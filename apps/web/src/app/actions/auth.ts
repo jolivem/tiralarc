@@ -5,6 +5,7 @@ import { cookies } from 'next/headers';
 import { getLocale } from 'next-intl/server';
 import { type ActionState, send } from '@/lib/action-state';
 import { api, clientHeaders, getAuthedApi } from '@/lib/api';
+import { homePathFor } from '@/lib/current-user-paths';
 import { clearSession, REFRESH_COOKIE, writeSession } from '@/lib/session';
 import { redirect } from '@/i18n/navigation';
 
@@ -17,7 +18,7 @@ function rolesFrom(formData: FormData): SelfAssignableRole[] {
     .filter((role): role is SelfAssignableRole => SELF_ASSIGNABLE.includes(role));
 }
 
-/** Only allow same-site, locale-less paths ("/profile") as post-login targets. */
+/** Only allow same-site, locale-less paths ("/archer/journal") as post-login targets. */
 function safeNext(value: unknown): string | undefined {
   return typeof value === 'string' && value.startsWith('/') && !value.startsWith('//')
     ? value
@@ -42,7 +43,7 @@ async function completeSignIn(tokens: TokenPair, next?: string): Promise<never> 
       locale,
     });
   }
-  return redirect({ href: next ?? '/profile', locale });
+  return redirect({ href: next ?? homePathFor(me.ok ? me.data.roles : []), locale });
 }
 
 export async function login(_prev: ActionState, formData: FormData): Promise<ActionState> {
@@ -144,7 +145,10 @@ export async function updateRoles(_prev: ActionState, formData: FormData): Promi
 
   const next = formData.get('next');
   if (typeof next === 'string') {
-    return redirect({ href: safeNext(next) ?? '/profile', locale: await getLocale() });
+    return redirect({
+      href: safeNext(next) ?? homePathFor(result.data.roles),
+      locale: await getLocale(),
+    });
   }
   return { notice: 'saved' };
 }

@@ -95,6 +95,17 @@ Composants et styles : [Mantine](https://mantine.dev) 9 (`@mantine/core`, `@mant
 points de rupture Mantine : `xs` 576 px, `sm` 768 px (tablette), `md` 992 px (ordinateur).
 Sous `sm`, la navigation passe dans un menu « burger ».
 
+### Pages
+
+| Route (`/fr` ou `/en` devant)                                                                                                        | Accès       |
+| ------------------------------------------------------------------------------------------------------------------------------------ | ----------- |
+| `/`, `/login`, `/register`, `/verify-email`                                                                                          | public      |
+| `/account` — Mon compte (email, connexion, rôles)                                                                                    | connecté    |
+| `/archer` — Accueil, `/archer/journal`, `/archer/sheets` (Fiches), `/archer/stats` (Indicateurs), `/archer/profile` (Profil sportif) | rôle ARCHER |
+
+Espace archer : barre d'onglets en bas d'écran sur téléphone, menu latéral à partir de la
+tablette. Compte et déconnexion dans le menu de l'avatar.
+
 ## Multilingue
 
 Le site est en français et en anglais (next-intl) : toutes les pages sont sous `/fr/...` ou

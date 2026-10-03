@@ -182,7 +182,7 @@ export function RolesForm({
         {next !== undefined && <input type="hidden" name="next" value={next} />}
         <RolePicker value={roles} onChange={setRoles} error={fieldError(state, 'roles')} />
         <FormError state={state} />
-        {state.notice === 'saved' && <SuccessNotice>{t('profile.saved')}</SuccessNotice>}
+        {state.notice === 'saved' && <SuccessNotice>{t('account.saved')}</SuccessNotice>}
         <Button type="submit" loading={pending}>
           {submitLabel}
         </Button>

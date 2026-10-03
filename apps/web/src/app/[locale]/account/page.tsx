@@ -19,29 +19,29 @@ import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/serve
 import { RolesForm } from '@/components/auth-forms';
 import { redirect } from '@/i18n/navigation';
 import type { Locale } from '@/i18n/routing';
-import { getAuthedApi } from '@/lib/api';
+import { getCurrentUser } from '@/lib/current-user';
 
 const PROVIDER_LABELS = { GOOGLE: 'Google', APPLE: 'Apple' } as const;
 const ROLE_COLORS = { ADMIN: 'grape', ARCHER: 'teal', COACH: 'blue' } as const;
 
-export default async function ProfilePage({ params }: PageProps<'/[locale]/profile'>) {
+export default async function AccountPage({ params }: PageProps<'/[locale]/account'>) {
   const { locale } = await params;
   setRequestLocale(locale as Locale);
   const t = await getTranslations();
   const format = await getFormatter();
 
-  const { data: user } = await (await getAuthedApi()).GET('/api/v1/users/me');
+  const user = await getCurrentUser();
   // proxy.ts already redirects anonymous visitors; this covers a session revoked meanwhile.
   if (!user) {
     return redirect({
-      href: { pathname: '/login', query: { next: '/profile' } },
+      href: { pathname: '/login', query: { next: '/account' } },
       locale: locale as Locale,
     });
   }
 
   const name = user.displayName ?? user.email;
   const methods = [
-    ...(user.hasPassword ? [t('profile.methodPassword')] : []),
+    ...(user.hasPassword ? [t('account.methodPassword')] : []),
     ...user.providers.map((p) => PROVIDER_LABELS[p]),
   ];
 
@@ -51,7 +51,7 @@ export default async function ProfilePage({ params }: PageProps<'/[locale]/profi
         <Group gap="md" wrap="nowrap">
           <Avatar name={name} color="initials" size="lg" />
           <Title order={1} size="h2">
-            {t('profile.hello', { name })}
+            {t('account.title')}
           </Title>
         </Group>
 
@@ -61,11 +61,11 @@ export default async function ProfilePage({ params }: PageProps<'/[locale]/profi
             <Table variant="vertical" layout="fixed" withRowBorders={false}>
               <TableTbody>
                 <TableTr>
-                  <TableTh w={130}>{t('profile.email')}</TableTh>
+                  <TableTh w={130}>{t('account.email')}</TableTh>
                   <TableTd style={{ overflowWrap: 'anywhere' }}>{user.email}</TableTd>
                 </TableTr>
                 <TableTr>
-                  <TableTh>{t('profile.roles')}</TableTh>
+                  <TableTh>{t('account.roles')}</TableTh>
                   <TableTd>
                     <Group gap={6}>
                       {user.roles.length === 0 && <Text c="dimmed">—</Text>}
@@ -78,11 +78,11 @@ export default async function ProfilePage({ params }: PageProps<'/[locale]/profi
                   </TableTd>
                 </TableTr>
                 <TableTr>
-                  <TableTh>{t('profile.signInMethods')}</TableTh>
+                  <TableTh>{t('account.signInMethods')}</TableTh>
                   <TableTd>{methods.join(', ')}</TableTd>
                 </TableTr>
                 <TableTr>
-                  <TableTh>{t('profile.memberSince')}</TableTh>
+                  <TableTh>{t('account.memberSince')}</TableTh>
                   <TableTd>
                     {format.dateTime(new Date(user.createdAt), { dateStyle: 'long' })}
                   </TableTd>
@@ -94,11 +94,11 @@ export default async function ProfilePage({ params }: PageProps<'/[locale]/profi
           <Card withBorder radius="lg" padding="lg">
             <Stack gap="md">
               <Title order={2} size="h4">
-                {t('profile.editRoles')}
+                {t('account.editRoles')}
               </Title>
               <RolesForm
                 initialRoles={user.roles.filter((r): r is SelfAssignableRole => r !== 'ADMIN')}
-                submitLabel={t('profile.save')}
+                submitLabel={t('account.save')}
               />
             </Stack>
           </Card>

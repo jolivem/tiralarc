@@ -9,6 +9,9 @@ const nextConfig: NextConfig = {
   output: 'standalone',
   // Monorepo: trace dependencies from the repository root.
   outputFileTracingRoot: path.join(import.meta.dirname, '../..'),
+  // The dev "N" badge sits in a screen corner, over the phone tab bar / header controls.
+  // Compile and runtime errors are still reported.
+  devIndicators: false,
 };
 
 export default withNextIntl(nextConfig);

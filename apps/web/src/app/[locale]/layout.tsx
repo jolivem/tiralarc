@@ -1,10 +1,10 @@
 import '@mantine/core/styles.css';
 import '@mantine/dates/styles.css';
+import '@mantine/schedule/styles.css';
 import '../globals.css';
 import { ColorSchemeScript, mantineHtmlProps } from '@mantine/core';
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
-import { cookies } from 'next/headers';
 import { notFound } from 'next/navigation';
 import { hasLocale, NextIntlClientProvider } from 'next-intl';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
@@ -12,7 +12,7 @@ import { Suspense } from 'react';
 import { TiralarcShell } from '@/components/app-shell';
 import { Providers } from '@/components/providers';
 import { routing } from '@/i18n/routing';
-import { ACCESS_COOKIE, REFRESH_COOKIE } from '@/lib/session';
+import { getCurrentUser } from '@/lib/current-user';
 
 const geistSans = Geist({ variable: '--font-geist-sans', subsets: ['latin'] });
 const geistMono = Geist_Mono({ variable: '--font-geist-mono', subsets: ['latin'] });
@@ -32,9 +32,9 @@ export default async function LocaleLayout({ children, params }: LayoutProps<'/[
   if (!hasLocale(routing.locales, locale)) notFound();
   setRequestLocale(locale);
 
-  // Only drives which menu entries are shown; pages check the session themselves.
-  const cookieStore = await cookies();
-  const signedIn = cookieStore.has(ACCESS_COOKIE) || cookieStore.has(REFRESH_COOKIE);
+  // Drives the navigation only; pages and the archer layout enforce access themselves.
+  const user = await getCurrentUser();
+  const shellUser = user && { displayName: user.displayName, email: user.email, roles: user.roles };
 
   return (
     <html
@@ -49,7 +49,7 @@ export default async function LocaleLayout({ children, params }: LayoutProps<'/[
         <NextIntlClientProvider>
           <Providers locale={locale}>
             <Suspense>
-              <TiralarcShell signedIn={signedIn}>{children}</TiralarcShell>
+              <TiralarcShell user={shellUser}>{children}</TiralarcShell>
             </Suspense>
           </Providers>
         </NextIntlClientProvider>

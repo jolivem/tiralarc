@@ -17,7 +17,11 @@
     "profile": "My profile",
     "logout": "Sign out",
     "menu": "Menu",
-    "toggleColorScheme": "Toggle light / dark theme"
+    "toggleColorScheme": "Toggle light / dark theme",
+    "account": "My account",
+    "userMenu": "User menu",
+    "archerSection": "Archer area",
+    "mainNavigation": "Main navigation"
   },
   "home": {
     "tagline": "The platform for archers and their coaches.",
@@ -76,17 +80,6 @@
     "body": "One last step: tell us who you are.",
     "submit": "Continue"
   },
-  "profile": {
-    "hello": "Hello {name}",
-    "email": "Email",
-    "roles": "Profiles",
-    "signInMethods": "Sign-in",
-    "methodPassword": "password",
-    "memberSince": "Member since",
-    "editRoles": "Edit my profiles",
-    "save": "Save",
-    "saved": "Profiles saved."
-  },
   "errors": {
     "VALIDATION_FAILED": "Some fields are invalid.",
     "UNAUTHORIZED": "Your session has expired, please sign in again.",
@@ -109,5 +102,47 @@
     "maxLength": "Too long.",
     "arrayMinSize": "Choose at least one option.",
     "default": "Invalid value."
+  },
+  "account": {
+    "title": "My account",
+    "email": "Email",
+    "roles": "Profiles",
+    "signInMethods": "Sign-in",
+    "methodPassword": "password",
+    "memberSince": "Member since",
+    "editRoles": "Edit my profiles",
+    "save": "Save",
+    "saved": "Profiles saved."
+  },
+  "archer": {
+    "home": "Home",
+    "journal": "Journal",
+    "sheets": "Sheets",
+    "stats": "Stats",
+    "profile": "Profile",
+    "homeTitle": "Hello {name}",
+    "homeIntro": "Your archer area: sessions, sheets and progress in one place.",
+    "journalIntro": "Your training sessions and competitions: date, distance, arrow count, scores, feelings.",
+    "sheetsIntro": "Your technique sheets and memos: technique points, instructions, personal notes.",
+    "statsIntro": "Your progress in numbers: arrow volume, scores, consistency.",
+    "profileIntro": "Your sport details (bow type, category, dominant hand) and your club / licence.",
+    "comingSoon": "Coming soon",
+    "newSession": "New session",
+    "open": "Open"
+  },
+  "schedule": {
+    "day": "Day",
+    "week": "Week",
+    "month": "Month",
+    "year": "Year",
+    "allDay": "All day",
+    "today": "Today",
+    "next": "Next",
+    "previous": "Previous",
+    "noEvents": "No sessions",
+    "agenda": "Agenda",
+    "more": "more",
+    "moreLabel": "+{count} more",
+    "viewSelectLabel": "View"
   }
 }

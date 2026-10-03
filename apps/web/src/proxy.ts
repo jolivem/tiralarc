@@ -8,7 +8,7 @@ const api = createApiClient({ baseUrl: process.env.API_URL ?? 'http://localhost:
 const handleI18nRouting = createIntlMiddleware(routing);
 
 /** Locale-less routes that require a signed-in user. */
-const PROTECTED_PREFIXES = ['/profile', '/onboarding'];
+const PROTECTED_PREFIXES = ['/account', '/archer', '/onboarding'];
 
 /**
  * Refresh tokens are single-use: concurrent requests (parallel navigations,
@@ -37,7 +37,7 @@ function refreshOnce(refreshToken: string, request: NextRequest): Promise<TokenP
   return pending;
 }
 
-/** "/en/profile" → { locale: "en", path: "/profile" } */
+/** "/en/account" → { locale: "en", path: "/account" } */
 function splitLocale(pathname: string): { locale: string; path: string } {
   const [, first, ...rest] = pathname.split('/');
   if (first && (routing.locales as readonly string[]).includes(first)) {

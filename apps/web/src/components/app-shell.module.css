@@ -1,0 +1,42 @@
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: inherit;
+  text-decoration: none;
+}
+
+/* Phone bottom tab bar; leaves room for the iPhone home indicator. */
+.tabBar {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.tabs {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  height: 64px;
+}
+
+.tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  color: var(--mantine-color-dimmed);
+  text-decoration: none;
+
+  &[data-active] {
+    color: var(--mantine-primary-color-filled);
+  }
+}
+
+.tabLabel {
+  font-size: 11px;
+  line-height: 1.2;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding-inline: 2px;
+}

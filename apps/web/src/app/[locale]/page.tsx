@@ -2,8 +2,10 @@ import { Badge, Container, Group, Stack, Text, Title } from '@mantine/core';
 import { IconLogin, IconUserPlus } from '@tabler/icons-react';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { ButtonLink } from '@/components/links';
+import { redirect } from '@/i18n/navigation';
 import type { Locale } from '@/i18n/routing';
 import { api } from '@/lib/api';
+import { getCurrentUser, homePathFor } from '@/lib/current-user';
 
 async function getApiStatus(): Promise<'up' | 'down'> {
   try {
@@ -17,6 +19,8 @@ async function getApiStatus(): Promise<'up' | 'down'> {
 export default async function HomePage({ params }: PageProps<'/[locale]'>) {
   const { locale } = await params;
   setRequestLocale(locale as Locale);
+  const user = await getCurrentUser();
+  if (user) return redirect({ href: homePathFor(user.roles), locale: locale as Locale });
   const t = await getTranslations('home');
   const status = await getApiStatus();
 
