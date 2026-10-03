@@ -1,18 +1,20 @@
 import { z } from 'zod';
 
+const commaSeparated = z
+  .string()
+  .default('')
+  .transform((value) =>
+    value
+      .split(',')
+      .map((item) => item.trim())
+      .filter(Boolean),
+  );
+
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().positive().default(3001),
   DATABASE_URL: z.string().startsWith('mysql://'),
-  CORS_ORIGINS: z
-    .string()
-    .default('')
-    .transform((value) =>
-      value
-        .split(',')
-        .map((origin) => origin.trim())
-        .filter(Boolean),
-    ),
+  CORS_ORIGINS: commaSeparated,
   /**
    * Express `trust proxy` setting: which hops may set X-Forwarded-For, so that
    * rate limiting sees the real client IP behind the Next.js BFF / load balancer.
@@ -34,6 +36,27 @@ const envSchema = z.object({
     .int()
     .positive()
     .default(60 * 60 * 24 * 30),
+  /** Public URL of the web app, used to build links in emails. */
+  WEB_URL: z.url().default('http://localhost:3000'),
+  /** SMTP connection string, e.g. smtp://localhost:1025 (Mailpit in dev) or smtps://user:pass@host:465. */
+  SMTP_URL: z.string().default('smtp://localhost:1025'),
+  MAIL_FROM: z.string().default('Tiralarc <no-reply@tiralarc.local>'),
+  /** Email verification link lifetime, in seconds. */
+  EMAIL_VERIFICATION_TTL: z.coerce
+    .number()
+    .int()
+    .positive()
+    .default(60 * 60 * 24),
+  /**
+   * Accepted audiences for Google ID tokens: comma-separated OAuth client IDs
+   * (web, Android, iOS). Empty = Google sign-in disabled.
+   */
+  GOOGLE_CLIENT_IDS: commaSeparated,
+  /**
+   * Accepted audiences for Apple identity tokens: the Services ID (web) and the
+   * app bundle ID (iOS). Empty = Apple sign-in disabled.
+   */
+  APPLE_CLIENT_IDS: commaSeparated,
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
 });
 

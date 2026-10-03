@@ -1,11 +1,14 @@
 import { createApiClient, type TokenPair } from '@tiralarc/api-client';
 import { type NextRequest, NextResponse } from 'next/server';
+import createIntlMiddleware from 'next-intl/middleware';
+import { routing } from './i18n/routing';
 import { ACCESS_COOKIE, clearSession, REFRESH_COOKIE, writeSession } from './lib/session';
 
 const api = createApiClient({ baseUrl: process.env.API_URL ?? 'http://localhost:3001' });
+const handleI18nRouting = createIntlMiddleware(routing);
 
-/** Routes that require a signed-in user. */
-const PROTECTED_PREFIXES = ['/profile'];
+/** Locale-less routes that require a signed-in user. */
+const PROTECTED_PREFIXES = ['/profile', '/onboarding'];
 
 /**
  * Refresh tokens are single-use: concurrent requests (parallel navigations,
@@ -34,36 +37,53 @@ function refreshOnce(refreshToken: string, request: NextRequest): Promise<TokenP
   return pending;
 }
 
+/** "/en/profile" → { locale: "en", path: "/profile" } */
+function splitLocale(pathname: string): { locale: string; path: string } {
+  const [, first, ...rest] = pathname.split('/');
+  if (first && (routing.locales as readonly string[]).includes(first)) {
+    return { locale: first, path: `/${rest.join('/')}` };
+  }
+  return { locale: routing.defaultLocale, path: pathname };
+}
+
+/**
+ * 1. Refreshes the access token when only the refresh token is left.
+ * 2. Redirects anonymous visitors away from protected pages.
+ * 3. Applies locale routing (next-intl): "/" → "/fr", etc.
+ */
 export async function proxy(request: NextRequest) {
-  const { pathname, search } = request.nextUrl;
-  const isProtected = PROTECTED_PREFIXES.some((prefix) => pathname.startsWith(prefix));
-  const hasAccess = request.cookies.has(ACCESS_COOKIE);
+  const { locale, path } = splitLocale(request.nextUrl.pathname);
+  const isProtected = PROTECTED_PREFIXES.some((prefix) => path.startsWith(prefix));
   const refreshToken = request.cookies.get(REFRESH_COOKIE)?.value;
 
-  if (hasAccess) return NextResponse.next();
-
-  const tokens = refreshToken ? await refreshOnce(refreshToken, request) : null;
-
-  if (!tokens) {
-    const response = isProtected
-      ? NextResponse.redirect(
-          new URL(`/login?next=${encodeURIComponent(pathname + search)}`, request.url),
-        )
-      : NextResponse.next();
-    if (refreshToken) clearSession(response.cookies);
-    return response;
+  let tokens: TokenPair | null = null;
+  let signedIn = request.cookies.has(ACCESS_COOKIE);
+  if (!signedIn && refreshToken) {
+    tokens = await refreshOnce(refreshToken, request);
+    signedIn = tokens !== null;
+    if (tokens) {
+      // Make the new tokens visible to this render; next-intl forwards request headers.
+      request.cookies.set(ACCESS_COOKIE, tokens.accessToken);
+      request.cookies.set(REFRESH_COOKIE, tokens.refreshToken);
+    }
   }
 
-  // Make the new tokens visible to this render (request) and persist them (response).
-  request.cookies.set(ACCESS_COOKIE, tokens.accessToken);
-  request.cookies.set(REFRESH_COOKIE, tokens.refreshToken);
-  const response = NextResponse.next({ request: { headers: request.headers } });
-  writeSession(response.cookies, tokens);
+  const response =
+    isProtected && !signedIn
+      ? NextResponse.redirect(
+          new URL(
+            `/${locale}/login?next=${encodeURIComponent(path + request.nextUrl.search)}`,
+            request.url,
+          ),
+        )
+      : handleI18nRouting(request);
+
+  if (tokens) writeSession(response.cookies, tokens);
+  else if (refreshToken && !signedIn) clearSession(response.cookies);
   return response;
 }
 
 export const config = {
-  matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)',
-  ],
+  // Everything except Next internals and static files.
+  matcher: ['/((?!_next|_vercel|.*\\..*).*)'],
 };

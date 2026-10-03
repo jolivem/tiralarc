@@ -11,7 +11,7 @@ packages/
   api-client/     Client TypeScript typé, généré depuis apps/api/openapi.json
   eslint-config/  Config ESLint partagée
   tsconfig/       tsconfig de base partagés
-docker/           MariaDB + Adminer pour le développement
+docker/           MariaDB, Adminer et Mailpit pour le développement
 docs/adr/         Décisions d'architecture
 ```
 
@@ -59,17 +59,41 @@ Conventions de l'API : routes sous `/api/v1`, toutes protégées par défaut (`@
 les exceptions), erreurs au format RFC 9457 `application/problem+json`, dates ISO 8601 UTC,
 identifiants UUID.
 
-## Authentification
+## Comptes et authentification
 
-- `POST /api/v1/auth/register|login` → `{ accessToken, refreshToken, expiresIn, ... }`
-- Appels authentifiés : `Authorization: Bearer <accessToken>` (JWT, 15 min)
-- `POST /api/v1/auth/refresh` : jeton de rafraîchissement opaque, **à usage unique** (rotation) ;
-  la réutilisation d'un jeton déjà échangé révoque toute la session.
-- `POST /api/v1/auth/logout` : révoque la session.
+Rôles cumulables : `ARCHER`, `COACH` (choisis par l'utilisateur) et `ADMIN` (attribué par
+`pnpm --filter @tiralarc/api user:make-admin <email>`). Routes réservées : `@Roles(Role.ADMIN)`.
 
-Web : les Server Actions et `src/proxy.ts` stockent les jetons en cookies httpOnly et
-rafraîchissent l'accès de façon transparente ; le navigateur ne voit jamais les jetons.
-Mobile : stocker les jetons dans le Keychain (iOS) / Keystore (Android) et appeler l'API directement.
+| Route (`/api/v1`)                  | Rôle                                                         |
+| ---------------------------------- | ------------------------------------------------------------ |
+| `POST /auth/register`              | Inscription email + mot de passe + rôles ; envoie un lien    |
+| `POST /auth/verify-email`          | Consomme le lien de confirmation et ouvre une session        |
+| `POST /auth/resend-verification`   | Renvoie le lien (répond toujours 202)                        |
+| `POST /auth/login`                 | `403 EMAIL_NOT_VERIFIED` tant que l'email n'est pas confirmé |
+| `POST /auth/google`, `/auth/apple` | Connexion / inscription avec un ID token Google ou Apple     |
+| `POST /auth/refresh`, `/logout`    | Rotation du jeton de rafraîchissement / fin de session       |
+| `GET /users/me`                    | Profil, rôles, méthodes de connexion                         |
+| `PUT /users/me/roles`              | Choix des rôles archer / coach (ADMIN conservé)              |
+| `GET /users`                       | Liste des comptes (ADMIN)                                    |
+
+- Jeton d'accès JWT (15 min, contient les rôles) en `Authorization: Bearer`.
+- Jeton de rafraîchissement opaque, **à usage unique** ; sa réutilisation révoque la session.
+- Google / Apple : l'API vérifie l'ID token (signature, émetteur, audience). Un compte existant
+  avec le même email (vérifié par le fournisseur) est relié automatiquement. Configuration :
+  [docs/oauth-setup.md](docs/oauth-setup.md).
+- Erreurs : chaque réponse `problem+json` porte un `code` stable (`EMAIL_TAKEN`,
+  `INVALID_CREDENTIALS`…, liste dans `apps/api/src/common/errors.ts`) que les clients traduisent.
+
+Web : Server Actions et `src/proxy.ts` gardent les jetons en cookies httpOnly ; le navigateur ne
+les voit jamais. Mobile : stocker les jetons dans le Keychain / Keystore et appeler l'API.
+
+## Multilingue
+
+Le site est en français et en anglais (next-intl) : toutes les pages sont sous `/fr/...` ou
+`/en/...`, `/` redirige selon la langue du navigateur. Textes dans `apps/web/messages/*.json`
+(clés typées : une clé manquante casse le typecheck). Pour ajouter une langue : l'ajouter à
+`apps/web/src/i18n/routing.ts`, créer `messages/<langue>.json`, et l'ajouter à
+`SUPPORTED_LOCALES` + aux modèles d'email côté API (`apps/api/src/mail/templates.ts`).
 
 ## Docker (production)
 

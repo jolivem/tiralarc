@@ -6,6 +6,7 @@ import { LoggerModule } from 'nestjs-pino';
 import { AuthModule } from './auth/auth.module.js';
 import { type Env, validateEnv } from './config/env.js';
 import { HealthModule } from './health/health.module.js';
+import { MailModule } from './mail/mail.module.js';
 import { PrismaModule } from './prisma/prisma.module.js';
 import { UsersModule } from './users/users.module.js';
 
@@ -25,8 +26,16 @@ import { UsersModule } from './users/users.module.js';
         },
       }),
     }),
-    ThrottlerModule.forRoot([{ name: 'default', ttl: 60_000, limit: 120 }]),
+    ThrottlerModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (config: ConfigService<Env, true>) => ({
+        throttlers: [{ name: 'default', ttl: 60_000, limit: 120 }],
+        // e2e tests issue many auth calls from one IP.
+        skipIf: () => config.get('NODE_ENV', { infer: true }) === 'test',
+      }),
+    }),
     PrismaModule,
+    MailModule,
     HealthModule,
     AuthModule,
     UsersModule,

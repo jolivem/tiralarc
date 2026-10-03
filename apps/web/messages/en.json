@@ -1,0 +1,103 @@
+{
+  "common": {
+    "appName": "Tiralarc",
+    "language": "Language",
+    "locales": { "fr": "Français", "en": "English" },
+    "or": "or",
+    "loading": "…",
+    "email": "Email",
+    "password": "Password"
+  },
+  "home": {
+    "tagline": "The platform for archers and their coaches.",
+    "apiStatus": "API:",
+    "apiUp": "up",
+    "apiDown": "unavailable",
+    "login": "Sign in",
+    "register": "Create an account",
+    "profile": "My profile"
+  },
+  "roles": {
+    "ADMIN": "Administrator",
+    "ARCHER": "Archer",
+    "COACH": "Coach",
+    "ARCHER_description": "I practise archery",
+    "COACH_description": "I coach archers"
+  },
+  "login": {
+    "title": "Sign in",
+    "submit": "Sign in",
+    "noAccount": "No account yet?",
+    "createAccount": "Create an account",
+    "resendLink": "Resend the confirmation link"
+  },
+  "register": {
+    "title": "Create an account",
+    "rolesLabel": "You are…",
+    "rolesHint": "You can tick both.",
+    "displayName": "Display name",
+    "passwordHint": "Password (8 characters min.)",
+    "submit": "Create my account",
+    "socialHint": "Or sign up with:",
+    "haveAccount": "Already registered?",
+    "signIn": "Sign in",
+    "rolesRequired": "Choose at least one profile: archer or coach."
+  },
+  "social": {
+    "apple": "Continue with Apple"
+  },
+  "checkEmail": {
+    "title": "Check your inbox",
+    "body": "We sent a confirmation link to {email}. Click it to activate your account.",
+    "notReceived": "Nothing received? Check your spam folder, or:",
+    "resend": "Resend the link",
+    "resent": "If a pending account exists for this address, a new link has just been sent.",
+    "backToLogin": "Back to sign in"
+  },
+  "verifyEmail": {
+    "title": "Confirm your email address",
+    "body": "Click the button to activate your account.",
+    "submit": "Confirm my email",
+    "missingToken": "This link is incomplete. Please use the link from the email."
+  },
+  "onboarding": {
+    "title": "Welcome!",
+    "body": "One last step: tell us who you are.",
+    "submit": "Continue"
+  },
+  "profile": {
+    "hello": "Hello {name}",
+    "email": "Email",
+    "roles": "Profiles",
+    "signInMethods": "Sign-in",
+    "methodPassword": "password",
+    "memberSince": "Member since",
+    "editRoles": "Edit my profiles",
+    "save": "Save",
+    "saved": "Profiles saved.",
+    "logout": "Sign out"
+  },
+  "errors": {
+    "VALIDATION_FAILED": "Some fields are invalid.",
+    "UNAUTHORIZED": "Your session has expired, please sign in again.",
+    "FORBIDDEN": "Access denied.",
+    "NOT_FOUND": "Not found.",
+    "TOO_MANY_REQUESTS": "Too many attempts. Try again in a minute.",
+    "INTERNAL_ERROR": "Something went wrong, please try again.",
+    "NETWORK_ERROR": "The service is temporarily unavailable.",
+    "EMAIL_TAKEN": "An account already exists with this email address.",
+    "INVALID_CREDENTIALS": "Incorrect email or password.",
+    "EMAIL_NOT_VERIFIED": "Your email address isn't confirmed yet. Please check your inbox.",
+    "INVALID_VERIFICATION_TOKEN": "This confirmation link is invalid or has expired.",
+    "INVALID_REFRESH_TOKEN": "Your session has expired, please sign in again.",
+    "INVALID_ID_TOKEN": "Signing in with this provider failed.",
+    "PROVIDER_NOT_CONFIGURED": "This sign-in method isn't available."
+  },
+  "validation": {
+    "isEmail": "Invalid email address.",
+    "minLength": "Too short.",
+    "maxLength": "Too long.",
+    "arrayMinSize": "Choose at least one option.",
+    "default": "Invalid value."
+  }
+}

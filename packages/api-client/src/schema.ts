@@ -29,7 +29,42 @@ export interface paths {
         };
         get?: never;
         put?: never;
+        /** Sign up with email + password; a confirmation link is emailed */
         post: operations["Auth_register"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/verify-email": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Confirm the email address and sign in */
+        post: operations["Auth_verifyEmail"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/resend-verification": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Email a new confirmation link (always 202) */
+        post: operations["Auth_resendVerification"];
         delete?: never;
         options?: never;
         head?: never;
@@ -46,6 +81,40 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["Auth_login"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/google": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Sign in / sign up with a Google ID token */
+        post: operations["Auth_google"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/apple": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Sign in / sign up with a Sign in with Apple identity token */
+        post: operations["Auth_apple"];
         delete?: never;
         options?: never;
         head?: never;
@@ -100,10 +169,44 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/users/me/roles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["Users_updateMyRoles"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["Users_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** @enum {string} */
+        SelfAssignableRole: "ARCHER" | "COACH";
         RegisterDto: {
             /**
              * Format: email
@@ -111,9 +214,25 @@ export interface components {
              */
             email: string;
             password: string;
+            displayName?: string;
+            roles: components["schemas"]["SelfAssignableRole"][];
+            /**
+             * @description Language of the emails sent to the user.
+             * @enum {string}
+             */
+            locale?: "fr" | "en";
+        };
+        RegistrationDto: {
+            /** Format: email */
+            email: string;
+            /** @description Always true: a confirmation link was emailed; login is refused until it is used. */
+            verificationRequired: boolean;
+        };
+        VerifyEmailDto: {
+            /** @description Token from the link emailed at registration. */
+            token: string;
             /** @description Human-readable device label (e.g. "Pixel 9", "Firefox on Linux"), shown in session lists. */
             deviceName?: string;
-            displayName?: string;
         };
         TokenPairDto: {
             /** @description Short-lived JWT, sent as `Authorization: Bearer <token>`. */
@@ -127,6 +246,10 @@ export interface components {
             /** @description Refresh token lifetime, in seconds. */
             refreshExpiresIn: number;
         };
+        ResendVerificationDto: {
+            /** Format: email */
+            email: string;
+        };
         LoginDto: {
             /**
              * Format: email
@@ -137,17 +260,50 @@ export interface components {
             /** @description Human-readable device label (e.g. "Pixel 9", "Firefox on Linux"), shown in session lists. */
             deviceName?: string;
         };
+        SocialSignInDto: {
+            /** @description ID token returned by Google Identity Services / Sign in with Apple (web or native SDK). */
+            idToken: string;
+            /** @description Nonce passed to the provider when requesting the token; checked if present. */
+            nonce?: string;
+            /** @description Roles for a new account. If omitted for a new account, it is created without roles and the client must ask the user (PUT /users/me/roles). Ignored for existing accounts. */
+            roles?: components["schemas"]["SelfAssignableRole"][];
+            /** @description Apple only sends the name to the client, on first sign-in: forward it here. */
+            displayName?: string;
+            /** @enum {string} */
+            locale?: "fr" | "en";
+            /** @description Human-readable device label (e.g. "Pixel 9", "Firefox on Linux"), shown in session lists. */
+            deviceName?: string;
+        };
         RefreshTokenDto: {
             refreshToken: string;
         };
+        /**
+         * @description Empty for an account created through Google / Apple whose user has not chosen yet.
+         * @enum {string}
+         */
+        Role: "ADMIN" | "ARCHER" | "COACH";
+        /** @enum {string} */
+        AuthProvider: "GOOGLE" | "APPLE";
         UserDto: {
             /** Format: uuid */
             id: string;
             /** Format: email */
             email: string;
+            emailVerified: boolean;
             displayName: string | null;
+            /** @example fr */
+            locale: string;
+            /** @description Empty for an account created through Google / Apple whose user has not chosen yet. */
+            roles: components["schemas"]["Role"][];
+            /** @description False for accounts created through Google / Apple only. */
+            hasPassword: boolean;
+            providers: components["schemas"]["AuthProvider"][];
             /** Format: date-time */
             createdAt: string;
+        };
+        UpdateMyRolesDto: {
+            /** @description Replaces the self-assignable roles (ADMIN, if held, is kept). */
+            roles: components["schemas"]["SelfAssignableRole"][];
         };
     };
     responses: never;
@@ -324,11 +480,62 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    "application/json": components["schemas"]["RegistrationDto"];
+                };
+            };
+            /** @description EMAIL_TAKEN */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    Auth_verifyEmail: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VerifyEmailDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
                     "application/json": components["schemas"]["TokenPairDto"];
                 };
             };
-            /** @description Email already registered */
-            409: {
+            /** @description INVALID_VERIFICATION_TOKEN */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    Auth_resendVerification: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResendVerificationDto"];
+            };
+        };
+        responses: {
+            202: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -357,8 +564,89 @@ export interface operations {
                     "application/json": components["schemas"]["TokenPairDto"];
                 };
             };
-            /** @description Invalid credentials */
+            /** @description INVALID_CREDENTIALS */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description EMAIL_NOT_VERIFIED */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    Auth_google: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SocialSignInDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TokenPairDto"];
+                };
+            };
+            /** @description INVALID_ID_TOKEN */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description EMAIL_TAKEN (email not verified by the provider) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    Auth_apple: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SocialSignInDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TokenPairDto"];
+                };
+            };
+            /** @description INVALID_ID_TOKEN */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description EMAIL_TAKEN (email not verified by the provider) */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -387,7 +675,7 @@ export interface operations {
                     "application/json": components["schemas"]["TokenPairDto"];
                 };
             };
-            /** @description Invalid, expired or reused refresh token */
+            /** @description INVALID_REFRESH_TOKEN */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -433,6 +721,55 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["UserDto"];
                 };
+            };
+        };
+    };
+    Users_updateMyRoles: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateMyRolesDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserDto"];
+                };
+            };
+        };
+    };
+    Users_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserDto"][];
+                };
+            };
+            /** @description Admins only */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

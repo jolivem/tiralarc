@@ -7,15 +7,38 @@ export type { components, paths };
 export type Schemas = components['schemas'];
 export type User = Schemas['UserDto'];
 export type TokenPair = Schemas['TokenPairDto'];
+export type Role = Schemas['UserDto']['roles'][number];
+export type SelfAssignableRole = Schemas['RegisterDto']['roles'][number];
+
+/**
+ * Stable error codes (apps/api/src/common/errors.ts). Clients translate these;
+ * `detail` is English, for developers.
+ */
+export type ErrorCode =
+  | 'VALIDATION_FAILED'
+  | 'UNAUTHORIZED'
+  | 'FORBIDDEN'
+  | 'NOT_FOUND'
+  | 'TOO_MANY_REQUESTS'
+  | 'INTERNAL_ERROR'
+  | 'EMAIL_TAKEN'
+  | 'INVALID_CREDENTIALS'
+  | 'EMAIL_NOT_VERIFIED'
+  | 'INVALID_VERIFICATION_TOKEN'
+  | 'INVALID_REFRESH_TOKEN'
+  | 'INVALID_ID_TOKEN'
+  | 'PROVIDER_NOT_CONFIGURED';
 
 /** RFC 9457 error body returned by every failing API call. */
 export interface ProblemDetails {
   type: string;
   title: string;
   status: number;
+  code: ErrorCode;
   detail?: string;
   instance: string;
-  errors?: { field: string; messages: string[] }[];
+  /** Present when code is VALIDATION_FAILED. `constraints` are rule names, e.g. "isEmail". */
+  errors?: { field: string; constraints: string[]; messages: string[] }[];
 }
 
 /**

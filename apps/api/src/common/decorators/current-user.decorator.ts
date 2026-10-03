@@ -1,9 +1,11 @@
 import { createParamDecorator, ExecutionContext } from '@nestjs/common';
 import type { Request } from 'express';
+import type { Role } from '../../generated/prisma/client.js';
 
 export interface AuthenticatedUser {
   id: string;
   email: string;
+  roles: Role[];
 }
 
 export type AuthenticatedRequest = Request & { user?: AuthenticatedUser };

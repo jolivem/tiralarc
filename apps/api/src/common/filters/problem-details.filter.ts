@@ -8,15 +8,26 @@ import {
 } from '@nestjs/common';
 import { STATUS_CODES } from 'node:http';
 import type { Request, Response } from 'express';
+import { defaultErrorCode, type ErrorCode } from '../errors.js';
+
+export interface FieldError {
+  field: string;
+  /** Failed rule names (e.g. "isEmail", "minLength"), stable for client-side translation. */
+  constraints: string[];
+  /** English messages, for developers. */
+  messages: string[];
+}
 
 export interface ProblemDetails {
   type: string;
   title: string;
   status: number;
+  /** Stable machine-readable code, see common/errors.ts. */
+  code: ErrorCode;
   detail?: string;
   instance: string;
-  /** Field-level validation errors, when status is 400. */
-  errors?: { field: string; messages: string[] }[];
+  /** Field-level validation errors, when code is VALIDATION_FAILED. */
+  errors?: FieldError[];
 }
 
 /**
@@ -43,6 +54,7 @@ export class ProblemDetailsFilter implements ExceptionFilter {
       type: 'about:blank',
       title: STATUS_CODES[status] ?? 'Error',
       status,
+      code: defaultErrorCode(status),
       instance: request.originalUrl,
     };
 
@@ -51,12 +63,14 @@ export class ProblemDetailsFilter implements ExceptionFilter {
       if (typeof body === 'string') {
         problem.detail = body;
       } else if (typeof body === 'object' && body !== null) {
-        const { message, errors } = body as {
+        const { message, errors, code } = body as {
           message?: unknown;
-          errors?: ProblemDetails['errors'];
+          errors?: FieldError[];
+          code?: ErrorCode;
         };
         if (typeof message === 'string') problem.detail = message;
         if (Array.isArray(errors)) problem.errors = errors;
+        if (code) problem.code = code;
       }
     }
 

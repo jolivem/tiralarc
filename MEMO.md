@@ -20,7 +20,7 @@ cp apps/api/.env.example apps/api/.env        # puis mettre un vrai JWT_ACCESS_S
                                               #   openssl rand -base64 48
 cp apps/web/.env.example apps/web/.env.local
 
-pnpm db:up                                    # démarre MariaDB (Docker)
+pnpm db:up                                    # démarre MariaDB et Mailpit (Docker)
 pnpm --filter @tiralarc/api db:migrate        # crée les tables
 ```
 
@@ -29,7 +29,7 @@ pnpm --filter @tiralarc/api db:migrate        # crée les tables
 ### 1. Démarrer la base de données
 
 ```bash
-pnpm db:up            # MariaDB sur localhost:3307, Adminer sur http://localhost:8081
+pnpm db:up            # MariaDB (:3307), Adminer (:8081), Mailpit (:8025)
 ```
 
 ### 2a. Tout lancer d'un coup (recommandé)
@@ -72,8 +72,25 @@ pnpm db:down          # les données sont conservées (volume Docker)
 | API — état de santé      | http://localhost:3001/api/v1/health |
 | API — documentation      | http://localhost:3001/api/docs      |
 | Adminer (explorer la BD) | http://localhost:8081               |
+| Mailpit (emails de dev)  | http://localhost:8025               |
 
 Adminer : serveur `mariadb`, utilisateur `tiralarc`, mot de passe `tiralarc`, base `tiralarc`.
+
+## Comptes utilisateurs
+
+- **Inscription par email** : un lien de confirmation est envoyé. En développement, aucun email
+  ne part vraiment : ils arrivent tous dans **Mailpit**, http://localhost:8025. Cliquer sur le
+  lien, puis sur « Confirmer mon email ».
+- **Google / Apple** : boutons masqués tant que les identifiants ne sont pas configurés, voir
+  [docs/oauth-setup.md](docs/oauth-setup.md).
+- **Rendre quelqu'un administrateur** (la personne doit d'abord s'être inscrite) :
+
+  ```bash
+  pnpm --filter @tiralarc/api build      # si pas déjà fait
+  pnpm --filter @tiralarc/api user:make-admin jane@example.com
+  ```
+
+  Effectif à sa prochaine connexion (ou au plus tard 15 min).
 
 ## En cas de problème
 
@@ -85,6 +102,8 @@ Adminer : serveur `mariadb`, utilisateur `tiralarc`, mot de passe `tiralarc`, ba
   `docker compose -f docker/docker-compose.yml ps`.
 - **Port déjà utilisé** : changer `MARIADB_PORT` / `ADMINER_PORT` dans `docker/.env`, ou `PORT`
   dans `apps/api/.env` (et `API_URL` côté web en conséquence).
+- **Pas d'email de confirmation** : vérifier que Mailpit tourne (`pnpm db:up`) et regarder
+  http://localhost:8025.
 - **Après modification de `prisma/schema.prisma`** : `pnpm --filter @tiralarc/api db:migrate`.
 - **Après modification d'un contrôleur ou DTO de l'API** : `pnpm openapi` pour mettre à jour
   le client utilisé par le front.

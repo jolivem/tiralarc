@@ -39,6 +39,7 @@ export function configureApp(app: INestApplication): void {
           message: 'Validation failed',
           errors: errors.map((error) => ({
             field: error.property,
+            constraints: Object.keys(error.constraints ?? {}),
             messages: Object.values(error.constraints ?? {}),
           })),
         }),

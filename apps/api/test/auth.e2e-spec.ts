@@ -1,96 +1,126 @@
-import type { INestApplication } from '@nestjs/common';
-import { Test } from '@nestjs/testing';
 import request from 'supertest';
-import type { App } from 'supertest/types.js';
-import { AppModule } from '../src/app.module.js';
-import { PrismaService } from '../src/prisma/prisma.service.js';
-import { configureApp } from '../src/setup.js';
+import { createTestApp, type TestContext, verificationTokenFor } from './helpers.js';
 
-describe('Auth (e2e)', () => {
-  let app: INestApplication<App>;
+describe('Auth — email + password (e2e)', () => {
+  let ctx: TestContext;
   const credentials = { email: 'Jane@Example.com', password: 'correct horse battery' };
 
   beforeAll(async () => {
-    const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
-    app = moduleRef.createNestApplication();
-    configureApp(app);
-    await app.init();
-
-    const prisma = app.get(PrismaService);
-    await prisma.refreshToken.deleteMany();
-    await prisma.user.deleteMany();
+    ctx = await createTestApp();
   });
 
   afterAll(async () => {
-    await app.close();
+    await ctx.app.close();
   });
 
+  const http = () => request(ctx.app.getHttpServer());
+
   it('GET /api/v1/health is public', async () => {
-    const res = await request(app.getHttpServer()).get('/api/v1/health').expect(200);
+    const res = await http().get('/api/v1/health').expect(200);
     expect(res.body.status).toBe('ok');
   });
 
-  it('rejects invalid payloads with problem+json', async () => {
-    const res = await request(app.getHttpServer())
+  it('rejects invalid payloads with problem+json and stable codes', async () => {
+    const res = await http()
       .post('/api/v1/auth/register')
-      .send({ email: 'not-an-email', password: 'short' })
+      .send({ email: 'not-an-email', password: 'short', roles: ['ADMIN'] })
       .expect(400)
       .expect('Content-Type', /application\/problem\+json/);
-    expect(res.body.errors.map((e: { field: string }) => e.field)).toEqual(['email', 'password']);
+    expect(res.body.code).toBe('VALIDATION_FAILED');
+    expect(res.body.errors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ field: 'email', constraints: ['isEmail'] }),
+        expect.objectContaining({ field: 'roles', constraints: ['isIn'] }),
+      ]),
+    );
   });
 
-  it('register → me → refresh (rotation) → reuse detection → logout', async () => {
-    const http = request(app.getHttpServer());
-
-    const registered = await http
+  it('register → login refused until verified → verify → me → refresh → logout', async () => {
+    const registered = await http()
       .post('/api/v1/auth/register')
-      .send({ ...credentials, displayName: 'Jane', deviceName: 'e2e' })
+      .send({ ...credentials, displayName: 'Jane', roles: ['ARCHER', 'COACH'], locale: 'en' })
       .expect(201);
-    expect(registered.body.tokenType).toBe('Bearer');
+    expect(registered.body).toEqual({ email: 'jane@example.com', verificationRequired: true });
 
-    await http.post('/api/v1/auth/register').send(credentials).expect(409);
+    // The email is in the user's language and links to the web app.
+    const mail = ctx.outbox.at(-1)!;
+    expect(mail.subject).toBe('Confirm your email address');
+    expect(mail.text).toContain('http://localhost:3000/en/verify-email?token=');
 
-    await http.get('/api/v1/users/me').expect(401);
-    const me = await http
-      .get('/api/v1/users/me')
-      .set('Authorization', `Bearer ${registered.body.accessToken}`)
-      .expect(200);
-    expect(me.body).toMatchObject({ email: 'jane@example.com', displayName: 'Jane' });
-    expect(me.body.passwordHash).toBeUndefined();
+    const dup = await http()
+      .post('/api/v1/auth/register')
+      .send({ ...credentials, roles: ['ARCHER'] });
+    expect(dup.status).toBe(409);
+    expect(dup.body.code).toBe('EMAIL_TAKEN');
 
-    const login = await http
-      .post('/api/v1/auth/login')
-      .send({ email: 'jane@example.com', password: credentials.password })
-      .expect(200);
-    await http
+    const unverified = await http().post('/api/v1/auth/login').send(credentials).expect(403);
+    expect(unverified.body.code).toBe('EMAIL_NOT_VERIFIED');
+    // Wrong password never reveals the verification state.
+    const wrong = await http()
       .post('/api/v1/auth/login')
       .send({ ...credentials, password: 'wrong password' })
       .expect(401);
+    expect(wrong.body.code).toBe('INVALID_CREDENTIALS');
 
-    const refreshed = await http
+    await http()
+      .post('/api/v1/auth/resend-verification')
+      .send({ email: credentials.email })
+      .expect(202);
+    const token = verificationTokenFor(ctx.outbox, 'jane@example.com');
+
+    const verified = await http().post('/api/v1/auth/verify-email').send({ token }).expect(200);
+    expect(verified.body.tokenType).toBe('Bearer');
+    const reused = await http().post('/api/v1/auth/verify-email').send({ token }).expect(400);
+    expect(reused.body.code).toBe('INVALID_VERIFICATION_TOKEN');
+
+    const me = await http()
+      .get('/api/v1/users/me')
+      .set('Authorization', `Bearer ${verified.body.accessToken}`)
+      .expect(200);
+    expect(me.body).toMatchObject({
+      email: 'jane@example.com',
+      displayName: 'Jane',
+      emailVerified: true,
+      locale: 'en',
+      roles: ['ARCHER', 'COACH'],
+      hasPassword: true,
+      providers: [],
+    });
+
+    const login = await http().post('/api/v1/auth/login').send(credentials).expect(200);
+
+    const refreshed = await http()
       .post('/api/v1/auth/refresh')
       .send({ refreshToken: login.body.refreshToken })
       .expect(200);
-    expect(refreshed.body.refreshToken).not.toBe(login.body.refreshToken);
-
     // Replaying the rotated token revokes the whole session…
-    await http
+    const replay = await http()
       .post('/api/v1/auth/refresh')
       .send({ refreshToken: login.body.refreshToken })
       .expect(401);
-    await http
+    expect(replay.body.code).toBe('INVALID_REFRESH_TOKEN');
+    await http()
       .post('/api/v1/auth/refresh')
       .send({ refreshToken: refreshed.body.refreshToken })
       .expect(401);
 
-    // …but not the other session (the one opened at registration).
-    await http
+    // …but not the other session (the one opened by email verification).
+    await http()
       .post('/api/v1/auth/logout')
-      .send({ refreshToken: registered.body.refreshToken })
+      .send({ refreshToken: verified.body.refreshToken })
       .expect(204);
-    await http
+    await http()
       .post('/api/v1/auth/refresh')
-      .send({ refreshToken: registered.body.refreshToken })
+      .send({ refreshToken: verified.body.refreshToken })
       .expect(401);
+  });
+
+  it('resend-verification does not reveal unknown addresses', async () => {
+    const before = ctx.outbox.length;
+    await http()
+      .post('/api/v1/auth/resend-verification')
+      .send({ email: 'nobody@example.com' })
+      .expect(202);
+    expect(ctx.outbox.length).toBe(before);
   });
 });

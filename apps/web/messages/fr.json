@@ -1,0 +1,103 @@
+{
+  "common": {
+    "appName": "Tiralarc",
+    "language": "Langue",
+    "locales": { "fr": "Français", "en": "English" },
+    "or": "ou",
+    "loading": "…",
+    "email": "Email",
+    "password": "Mot de passe"
+  },
+  "home": {
+    "tagline": "La plateforme des archers et de leurs coachs.",
+    "apiStatus": "API :",
+    "apiUp": "opérationnelle",
+    "apiDown": "indisponible",
+    "login": "Connexion",
+    "register": "Créer un compte",
+    "profile": "Mon profil"
+  },
+  "roles": {
+    "ADMIN": "Administrateur",
+    "ARCHER": "Archer",
+    "COACH": "Coach",
+    "ARCHER_description": "Je pratique le tir à l'arc",
+    "COACH_description": "J'entraîne des archers"
+  },
+  "login": {
+    "title": "Connexion",
+    "submit": "Se connecter",
+    "noAccount": "Pas encore de compte ?",
+    "createAccount": "Créer un compte",
+    "resendLink": "Renvoyer le lien de confirmation"
+  },
+  "register": {
+    "title": "Créer un compte",
+    "rolesLabel": "Vous êtes…",
+    "rolesHint": "Vous pouvez cocher les deux.",
+    "displayName": "Nom affiché",
+    "passwordHint": "Mot de passe (8 caractères min.)",
+    "submit": "Créer mon compte",
+    "socialHint": "Ou inscrivez-vous avec :",
+    "haveAccount": "Déjà inscrit ?",
+    "signIn": "Se connecter",
+    "rolesRequired": "Choisissez au moins un profil : archer ou coach."
+  },
+  "social": {
+    "apple": "Continuer avec Apple"
+  },
+  "checkEmail": {
+    "title": "Vérifiez votre boîte mail",
+    "body": "Nous avons envoyé un lien de confirmation à {email}. Cliquez dessus pour activer votre compte.",
+    "notReceived": "Rien reçu ? Vérifiez vos spams, ou :",
+    "resend": "Renvoyer le lien",
+    "resent": "Si un compte en attente existe pour cette adresse, un nouveau lien vient d'être envoyé.",
+    "backToLogin": "Retour à la connexion"
+  },
+  "verifyEmail": {
+    "title": "Confirmer votre adresse email",
+    "body": "Cliquez sur le bouton pour activer votre compte.",
+    "submit": "Confirmer mon email",
+    "missingToken": "Ce lien est incomplet. Utilisez le lien reçu par email."
+  },
+  "onboarding": {
+    "title": "Bienvenue !",
+    "body": "Pour finir, dites-nous qui vous êtes.",
+    "submit": "Continuer"
+  },
+  "profile": {
+    "hello": "Bonjour {name}",
+    "email": "Email",
+    "roles": "Profils",
+    "signInMethods": "Connexion",
+    "methodPassword": "mot de passe",
+    "memberSince": "Inscrit le",
+    "editRoles": "Modifier mes profils",
+    "save": "Enregistrer",
+    "saved": "Profils enregistrés.",
+    "logout": "Se déconnecter"
+  },
+  "errors": {
+    "VALIDATION_FAILED": "Certains champs sont invalides.",
+    "UNAUTHORIZED": "Votre session a expiré, reconnectez-vous.",
+    "FORBIDDEN": "Accès refusé.",
+    "NOT_FOUND": "Introuvable.",
+    "TOO_MANY_REQUESTS": "Trop de tentatives. Réessayez dans une minute.",
+    "INTERNAL_ERROR": "Une erreur est survenue, veuillez réessayer.",
+    "NETWORK_ERROR": "Le service est momentanément indisponible.",
+    "EMAIL_TAKEN": "Un compte existe déjà avec cette adresse email.",
+    "INVALID_CREDENTIALS": "Email ou mot de passe incorrect.",
+    "EMAIL_NOT_VERIFIED": "Votre adresse email n'est pas encore confirmée. Consultez votre boîte mail.",
+    "INVALID_VERIFICATION_TOKEN": "Ce lien de confirmation est invalide ou a expiré.",
+    "INVALID_REFRESH_TOKEN": "Votre session a expiré, reconnectez-vous.",
+    "INVALID_ID_TOKEN": "La connexion avec ce fournisseur a échoué.",
+    "PROVIDER_NOT_CONFIGURED": "Ce mode de connexion n'est pas disponible."
+  },
+  "validation": {
+    "isEmail": "Adresse email invalide.",
+    "minLength": "Trop court.",
+    "maxLength": "Trop long.",
+    "arrayMinSize": "Choisissez au moins une option.",
+    "default": "Valeur invalide."
+  }
+}

@@ -21,4 +21,10 @@ the same API — keep it client-agnostic (no cookies, no web-only assumptions in
 - Tests use Vitest; the API lints with oxlint, the rest with ESLint.
 - Web: tokens only server-side (httpOnly cookies, `src/lib/session.ts`); use `src/lib/api.ts` from
   Server Components / Actions. Next.js 16: middleware is `src/proxy.ts`; read `apps/web/AGENTS.md`.
+- Errors: throw `ApiException(status, ErrorCode.X, detail)`; codes in `apps/api/src/common/errors.ts`
+  are public contract (mirrored in `packages/api-client/src/index.ts`) — clients translate them.
+- Roles: `ARCHER`/`COACH` self-assigned, `ADMIN` via `user:make-admin`; guard with `@Roles(...)`.
+- Web is bilingual (next-intl, `/fr`, `/en`): every user-facing string goes in `apps/web/messages/{fr,en}.json`;
+  use `Link`/`redirect` from `@/i18n/navigation`, not `next/link`/`next/navigation`.
+- Dev emails land in Mailpit (http://localhost:8025). e2e tests capture mail and fake ID tokens (`apps/api/test/helpers.ts`).
 - TypeScript is pinned to 6.0 (TS 7 is not yet supported by typescript-eslint / tooling).
