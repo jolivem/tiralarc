@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    services:
+      mariadb:
+        image: mariadb:11.8
+        env:
+          MARIADB_ROOT_PASSWORD: root
+          MARIADB_DATABASE: tiralarc_test
+          MARIADB_USER: tiralarc
+          MARIADB_PASSWORD: tiralarc
+        ports: ['3307:3306']
+        options: >-
+          --health-cmd "healthcheck.sh --connect --innodb_initialized"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm format:check
+      - run: pnpm turbo run lint typecheck test build
+
+      # The committed OpenAPI contract (and the generated TS client) must match the code:
+      # mobile clients are generated from it.
+      - name: Check OpenAPI contract is up to date
+        run: |
+          pnpm openapi
+          git diff --exit-code -- apps/api/openapi.json packages/api-client/src/schema.ts
+
+      - name: API e2e tests
+        run: pnpm --filter @tiralarc/api test:e2e
