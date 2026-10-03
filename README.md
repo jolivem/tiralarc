@@ -6,7 +6,7 @@ Android et iOS consommeront la même API, via le contrat OpenAPI versionné dans
 ```
 apps/
   api/            API NestJS — REST /api/v1, Prisma + MariaDB, auth JWT
-  web/            Next.js (App Router) — BFF : les jetons restent côté serveur (cookies httpOnly)
+  web/            Next.js (App Router) + Mantine — BFF : les jetons restent côté serveur (cookies httpOnly)
 packages/
   api-client/     Client TypeScript typé, généré depuis apps/api/openapi.json
   eslint-config/  Config ESLint partagée
@@ -86,6 +86,14 @@ Rôles cumulables : `ARCHER`, `COACH` (choisis par l'utilisateur) et `ADMIN` (at
 
 Web : Server Actions et `src/proxy.ts` gardent les jetons en cookies httpOnly ; le navigateur ne
 les voit jamais. Mobile : stocker les jetons dans le Keychain / Keystore et appeler l'API.
+
+## Interface
+
+Composants et styles : [Mantine](https://mantine.dev) 9 (`@mantine/core`, `@mantine/dates`,
+`@mantine/schedule` pour les plannings), icônes [Tabler](https://tabler.io/icons). Thème dans
+`apps/web/src/theme.ts`, clair / sombre automatique. Responsive « mobile d'abord » avec les
+points de rupture Mantine : `xs` 576 px, `sm` 768 px (tablette), `md` 992 px (ordinateur).
+Sous `sm`, la navigation passe dans un menu « burger ».
 
 ## Multilingue
 

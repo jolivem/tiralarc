@@ -26,5 +26,10 @@ the same API — keep it client-agnostic (no cookies, no web-only assumptions in
 - Roles: `ARCHER`/`COACH` self-assigned, `ADMIN` via `user:make-admin`; guard with `@Roles(...)`.
 - Web is bilingual (next-intl, `/fr`, `/en`): every user-facing string goes in `apps/web/messages/{fr,en}.json`;
   use `Link`/`redirect` from `@/i18n/navigation`, not `next/link`/`next/navigation`.
+- UI: Mantine 9 (no Tailwind). Responsive via Mantine props (`cols={{ base: 1, sm: 2 }}`, `hiddenFrom`,
+  `visibleFrom`; sm = 768px tablet). In Server Components use `ButtonLink` / `AnchorLink`
+  (`src/components/links.tsx`), never `component={Link}`. Icons: `@tabler/icons-react`.
+- Forms posting to Server Actions: keep user input in React state (controlled inputs) — React resets
+  uncontrolled fields after each submission, even when the server rejects it.
 - Dev emails land in Mailpit (http://localhost:8025). e2e tests capture mail and fake ID tokens (`apps/api/test/helpers.ts`).
 - TypeScript is pinned to 6.0 (TS 7 is not yet supported by typescript-eslint / tooling).

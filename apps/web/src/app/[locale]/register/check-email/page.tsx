@@ -1,8 +1,10 @@
-import type { Locale } from '@/i18n/routing';
+import { Text, ThemeIcon } from '@mantine/core';
+import { IconMailCheck } from '@tabler/icons-react';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { ResendVerificationForm } from '@/components/auth-forms';
-import { PageShell } from '@/components/ui';
-import { Link } from '@/i18n/navigation';
+import { AnchorLink } from '@/components/links';
+import { FormPage } from '@/components/page-shell';
+import type { Locale } from '@/i18n/routing';
 
 export default async function CheckEmailPage({
   params,
@@ -15,13 +17,18 @@ export default async function CheckEmailPage({
   const t = await getTranslations('checkEmail');
 
   return (
-    <PageShell title={t('title')}>
-      <p className="max-w-md text-center">{t('body', { email: address })}</p>
-      <p className="text-sm text-neutral-500">{t('notReceived')}</p>
+    <FormPage title={t('title')}>
+      <ThemeIcon size={56} radius="xl" variant="light" mx="auto">
+        <IconMailCheck size={30} />
+      </ThemeIcon>
+      <Text ta="center">{t('body', { email: address })}</Text>
+      <Text size="sm" c="dimmed" ta="center">
+        {t('notReceived')}
+      </Text>
       <ResendVerificationForm email={address} />
-      <Link href="/login" className="text-sm underline">
+      <AnchorLink href="/login" size="sm" ta="center">
         {t('backToLogin')}
-      </Link>
-    </PageShell>
+      </AnchorLink>
+    </FormPage>
   );
 }

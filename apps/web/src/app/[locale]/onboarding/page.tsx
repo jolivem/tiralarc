@@ -1,9 +1,10 @@
+import { Text } from '@mantine/core';
 import type { SelfAssignableRole } from '@tiralarc/api-client';
-import type { Locale } from '@/i18n/routing';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { RolesForm } from '@/components/auth-forms';
-import { PageShell } from '@/components/ui';
+import { FormPage } from '@/components/page-shell';
 import { redirect } from '@/i18n/navigation';
+import type { Locale } from '@/i18n/routing';
 import { getAuthedApi } from '@/lib/api';
 
 /** Shown after a first Google / Apple sign-in from the login page: the user picks their roles. */
@@ -20,13 +21,13 @@ export default async function OnboardingPage({
   if (!user) return redirect({ href: '/login', locale: locale as Locale });
 
   return (
-    <PageShell title={t('title')}>
-      <p>{t('body')}</p>
+    <FormPage title={t('title')}>
+      <Text ta="center">{t('body')}</Text>
       <RolesForm
         initialRoles={user.roles.filter((r): r is SelfAssignableRole => r !== 'ADMIN')}
         submitLabel={t('submit')}
         next={typeof next === 'string' ? next : ''}
       />
-    </PageShell>
+    </FormPage>
   );
 }

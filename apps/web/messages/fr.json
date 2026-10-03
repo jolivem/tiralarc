@@ -2,11 +2,22 @@
   "common": {
     "appName": "Tiralarc",
     "language": "Langue",
-    "locales": { "fr": "Français", "en": "English" },
+    "locales": {
+      "fr": "Français",
+      "en": "English"
+    },
     "or": "ou",
-    "loading": "…",
     "email": "Email",
     "password": "Mot de passe"
+  },
+  "nav": {
+    "home": "Accueil",
+    "login": "Connexion",
+    "register": "Créer un compte",
+    "profile": "Mon profil",
+    "logout": "Se déconnecter",
+    "menu": "Menu",
+    "toggleColorScheme": "Changer le thème clair / sombre"
   },
   "home": {
     "tagline": "La plateforme des archers et de leurs coachs.",
@@ -74,8 +85,7 @@
     "memberSince": "Inscrit le",
     "editRoles": "Modifier mes profils",
     "save": "Enregistrer",
-    "saved": "Profils enregistrés.",
-    "logout": "Se déconnecter"
+    "saved": "Profils enregistrés."
   },
   "errors": {
     "VALIDATION_FAILED": "Certains champs sont invalides.",

@@ -1,29 +1,39 @@
 'use client';
 
+import { SegmentedControl } from '@mantine/core';
 import { useLocale, useTranslations } from 'next-intl';
 import { useSearchParams } from 'next/navigation';
-import { Link, usePathname } from '@/i18n/navigation';
-import { routing } from '@/i18n/routing';
+import { useTransition } from 'react';
+import { usePathname, useRouter } from '@/i18n/navigation';
+import { type Locale, routing } from '@/i18n/routing';
 
+/** FR / EN switch that keeps the current page and query string. */
 export function LanguageSwitcher() {
   const t = useTranslations('common');
-  const current = useLocale();
+  const locale = useLocale();
+  const router = useRouter();
   const pathname = usePathname();
-  const query = Object.fromEntries(useSearchParams());
+  const searchParams = useSearchParams();
+  const [pending, startTransition] = useTransition();
 
   return (
-    <nav aria-label={t('language')} className="flex gap-2 text-sm">
-      {routing.locales.map((locale) => (
-        <Link
-          key={locale}
-          href={{ pathname, query }}
-          locale={locale}
-          aria-current={locale === current ? 'true' : undefined}
-          className={locale === current ? 'font-semibold' : 'text-neutral-500 underline'}
-        >
-          {t(`locales.${locale}`)}
-        </Link>
-      ))}
-    </nav>
+    <SegmentedControl
+      size="xs"
+      aria-label={t('language')}
+      value={locale}
+      disabled={pending}
+      data={routing.locales.map((value) => ({
+        value,
+        label: value.toUpperCase(),
+      }))}
+      onChange={(next) =>
+        startTransition(() =>
+          router.replace(
+            { pathname, query: Object.fromEntries(searchParams) },
+            { locale: next as Locale },
+          ),
+        )
+      }
+    />
   );
 }

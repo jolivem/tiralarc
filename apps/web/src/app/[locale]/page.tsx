@@ -1,6 +1,8 @@
-import type { Locale } from '@/i18n/routing';
+import { Badge, Container, Group, Stack, Text, Title } from '@mantine/core';
+import { IconLogin, IconUserPlus } from '@tabler/icons-react';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
-import { Link } from '@/i18n/navigation';
+import { ButtonLink } from '@/components/links';
+import type { Locale } from '@/i18n/routing';
 import { api } from '@/lib/api';
 
 async function getApiStatus(): Promise<'up' | 'down'> {
@@ -19,20 +21,31 @@ export default async function HomePage({ params }: PageProps<'/[locale]'>) {
   const status = await getApiStatus();
 
   return (
-    <main className="flex flex-1 flex-col items-center justify-center gap-6 p-8">
-      <h1 className="text-3xl font-semibold">Tiralarc</h1>
-      <p>{t('tagline')}</p>
-      <p className="text-sm">
-        {t('apiStatus')}{' '}
-        <span className={status === 'up' ? 'text-green-600' : 'text-red-600'}>
-          {status === 'up' ? t('apiUp') : t('apiDown')}
-        </span>
-      </p>
-      <nav className="flex gap-4 text-sm underline">
-        <Link href="/login">{t('login')}</Link>
-        <Link href="/register">{t('register')}</Link>
-        <Link href="/profile">{t('profile')}</Link>
-      </nav>
-    </main>
+    <Container size="sm" py={{ base: 'xl', sm: 80 }}>
+      <Stack align="center" gap="lg" ta="center">
+        <Title order={1} fz={{ base: 36, sm: 52 }}>
+          Tiralarc
+        </Title>
+        <Text size="lg" c="dimmed">
+          {t('tagline')}
+        </Text>
+        <Group justify="center" gap="sm" w="100%" grow={false}>
+          <ButtonLink href="/register" size="md" leftSection={<IconUserPlus size={18} />}>
+            {t('register')}
+          </ButtonLink>
+          <ButtonLink
+            href="/login"
+            size="md"
+            variant="default"
+            leftSection={<IconLogin size={18} />}
+          >
+            {t('login')}
+          </ButtonLink>
+        </Group>
+        <Badge variant="dot" color={status === 'up' ? 'teal' : 'red'}>
+          {t('apiStatus')} {status === 'up' ? t('apiUp') : t('apiDown')}
+        </Badge>
+      </Stack>
+    </Container>
   );
 }

@@ -1,7 +1,8 @@
-import type { Locale } from '@/i18n/routing';
+import { Alert, Text } from '@mantine/core';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { VerifyEmailForm } from '@/components/auth-forms';
-import { Notice, PageShell } from '@/components/ui';
+import { FormPage } from '@/components/page-shell';
+import type { Locale } from '@/i18n/routing';
 
 /**
  * Landing page of the link emailed at sign-up. The token is only consumed when
@@ -18,15 +19,17 @@ export default async function VerifyEmailPage({
   const t = await getTranslations('verifyEmail');
 
   return (
-    <PageShell title={t('title')}>
+    <FormPage title={t('title')}>
       {typeof token === 'string' && token ? (
         <>
-          <p>{t('body')}</p>
+          <Text ta="center">{t('body')}</Text>
           <VerifyEmailForm token={token} />
         </>
       ) : (
-        <Notice tone="error">{t('missingToken')}</Notice>
+        <Alert color="red" variant="light">
+          {t('missingToken')}
+        </Alert>
       )}
-    </PageShell>
+    </FormPage>
   );
 }

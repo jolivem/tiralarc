@@ -1,47 +1,56 @@
 'use client';
 
+import { Checkbox, Group, SimpleGrid, Text } from '@mantine/core';
+import { IconSchool, IconTarget } from '@tabler/icons-react';
 import type { SelfAssignableRole } from '@tiralarc/api-client';
 import { useTranslations } from 'next-intl';
 
 export const SELF_ASSIGNABLE_ROLES: SelfAssignableRole[] = ['ARCHER', 'COACH'];
 
+const ICONS = { ARCHER: IconTarget, COACH: IconSchool } as const;
+
 interface RolePickerProps {
   value: SelfAssignableRole[];
   onChange: (roles: SelfAssignableRole[]) => void;
+  error?: string;
 }
 
-/** Archer / coach checkboxes (cumulative), submitted as repeated "roles" form fields. */
-export function RolePicker({ value, onChange }: RolePickerProps) {
+/**
+ * Archer / coach cards (cumulative). Stacked on phones, side by side from xs up.
+ * Submitted as repeated hidden "roles" fields.
+ */
+export function RolePicker({ value, onChange, error }: RolePickerProps) {
   const t = useTranslations('roles');
   return (
-    <div className="grid grid-cols-2 gap-3">
-      {SELF_ASSIGNABLE_ROLES.map((role) => {
-        const checked = value.includes(role);
-        return (
-          <label
-            key={role}
-            className={`flex cursor-pointer flex-col gap-1 rounded border p-3 text-sm ${
-              checked
-                ? 'border-neutral-900 dark:border-white'
-                : 'border-neutral-300 dark:border-neutral-700'
-            }`}
-          >
-            <span className="flex items-center gap-2 font-medium">
-              <input
-                type="checkbox"
-                name="roles"
-                value={role}
-                checked={checked}
-                onChange={(e) =>
-                  onChange(e.target.checked ? [...value, role] : value.filter((r) => r !== role))
-                }
-              />
-              {t(role)}
-            </span>
-            <span className="text-neutral-500">{t(`${role}_description`)}</span>
-          </label>
-        );
-      })}
-    </div>
+    <Checkbox.Group
+      value={value}
+      onChange={(roles) => onChange(roles as SelfAssignableRole[])}
+      error={error}
+    >
+      <SimpleGrid cols={{ base: 1, xs: 2 }} spacing="sm">
+        {SELF_ASSIGNABLE_ROLES.map((role) => {
+          const Icon = ICONS[role];
+          return (
+            <Checkbox.Card key={role} value={role} radius="md" p="md">
+              <Group wrap="nowrap" align="flex-start" gap="sm">
+                <Checkbox.Indicator mt={2} />
+                <div>
+                  <Group gap={6}>
+                    <Icon size={18} />
+                    <Text fw={600}>{t(role)}</Text>
+                  </Group>
+                  <Text size="sm" c="dimmed">
+                    {t(`${role}_description`)}
+                  </Text>
+                </div>
+              </Group>
+            </Checkbox.Card>
+          );
+        })}
+      </SimpleGrid>
+      {value.map((role) => (
+        <input key={role} type="hidden" name="roles" value={role} />
+      ))}
+    </Checkbox.Group>
   );
 }

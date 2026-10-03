@@ -1,5 +1,7 @@
 'use client';
 
+import { Alert, Button, Divider, Stack } from '@mantine/core';
+import { IconBrandApple } from '@tabler/icons-react';
 import type { SelfAssignableRole } from '@tiralarc/api-client';
 import { useLocale, useTranslations } from 'next-intl';
 import { useEffect, useEffectEvent, useRef, useState, useTransition } from 'react';
@@ -7,7 +9,6 @@ import { socialSignIn, type SocialSignInInput } from '@/app/actions/auth';
 import type { ActionState } from '@/lib/action-state';
 import { loadScript } from '@/lib/load-script';
 import { FormError } from './form-feedback';
-import { Notice, SecondaryButton } from './ui';
 
 const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
 const APPLE_CLIENT_ID = process.env.NEXT_PUBLIC_APPLE_CLIENT_ID;
@@ -49,12 +50,8 @@ export function SocialSignIn({ roles, next }: SocialSignInProps) {
   };
 
   return (
-    <div className="flex w-full max-w-sm flex-col items-center gap-3">
-      <div className="flex w-full items-center gap-3 text-sm text-neutral-500">
-        <hr className="flex-1" />
-        {t('common.or')}
-        <hr className="flex-1" />
-      </div>
+    <Stack gap="sm" align="center">
+      <Divider label={t('common.or')} labelPosition="center" w="100%" />
       {GOOGLE_CLIENT_ID && (
         <GoogleButton clientId={GOOGLE_CLIENT_ID} onToken={(p) => submit('google', p)} />
       )}
@@ -67,9 +64,13 @@ export function SocialSignIn({ roles, next }: SocialSignInProps) {
           onToken={(p) => submit('apple', p)}
         />
       )}
-      {state.fieldErrors?.roles && <Notice tone="error">{t('register.rolesRequired')}</Notice>}
+      {state.fieldErrors?.roles && (
+        <Alert color="red" variant="light" w="100%">
+          {t('register.rolesRequired')}
+        </Alert>
+      )}
       <FormError state={state} />
-    </div>
+    </Stack>
   );
 }
 
@@ -125,7 +126,7 @@ function GoogleButton({
     };
   }, [clientId, locale]);
 
-  return <div ref={container} className="min-h-10" />;
+  return <div ref={container} style={{ minHeight: 40 }} />;
 }
 
 // ------------------------------------------------------------------ Apple
@@ -190,8 +191,16 @@ function AppleButton({
   };
 
   return (
-    <SecondaryButton type="button" onClick={signIn} disabled={disabled} className="w-80">
+    <Button
+      type="button"
+      variant="default"
+      onClick={signIn}
+      disabled={disabled}
+      w={320}
+      maw="100%"
+      leftSection={<IconBrandApple size={18} />}
+    >
       {label}
-    </SecondaryButton>
+    </Button>
   );
 }

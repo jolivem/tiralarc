@@ -1,14 +1,18 @@
+import '@mantine/core/styles.css';
+import '@mantine/dates/styles.css';
+import '../globals.css';
+import { ColorSchemeScript, mantineHtmlProps } from '@mantine/core';
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
+import { cookies } from 'next/headers';
 import { notFound } from 'next/navigation';
 import { hasLocale, NextIntlClientProvider } from 'next-intl';
-import type { Locale } from '@/i18n/routing';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Suspense } from 'react';
-import { LanguageSwitcher } from '@/components/language-switcher';
-import { Link } from '@/i18n/navigation';
+import { TiralarcShell } from '@/components/app-shell';
+import { Providers } from '@/components/providers';
 import { routing } from '@/i18n/routing';
-import '../globals.css';
+import { ACCESS_COOKIE, REFRESH_COOKIE } from '@/lib/session';
 
 const geistSans = Geist({ variable: '--font-geist-sans', subsets: ['latin'] });
 const geistMono = Geist_Mono({ variable: '--font-geist-mono', subsets: ['latin'] });
@@ -19,7 +23,7 @@ export function generateStaticParams() {
 
 export async function generateMetadata({ params }: LayoutProps<'/[locale]'>): Promise<Metadata> {
   const { locale } = await params;
-  const t = await getTranslations({ locale: locale as Locale, namespace: 'home' });
+  const t = await getTranslations({ locale: locale as 'fr' | 'en', namespace: 'home' });
   return { title: 'Tiralarc', description: t('tagline') };
 }
 
@@ -28,22 +32,26 @@ export default async function LocaleLayout({ children, params }: LayoutProps<'/[
   if (!hasLocale(routing.locales, locale)) notFound();
   setRequestLocale(locale);
 
+  // Only drives which menu entries are shown; pages check the session themselves.
+  const cookieStore = await cookies();
+  const signedIn = cookieStore.has(ACCESS_COOKIE) || cookieStore.has(REFRESH_COOKIE);
+
   return (
     <html
       lang={locale}
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable}`}
+      {...mantineHtmlProps}
     >
-      <body className="flex min-h-full flex-col">
+      <head>
+        <ColorSchemeScript defaultColorScheme="auto" />
+      </head>
+      <body>
         <NextIntlClientProvider>
-          <header className="flex items-center justify-between border-b border-neutral-200 px-6 py-3 dark:border-neutral-800">
-            <Link href="/" className="font-semibold">
-              Tiralarc
-            </Link>
+          <Providers locale={locale}>
             <Suspense>
-              <LanguageSwitcher />
+              <TiralarcShell signedIn={signedIn}>{children}</TiralarcShell>
             </Suspense>
-          </header>
-          {children}
+          </Providers>
         </NextIntlClientProvider>
       </body>
     </html>

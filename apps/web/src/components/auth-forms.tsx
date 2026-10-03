@@ -1,139 +1,128 @@
 'use client';
 
+import { Anchor, Button, PasswordInput, Stack, Text, TextInput } from '@mantine/core';
 import type { SelfAssignableRole } from '@tiralarc/api-client';
 import { useTranslations } from 'next-intl';
 import { useActionState, useState } from 'react';
 import { login, register, resendVerification, updateRoles, verifyEmail } from '@/app/actions/auth';
 import { Link } from '@/i18n/navigation';
 import type { ActionState } from '@/lib/action-state';
-import { FieldErrors, FormError } from './form-feedback';
+import { FormError, SuccessNotice, useFieldError } from './form-feedback';
 import { RolePicker } from './role-picker';
 import { SocialSignIn } from './social-sign-in';
-import { Button, inputClass, Notice, SecondaryButton } from './ui';
 
 const initial: ActionState = {};
-const formClass = 'flex w-full max-w-sm flex-col gap-4';
-
-function TextField(props: {
-  name: string;
-  label: string;
-  type: string;
-  autoComplete: string;
-  required?: boolean;
-  minLength?: number;
-  defaultValue?: string;
-  state: ActionState;
-}) {
-  const { label, state, ...input } = props;
-  return (
-    <label className="flex flex-col gap-1 text-sm">
-      {label}
-      <input {...input} className={inputClass} />
-      <FieldErrors state={state} field={props.name} />
-    </label>
-  );
-}
 
 export function LoginForm({ next }: { next?: string }) {
   const t = useTranslations();
+  const fieldError = useFieldError();
   const [state, action, pending] = useActionState(login, initial);
   const [email, setEmail] = useState('');
 
   return (
-    <>
-      <form action={action} className={formClass}>
-        {next && <input type="hidden" name="next" value={next} />}
-        <label className="flex flex-col gap-1 text-sm">
-          {t('common.email')}
-          <input
+    <Stack gap="lg">
+      <form action={action}>
+        <Stack gap="md">
+          {next && <input type="hidden" name="next" value={next} />}
+          <TextInput
             name="email"
             type="email"
+            label={t('common.email')}
             autoComplete="email"
             required
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className={inputClass}
+            onChange={(e) => setEmail(e.currentTarget.value)}
+            error={fieldError(state, 'email')}
           />
-          <FieldErrors state={state} field="email" />
-        </label>
-        <TextField
-          name="password"
-          label={t('common.password')}
-          type="password"
-          autoComplete="current-password"
-          required
-          state={state}
-        />
-        <FormError state={state} />
-        <Button type="submit" disabled={pending}>
-          {pending ? t('common.loading') : t('login.submit')}
-        </Button>
+          <PasswordInput
+            name="password"
+            label={t('common.password')}
+            autoComplete="current-password"
+            required
+            error={fieldError(state, 'password')}
+          />
+          <FormError state={state} />
+          <Button type="submit" loading={pending} fullWidth>
+            {t('login.submit')}
+          </Button>
+        </Stack>
       </form>
       {state.code === 'EMAIL_NOT_VERIFIED' && <ResendVerificationForm email={email} />}
       <SocialSignIn next={next} />
-      <p className="text-sm text-neutral-600 dark:text-neutral-400">
+      <Text size="sm" ta="center" c="dimmed">
         {t('login.noAccount')}{' '}
-        <Link href="/register" className="underline">
+        <Anchor component={Link} href="/register">
           {t('login.createAccount')}
-        </Link>
-      </p>
-    </>
+        </Anchor>
+      </Text>
+    </Stack>
   );
 }
 
 export function RegisterForm() {
   const t = useTranslations();
+  const fieldError = useFieldError();
   const [state, action, pending] = useActionState(register, initial);
   const [roles, setRoles] = useState<SelfAssignableRole[]>([]);
+  // Controlled: React resets uncontrolled fields after each submission, which
+  // would wipe what the user typed when the server rejects the form.
+  const [values, setValues] = useState({ displayName: '', email: '', password: '' });
+  const bind = (name: keyof typeof values) => ({
+    name,
+    value: values[name],
+    onChange: (e: React.ChangeEvent<HTMLInputElement>) => {
+      const { value } = e.currentTarget; // read now: currentTarget is null inside the updater
+      setValues((v) => ({ ...v, [name]: value }));
+    },
+    error: fieldError(state, name),
+  });
 
   return (
-    <>
-      <form action={action} className={formClass}>
-        <fieldset className="flex flex-col gap-2">
-          <legend className="mb-2 text-sm">
-            {t('register.rolesLabel')}{' '}
-            <span className="text-neutral-500">{t('register.rolesHint')}</span>
-          </legend>
-          <RolePicker value={roles} onChange={setRoles} />
-          <FieldErrors state={state} field="roles" />
-        </fieldset>
-        <TextField
-          name="displayName"
-          label={t('register.displayName')}
-          type="text"
-          autoComplete="name"
-          state={state}
-        />
-        <TextField
-          name="email"
-          label={t('common.email')}
-          type="email"
-          autoComplete="email"
-          required
-          state={state}
-        />
-        <TextField
-          name="password"
-          label={t('register.passwordHint')}
-          type="password"
-          autoComplete="new-password"
-          required
-          minLength={8}
-          state={state}
-        />
-        <FormError state={state} />
-        <Button type="submit" disabled={pending}>
-          {pending ? t('common.loading') : t('register.submit')}
-        </Button>
+    <Stack gap="lg">
+      <form action={action}>
+        <Stack gap="md">
+          <div>
+            <Text fw={500} size="sm">
+              {t('register.rolesLabel')}
+            </Text>
+            <Text size="xs" c="dimmed" mb="xs">
+              {t('register.rolesHint')}
+            </Text>
+            <RolePicker value={roles} onChange={setRoles} error={fieldError(state, 'roles')} />
+          </div>
+          <TextInput
+            {...bind('displayName')}
+            label={t('register.displayName')}
+            autoComplete="name"
+          />
+          <TextInput
+            {...bind('email')}
+            type="email"
+            label={t('common.email')}
+            autoComplete="email"
+            required
+          />
+          <PasswordInput
+            {...bind('password')}
+            label={t('register.passwordHint')}
+            autoComplete="new-password"
+            required
+            minLength={8}
+          />
+          <FormError state={state} />
+          <Button type="submit" loading={pending} fullWidth>
+            {t('register.submit')}
+          </Button>
+        </Stack>
       </form>
       <SocialSignIn roles={roles} />
-      <p className="text-sm text-neutral-600 dark:text-neutral-400">
+      <Text size="sm" ta="center" c="dimmed">
         {t('register.haveAccount')}{' '}
-        <Link href="/login" className="underline">
+        <Anchor component={Link} href="/login">
           {t('register.signIn')}
-        </Link>
-      </p>
-    </>
+        </Anchor>
+      </Text>
+    </Stack>
   );
 }
 
@@ -142,13 +131,15 @@ export function ResendVerificationForm({ email }: { email: string }) {
   const [state, action, pending] = useActionState(resendVerification, initial);
 
   return (
-    <form action={action} className="flex flex-col items-center gap-2">
-      <input type="hidden" name="email" value={email} />
-      <SecondaryButton type="submit" disabled={pending || !email}>
-        {t('checkEmail.resend')}
-      </SecondaryButton>
-      {state.notice === 'resent' && <Notice tone="success">{t('checkEmail.resent')}</Notice>}
-      <FormError state={state} />
+    <form action={action}>
+      <Stack gap="sm" align="center">
+        <input type="hidden" name="email" value={email} />
+        <Button type="submit" variant="default" loading={pending} disabled={!email}>
+          {t('checkEmail.resend')}
+        </Button>
+        {state.notice === 'resent' && <SuccessNotice>{t('checkEmail.resent')}</SuccessNotice>}
+        <FormError state={state} />
+      </Stack>
     </form>
   );
 }
@@ -158,12 +149,14 @@ export function VerifyEmailForm({ token }: { token: string }) {
   const [state, action, pending] = useActionState(verifyEmail, initial);
 
   return (
-    <form action={action} className="flex flex-col items-center gap-4">
-      <input type="hidden" name="token" value={token} />
-      <Button type="submit" disabled={pending}>
-        {pending ? t('common.loading') : t('verifyEmail.submit')}
-      </Button>
-      <FormError state={state} />
+    <form action={action}>
+      <Stack gap="md">
+        <input type="hidden" name="token" value={token} />
+        <Button type="submit" loading={pending} fullWidth>
+          {t('verifyEmail.submit')}
+        </Button>
+        <FormError state={state} />
+      </Stack>
     </form>
   );
 }
@@ -179,19 +172,21 @@ export function RolesForm({
   next?: string;
 }) {
   const t = useTranslations();
+  const fieldError = useFieldError();
   const [state, action, pending] = useActionState(updateRoles, initial);
   const [roles, setRoles] = useState(initialRoles);
 
   return (
-    <form action={action} className={formClass}>
-      {next !== undefined && <input type="hidden" name="next" value={next} />}
-      <RolePicker value={roles} onChange={setRoles} />
-      <FieldErrors state={state} field="roles" />
-      <FormError state={state} />
-      {state.notice === 'saved' && <Notice tone="success">{t('profile.saved')}</Notice>}
-      <Button type="submit" disabled={pending}>
-        {pending ? t('common.loading') : submitLabel}
-      </Button>
+    <form action={action}>
+      <Stack gap="md">
+        {next !== undefined && <input type="hidden" name="next" value={next} />}
+        <RolePicker value={roles} onChange={setRoles} error={fieldError(state, 'roles')} />
+        <FormError state={state} />
+        {state.notice === 'saved' && <SuccessNotice>{t('profile.saved')}</SuccessNotice>}
+        <Button type="submit" loading={pending}>
+          {submitLabel}
+        </Button>
+      </Stack>
     </form>
   );
 }

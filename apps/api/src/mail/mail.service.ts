@@ -24,6 +24,11 @@ export class MailService {
     const lang: MailLocale = locale === 'en' ? 'en' : 'fr';
     const link = new URL(`/${lang}/verify-email`, this.config.get('WEB_URL', { infer: true }));
     link.searchParams.set('token', token);
+    // Development only: the link grants access to the account, it must never reach production logs.
+    // Logged before sending, so it is available even when the SMTP server (Mailpit) is down.
+    if (this.config.get('NODE_ENV', { infer: true }) === 'development') {
+      this.logger.log(`Email verification link for ${to}: ${link.toString()}`);
+    }
     await this.send({ to, ...verificationEmail(lang, link.toString()) });
   }
 
