@@ -144,5 +144,68 @@
     "more": "more",
     "moreLabel": "+{count} more",
     "viewSelectLabel": "View"
+  },
+  "journal": {
+    "types": {
+      "TRAINING": "Training",
+      "COACHING": "Coaching",
+      "COMPETITION": "Competition",
+      "STRENGTH": "Strength training"
+    },
+    "typesShort": {
+      "TRAINING": "Training",
+      "COACHING": "Coaching",
+      "COMPETITION": "Competition",
+      "STRENGTH": "Strength"
+    },
+    "disciplines": {
+      "INDOOR": "Indoor",
+      "TAE_NATIONAL": "TAE N",
+      "TAE_INTERNATIONAL": "TAE I",
+      "THREE_D": "3D",
+      "FIELD": "Field"
+    },
+    "feelings": {
+      "GREAT": "Great",
+      "OK": "Neutral",
+      "BAD": "Not good",
+      "EXHAUSTED": "Exhausted"
+    },
+    "newSession": "New session",
+    "newSessionHint": "Pick the type and date: the session sheet opens next.",
+    "type": "Session type",
+    "date": "Date",
+    "time": "Time",
+    "timeHint": "Optional: without a time, the session spans the day.",
+    "create": "Create session",
+    "cancel": "Cancel",
+    "info": "Details",
+    "location": "Location",
+    "locationPlaceholder": "E.g. club gym",
+    "discipline": "Discipline",
+    "distance": "Distance (m)",
+    "duration": "Duration (min)",
+    "arrows": "Number of arrows",
+    "score": "Score",
+    "objective": "Session goal",
+    "selfAssessment": "Self-assessment",
+    "satisfaction": "Overall satisfaction",
+    "technique": "Technique",
+    "notRated": "not rated",
+    "description": "Description and analysis",
+    "physical": "Physical feeling",
+    "mental": "Mental feeling",
+    "wentWell": "What went well",
+    "toImprove": "What to improve",
+    "nextTime": "Next — for the next session",
+    "save": "Save",
+    "saved": "Session saved.",
+    "unsaved": "Unsaved changes",
+    "delete": "Delete",
+    "deleteTitle": "Delete this session?",
+    "deleteBody": "The session and its sheet will be permanently deleted.",
+    "strengthComing": "The strength training form is coming soon. You can already put the session in your calendar.",
+    "back": "Journal",
+    "allDay": "All day"
   }
 }

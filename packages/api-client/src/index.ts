@@ -9,6 +9,13 @@ export type User = Schemas['UserDto'];
 export type TokenPair = Schemas['TokenPairDto'];
 export type Role = Schemas['UserDto']['roles'][number];
 export type SelfAssignableRole = Schemas['RegisterDto']['roles'][number];
+export type JournalSession = Schemas['SessionDto'];
+export type JournalSessionSummary = Schemas['SessionSummaryDto'];
+export type JournalSessionUpdate = Schemas['UpdateSessionDto'];
+export type JournalSuggestions = Schemas['SessionSuggestionsDto'];
+export type SessionType = Schemas['SessionDto']['type'];
+export type Discipline = NonNullable<Schemas['SessionDto']['discipline']>;
+export type Feeling = NonNullable<Schemas['SessionDto']['physicalFeeling']>;
 
 /**
  * Stable error codes (apps/api/src/common/errors.ts). Clients translate these;

@@ -201,6 +201,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/journal/sessions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["Journal_list"];
+        put?: never;
+        post: operations["Journal_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/journal/sessions/suggestions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["Journal_suggestions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/journal/sessions/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["Journal_get"];
+        put?: never;
+        post?: never;
+        delete: operations["Journal_remove"];
+        options?: never;
+        head?: never;
+        patch: operations["Journal_update"];
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -304,6 +352,98 @@ export interface components {
         UpdateMyRolesDto: {
             /** @description Replaces the self-assignable roles (ADMIN, if held, is kept). */
             roles: components["schemas"]["SelfAssignableRole"][];
+        };
+        /** @enum {string} */
+        SessionType: "TRAINING" | "COACHING" | "COMPETITION" | "STRENGTH";
+        /** @enum {string} */
+        Discipline: "INDOOR" | "TAE_NATIONAL" | "TAE_INTERNATIONAL" | "THREE_D" | "FIELD";
+        SessionSummaryDto: {
+            /** Format: uuid */
+            id: string;
+            type: components["schemas"]["SessionType"];
+            /** @example 2026-10-03 */
+            date: string;
+            /** @example 18:30 */
+            startTime: string | null;
+            durationMinutes: number | null;
+            location: string | null;
+            discipline: components["schemas"]["Discipline"] | null;
+            score: number | null;
+        };
+        SessionSuggestionsDto: {
+            locations: string[];
+            /** @description Distances in meters. */
+            distances: number[];
+            wentWell: string[];
+            toImprove: string[];
+        };
+        CreateSessionDto: {
+            type: components["schemas"]["SessionType"];
+            /**
+             * @description Local date (YYYY-MM-DD).
+             * @example 2026-10-03
+             */
+            date: string;
+            /**
+             * @description Local time (HH:mm); omitted / null = all-day.
+             * @example 18:30
+             */
+            startTime?: string | null;
+        };
+        /** @enum {string} */
+        Feeling: "GREAT" | "OK" | "BAD" | "EXHAUSTED";
+        SessionDto: {
+            /** Format: uuid */
+            id: string;
+            type: components["schemas"]["SessionType"];
+            /** @example 2026-10-03 */
+            date: string;
+            /** @example 18:30 */
+            startTime: string | null;
+            durationMinutes: number | null;
+            location: string | null;
+            discipline: components["schemas"]["Discipline"] | null;
+            score: number | null;
+            distanceMeters: number | null;
+            arrowCount: number | null;
+            objective: string | null;
+            satisfaction: number | null;
+            technique: number | null;
+            description: string | null;
+            physicalFeeling: components["schemas"]["Feeling"] | null;
+            mentalFeeling: components["schemas"]["Feeling"] | null;
+            wentWell: string[];
+            toImprove: string[];
+            nextTime: string | null;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        UpdateSessionDto: {
+            type?: components["schemas"]["SessionType"];
+            /** @example 2026-10-03 */
+            date?: string;
+            /** @example 18:30 */
+            startTime?: string | null;
+            durationMinutes?: number | null;
+            location?: string | null;
+            discipline?: components["schemas"]["Discipline"] | null;
+            distanceMeters?: number | null;
+            arrowCount?: number | null;
+            score?: number | null;
+            objective?: string | null;
+            /** @description Overall satisfaction. */
+            satisfaction?: number | null;
+            /** @description Technique self-assessment. */
+            technique?: number | null;
+            description?: string | null;
+            physicalFeeling?: components["schemas"]["Feeling"] | null;
+            mentalFeeling?: components["schemas"]["Feeling"] | null;
+            /** @description What went well (≤ 3 lines). */
+            wentWell?: string[];
+            /** @description What to improve (≤ 3 lines). */
+            toImprove?: string[];
+            /** @description Notes for the next session. */
+            nextTime?: string | null;
         };
     };
     responses: never;
@@ -766,6 +906,197 @@ export interface operations {
             };
             /** @description Admins only */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    Journal_list: {
+        parameters: {
+            query: {
+                /** @description First day, inclusive (YYYY-MM-DD). */
+                from: string;
+                /** @description Last day, inclusive (YYYY-MM-DD). At most 366 days after `from`. */
+                to: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionSummaryDto"][];
+                };
+            };
+            /** @description Archers only */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    Journal_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateSessionDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionDto"];
+                };
+            };
+            /** @description Archers only */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    Journal_suggestions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionSuggestionsDto"];
+                };
+            };
+            /** @description Archers only */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    Journal_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionDto"];
+                };
+            };
+            /** @description Archers only */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    Journal_remove: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Archers only */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    Journal_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateSessionDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionDto"];
+                };
+            };
+            /** @description Archers only */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

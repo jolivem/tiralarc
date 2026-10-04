@@ -38,6 +38,7 @@ model User {
   identities              UserIdentity[]
   refreshTokens           RefreshToken[]
   emailVerificationTokens EmailVerificationToken[]
+  journalSessions         JournalSession[]
 
   @@map("users")
 }
@@ -105,4 +106,61 @@ model RefreshToken {
   @@index([userId])
   @@index([familyId])
   @@map("refresh_tokens")
+}
+
+enum SessionType {
+  TRAINING
+  COACHING
+  COMPETITION
+  STRENGTH
+}
+
+enum Discipline {
+  INDOOR
+  TAE_NATIONAL
+  TAE_INTERNATIONAL
+  THREE_D
+  FIELD
+}
+
+enum Feeling {
+  GREAT
+  OK
+  BAD
+  EXHAUSTED
+}
+
+/// An archer's journal entry: a calendar event plus its session sheet.
+/// Date and time are "wall clock" values (no time zone): 18:00 stays 18:00 on every device.
+model JournalSession {
+  id              String      @id @default(uuid()) @db.Char(36)
+  userId          String      @map("user_id") @db.Char(36)
+  type            SessionType
+  date            DateTime    @db.Date
+  /// "HH:mm"; null = all-day event.
+  startTime       String?     @map("start_time") @db.VarChar(5)
+  durationMinutes Int?        @map("duration_minutes") @db.SmallInt
+  location        String?     @db.VarChar(200)
+  discipline      Discipline?
+  distanceMeters  Int?        @map("distance_meters") @db.SmallInt
+  arrowCount      Int?        @map("arrow_count") @db.SmallInt
+  score           Int?        @db.SmallInt
+  objective       String?     @db.Text
+  /// Self-assessment, 0–10.
+  satisfaction    Int?        @db.TinyInt
+  technique       Int?        @db.TinyInt
+  description     String?     @db.Text
+  physicalFeeling Feeling?    @map("physical_feeling")
+  mentalFeeling   Feeling?    @map("mental_feeling")
+  /// Up to 3 short strings each.
+  wentWell        Json        @map("went_well")
+  toImprove       Json        @map("to_improve")
+  nextTime        String?     @map("next_time") @db.Text
+  createdAt       DateTime    @default(now()) @map("created_at") @db.DateTime(3)
+  updatedAt       DateTime    @updatedAt @map("updated_at") @db.DateTime(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, date])
+  @@map("journal_sessions")
 }

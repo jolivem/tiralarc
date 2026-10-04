@@ -32,7 +32,10 @@ the same API — keep it client-agnostic (no cookies, no web-only assumptions in
 - Signed-in user in Server Components: `getCurrentUser()` (`src/lib/current-user.ts`, one `/users/me` per request).
   Archer pages live under `src/app/[locale]/archer/`, guarded by its layout (ARCHER role); add new sections to
   `sections` in `src/components/app-shell.tsx` (side menu + phone tab bar).
-- `@mantine/schedule` 9.6.3: don't pass `mode="static"` (leaks `withEventResize` to the DOM).
+- `@mantine/schedule` 9.6.3 leaks some props to the DOM from MonthView / YearView: don't pass `mode="static"`,
+  and pass `onTimeSlotClick` / `onAllDaySlotClick` only in day / week views (see `components/journal/journal-view.tsx`).
+- Mantine `Slider`: accessible name goes in `thumbLabel`, not `aria-label`.
+- `pnpm openapi` compiles to `apps/api/dist-openapi/`, safe while `pnpm dev` runs; `pnpm build` is not (it rewrites `apps/api/dist`).
 - Forms posting to Server Actions: keep user input in React state (controlled inputs) — React resets
   uncontrolled fields after each submission, even when the server rejects it.
 - Dev emails land in Mailpit (http://localhost:8025). e2e tests capture mail and fake ID tokens (`apps/api/test/helpers.ts`).

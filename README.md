@@ -103,6 +103,11 @@ Sous `sm`, la navigation passe dans un menu « burger ».
 | `/account` — Mon compte (email, connexion, rôles)                                                                                    | connecté    |
 | `/archer` — Accueil, `/archer/journal`, `/archer/sheets` (Fiches), `/archer/stats` (Indicateurs), `/archer/profile` (Profil sportif) | rôle ARCHER |
 
+Journal : calendrier (jour / semaine / mois / année, vue mois compacte sur téléphone) ; ajout
+d'une séance en 2 temps — type + date (+ heure), puis la fiche de séance `/archer/journal/{id}`
+(informations, objectif, auto-évaluation, analyses, ressentis, points forts / à améliorer, next).
+Les champs répétitifs proposent ce que l'archer a déjà saisi.
+
 Espace archer : barre d'onglets en bas d'écran sur téléphone, menu latéral à partir de la
 tablette. Compte et déconnexion dans le menu de l'avatar.
 

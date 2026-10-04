@@ -30,7 +30,7 @@
       "cache": false
     },
     "openapi": {
-      "dependsOn": ["build"],
+      "dependsOn": ["prisma:generate"],
       "outputs": ["openapi.json"],
       "cache": false
     },

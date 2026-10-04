@@ -1,7 +1,5 @@
-import { Button } from '@mantine/core';
-import { IconPlus } from '@tabler/icons-react';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
-import { JournalCalendar } from '@/components/journal-calendar';
+import { JournalView } from '@/components/journal/journal-view';
 import { SectionPage } from '@/components/section-page';
 import type { Locale } from '@/i18n/routing';
 
@@ -11,16 +9,8 @@ export default async function ArcherJournalPage({ params }: PageProps<'/[locale]
   const t = await getTranslations('archer');
 
   return (
-    <SectionPage
-      title={t('journal')}
-      intro={t('journalIntro')}
-      actions={
-        <Button leftSection={<IconPlus size={18} />} disabled title={t('comingSoon')}>
-          {t('newSession')}
-        </Button>
-      }
-    >
-      <JournalCalendar />
+    <SectionPage title={t('journal')} intro={t('journalIntro')}>
+      <JournalView />
     </SectionPage>
   );
 }

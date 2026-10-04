@@ -596,6 +596,247 @@
           "users"
         ]
       }
+    },
+    "/api/v1/journal/sessions": {
+      "get": {
+        "operationId": "Journal_list",
+        "parameters": [
+          {
+            "name": "from",
+            "required": true,
+            "in": "query",
+            "description": "First day, inclusive (YYYY-MM-DD).",
+            "schema": {
+              "example": "2026-10-01",
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "required": true,
+            "in": "query",
+            "description": "Last day, inclusive (YYYY-MM-DD). At most 366 days after `from`.",
+            "schema": {
+              "example": "2026-10-31",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SessionSummaryDto"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Archers only"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "journal"
+        ]
+      },
+      "post": {
+        "operationId": "Journal_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSessionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Archers only"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "journal"
+        ]
+      }
+    },
+    "/api/v1/journal/sessions/suggestions": {
+      "get": {
+        "operationId": "Journal_suggestions",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionSuggestionsDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Archers only"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "journal"
+        ]
+      }
+    },
+    "/api/v1/journal/sessions/{id}": {
+      "get": {
+        "operationId": "Journal_get",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Archers only"
+          },
+          "404": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "journal"
+        ]
+      },
+      "patch": {
+        "operationId": "Journal_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSessionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Archers only"
+          },
+          "404": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "journal"
+        ]
+      },
+      "delete": {
+        "operationId": "Journal_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "403": {
+            "description": "Archers only"
+          },
+          "404": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "journal"
+        ]
+      }
     }
   },
   "info": {
@@ -903,6 +1144,399 @@
         "required": [
           "roles"
         ]
+      },
+      "SessionType": {
+        "type": "string",
+        "enum": [
+          "TRAINING",
+          "COACHING",
+          "COMPETITION",
+          "STRENGTH"
+        ]
+      },
+      "Discipline": {
+        "type": "string",
+        "enum": [
+          "INDOOR",
+          "TAE_NATIONAL",
+          "TAE_INTERNATIONAL",
+          "THREE_D",
+          "FIELD"
+        ]
+      },
+      "SessionSummaryDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "type": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SessionType"
+              }
+            ]
+          },
+          "date": {
+            "type": "string",
+            "example": "2026-10-03"
+          },
+          "startTime": {
+            "type": "string",
+            "nullable": true,
+            "example": "18:30"
+          },
+          "durationMinutes": {
+            "type": "number",
+            "nullable": true
+          },
+          "location": {
+            "type": "string",
+            "nullable": true
+          },
+          "discipline": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Discipline"
+              }
+            ]
+          },
+          "score": {
+            "type": "number",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "date",
+          "startTime",
+          "durationMinutes",
+          "location",
+          "discipline",
+          "score"
+        ]
+      },
+      "SessionSuggestionsDto": {
+        "type": "object",
+        "properties": {
+          "locations": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "distances": {
+            "description": "Distances in meters.",
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "wentWell": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "toImprove": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "locations",
+          "distances",
+          "wentWell",
+          "toImprove"
+        ]
+      },
+      "CreateSessionDto": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SessionType"
+              }
+            ]
+          },
+          "date": {
+            "type": "string",
+            "example": "2026-10-03",
+            "description": "Local date (YYYY-MM-DD)."
+          },
+          "startTime": {
+            "type": "string",
+            "nullable": true,
+            "example": "18:30",
+            "description": "Local time (HH:mm); omitted / null = all-day."
+          }
+        },
+        "required": [
+          "type",
+          "date"
+        ]
+      },
+      "Feeling": {
+        "type": "string",
+        "enum": [
+          "GREAT",
+          "OK",
+          "BAD",
+          "EXHAUSTED"
+        ]
+      },
+      "SessionDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "type": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SessionType"
+              }
+            ]
+          },
+          "date": {
+            "type": "string",
+            "example": "2026-10-03"
+          },
+          "startTime": {
+            "type": "string",
+            "nullable": true,
+            "example": "18:30"
+          },
+          "durationMinutes": {
+            "type": "number",
+            "nullable": true
+          },
+          "location": {
+            "type": "string",
+            "nullable": true
+          },
+          "discipline": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Discipline"
+              }
+            ]
+          },
+          "score": {
+            "type": "number",
+            "nullable": true
+          },
+          "distanceMeters": {
+            "type": "number",
+            "nullable": true
+          },
+          "arrowCount": {
+            "type": "number",
+            "nullable": true
+          },
+          "objective": {
+            "type": "string",
+            "nullable": true
+          },
+          "satisfaction": {
+            "type": "number",
+            "nullable": true
+          },
+          "technique": {
+            "type": "number",
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "physicalFeeling": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Feeling"
+              }
+            ]
+          },
+          "mentalFeeling": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Feeling"
+              }
+            ]
+          },
+          "wentWell": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "toImprove": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "nextTime": {
+            "type": "string",
+            "nullable": true
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "date",
+          "startTime",
+          "durationMinutes",
+          "location",
+          "discipline",
+          "score",
+          "distanceMeters",
+          "arrowCount",
+          "objective",
+          "satisfaction",
+          "technique",
+          "description",
+          "physicalFeeling",
+          "mentalFeeling",
+          "wentWell",
+          "toImprove",
+          "nextTime",
+          "updatedAt"
+        ]
+      },
+      "UpdateSessionDto": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SessionType"
+              }
+            ]
+          },
+          "date": {
+            "type": "string",
+            "example": "2026-10-03"
+          },
+          "startTime": {
+            "type": "string",
+            "nullable": true,
+            "example": "18:30"
+          },
+          "durationMinutes": {
+            "type": "number",
+            "nullable": true,
+            "minimum": 0,
+            "maximum": 1440
+          },
+          "location": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 200
+          },
+          "discipline": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Discipline"
+              }
+            ]
+          },
+          "distanceMeters": {
+            "type": "number",
+            "nullable": true,
+            "minimum": 0,
+            "maximum": 1000
+          },
+          "arrowCount": {
+            "type": "number",
+            "nullable": true,
+            "minimum": 0,
+            "maximum": 2000
+          },
+          "score": {
+            "type": "number",
+            "nullable": true,
+            "minimum": 0,
+            "maximum": 2000
+          },
+          "objective": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 5000
+          },
+          "satisfaction": {
+            "type": "number",
+            "nullable": true,
+            "minimum": 0,
+            "maximum": 10,
+            "description": "Overall satisfaction."
+          },
+          "technique": {
+            "type": "number",
+            "nullable": true,
+            "minimum": 0,
+            "maximum": 10,
+            "description": "Technique self-assessment."
+          },
+          "description": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 5000
+          },
+          "physicalFeeling": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Feeling"
+              }
+            ]
+          },
+          "mentalFeeling": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Feeling"
+              }
+            ]
+          },
+          "wentWell": {
+            "maxItems": 3,
+            "description": "What went well (≤ 3 lines).",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "toImprove": {
+            "maxItems": 3,
+            "description": "What to improve (≤ 3 lines).",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "nextTime": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 5000,
+            "description": "Notes for the next session."
+          }
+        }
       }
     }
   }

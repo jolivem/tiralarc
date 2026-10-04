@@ -144,5 +144,68 @@
     "more": "de plus",
     "moreLabel": "+{count} de plus",
     "viewSelectLabel": "Vue"
+  },
+  "journal": {
+    "types": {
+      "TRAINING": "Entraînement",
+      "COACHING": "Coaching",
+      "COMPETITION": "Compétition",
+      "STRENGTH": "Renforcement musculaire"
+    },
+    "typesShort": {
+      "TRAINING": "Entraînement",
+      "COACHING": "Coaching",
+      "COMPETITION": "Compétition",
+      "STRENGTH": "Renfo"
+    },
+    "disciplines": {
+      "INDOOR": "Salle",
+      "TAE_NATIONAL": "TAE N",
+      "TAE_INTERNATIONAL": "TAE I",
+      "THREE_D": "3D",
+      "FIELD": "Campagne"
+    },
+    "feelings": {
+      "GREAT": "Très bien",
+      "OK": "Neutre",
+      "BAD": "Pas bien",
+      "EXHAUSTED": "Épuisé"
+    },
+    "newSession": "Nouvelle séance",
+    "newSessionHint": "Choisissez le type et la date : la fiche s'ouvrira ensuite.",
+    "type": "Type de séance",
+    "date": "Date",
+    "time": "Heure",
+    "timeHint": "Facultatif : sans heure, la séance occupe la journée.",
+    "create": "Créer la séance",
+    "cancel": "Annuler",
+    "info": "Informations",
+    "location": "Lieu",
+    "locationPlaceholder": "Ex. : gymnase du club",
+    "discipline": "Discipline",
+    "distance": "Distance (m)",
+    "duration": "Durée (min)",
+    "arrows": "Nombre de flèches",
+    "score": "Score",
+    "objective": "Objectif de la séance",
+    "selfAssessment": "Auto-évaluation",
+    "satisfaction": "Satisfaction générale",
+    "technique": "Technique",
+    "notRated": "non noté",
+    "description": "Description et analyses",
+    "physical": "Ressenti physique",
+    "mental": "Ressenti mental",
+    "wentWell": "Ce qui a bien fonctionné",
+    "toImprove": "Ce qui est à améliorer",
+    "nextTime": "Next — pour la prochaine séance",
+    "save": "Enregistrer",
+    "saved": "Séance enregistrée.",
+    "unsaved": "Modifications non enregistrées",
+    "delete": "Supprimer",
+    "deleteTitle": "Supprimer cette séance ?",
+    "deleteBody": "La séance et sa fiche seront définitivement supprimées.",
+    "strengthComing": "Le formulaire du renforcement musculaire arrive bientôt. Vous pouvez déjà placer la séance dans le calendrier.",
+    "back": "Journal",
+    "allDay": "Journée"
   }
 }

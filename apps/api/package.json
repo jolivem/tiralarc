@@ -17,7 +17,7 @@
     "test:e2e": "dotenv run -q -f .env.test -- prisma migrate deploy && dotenv run -q -f .env.test -- vitest run --config ./vitest.config.e2e.ts",
     "dev": "nest start --watch",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "openapi": "dotenv run -q -f .env,.env.example -- node dist/openapi.js",
+    "openapi": "tsc -p tsconfig.build.json --outDir dist-openapi --tsBuildInfoFile dist-openapi/.tsbuildinfo && dotenv run -q -f .env,.env.example -- node dist-openapi/openapi.js",
     "prisma:generate": "prisma generate",
     "db:migrate": "prisma migrate dev && prisma generate",
     "db:deploy": "prisma migrate deploy",
