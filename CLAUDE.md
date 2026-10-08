@@ -32,6 +32,12 @@ the same API — keep it client-agnostic (no cookies, no web-only assumptions in
 - Signed-in user in Server Components: `getCurrentUser()` (`src/lib/current-user.ts`, one `/users/me` per request).
   Archer pages live under `src/app/[locale]/archer/`, guarded by its layout (ARCHER role); add new sections to
   `sections` in `src/components/app-shell.tsx` (side menu + phone tab bar).
+- Journals: an archer has one `Journal` per season (title + inclusive start / end days); every session belongs to
+  a journal and its date stays within that period (`SESSION_OUTSIDE_JOURNAL`). The selected journal is a web-only
+  preference (`tl_journal` cookie, `src/lib/journals.ts`); the API always takes an explicit `journalId`. A journal's period can only change while it
+  still covers its sessions (`JOURNAL_PERIOD_EXCLUDES_SESSIONS`).
+- Archer profile (`apps/api/src/profile/`, web `components/profile/`): sport details, favourite websites and people
+  invited by email. Accepting an invitation (public `/invitations/accept`, token consumed on POST) grants no access yet.
 - `@mantine/schedule` 9.6.3 leaks some props to the DOM from MonthView / YearView: don't pass `mode="static"`,
   and pass `onTimeSlotClick` / `onAllDaySlotClick` only in day / week views (see `components/journal/journal-view.tsx`).
 - Mantine `Slider`: accessible name goes in `thumbLabel`, not `aria-label`.

@@ -1,27 +1,32 @@
 'use client';
 
 import { Button, Group, LoadingOverlay, Box } from '@mantine/core';
-import { Schedule, type ScheduleEventData, type ScheduleViewLevel } from '@mantine/schedule';
+import { Schedule, type ScheduleEventData } from '@mantine/schedule';
 import { IconPlus } from '@tabler/icons-react';
-import type { JournalSessionSummary } from '@tiralarc/api-client';
+import type { Journal, JournalSessionSummary } from '@tiralarc/api-client';
 import dayjs from 'dayjs';
 import { useLocale, useTranslations } from 'next-intl';
 import { useEffect, useState, useTransition } from 'react';
 import { listSessions } from '@/app/actions/journal';
 import { useRouter } from '@/i18n/navigation';
+import { eventDisplay } from './event-display';
 import classes from './journal.module.css';
-import { type NewSessionDefaults, NewSessionModal, today } from './new-session-modal';
+import {
+  clampToJournal,
+  type NewSessionDefaults,
+  NewSessionModal,
+  today,
+} from './new-session-modal';
 import { SESSION_TYPES } from './session-types';
 
 const DEFAULT_DURATION_MINUTES = 60;
 
-/** Days to load for the visible period (with a margin for the neighbouring weeks shown). */
-function visibleRange(date: string, view: ScheduleViewLevel): { from: string; to: string } {
+/** Days to load for the visible month (with a margin for the neighbouring weeks shown). */
+function visibleRange(date: string): { from: string; to: string } {
   const d = dayjs(date);
-  const unit = view === 'year' ? 'year' : view === 'month' ? 'month' : 'week';
   return {
-    from: d.startOf(unit).subtract(7, 'day').format('YYYY-MM-DD'),
-    to: d.endOf(unit).add(7, 'day').format('YYYY-MM-DD'),
+    from: d.startOf('month').subtract(7, 'day').format('YYYY-MM-DD'),
+    to: d.endOf('month').add(7, 'day').format('YYYY-MM-DD'),
   };
 }
 
@@ -29,7 +34,7 @@ type EventPayload = { session: JournalSessionSummary };
 
 /** Calendar entries: timed sessions on their slot, others as all-day events. */
 function toEvent(session: JournalSessionSummary, title: string): ScheduleEventData<EventPayload> {
-  const { color } = SESSION_TYPES[session.type];
+  const { color } = eventDisplay(session);
   if (!session.startTime) {
     return {
       id: session.id,
@@ -53,24 +58,28 @@ function toEvent(session: JournalSessionSummary, title: string): ScheduleEventDa
   };
 }
 
-/** Journal: "New session" button + calendar + quick-add dialog. */
-export function JournalView() {
+/** One journal: "New event" button + month calendar + quick-add dialog. */
+export function JournalView({ journal }: { journal: Journal }) {
   const t = useTranslations();
   const locale = useLocale();
   const router = useRouter();
-  const [date, setDate] = useState(today());
-  const [view, setView] = useState<ScheduleViewLevel>('month');
+  // A past or future season opens on its closest day rather than on an empty month.
+  const [date, setDate] = useState(() => clampToJournal(today(), journal));
   const [sessions, setSessions] = useState<JournalSessionSummary[]>([]);
   const [loading, startLoading] = useTransition();
   const [newSession, setNewSession] = useState<NewSessionDefaults | null>(null);
 
-  const { from, to } = visibleRange(date, view);
+  const { from, to } = visibleRange(date);
   useEffect(() => {
-    startLoading(async () => setSessions(await listSessions(from, to)));
-  }, [from, to]);
+    startLoading(async () => setSessions(await listSessions(journal.id, from, to)));
+  }, [journal.id, from, to]);
 
   const events = sessions.map((session) => {
-    const parts = [t(`journal.typesShort.${session.type}`)];
+    // An "other" event is its title (or its text); a session is its type, with its score or place.
+    const note =
+      SESSION_TYPES[session.type].form === 'note' &&
+      (session.title || session.description?.split('\n')[0]);
+    const parts = [note || t(`journal.typesShort.${session.type}`)];
     if (session.score !== null) parts.push(String(session.score));
     else if (session.location) parts.push(session.location);
     return toEvent(session, parts.join(' · '));
@@ -81,9 +90,7 @@ export function JournalView() {
       <Group justify="flex-end" mb="sm">
         <Button
           leftSection={<IconPlus size={18} />}
-          onClick={() =>
-            setNewSession({ date: view === 'month' || view === 'year' ? today() : date })
-          }
+          onClick={() => setNewSession({ date: today() })}
         >
           {t('journal.newSession')}
         </Button>
@@ -93,27 +100,16 @@ export function JournalView() {
         layout="responsive"
         date={date}
         onDateChange={setDate}
-        view={view}
-        onViewChange={setView}
+        // Month only: no day / week / year views, so no view selector either.
+        view="month"
+        monthViewProps={{ viewSelectProps: { display: 'none' } }}
         events={events}
         // Not mode="static": @mantine/schedule 9.6.3 then leaks `withEventResize` to the DOM.
         onEventClick={(event) => router.push(`/archer/journal/${event.id}`)}
         onDayClick={(day) => setNewSession({ date: dayjs(day).format('YYYY-MM-DD') })}
-        // Day / week only: in 9.6.3 the month and year views leak these handlers to the DOM.
-        {...(view === 'day' || view === 'week'
-          ? {
-              onAllDaySlotClick: (day: string) =>
-                setNewSession({ date: dayjs(day).format('YYYY-MM-DD') }),
-              onTimeSlotClick: ({ slotStart }: { slotStart: string }) =>
-                setNewSession({
-                  date: dayjs(slotStart).format('YYYY-MM-DD'),
-                  time: dayjs(slotStart).format('HH:mm'),
-                }),
-            }
-          : {})}
         renderEventBody={(event) => {
           const session = (event.payload as EventPayload | undefined)?.session;
-          const Icon = session ? SESSION_TYPES[session.type].icon : null;
+          const Icon = session ? eventDisplay(session).icon : null;
           return (
             <span className={classes.eventBody}>
               {Icon && <Icon size={14} style={{ flexShrink: 0 }} />}
@@ -146,7 +142,11 @@ export function JournalView() {
           moreLabel: (count) => t('schedule.moreLabel', { count }),
         }}
       />
-      <NewSessionModal defaults={newSession} onClose={() => setNewSession(null)} />
+      <NewSessionModal
+        journal={journal}
+        defaults={newSession}
+        onClose={() => setNewSession(null)}
+      />
     </Box>
   );
 }

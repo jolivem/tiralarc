@@ -38,6 +38,10 @@ model User {
   identities              UserIdentity[]
   refreshTokens           RefreshToken[]
   emailVerificationTokens EmailVerificationToken[]
+  journals                Journal[]
+  archerProfile           ArcherProfile?
+  profileInvitations      ProfileInvitation[]
+  favoriteSites           FavoriteSite[]
   journalSessions         JournalSession[]
 
   @@map("users")
@@ -113,6 +117,8 @@ enum SessionType {
   COACHING
   COMPETITION
   STRENGTH
+  /// Any other event: a date and a free text (`description`).
+  OTHER
 }
 
 enum Discipline {
@@ -121,6 +127,8 @@ enum Discipline {
   TAE_INTERNATIONAL
   THREE_D
   FIELD
+  BEURSAULT
+  RUN_ARCHERY
 }
 
 enum Feeling {
@@ -130,11 +138,30 @@ enum Feeling {
   EXHAUSTED
 }
 
-/// An archer's journal entry: a calendar event plus its session sheet.
+/// An archer's journal: the sessions of one season (e.g. school year 2026-2027).
+/// Both days are inclusive; an archer's journals may overlap.
+model Journal {
+  id        String   @id @default(uuid()) @db.Char(36)
+  userId    String   @map("user_id") @db.Char(36)
+  title     String   @db.VarChar(100)
+  startDate DateTime @map("start_date") @db.Date
+  endDate   DateTime @map("end_date") @db.Date
+  createdAt DateTime @default(now()) @map("created_at") @db.DateTime(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.DateTime(3)
+
+  user     User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sessions JournalSession[]
+
+  @@index([userId, startDate])
+  @@map("journals")
+}
+
+/// A journal entry: a calendar event plus its session sheet (or a free text for `OTHER` events).
 /// Date and time are "wall clock" values (no time zone): 18:00 stays 18:00 on every device.
 model JournalSession {
   id              String      @id @default(uuid()) @db.Char(36)
   userId          String      @map("user_id") @db.Char(36)
+  journalId       String      @map("journal_id") @db.Char(36)
   type            SessionType
   date            DateTime    @db.Date
   /// "HH:mm"; null = all-day event.
@@ -156,11 +183,86 @@ model JournalSession {
   wentWell        Json        @map("went_well")
   toImprove       Json        @map("to_improve")
   nextTime        String?     @map("next_time") @db.Text
+  /// `OTHER` events only: how the event shows in the calendar (see EVENT_COLORS / EVENT_ICONS).
+  title           String?     @db.VarChar(100)
+  color           String?     @db.VarChar(20)
+  icon            String?     @db.VarChar(20)
   createdAt       DateTime    @default(now()) @map("created_at") @db.DateTime(3)
   updatedAt       DateTime    @updatedAt @map("updated_at") @db.DateTime(3)
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  journal Journal @relation(fields: [journalId], references: [id], onDelete: Cascade)
 
   @@index([userId, date])
+  @@index([journalId, date])
   @@map("journal_sessions")
+}
+
+/// FFTA age categories.
+enum AgeCategory {
+  U11
+  U13
+  U15
+  U18
+  U21
+  S1
+  S2
+  S3
+}
+
+enum BowType {
+  RECURVE
+  COMPOUND
+  BAREBOW
+  LONGBOW
+  HUNTING
+  FREE
+}
+
+/// An archer's sport details. Created on first save.
+model ArcherProfile {
+  userId        String       @id @map("user_id") @db.Char(36)
+  licenceNumber String?      @map("licence_number") @db.VarChar(20)
+  category      AgeCategory?
+  bowType       BowType?     @map("bow_type")
+  /// Array of `Discipline` values.
+  disciplines   Json
+  createdAt     DateTime     @default(now()) @map("created_at") @db.DateTime(3)
+  updatedAt     DateTime     @updatedAt @map("updated_at") @db.DateTime(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("archer_profiles")
+}
+
+/// Someone an archer invited by email (e.g. their coach). Accepting gives no access yet.
+model ProfileInvitation {
+  id         String    @id @default(uuid()) @db.Char(36)
+  userId     String    @map("user_id") @db.Char(36)
+  name       String    @db.VarChar(100)
+  email      String    @db.VarChar(255)
+  isCoach    Boolean   @default(false) @map("is_coach")
+  /// Hash of the token emailed to the guest.
+  tokenHash  String    @unique @map("token_hash") @db.Char(64)
+  /// Null while the invitation is pending.
+  acceptedAt DateTime? @map("accepted_at") @db.DateTime(3)
+  createdAt  DateTime  @default(now()) @map("created_at") @db.DateTime(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, email])
+  @@map("profile_invitations")
+}
+
+model FavoriteSite {
+  id        String   @id @default(uuid()) @db.Char(36)
+  userId    String   @map("user_id") @db.Char(36)
+  label     String   @db.VarChar(100)
+  url       String   @db.VarChar(500)
+  createdAt DateTime @default(now()) @map("created_at") @db.DateTime(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("favorite_sites")
 }

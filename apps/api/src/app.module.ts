@@ -8,6 +8,7 @@ import { type Env, validateEnv } from './config/env.js';
 import { HealthModule } from './health/health.module.js';
 import { JournalModule } from './journal/journal.module.js';
 import { MailModule } from './mail/mail.module.js';
+import { ProfileModule } from './profile/profile.module.js';
 import { PrismaModule } from './prisma/prisma.module.js';
 import { UsersModule } from './users/users.module.js';
 
@@ -41,6 +42,7 @@ import { UsersModule } from './users/users.module.js';
     AuthModule,
     UsersModule,
     JournalModule,
+    ProfileModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })

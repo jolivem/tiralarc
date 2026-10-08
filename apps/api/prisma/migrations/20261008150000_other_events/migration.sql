@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE `journal_sessions` MODIFY `type` ENUM('TRAINING', 'COACHING', 'COMPETITION', 'STRENGTH', 'OTHER') NOT NULL;

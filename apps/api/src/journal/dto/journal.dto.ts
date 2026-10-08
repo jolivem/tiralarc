@@ -6,6 +6,7 @@ import {
   IsInt,
   IsOptional,
   IsString,
+  IsUUID,
   Matches,
   Max,
   MaxLength,
@@ -19,10 +20,109 @@ const SESSION_TYPES = Object.values(SessionType);
 const DISCIPLINES = Object.values(Discipline);
 const FEELINGS = Object.values(Feeling);
 
+/** Calendar colours an `OTHER` event can take (palette names; clients pick the shades). */
+export const EVENT_COLORS = [
+  'gray',
+  'red',
+  'pink',
+  'grape',
+  'violet',
+  'indigo',
+  'blue',
+  'cyan',
+  'teal',
+  'green',
+  'lime',
+  'yellow',
+  'orange',
+] as const;
+export type EventColor = (typeof EVENT_COLORS)[number];
+
+/** Pictograms an `OTHER` event can take (clients map each key to their own icon set). */
+export const EVENT_ICONS = [
+  'NOTE',
+  'STAR',
+  'FLAG',
+  'TOOL',
+  'CART',
+  'USERS',
+  'CAR',
+  'MEDICAL',
+  'GIFT',
+  'HEART',
+  'BELL',
+  'PIN',
+] as const;
+export type EventIcon = (typeof EVENT_ICONS)[number];
+
 /** Max items in "what went well" / "to improve" (3 lines, like the paper sheet). */
 export const MAX_LIST_ITEMS = 3;
 
+export class CreateJournalDto {
+  @ApiProperty({ example: 'Saison 2026-2027', minLength: 1, maxLength: 100 })
+  @IsString()
+  @Matches(/\S/, { message: 'title must not be blank' })
+  @MaxLength(100)
+  title!: string;
+
+  @ApiProperty({ example: '2026-09-01', description: 'First day, inclusive (YYYY-MM-DD).' })
+  @Matches(DATE, { message: 'startDate must be YYYY-MM-DD' })
+  startDate!: string;
+
+  @ApiProperty({
+    example: '2027-08-31',
+    description: 'Last day, inclusive (YYYY-MM-DD). Not before `startDate`.',
+  })
+  @Matches(DATE, { message: 'endDate must be YYYY-MM-DD' })
+  endDate!: string;
+}
+
+/** PATCH body: every field optional. */
+export class UpdateJournalDto {
+  @ApiPropertyOptional({ example: 'Saison 2026-2027', minLength: 1, maxLength: 100 })
+  @IsOptional()
+  @IsString()
+  @Matches(/\S/, { message: 'title must not be blank' })
+  @MaxLength(100)
+  title?: string;
+
+  @ApiPropertyOptional({ example: '2026-09-01', description: 'First day, inclusive.' })
+  @IsOptional()
+  @Matches(DATE, { message: 'startDate must be YYYY-MM-DD' })
+  startDate?: string;
+
+  @ApiPropertyOptional({
+    example: '2027-08-31',
+    description: "Last day, inclusive. The period must keep covering the journal's sessions.",
+  })
+  @IsOptional()
+  @Matches(DATE, { message: 'endDate must be YYYY-MM-DD' })
+  endDate?: string;
+}
+
+/** A season's journal. */
+export class JournalDto {
+  @ApiProperty({ format: 'uuid' })
+  id!: string;
+
+  @ApiProperty({ example: 'Saison 2026-2027' })
+  title!: string;
+
+  @ApiProperty({ example: '2026-09-01' })
+  startDate!: string;
+
+  @ApiProperty({ example: '2027-08-31' })
+  endDate!: string;
+
+  @ApiProperty({ description: 'Number of sessions in the journal.' })
+  sessionCount!: number;
+}
+
 export class ListSessionsQuery {
+  @ApiProperty({ format: 'uuid', description: 'Journal to read.' })
+  @IsUUID()
+  journalId!: string;
+
   @ApiProperty({ example: '2026-10-01', description: 'First day, inclusive (YYYY-MM-DD).' })
   @Matches(DATE, { message: 'from must be YYYY-MM-DD' })
   from!: string;
@@ -36,11 +136,18 @@ export class ListSessionsQuery {
 }
 
 export class CreateSessionDto {
+  @ApiProperty({ format: 'uuid', description: 'Journal the session is added to.' })
+  @IsUUID()
+  journalId!: string;
+
   @ApiProperty({ enum: SESSION_TYPES, enumName: 'SessionType' })
   @IsIn(SESSION_TYPES)
   type!: SessionType;
 
-  @ApiProperty({ example: '2026-10-03', description: 'Local date (YYYY-MM-DD).' })
+  @ApiProperty({
+    example: '2026-10-03',
+    description: "Local date (YYYY-MM-DD), within the journal's period.",
+  })
   @Matches(DATE, { message: 'date must be YYYY-MM-DD' })
   date!: string;
 
@@ -193,12 +300,36 @@ export class UpdateSessionDto {
   @IsString()
   @MaxLength(5000)
   nextTime?: string | null;
+
+  @ApiPropertyOptional({
+    type: String,
+    nullable: true,
+    maxLength: 100,
+    description: 'Title of an `OTHER` event, shown in the calendar.',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  title?: string | null;
+
+  @ApiPropertyOptional({ enum: EVENT_COLORS, enumName: 'EventColor', nullable: true })
+  @IsOptional()
+  @IsIn(EVENT_COLORS)
+  color?: EventColor | null;
+
+  @ApiPropertyOptional({ enum: EVENT_ICONS, enumName: 'EventIcon', nullable: true })
+  @IsOptional()
+  @IsIn(EVENT_ICONS)
+  icon?: EventIcon | null;
 }
 
 /** Calendar entry. */
 export class SessionSummaryDto {
   @ApiProperty({ format: 'uuid' })
   id!: string;
+
+  @ApiProperty({ format: 'uuid' })
+  journalId!: string;
 
   @ApiProperty({ enum: SESSION_TYPES, enumName: 'SessionType' })
   type!: SessionType;
@@ -220,6 +351,32 @@ export class SessionSummaryDto {
 
   @ApiProperty({ type: Number, nullable: true })
   score!: number | null;
+
+  @ApiProperty({
+    type: String,
+    nullable: true,
+    description: 'Analyses, or the text of an `OTHER` event.',
+  })
+  description!: string | null;
+
+  @ApiProperty({ type: String, nullable: true, description: '`OTHER` events only.' })
+  title!: string | null;
+
+  @ApiProperty({
+    enum: EVENT_COLORS,
+    enumName: 'EventColor',
+    nullable: true,
+    description: '`OTHER` events only; null = default colour.',
+  })
+  color!: EventColor | null;
+
+  @ApiProperty({
+    enum: EVENT_ICONS,
+    enumName: 'EventIcon',
+    nullable: true,
+    description: '`OTHER` events only; null = default pictogram.',
+  })
+  icon!: EventIcon | null;
 }
 
 /** Full session sheet. */
@@ -238,9 +395,6 @@ export class SessionDto extends SessionSummaryDto {
 
   @ApiProperty({ type: Number, nullable: true })
   technique!: number | null;
-
-  @ApiProperty({ type: String, nullable: true })
-  description!: string | null;
 
   @ApiProperty({ enum: FEELINGS, enumName: 'Feeling', nullable: true })
   physicalFeeling!: Feeling | null;

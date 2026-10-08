@@ -4,7 +4,7 @@ import { Button, Group, Modal, SimpleGrid, Stack, Text } from '@mantine/core';
 import { DatePickerInput, TimeInput } from '@mantine/dates';
 import { useMediaQuery } from '@mantine/hooks';
 import { IconCalendar, IconClock } from '@tabler/icons-react';
-import type { SessionType } from '@tiralarc/api-client';
+import type { Journal, SessionType } from '@tiralarc/api-client';
 import dayjs from 'dayjs';
 import { useTranslations } from 'next-intl';
 import { useState, useTransition } from 'react';
@@ -20,12 +20,15 @@ export interface NewSessionDefaults {
 
 /**
  * Step 1 of the two-step entry: type + date (+ optional time). Full screen on
- * phones. On success the server action redirects to the session sheet.
+ * phones. On success the server action redirects to the event's own form,
+ * whose fields depend on the type.
  */
 export function NewSessionModal({
+  journal,
   defaults,
   onClose,
 }: {
+  journal: Journal;
   /** null = closed */
   defaults: NewSessionDefaults | null;
   onClose: () => void;
@@ -46,6 +49,7 @@ export function NewSessionModal({
       {defaults && (
         <NewSessionForm
           key={`${defaults.date}${defaults.time}`}
+          journal={journal}
           defaults={defaults}
           onCancel={onClose}
         />
@@ -55,15 +59,17 @@ export function NewSessionModal({
 }
 
 function NewSessionForm({
+  journal,
   defaults,
   onCancel,
 }: {
+  journal: Journal;
   defaults: NewSessionDefaults;
   onCancel: () => void;
 }) {
   const t = useTranslations('journal');
   const [type, setType] = useState<SessionType | null>(null);
-  const [date, setDate] = useState<string | null>(defaults.date);
+  const [date, setDate] = useState<string | null>(clampToJournal(defaults.date, journal));
   const [time, setTime] = useState(defaults.time ?? '');
   const [state, setState] = useState<ActionState>({});
   const [pending, startTransition] = useTransition();
@@ -71,7 +77,7 @@ function NewSessionForm({
   const submit = () => {
     if (!type || !date) return;
     startTransition(async () => {
-      setState(await createSession({ type, date, startTime: time || null }));
+      setState(await createSession({ journalId: journal.id, type, date, startTime: time || null }));
     });
   };
 
@@ -86,6 +92,8 @@ function NewSessionForm({
           label={t('date')}
           value={date}
           onChange={setDate}
+          minDate={journal.startDate}
+          maxDate={journal.endDate}
           valueFormat="dddd D MMMM YYYY"
           leftSection={<IconCalendar size={18} />}
           required
@@ -112,3 +120,9 @@ function NewSessionForm({
 }
 
 export const today = () => dayjs().format('YYYY-MM-DD');
+
+/** The closest day within the journal's period (YYYY-MM-DD strings compare chronologically). */
+export function clampToJournal(day: string, journal: Journal): string {
+  if (day < journal.startDate) return journal.startDate;
+  return day > journal.endDate ? journal.endDate : day;
+}

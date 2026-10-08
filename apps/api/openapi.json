@@ -597,10 +597,175 @@
         ]
       }
     },
+    "/api/v1/journals": {
+      "get": {
+        "operationId": "Journals_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/JournalDto"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Archers only"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "journal"
+        ]
+      },
+      "post": {
+        "operationId": "Journals_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateJournalDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JournalDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Archers only"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "journal"
+        ]
+      }
+    },
+    "/api/v1/journals/{id}": {
+      "patch": {
+        "operationId": "Journals_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateJournalDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JournalDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Archers only"
+          },
+          "404": {
+            "description": ""
+          },
+          "409": {
+            "description": "Sessions would fall outside the new period"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "journal"
+        ]
+      },
+      "delete": {
+        "operationId": "Journals_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "403": {
+            "description": "Archers only"
+          },
+          "404": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "journal"
+        ]
+      }
+    },
     "/api/v1/journal/sessions": {
       "get": {
         "operationId": "Journal_list",
         "parameters": [
+          {
+            "name": "journalId",
+            "required": true,
+            "in": "query",
+            "description": "Journal to read.",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
           {
             "name": "from",
             "required": true,
@@ -675,6 +840,9 @@
           },
           "403": {
             "description": "Archers only"
+          },
+          "404": {
+            "description": "Unknown journal"
           }
         },
         "security": [
@@ -835,6 +1003,322 @@
         ],
         "tags": [
           "journal"
+        ]
+      }
+    },
+    "/api/v1/profile": {
+      "get": {
+        "operationId": "Profile_get",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProfileDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Archers only"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "profile"
+        ]
+      },
+      "patch": {
+        "operationId": "Profile_update",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateProfileDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProfileDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Archers only"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "profile"
+        ]
+      }
+    },
+    "/api/v1/profile/invitations": {
+      "get": {
+        "operationId": "Profile_listInvitations",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/InvitationDto"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Archers only"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "profile"
+        ]
+      },
+      "post": {
+        "operationId": "Profile_invite",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateInvitationDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvitationDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "CANNOT_INVITE_SELF"
+          },
+          "403": {
+            "description": "Archers only"
+          },
+          "409": {
+            "description": "INVITATION_ALREADY_SENT, LIMIT_REACHED"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Invite someone; they receive an email with a link to accept",
+        "tags": [
+          "profile"
+        ]
+      }
+    },
+    "/api/v1/profile/invitations/{id}": {
+      "delete": {
+        "operationId": "Profile_removeInvitation",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "403": {
+            "description": "Archers only"
+          },
+          "404": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "profile"
+        ]
+      }
+    },
+    "/api/v1/profile/sites": {
+      "get": {
+        "operationId": "Profile_listSites",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SiteDto"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Archers only"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "profile"
+        ]
+      },
+      "post": {
+        "operationId": "Profile_addSite",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSiteDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SiteDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Archers only"
+          },
+          "409": {
+            "description": "LIMIT_REACHED"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "profile"
+        ]
+      }
+    },
+    "/api/v1/profile/sites/{id}": {
+      "delete": {
+        "operationId": "Profile_removeSite",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "403": {
+            "description": "Archers only"
+          },
+          "404": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "profile"
+        ]
+      }
+    },
+    "/api/v1/invitations/accept": {
+      "post": {
+        "operationId": "Invitations_accept",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AcceptInvitationDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AcceptedInvitationDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "INVALID_INVITATION_TOKEN"
+          }
+        },
+        "tags": [
+          "profile"
         ]
       }
     }
@@ -1145,13 +1629,93 @@
           "roles"
         ]
       },
+      "JournalDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string",
+            "example": "Saison 2026-2027"
+          },
+          "startDate": {
+            "type": "string",
+            "example": "2026-09-01"
+          },
+          "endDate": {
+            "type": "string",
+            "example": "2027-08-31"
+          },
+          "sessionCount": {
+            "type": "number",
+            "description": "Number of sessions in the journal."
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "startDate",
+          "endDate",
+          "sessionCount"
+        ]
+      },
+      "CreateJournalDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "example": "Saison 2026-2027",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "startDate": {
+            "type": "string",
+            "example": "2026-09-01",
+            "description": "First day, inclusive (YYYY-MM-DD)."
+          },
+          "endDate": {
+            "type": "string",
+            "example": "2027-08-31",
+            "description": "Last day, inclusive (YYYY-MM-DD). Not before `startDate`."
+          }
+        },
+        "required": [
+          "title",
+          "startDate",
+          "endDate"
+        ]
+      },
+      "UpdateJournalDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "example": "Saison 2026-2027",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "startDate": {
+            "type": "string",
+            "example": "2026-09-01",
+            "description": "First day, inclusive."
+          },
+          "endDate": {
+            "type": "string",
+            "example": "2027-08-31",
+            "description": "Last day, inclusive. The period must keep covering the journal's sessions."
+          }
+        }
+      },
       "SessionType": {
         "type": "string",
         "enum": [
           "TRAINING",
           "COACHING",
           "COMPETITION",
-          "STRENGTH"
+          "STRENGTH",
+          "OTHER"
         ]
       },
       "Discipline": {
@@ -1161,13 +1725,56 @@
           "TAE_NATIONAL",
           "TAE_INTERNATIONAL",
           "THREE_D",
-          "FIELD"
+          "FIELD",
+          "BEURSAULT",
+          "RUN_ARCHERY"
         ]
+      },
+      "EventColor": {
+        "type": "string",
+        "enum": [
+          "gray",
+          "red",
+          "pink",
+          "grape",
+          "violet",
+          "indigo",
+          "blue",
+          "cyan",
+          "teal",
+          "green",
+          "lime",
+          "yellow",
+          "orange"
+        ],
+        "description": "`OTHER` events only; null = default colour."
+      },
+      "EventIcon": {
+        "type": "string",
+        "enum": [
+          "NOTE",
+          "STAR",
+          "FLAG",
+          "TOOL",
+          "CART",
+          "USERS",
+          "CAR",
+          "MEDICAL",
+          "GIFT",
+          "HEART",
+          "BELL",
+          "PIN"
+        ],
+        "description": "`OTHER` events only; null = default pictogram."
       },
       "SessionSummaryDto": {
         "type": "object",
         "properties": {
           "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "journalId": {
             "type": "string",
             "format": "uuid"
           },
@@ -1206,17 +1813,50 @@
           "score": {
             "type": "number",
             "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "nullable": true,
+            "description": "Analyses, or the text of an `OTHER` event."
+          },
+          "title": {
+            "type": "string",
+            "nullable": true,
+            "description": "`OTHER` events only."
+          },
+          "color": {
+            "nullable": true,
+            "description": "`OTHER` events only; null = default colour.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/EventColor"
+              }
+            ]
+          },
+          "icon": {
+            "nullable": true,
+            "description": "`OTHER` events only; null = default pictogram.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/EventIcon"
+              }
+            ]
           }
         },
         "required": [
           "id",
+          "journalId",
           "type",
           "date",
           "startTime",
           "durationMinutes",
           "location",
           "discipline",
-          "score"
+          "score",
+          "description",
+          "title",
+          "color",
+          "icon"
         ]
       },
       "SessionSuggestionsDto": {
@@ -1258,6 +1898,11 @@
       "CreateSessionDto": {
         "type": "object",
         "properties": {
+          "journalId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Journal the session is added to."
+          },
           "type": {
             "allOf": [
               {
@@ -1268,7 +1913,7 @@
           "date": {
             "type": "string",
             "example": "2026-10-03",
-            "description": "Local date (YYYY-MM-DD)."
+            "description": "Local date (YYYY-MM-DD), within the journal's period."
           },
           "startTime": {
             "type": "string",
@@ -1278,6 +1923,7 @@
           }
         },
         "required": [
+          "journalId",
           "type",
           "date"
         ]
@@ -1295,6 +1941,10 @@
         "type": "object",
         "properties": {
           "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "journalId": {
             "type": "string",
             "format": "uuid"
           },
@@ -1334,6 +1984,34 @@
             "type": "number",
             "nullable": true
           },
+          "description": {
+            "type": "string",
+            "nullable": true,
+            "description": "Analyses, or the text of an `OTHER` event."
+          },
+          "title": {
+            "type": "string",
+            "nullable": true,
+            "description": "`OTHER` events only."
+          },
+          "color": {
+            "nullable": true,
+            "description": "`OTHER` events only; null = default colour.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/EventColor"
+              }
+            ]
+          },
+          "icon": {
+            "nullable": true,
+            "description": "`OTHER` events only; null = default pictogram.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/EventIcon"
+              }
+            ]
+          },
           "distanceMeters": {
             "type": "number",
             "nullable": true
@@ -1352,10 +2030,6 @@
           },
           "technique": {
             "type": "number",
-            "nullable": true
-          },
-          "description": {
-            "type": "string",
             "nullable": true
           },
           "physicalFeeling": {
@@ -1397,6 +2071,7 @@
         },
         "required": [
           "id",
+          "journalId",
           "type",
           "date",
           "startTime",
@@ -1404,12 +2079,15 @@
           "location",
           "discipline",
           "score",
+          "description",
+          "title",
+          "color",
+          "icon",
           "distanceMeters",
           "arrowCount",
           "objective",
           "satisfaction",
           "technique",
-          "description",
           "physicalFeeling",
           "mentalFeeling",
           "wentWell",
@@ -1535,8 +2213,261 @@
             "nullable": true,
             "maxLength": 5000,
             "description": "Notes for the next session."
+          },
+          "title": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 100,
+            "description": "Title of an `OTHER` event, shown in the calendar."
+          },
+          "color": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/EventColor"
+              }
+            ]
+          },
+          "icon": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/EventIcon"
+              }
+            ]
           }
         }
+      },
+      "AgeCategory": {
+        "type": "string",
+        "enum": [
+          "U11",
+          "U13",
+          "U15",
+          "U18",
+          "U21",
+          "S1",
+          "S2",
+          "S3"
+        ]
+      },
+      "BowType": {
+        "type": "string",
+        "enum": [
+          "RECURVE",
+          "COMPOUND",
+          "BAREBOW",
+          "LONGBOW",
+          "HUNTING",
+          "FREE"
+        ]
+      },
+      "ProfileDto": {
+        "type": "object",
+        "properties": {
+          "licenceNumber": {
+            "type": "string",
+            "nullable": true,
+            "example": "0123456A"
+          },
+          "category": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AgeCategory"
+              }
+            ]
+          },
+          "bowType": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/BowType"
+              }
+            ]
+          },
+          "disciplines": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Discipline"
+            }
+          }
+        },
+        "required": [
+          "licenceNumber",
+          "category",
+          "bowType",
+          "disciplines"
+        ]
+      },
+      "UpdateProfileDto": {
+        "type": "object",
+        "properties": {
+          "licenceNumber": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 20
+          },
+          "category": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AgeCategory"
+              }
+            ]
+          },
+          "bowType": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/BowType"
+              }
+            ]
+          },
+          "disciplines": {
+            "type": "array",
+            "description": "Replaces the practised disciplines.",
+            "items": {
+              "$ref": "#/components/schemas/Discipline"
+            }
+          }
+        }
+      },
+      "InvitationStatus": {
+        "type": "string",
+        "enum": [
+          "PENDING",
+          "ACCEPTED"
+        ]
+      },
+      "InvitationDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "isCoach": {
+            "type": "boolean"
+          },
+          "status": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/InvitationStatus"
+              }
+            ]
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "email",
+          "isCoach",
+          "status",
+          "createdAt"
+        ]
+      },
+      "CreateInvitationDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Camille Martin",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "description": "Where the invitation is sent."
+          },
+          "isCoach": {
+            "type": "boolean",
+            "default": false,
+            "description": "True when the guest is the archer's coach."
+          }
+        },
+        "required": [
+          "name",
+          "email"
+        ]
+      },
+      "SiteDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "label": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string",
+            "format": "uri"
+          }
+        },
+        "required": [
+          "id",
+          "label",
+          "url"
+        ]
+      },
+      "CreateSiteDto": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string",
+            "example": "FFTA",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "url": {
+            "type": "string",
+            "example": "https://www.ffta.fr",
+            "description": "http(s) URL.",
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "label",
+          "url"
+        ]
+      },
+      "AcceptInvitationDto": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string",
+            "description": "Token from the invitation link."
+          }
+        },
+        "required": [
+          "token"
+        ]
+      },
+      "AcceptedInvitationDto": {
+        "type": "object",
+        "properties": {
+          "invitedBy": {
+            "type": "string",
+            "description": "Display name (or email) of the archer who sent the invitation."
+          }
+        },
+        "required": [
+          "invitedBy"
+        ]
       }
     }
   }

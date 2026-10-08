@@ -6,7 +6,7 @@ import { useTranslations } from 'next-intl';
 import type { ReactNode } from 'react';
 import type { ActionState } from '@/lib/action-state';
 
-const KNOWN_RULES = ['isEmail', 'minLength', 'maxLength', 'arrayMinSize'] as const;
+const KNOWN_RULES = ['isEmail', 'isUrl', 'minLength', 'maxLength', 'arrayMinSize'] as const;
 type KnownRule = (typeof KNOWN_RULES)[number];
 
 /** Translated validation message for one field, for Mantine's `error` prop. */

@@ -94,14 +94,21 @@
     "INVALID_VERIFICATION_TOKEN": "This confirmation link is invalid or has expired.",
     "INVALID_REFRESH_TOKEN": "Your session has expired, please sign in again.",
     "INVALID_ID_TOKEN": "Signing in with this provider failed.",
-    "PROVIDER_NOT_CONFIGURED": "This sign-in method isn't available."
+    "PROVIDER_NOT_CONFIGURED": "This sign-in method isn't available.",
+    "SESSION_OUTSIDE_JOURNAL": "The session date is outside the journal's period.",
+    "JOURNAL_PERIOD_EXCLUDES_SESSIONS": "Some sessions of this journal fall outside the new period. Widen it, or move or delete those sessions.",
+    "INVITATION_ALREADY_SENT": "This person is already invited.",
+    "INVALID_INVITATION_TOKEN": "This invitation is invalid or has been withdrawn.",
+    "CANNOT_INVITE_SELF": "You can't invite yourself.",
+    "LIMIT_REACHED": "You have reached the maximum number of items. Delete one to continue."
   },
   "validation": {
     "isEmail": "Invalid email address.",
     "minLength": "Too short.",
     "maxLength": "Too long.",
     "arrayMinSize": "Choose at least one option.",
-    "default": "Invalid value."
+    "default": "Invalid value.",
+    "isUrl": "Invalid address (it must start with https://)."
   },
   "account": {
     "title": "My account",
@@ -125,10 +132,11 @@
     "journalIntro": "Your training sessions and competitions: date, distance, arrow count, scores, feelings.",
     "sheetsIntro": "Your technique sheets and memos: technique points, instructions, personal notes.",
     "statsIntro": "Your progress in numbers: arrow volume, scores, consistency.",
-    "profileIntro": "Your sport details (bow type, category, dominant hand) and your club / licence.",
+    "profileIntro": "Your licence, category, bow and disciplines, your invited people and your favourite websites.",
     "comingSoon": "Coming soon",
-    "newSession": "New session",
-    "open": "Open"
+    "newSession": "New event",
+    "open": "Open",
+    "openJournal": "Open journal"
   },
   "schedule": {
     "day": "Day",
@@ -139,7 +147,7 @@
     "today": "Today",
     "next": "Next",
     "previous": "Previous",
-    "noEvents": "No sessions",
+    "noEvents": "No events",
     "agenda": "Agenda",
     "more": "more",
     "moreLabel": "+{count} more",
@@ -150,20 +158,24 @@
       "TRAINING": "Training",
       "COACHING": "Coaching",
       "COMPETITION": "Competition",
-      "STRENGTH": "Strength training"
+      "STRENGTH": "Strength training",
+      "OTHER": "Other"
     },
     "typesShort": {
       "TRAINING": "Training",
       "COACHING": "Coaching",
       "COMPETITION": "Competition",
-      "STRENGTH": "Strength"
+      "STRENGTH": "Strength",
+      "OTHER": "Other"
     },
     "disciplines": {
       "INDOOR": "Indoor",
       "TAE_NATIONAL": "TAE N",
       "TAE_INTERNATIONAL": "TAE I",
       "THREE_D": "3D",
-      "FIELD": "Field"
+      "FIELD": "Field",
+      "BEURSAULT": "Beursault",
+      "RUN_ARCHERY": "Run Archery"
     },
     "feelings": {
       "GREAT": "Great",
@@ -171,13 +183,13 @@
       "BAD": "Not good",
       "EXHAUSTED": "Exhausted"
     },
-    "newSession": "New session",
-    "newSessionHint": "Pick the type and date: the session sheet opens next.",
-    "type": "Session type",
+    "newSession": "New event",
+    "newSessionHint": "Pick the type, date and time: the details to fill in come next.",
+    "type": "Event type",
     "date": "Date",
     "time": "Time",
-    "timeHint": "Optional: without a time, the session spans the day.",
-    "create": "Create session",
+    "timeHint": "Optional: without a time, the event lasts all day.",
+    "create": "Create event",
     "cancel": "Cancel",
     "info": "Details",
     "location": "Location",
@@ -199,13 +211,152 @@
     "toImprove": "What to improve",
     "nextTime": "Next — for the next session",
     "save": "Save",
-    "saved": "Session saved.",
+    "saved": "Saved.",
     "unsaved": "Unsaved changes",
     "delete": "Delete",
-    "deleteTitle": "Delete this session?",
-    "deleteBody": "The session and its sheet will be permanently deleted.",
+    "deleteTitle": "Delete this event?",
+    "deleteBody": "The event and its sheet will be permanently deleted.",
     "strengthComing": "The strength training form is coming soon. You can already put the session in your calendar.",
     "back": "Journal",
-    "allDay": "All day"
+    "allDay": "All day",
+    "note": "Free text",
+    "title": "Title",
+    "titleHint": "Shown in the calendar, with the colour and the pictogram.",
+    "color": "Colour",
+    "icon": "Pictogram",
+    "colors": {
+      "gray": "Gray",
+      "red": "Red",
+      "pink": "Pink",
+      "grape": "Grape",
+      "violet": "Violet",
+      "indigo": "Indigo",
+      "blue": "Blue",
+      "cyan": "Cyan",
+      "teal": "Teal",
+      "green": "Green",
+      "lime": "Lime",
+      "yellow": "Yellow",
+      "orange": "Orange"
+    },
+    "icons": {
+      "NOTE": "Note",
+      "STAR": "Star",
+      "FLAG": "Flag",
+      "TOOL": "Tool",
+      "CART": "Purchase",
+      "USERS": "Group",
+      "CAR": "Travel",
+      "MEDICAL": "Health",
+      "GIFT": "Gift",
+      "HEART": "Heart",
+      "BELL": "Reminder",
+      "PIN": "Place"
+    }
+  },
+  "journals": {
+    "list": "Your journals",
+    "empty": "No journal yet. Create one per season, for example “Season 2026-2027”.",
+    "new": "New journal",
+    "newHint": "A journal covers one season: all your sessions of the period are grouped in it.",
+    "title": "Title",
+    "titlePlaceholder": "E.g. Season 2026-2027",
+    "startDate": "Start date",
+    "endDate": "End date",
+    "create": "Create journal",
+    "cancel": "Cancel",
+    "period": "{start} – {end}",
+    "sessions": "{count, plural, =0 {No sessions} one {# session} other {# sessions}}",
+    "selected": "Selected journal",
+    "delete": "Delete",
+    "deleteLabel": "Delete journal {title}",
+    "deleteTitle": "Delete this journal?",
+    "deleteBody": "The journal “{title}” will be permanently deleted.",
+    "deleteSessions": "{count, plural, one {Its session will be deleted with it.} other {Its # sessions will be deleted with it.}}",
+    "noneTitle": "Create your first journal",
+    "noneBody": "Your sessions are kept in one journal per season. Create one to get started.",
+    "edit": "Edit journal",
+    "editHint": "The period must keep covering the sessions already recorded in this journal.",
+    "save": "Save",
+    "editLabel": "Edit journal {title}"
+  },
+  "profile": {
+    "title": "Profile",
+    "guests": {
+      "title": "Invited people",
+      "empty": "You haven't invited anyone yet.",
+      "add": "Invite someone",
+      "addHint": "The person receives an invitation email. For now, accepting gives them no access to your data.",
+      "name": "Name",
+      "namePlaceholder": "E.g. Camille Martin",
+      "email": "Email",
+      "isCoach": "This is my coach",
+      "coach": "Coach",
+      "submit": "Send invitation",
+      "status": {
+        "PENDING": "Pending",
+        "ACCEPTED": "Accepted"
+      },
+      "removeLabel": "Remove {name}",
+      "removeTitle": "Remove this person?",
+      "removeBody": "{name} will be removed from your invited people and their invitation will no longer be valid."
+    },
+    "sites": {
+      "title": "Favourite websites",
+      "empty": "No website yet.",
+      "add": "Add a website",
+      "label": "Name",
+      "labelPlaceholder": "E.g. FFTA",
+      "url": "Address",
+      "urlPlaceholder": "https://www.ffta.fr",
+      "submit": "Add",
+      "removeLabel": "Delete website {name}",
+      "removeTitle": "Delete this website?",
+      "removeBody": "The link to “{name}” will be removed from your profile."
+    },
+    "config": {
+      "title": "Configuration",
+      "licence": "Licence number",
+      "category": "Category",
+      "bowType": "Bow",
+      "disciplines": "Disciplines practised",
+      "choose": "Choose",
+      "save": "Save",
+      "saved": "Profile saved."
+    },
+    "categories": {
+      "U11": "U11",
+      "U13": "U13",
+      "U15": "U15",
+      "U18": "U18",
+      "U21": "U21",
+      "S1": "Senior 1",
+      "S2": "Senior 2",
+      "S3": "Senior 3"
+    },
+    "bowTypes": {
+      "RECURVE": "Recurve",
+      "COMPOUND": "Compound",
+      "BAREBOW": "Barebow",
+      "LONGBOW": "Longbow",
+      "HUNTING": "Hunting bow",
+      "FREE": "Freestyle bow"
+    },
+    "options": {
+      "title": "Options",
+      "soon": "Coming soon",
+      "departmental": "Show departmental-level competitions",
+      "regional": "Show regional-level competitions"
+    },
+    "cancel": "Cancel",
+    "remove": "Remove",
+    "delete": "Delete",
+    "accept": {
+      "title": "Tiralarc invitation",
+      "body": "An archer added you to their invited people on Tiralarc.",
+      "submit": "Accept the invitation",
+      "done": "Invitation from {name} accepted. Thank you!",
+      "missingToken": "This link is incomplete. Use the link you received by email."
+    }
   }
 }

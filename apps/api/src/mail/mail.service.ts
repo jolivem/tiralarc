@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { createTransport, type Transporter } from 'nodemailer';
 import type { Env } from '../config/env.js';
-import { type MailLocale, verificationEmail } from './templates.js';
+import { invitationEmail, type MailLocale, verificationEmail } from './templates.js';
 
 export interface OutgoingMail {
   to: string;
@@ -30,6 +30,17 @@ export class MailService {
       this.logger.log(`Email verification link for ${to}: ${link.toString()}`);
     }
     await this.send({ to, ...verificationEmail(lang, link.toString()) });
+  }
+
+  /** Invitation from an archer to a guest, written in the archer's language. */
+  async sendInvitation(to: string, locale: string, inviter: string, token: string): Promise<void> {
+    const lang: MailLocale = locale === 'en' ? 'en' : 'fr';
+    const link = new URL(
+      `/${lang}/invitations/accept`,
+      this.config.get('WEB_URL', { infer: true }),
+    );
+    link.searchParams.set('token', token);
+    await this.send({ to, ...invitationEmail(lang, inviter, link.toString()) });
   }
 
   /** Overridden in tests to capture outgoing mail. */

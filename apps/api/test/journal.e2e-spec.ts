@@ -6,6 +6,9 @@ describe('Journal (e2e)', () => {
   let archer: string;
   let otherArcher: string;
   let coach: string;
+  /** Season 2026-2027 journals. */
+  let journalId: string;
+  let otherJournalId: string;
 
   const http = () => request(ctx.app.getHttpServer());
   const as = (token: string) => ({ Authorization: `Bearer ${token}` });
@@ -16,12 +19,22 @@ describe('Journal (e2e)', () => {
         .send({ idToken: fakeIdToken(sub, `${sub}@gmail.com`), roles })
         .expect(200)
     ).body.accessToken as string;
+  const createJournal = async (token: string, title = 'Saison 2026-2027') =>
+    (
+      await http()
+        .post('/api/v1/journals')
+        .set(as(token))
+        .send({ title, startDate: '2026-09-01', endDate: '2027-08-31' })
+        .expect(201)
+    ).body.id as string;
 
   beforeAll(async () => {
     ctx = await createTestApp();
     archer = await signUp('j-archer', ['ARCHER']);
     otherArcher = await signUp('j-other', ['ARCHER']);
     coach = await signUp('j-coach', ['COACH']);
+    journalId = await createJournal(archer);
+    otherJournalId = await createJournal(otherArcher);
   });
 
   afterAll(async () => {
@@ -32,10 +45,11 @@ describe('Journal (e2e)', () => {
     const created = await http()
       .post('/api/v1/journal/sessions')
       .set(as(archer))
-      .send({ type: 'TRAINING', date: '2026-10-05', startTime: '18:30' })
+      .send({ journalId, type: 'TRAINING', date: '2026-10-05', startTime: '18:30' })
       .expect(201);
     const id = created.body.id as string;
     expect(created.body).toMatchObject({
+      journalId,
       type: 'TRAINING',
       date: '2026-10-05',
       startTime: '18:30',
@@ -80,12 +94,12 @@ describe('Journal (e2e)', () => {
     expect(cleared.body).toMatchObject({ startTime: null, score: null, arrowCount: 60 });
 
     const october = await http()
-      .get('/api/v1/journal/sessions?from=2026-10-01&to=2026-10-31')
+      .get(`/api/v1/journal/sessions?journalId=${journalId}&from=2026-10-01&to=2026-10-31`)
       .set(as(archer))
       .expect(200);
     expect(october.body).toEqual([expect.objectContaining({ id, date: '2026-10-05' })]);
     const november = await http()
-      .get('/api/v1/journal/sessions?from=2026-11-01&to=2026-11-30')
+      .get(`/api/v1/journal/sessions?journalId=${journalId}&from=2026-11-01&to=2026-11-30`)
       .set(as(archer))
       .expect(200);
     expect(november.body).toEqual([]);
@@ -99,7 +113,7 @@ describe('Journal (e2e)', () => {
     const { body } = await http()
       .post('/api/v1/journal/sessions')
       .set(as(archer))
-      .send({ type: 'COMPETITION', date: '2026-10-10' })
+      .send({ journalId, type: 'COMPETITION', date: '2026-10-10' })
       .expect(201);
 
     await http().get(`/api/v1/journal/sessions/${body.id}`).set(as(otherArcher)).expect(404);
@@ -110,23 +124,33 @@ describe('Journal (e2e)', () => {
       .expect(404);
     await http().delete(`/api/v1/journal/sessions/${body.id}`).set(as(otherArcher)).expect(404);
     const list = await http()
-      .get('/api/v1/journal/sessions?from=2026-10-01&to=2026-10-31')
+      .get(`/api/v1/journal/sessions?journalId=${otherJournalId}&from=2026-10-01&to=2026-10-31`)
       .set(as(otherArcher))
       .expect(200);
     expect(list.body).toEqual([]);
+    // Someone else's journal can't be read, filled or deleted.
+    await http()
+      .get(`/api/v1/journal/sessions?journalId=${journalId}&from=2026-10-01&to=2026-10-31`)
+      .set(as(otherArcher))
+      .expect(404);
+    await http()
+      .post('/api/v1/journal/sessions')
+      .set(as(otherArcher))
+      .send({ journalId, type: 'TRAINING', date: '2026-10-10' })
+      .expect(404);
+    await http().delete(`/api/v1/journals/${journalId}`).set(as(otherArcher)).expect(404);
   });
 
   it('is reserved to archers and validates input', async () => {
-    await http()
-      .get('/api/v1/journal/sessions?from=2026-10-01&to=2026-10-31')
-      .set(as(coach))
-      .expect(403);
-    await http().get('/api/v1/journal/sessions?from=2026-10-01&to=2026-10-31').expect(401);
+    const october = `/api/v1/journal/sessions?journalId=${journalId}&from=2026-10-01&to=2026-10-31`;
+    await http().get(october).set(as(coach)).expect(403);
+    await http().get(october).expect(401);
+    await http().get('/api/v1/journals').set(as(coach)).expect(403);
 
     const bad = await http()
       .post('/api/v1/journal/sessions')
       .set(as(archer))
-      .send({ type: 'YOGA', date: '05/10/2026', startTime: '25:00' })
+      .send({ journalId, type: 'YOGA', date: '05/10/2026', startTime: '25:00' })
       .expect(400);
     expect(bad.body.errors.map((e: { field: string }) => e.field).sort()).toEqual([
       'date',
@@ -137,7 +161,7 @@ describe('Journal (e2e)', () => {
     const { body } = await http()
       .post('/api/v1/journal/sessions')
       .set(as(archer))
-      .send({ type: 'STRENGTH', date: '2026-10-12' })
+      .send({ journalId, type: 'STRENGTH', date: '2026-10-12' })
       .expect(201);
     await http()
       .patch(`/api/v1/journal/sessions/${body.id}`)
@@ -146,9 +170,126 @@ describe('Journal (e2e)', () => {
       .expect(400);
 
     await http()
-      .get('/api/v1/journal/sessions?from=2026-01-01&to=2027-06-01')
+      .get(`/api/v1/journal/sessions?journalId=${journalId}&from=2026-01-01&to=2027-06-01`)
       .set(as(archer))
       .expect(400);
+  });
+
+  it('creates, lists and deletes journals with their sessions', async () => {
+    const token = await signUp('j-seasons', ['ARCHER']);
+    expect((await http().get('/api/v1/journals').set(as(token)).expect(200)).body).toEqual([]);
+
+    const previous = await http()
+      .post('/api/v1/journals')
+      .set(as(token))
+      .send({ title: '  Saison 2025-2026 ', startDate: '2025-09-01', endDate: '2026-08-31' })
+      .expect(201);
+    expect(previous.body).toMatchObject({
+      title: 'Saison 2025-2026',
+      startDate: '2025-09-01',
+      endDate: '2026-08-31',
+      sessionCount: 0,
+    });
+    const current = await createJournal(token);
+
+    const addSession = (date: string) =>
+      http()
+        .post('/api/v1/journal/sessions')
+        .set(as(token))
+        .send({ journalId: current, type: 'TRAINING', date });
+    const session = await addSession('2026-09-01').expect(201);
+    await addSession('2027-08-31').expect(201);
+
+    // Sessions stay within their journal's period.
+    const outside = await addSession('2027-09-01').expect(400);
+    expect(outside.body.code).toBe('SESSION_OUTSIDE_JOURNAL');
+    const moved = await http()
+      .patch(`/api/v1/journal/sessions/${session.body.id}`)
+      .set(as(token))
+      .send({ date: '2026-08-31' })
+      .expect(400);
+    expect(moved.body.code).toBe('SESSION_OUTSIDE_JOURNAL');
+
+    // Renaming and moving the period, as long as it still covers the sessions.
+    const patch = (body: object) =>
+      http().patch(`/api/v1/journals/${current}`).set(as(token)).send(body);
+    const renamed = await patch({ title: ' Extérieur 2027 ', startDate: '2026-08-15' }).expect(200);
+    expect(renamed.body).toMatchObject({
+      title: 'Extérieur 2027',
+      startDate: '2026-08-15',
+      endDate: '2027-08-31',
+      sessionCount: 2,
+    });
+    const shrunk = await patch({ endDate: '2027-06-30' }).expect(409);
+    expect(shrunk.body.code).toBe('JOURNAL_PERIOD_EXCLUDES_SESSIONS');
+    await patch({ startDate: '2027-09-01' }).expect(400);
+    await patch({ title: ' ' }).expect(400);
+    await http()
+      .patch(`/api/v1/journals/${current}`)
+      .set(as(otherArcher))
+      .send({ title: 'Volé' })
+      .expect(404);
+
+    // Most recent season first.
+    const list = await http().get('/api/v1/journals').set(as(token)).expect(200);
+    expect(list.body).toEqual([
+      expect.objectContaining({ id: current, sessionCount: 2 }),
+      expect.objectContaining({ id: previous.body.id, sessionCount: 0 }),
+    ]);
+
+    await http()
+      .post('/api/v1/journals')
+      .set(as(token))
+      .send({ title: 'À l’envers', startDate: '2026-09-01', endDate: '2026-08-31' })
+      .expect(400);
+    const bad = await http()
+      .post('/api/v1/journals')
+      .set(as(token))
+      .send({ title: '   ', startDate: '2026-9-1', endDate: 'demain' })
+      .expect(400);
+    expect(bad.body.errors.map((e: { field: string }) => e.field).sort()).toEqual([
+      'endDate',
+      'startDate',
+      'title',
+    ]);
+
+    await http().delete(`/api/v1/journals/${current}`).set(as(token)).expect(204);
+    await http().get(`/api/v1/journal/sessions/${session.body.id}`).set(as(token)).expect(404);
+    await http().delete(`/api/v1/journals/${current}`).set(as(token)).expect(404);
+    expect((await http().get('/api/v1/journals').set(as(token)).expect(200)).body).toHaveLength(1);
+  });
+
+  it('records other events with a title, a colour, a pictogram and a free text', async () => {
+    const created = await http()
+      .post('/api/v1/journal/sessions')
+      .set(as(archer))
+      .send({ journalId, type: 'OTHER', date: '2026-12-05', startTime: '10:00' })
+      .expect(201);
+    expect(created.body).toMatchObject({ type: 'OTHER', startTime: '10:00', description: null });
+    await http()
+      .patch(`/api/v1/journal/sessions/${created.body.id}`)
+      .set(as(archer))
+      .send({ description: 'Réglage du viseur', title: ' Atelier ', color: 'violet', icon: 'TOOL' })
+      .expect(200);
+    await http()
+      .patch(`/api/v1/journal/sessions/${created.body.id}`)
+      .set(as(archer))
+      .send({ color: '#ff0000', icon: 'SKULL' })
+      .expect(400);
+
+    const december = await http()
+      .get(`/api/v1/journal/sessions?journalId=${journalId}&from=2026-12-01&to=2026-12-31`)
+      .set(as(archer))
+      .expect(200);
+    expect(december.body).toEqual([
+      expect.objectContaining({
+        id: created.body.id,
+        description: 'Réglage du viseur',
+        title: 'Atelier',
+        color: 'violet',
+        icon: 'TOOL',
+      }),
+    ]);
   });
 
   it('suggests previously entered values, most frequent first', async () => {
@@ -156,7 +297,7 @@ describe('Journal (e2e)', () => {
       const { body } = await http()
         .post('/api/v1/journal/sessions')
         .set(as(otherArcher))
-        .send({ type: 'TRAINING', date })
+        .send({ journalId: otherJournalId, type: 'TRAINING', date })
         .expect(201);
       await http()
         .patch(`/api/v1/journal/sessions/${body.id}`)

@@ -1,13 +1,18 @@
 import { HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
 import { ApiException, ErrorCode } from '../common/errors.js';
-import type { JournalSession } from '../generated/prisma/client.js';
+import type { Journal, JournalSession } from '../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import {
+  type CreateJournalDto,
   type CreateSessionDto,
+  type EventColor,
+  type EventIcon,
+  type JournalDto,
   MAX_LIST_ITEMS,
   type SessionDto,
   type SessionSuggestionsDto,
   type SessionSummaryDto,
+  type UpdateJournalDto,
   type UpdateSessionDto,
 } from './dto/journal.dto.js';
 
@@ -51,9 +56,40 @@ function asList(value: unknown): string[] {
   return Array.isArray(value) ? value.filter((v): v is string => typeof v === 'string') : [];
 }
 
+function toJournalDto(j: Journal, sessionCount: number): JournalDto {
+  return {
+    id: j.id,
+    title: j.title,
+    startDate: fromDbDate(j.startDate),
+    endDate: fromDbDate(j.endDate),
+    sessionCount,
+  };
+}
+
+function assertInJournal(journal: Journal, date: Date): void {
+  if (date < journal.startDate || date > journal.endDate) {
+    throw new ApiException(
+      HttpStatus.BAD_REQUEST,
+      ErrorCode.SESSION_OUTSIDE_JOURNAL,
+      "The session date is outside the journal's period",
+    );
+  }
+}
+
+function assertPeriod(startDate: Date, endDate: Date): void {
+  if (endDate < startDate) {
+    throw new ApiException(
+      HttpStatus.BAD_REQUEST,
+      ErrorCode.VALIDATION_FAILED,
+      '"endDate" must not be before "startDate"',
+    );
+  }
+}
+
 function toSummary(s: JournalSession): SessionSummaryDto {
   return {
     id: s.id,
+    journalId: s.journalId,
     type: s.type,
     date: fromDbDate(s.date),
     startTime: s.startTime,
@@ -61,6 +97,10 @@ function toSummary(s: JournalSession): SessionSummaryDto {
     location: s.location,
     discipline: s.discipline,
     score: s.score,
+    description: s.description,
+    title: s.title,
+    color: s.color as EventColor | null,
+    icon: s.icon as EventIcon | null,
   };
 }
 
@@ -72,7 +112,6 @@ function toDto(s: JournalSession): SessionDto {
     objective: s.objective,
     satisfaction: s.satisfaction,
     technique: s.technique,
-    description: s.description,
     physicalFeeling: s.physicalFeeling,
     mentalFeeling: s.mentalFeeling,
     wentWell: asList(s.wentWell),
@@ -82,12 +121,67 @@ function toDto(s: JournalSession): SessionDto {
   };
 }
 
-/** Archers' journal. Every query is scoped to the owner: someone else's session is a 404. */
+/** Archers' journals. Every query is scoped to the owner: someone else's journal or session is a 404. */
 @Injectable()
 export class JournalService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async list(userId: string, from: string, to: string): Promise<SessionSummaryDto[]> {
+  /** Most recent season first. */
+  async listJournals(userId: string): Promise<JournalDto[]> {
+    const journals = await this.prisma.journal.findMany({
+      where: { userId },
+      orderBy: [{ startDate: 'desc' }, { createdAt: 'desc' }],
+      include: { _count: { select: { sessions: true } } },
+    });
+    return journals.map((j) => toJournalDto(j, j._count.sessions));
+  }
+
+  async createJournal(userId: string, dto: CreateJournalDto): Promise<JournalDto> {
+    const startDate = toDbDate(dto.startDate);
+    const endDate = toDbDate(dto.endDate);
+    assertPeriod(startDate, endDate);
+    const journal = await this.prisma.journal.create({
+      data: { userId, title: dto.title.trim(), startDate, endDate },
+    });
+    return toJournalDto(journal, 0);
+  }
+
+  /** The period can only change while it still covers every session of the journal. */
+  async updateJournal(userId: string, id: string, dto: UpdateJournalDto): Promise<JournalDto> {
+    const current = await this.findOwnedJournal(userId, id);
+    const startDate = dto.startDate !== undefined ? toDbDate(dto.startDate) : current.startDate;
+    const endDate = dto.endDate !== undefined ? toDbDate(dto.endDate) : current.endDate;
+    assertPeriod(startDate, endDate);
+    const outside = await this.prisma.journalSession.count({
+      where: { journalId: id, OR: [{ date: { lt: startDate } }, { date: { gt: endDate } }] },
+    });
+    if (outside > 0) {
+      throw new ApiException(
+        HttpStatus.CONFLICT,
+        ErrorCode.JOURNAL_PERIOD_EXCLUDES_SESSIONS,
+        `${outside} session(s) of the journal would be outside the new period`,
+      );
+    }
+    const journal = await this.prisma.journal.update({
+      where: { id },
+      data: { title: dto.title?.trim(), startDate, endDate },
+      include: { _count: { select: { sessions: true } } },
+    });
+    return toJournalDto(journal, journal._count.sessions);
+  }
+
+  /** Deletes the journal and its sessions. */
+  async removeJournal(userId: string, id: string): Promise<void> {
+    await this.findOwnedJournal(userId, id);
+    await this.prisma.journal.delete({ where: { id } });
+  }
+
+  async list(
+    userId: string,
+    journalId: string,
+    from: string,
+    to: string,
+  ): Promise<SessionSummaryDto[]> {
     const start = toDbDate(from);
     const end = toDbDate(to);
     const days = (end.getTime() - start.getTime()) / 86_400_000;
@@ -98,8 +192,9 @@ export class JournalService {
         `"to" must be between "from" and ${MAX_RANGE_DAYS} days later`,
       );
     }
+    await this.findOwnedJournal(userId, journalId);
     const sessions = await this.prisma.journalSession.findMany({
-      where: { userId, date: { gte: start, lte: end } },
+      where: { userId, journalId, date: { gte: start, lte: end } },
       orderBy: [{ date: 'asc' }, { startTime: 'asc' }],
     });
     return sessions.map(toSummary);
@@ -121,11 +216,15 @@ export class JournalService {
   }
 
   async create(userId: string, dto: CreateSessionDto): Promise<SessionDto> {
+    const journal = await this.findOwnedJournal(userId, dto.journalId);
+    const date = toDbDate(dto.date);
+    assertInJournal(journal, date);
     const session = await this.prisma.journalSession.create({
       data: {
         userId,
+        journalId: journal.id,
         type: dto.type,
-        date: toDbDate(dto.date),
+        date,
         startTime: dto.startTime ?? null,
         wentWell: [],
         toImprove: [],
@@ -139,14 +238,18 @@ export class JournalService {
   }
 
   async update(userId: string, id: string, dto: UpdateSessionDto): Promise<SessionDto> {
-    await this.findOwned(userId, id);
-    const { date, wentWell, toImprove, location, ...rest } = dto;
+    const { journalId } = await this.findOwned(userId, id);
+    const { date, wentWell, toImprove, location, title, ...rest } = dto;
+    if (date !== undefined) {
+      assertInJournal(await this.findOwnedJournal(userId, journalId), toDbDate(date));
+    }
     const session = await this.prisma.journalSession.update({
       where: { id },
       data: {
         ...rest,
         ...(date !== undefined && { date: toDbDate(date) }),
         ...(location !== undefined && { location: location?.trim() || null }),
+        ...(title !== undefined && { title: title?.trim() || null }),
         ...(wentWell !== undefined && { wentWell: cleanList(wentWell) }),
         ...(toImprove !== undefined && { toImprove: cleanList(toImprove) }),
       },
@@ -157,6 +260,12 @@ export class JournalService {
   async remove(userId: string, id: string): Promise<void> {
     await this.findOwned(userId, id);
     await this.prisma.journalSession.delete({ where: { id } });
+  }
+
+  private async findOwnedJournal(userId: string, id: string): Promise<Journal> {
+    const journal = await this.prisma.journal.findFirst({ where: { id, userId } });
+    if (!journal) throw new NotFoundException('Journal not found');
+    return journal;
   }
 
   private async findOwned(userId: string, id: string): Promise<JournalSession> {

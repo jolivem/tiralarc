@@ -94,14 +94,21 @@
     "INVALID_VERIFICATION_TOKEN": "Ce lien de confirmation est invalide ou a expiré.",
     "INVALID_REFRESH_TOKEN": "Votre session a expiré, reconnectez-vous.",
     "INVALID_ID_TOKEN": "La connexion avec ce fournisseur a échoué.",
-    "PROVIDER_NOT_CONFIGURED": "Ce mode de connexion n'est pas disponible."
+    "PROVIDER_NOT_CONFIGURED": "Ce mode de connexion n'est pas disponible.",
+    "SESSION_OUTSIDE_JOURNAL": "La date de la séance est en dehors de la période du journal.",
+    "JOURNAL_PERIOD_EXCLUDES_SESSIONS": "Des séances de ce journal sont en dehors de la nouvelle période. Élargissez-la, ou déplacez ou supprimez ces séances.",
+    "INVITATION_ALREADY_SENT": "Cette personne est déjà invitée.",
+    "INVALID_INVITATION_TOKEN": "Cette invitation est invalide ou a été retirée.",
+    "CANNOT_INVITE_SELF": "Vous ne pouvez pas vous inviter vous-même.",
+    "LIMIT_REACHED": "Vous avez atteint le nombre maximum d'éléments. Supprimez-en un pour continuer."
   },
   "validation": {
     "isEmail": "Adresse email invalide.",
     "minLength": "Trop court.",
     "maxLength": "Trop long.",
     "arrayMinSize": "Choisissez au moins une option.",
-    "default": "Valeur invalide."
+    "default": "Valeur invalide.",
+    "isUrl": "Adresse invalide (elle doit commencer par https://)."
   },
   "account": {
     "title": "Mon compte",
@@ -125,10 +132,11 @@
     "journalIntro": "Vos séances d'entraînement et compétitions : date, distance, nombre de flèches, scores, ressenti.",
     "sheetsIntro": "Vos fiches techniques et mémos : points de technique, consignes, notes personnelles.",
     "statsIntro": "Votre progression en chiffres : volume de flèches, scores, régularité.",
-    "profileIntro": "Vos informations sportives (type d'arc, catégorie, main directrice) et votre club / licence.",
+    "profileIntro": "Votre licence, votre catégorie, votre arme et vos disciplines, vos personnes invitées et vos sites préférés.",
     "comingSoon": "Bientôt disponible",
-    "newSession": "Nouvelle séance",
-    "open": "Ouvrir"
+    "newSession": "Nouvel événement",
+    "open": "Ouvrir",
+    "openJournal": "Ouvrir le journal"
   },
   "schedule": {
     "day": "Jour",
@@ -139,7 +147,7 @@
     "today": "Aujourd'hui",
     "next": "Suivant",
     "previous": "Précédent",
-    "noEvents": "Aucune séance",
+    "noEvents": "Aucun événement",
     "agenda": "Agenda",
     "more": "de plus",
     "moreLabel": "+{count} de plus",
@@ -150,20 +158,24 @@
       "TRAINING": "Entraînement",
       "COACHING": "Coaching",
       "COMPETITION": "Compétition",
-      "STRENGTH": "Renforcement musculaire"
+      "STRENGTH": "Renforcement musculaire",
+      "OTHER": "Divers"
     },
     "typesShort": {
       "TRAINING": "Entraînement",
       "COACHING": "Coaching",
       "COMPETITION": "Compétition",
-      "STRENGTH": "Renfo"
+      "STRENGTH": "Renfo",
+      "OTHER": "Divers"
     },
     "disciplines": {
       "INDOOR": "Salle",
       "TAE_NATIONAL": "TAE N",
       "TAE_INTERNATIONAL": "TAE I",
       "THREE_D": "3D",
-      "FIELD": "Campagne"
+      "FIELD": "Campagne",
+      "BEURSAULT": "Beursault",
+      "RUN_ARCHERY": "Run Archery"
     },
     "feelings": {
       "GREAT": "Très bien",
@@ -171,13 +183,13 @@
       "BAD": "Pas bien",
       "EXHAUSTED": "Épuisé"
     },
-    "newSession": "Nouvelle séance",
-    "newSessionHint": "Choisissez le type et la date : la fiche s'ouvrira ensuite.",
-    "type": "Type de séance",
+    "newSession": "Nouvel événement",
+    "newSessionHint": "Choisissez le type, la date et l'heure : les informations à saisir s'afficheront ensuite.",
+    "type": "Type d'événement",
     "date": "Date",
     "time": "Heure",
-    "timeHint": "Facultatif : sans heure, la séance occupe la journée.",
-    "create": "Créer la séance",
+    "timeHint": "Facultatif : sans heure, l'événement occupe la journée.",
+    "create": "Créer l'événement",
     "cancel": "Annuler",
     "info": "Informations",
     "location": "Lieu",
@@ -199,13 +211,152 @@
     "toImprove": "Ce qui est à améliorer",
     "nextTime": "Next — pour la prochaine séance",
     "save": "Enregistrer",
-    "saved": "Séance enregistrée.",
+    "saved": "Enregistré.",
     "unsaved": "Modifications non enregistrées",
     "delete": "Supprimer",
-    "deleteTitle": "Supprimer cette séance ?",
-    "deleteBody": "La séance et sa fiche seront définitivement supprimées.",
+    "deleteTitle": "Supprimer cet événement ?",
+    "deleteBody": "L'événement et sa fiche seront définitivement supprimés.",
     "strengthComing": "Le formulaire du renforcement musculaire arrive bientôt. Vous pouvez déjà placer la séance dans le calendrier.",
     "back": "Journal",
-    "allDay": "Journée"
+    "allDay": "Journée",
+    "note": "Texte libre",
+    "title": "Titre",
+    "titleHint": "Affiché dans le calendrier, avec la couleur et le pictogramme.",
+    "color": "Couleur",
+    "icon": "Pictogramme",
+    "colors": {
+      "gray": "Gris",
+      "red": "Rouge",
+      "pink": "Rose",
+      "grape": "Prune",
+      "violet": "Violet",
+      "indigo": "Indigo",
+      "blue": "Bleu",
+      "cyan": "Cyan",
+      "teal": "Turquoise",
+      "green": "Vert",
+      "lime": "Citron vert",
+      "yellow": "Jaune",
+      "orange": "Orange"
+    },
+    "icons": {
+      "NOTE": "Note",
+      "STAR": "Étoile",
+      "FLAG": "Drapeau",
+      "TOOL": "Outil",
+      "CART": "Achat",
+      "USERS": "Groupe",
+      "CAR": "Déplacement",
+      "MEDICAL": "Santé",
+      "GIFT": "Cadeau",
+      "HEART": "Cœur",
+      "BELL": "Rappel",
+      "PIN": "Lieu"
+    }
+  },
+  "journals": {
+    "list": "Vos journaux",
+    "empty": "Aucun journal pour l'instant. Créez-en un par saison, par exemple « Saison 2026-2027 ».",
+    "new": "Nouveau journal",
+    "newHint": "Un journal couvre une saison : toutes vos séances de la période y sont regroupées.",
+    "title": "Titre",
+    "titlePlaceholder": "Ex. : Saison 2026-2027",
+    "startDate": "Date de début",
+    "endDate": "Date de fin",
+    "create": "Créer le journal",
+    "cancel": "Annuler",
+    "period": "Du {start} au {end}",
+    "sessions": "{count, plural, =0 {Aucune séance} one {# séance} other {# séances}}",
+    "selected": "Journal sélectionné",
+    "delete": "Supprimer",
+    "deleteLabel": "Supprimer le journal {title}",
+    "deleteTitle": "Supprimer ce journal ?",
+    "deleteBody": "Le journal « {title} » sera définitivement supprimé.",
+    "deleteSessions": "{count, plural, one {Sa séance sera supprimée avec lui.} other {Ses # séances seront supprimées avec lui.}}",
+    "noneTitle": "Créez votre premier journal",
+    "noneBody": "Vos séances sont rangées dans un journal par saison. Créez-en un pour commencer.",
+    "edit": "Modifier le journal",
+    "editHint": "La période doit continuer à couvrir les séances déjà enregistrées dans ce journal.",
+    "save": "Enregistrer",
+    "editLabel": "Modifier le journal {title}"
+  },
+  "profile": {
+    "title": "Profil",
+    "guests": {
+      "title": "Personnes invitées",
+      "empty": "Vous n'avez encore invité personne.",
+      "add": "Inviter une personne",
+      "addHint": "La personne reçoit un email d'invitation. Pour l'instant, accepter ne lui donne accès à aucune de vos données.",
+      "name": "Nom",
+      "namePlaceholder": "Ex. : Camille Martin",
+      "email": "Email",
+      "isCoach": "C'est mon entraîneur",
+      "coach": "Entraîneur",
+      "submit": "Envoyer l'invitation",
+      "status": {
+        "PENDING": "En attente",
+        "ACCEPTED": "Acceptée"
+      },
+      "removeLabel": "Retirer {name}",
+      "removeTitle": "Retirer cette personne ?",
+      "removeBody": "{name} sera retiré de vos personnes invitées et son invitation ne sera plus valable."
+    },
+    "sites": {
+      "title": "Sites web préférés",
+      "empty": "Aucun site pour l'instant.",
+      "add": "Ajouter un site",
+      "label": "Nom",
+      "labelPlaceholder": "Ex. : FFTA",
+      "url": "Adresse",
+      "urlPlaceholder": "https://www.ffta.fr",
+      "submit": "Ajouter",
+      "removeLabel": "Supprimer le site {name}",
+      "removeTitle": "Supprimer ce site ?",
+      "removeBody": "Le lien vers « {name} » sera supprimé de votre profil."
+    },
+    "config": {
+      "title": "Configuration",
+      "licence": "N° de licence",
+      "category": "Catégorie",
+      "bowType": "Arme",
+      "disciplines": "Disciplines pratiquées",
+      "choose": "Choisir",
+      "save": "Enregistrer",
+      "saved": "Profil enregistré."
+    },
+    "categories": {
+      "U11": "U11",
+      "U13": "U13",
+      "U15": "U15",
+      "U18": "U18",
+      "U21": "U21",
+      "S1": "Senior 1",
+      "S2": "Senior 2",
+      "S3": "Senior 3"
+    },
+    "bowTypes": {
+      "RECURVE": "Arc classique",
+      "COMPOUND": "Arc à poulies",
+      "BAREBOW": "Arc nu",
+      "LONGBOW": "Arc droit",
+      "HUNTING": "Arc chasse",
+      "FREE": "Arc libre"
+    },
+    "options": {
+      "title": "Options",
+      "soon": "Bientôt disponible",
+      "departmental": "Afficher les compétitions niveau départemental",
+      "regional": "Afficher les compétitions niveau régional"
+    },
+    "cancel": "Annuler",
+    "remove": "Retirer",
+    "delete": "Supprimer",
+    "accept": {
+      "title": "Invitation Tiralarc",
+      "body": "Un archer vous a ajouté à ses personnes invitées sur Tiralarc.",
+      "submit": "Accepter l'invitation",
+      "done": "Invitation de {name} acceptée. Merci !",
+      "missingToken": "Ce lien est incomplet. Utilisez le lien reçu par email."
+    }
   }
 }

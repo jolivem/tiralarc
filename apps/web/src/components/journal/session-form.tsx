@@ -16,6 +16,7 @@ import {
   Stack,
   Text,
   Textarea,
+  TextInput,
   Title,
 } from '@mantine/core';
 import { DatePickerInput, TimeInput } from '@mantine/dates';
@@ -33,6 +34,7 @@ import {
   IconTrash,
 } from '@tabler/icons-react';
 import type {
+  Journal,
   Discipline,
   Feeling,
   JournalSession,
@@ -45,17 +47,10 @@ import { type ReactNode, useState, useTransition } from 'react';
 import { deleteSession, saveSession } from '@/app/actions/journal';
 import { FormError } from '@/components/form-feedback';
 import type { ActionState } from '@/lib/action-state';
+import { ColorPicker, IconPicker } from './event-display';
 import classes from './journal.module.css';
-import { SESSION_TYPES } from './session-types';
-import { TypePicker } from './type-picker';
+import { DISCIPLINE_ORDER, SESSION_TYPES } from './session-types';
 
-const DISCIPLINES: Discipline[] = [
-  'INDOOR',
-  'TAE_NATIONAL',
-  'TAE_INTERNATIONAL',
-  'THREE_D',
-  'FIELD',
-];
 const FEELINGS: { value: Feeling; icon: typeof IconMoodHappy; color: string }[] = [
   { value: 'GREAT', icon: IconMoodHappy, color: 'teal' },
   { value: 'OK', icon: IconMoodEmpty, color: 'gray' },
@@ -63,6 +58,7 @@ const FEELINGS: { value: Feeling; icon: typeof IconMoodHappy; color: string }[] 
   { value: 'EXHAUSTED', icon: IconMoodSick, color: 'red' },
 ];
 /** Usual target-archery distances, offered after the archer's own ones. */
+const DEFAULT_NOTE_COLOR = 'gray';
 const STANDARD_DISTANCES = [18, 25, 30, 50, 70];
 const QUICK_DISTANCES = 5;
 const LIST_LINES = 3;
@@ -95,6 +91,9 @@ function initialValues(s: JournalSession): Values {
     wentWell: pad(s.wentWell),
     toImprove: pad(s.toImprove),
     nextTime: s.nextTime,
+    title: s.title,
+    color: s.color,
+    icon: s.icon,
   };
 }
 
@@ -109,9 +108,12 @@ const toText = (value: string) => (value.trim() === '' ? null : value);
  */
 export function SessionForm({
   session,
+  journal,
   suggestions,
 }: {
   session: JournalSession;
+  /** The session's journal: its period bounds the date. */
+  journal?: Journal;
   suggestions: JournalSuggestions;
 }) {
   const t = useTranslations('journal');
@@ -145,17 +147,19 @@ export function SessionForm({
     0,
     QUICK_DISTANCES,
   );
-  const hasSheet = SESSION_TYPES[values.type].hasSheet;
+  const { form } = SESSION_TYPES[values.type];
+  const hasSheet = form === 'sheet';
 
   return (
     <Stack gap="md" pb="md">
       <Section title={t('info')}>
-        <TypePicker value={values.type} onChange={(type) => set('type', type)} />
         <SimpleGrid cols={{ base: 1, xs: 2, md: 4 }} spacing="md">
           <DatePickerInput
             label={t('date')}
             value={values.date}
             onChange={(date) => date && set('date', date)}
+            minDate={journal?.startDate}
+            maxDate={journal?.endDate}
             valueFormat="ddd D MMM YYYY"
             leftSection={<IconCalendar size={18} />}
           />
@@ -165,15 +169,17 @@ export function SessionForm({
             onChange={(e) => set('startTime', toText(e.currentTarget.value))}
             leftSection={<IconClock size={18} />}
           />
-          <NumberInput
-            label={t('duration')}
-            value={values.durationMinutes ?? ''}
-            onChange={(v) => set('durationMinutes', toNumber(v))}
-            min={0}
-            max={1440}
-            step={15}
-            allowDecimal={false}
-          />
+          {form !== 'note' && (
+            <NumberInput
+              label={t('duration')}
+              value={values.durationMinutes ?? ''}
+              onChange={(v) => set('durationMinutes', toNumber(v))}
+              min={0}
+              max={1440}
+              step={15}
+              allowDecimal={false}
+            />
+          )}
           {hasSheet && (
             <Autocomplete
               label={t('location')}
@@ -201,7 +207,7 @@ export function SessionForm({
                 }
               >
                 <Group gap="xs">
-                  {DISCIPLINES.map((d) => (
+                  {DISCIPLINE_ORDER.map((d) => (
                     <Chip
                       key={d}
                       value={d}
@@ -256,6 +262,33 @@ export function SessionForm({
                 allowDecimal={false}
               />
             </SimpleGrid>
+          </>
+        ) : form === 'note' ? (
+          <>
+            <TextInput
+              label={t('title')}
+              description={t('titleHint')}
+              value={values.title ?? ''}
+              onChange={(e) => set('title', toText(e.currentTarget.value))}
+              maxLength={100}
+            />
+            <ColorPicker
+              value={values.color ?? DEFAULT_NOTE_COLOR}
+              onChange={(color) => set('color', color)}
+            />
+            <IconPicker
+              value={values.icon ?? 'NOTE'}
+              color={values.color ?? DEFAULT_NOTE_COLOR}
+              onChange={(icon) => set('icon', icon)}
+            />
+            <Textarea
+              label={t('note')}
+              value={values.description ?? ''}
+              onChange={(e) => set('description', toText(e.currentTarget.value))}
+              autosize
+              minRows={4}
+              maxLength={5000}
+            />
           </>
         ) : (
           <Alert color={SESSION_TYPES.STRENGTH.color} variant="light">

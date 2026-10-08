@@ -6,7 +6,7 @@ import { useTranslations } from 'next-intl';
 import classes from './journal.module.css';
 import { SESSION_TYPE_ORDER, SESSION_TYPES } from './session-types';
 
-/** Four big buttons (2×2 on phones, 1×4 from tablets) to pick the session type. */
+/** Big buttons (2 per row on phones, one row from tablets) to pick the event type. */
 export function TypePicker({
   value,
   onChange,
@@ -16,7 +16,12 @@ export function TypePicker({
 }) {
   const t = useTranslations('journal');
   return (
-    <SimpleGrid cols={{ base: 2, sm: 4 }} spacing="xs" role="radiogroup" aria-label={t('type')}>
+    <SimpleGrid
+      cols={{ base: 2, sm: SESSION_TYPE_ORDER.length }}
+      spacing="xs"
+      role="radiogroup"
+      aria-label={t('type')}
+    >
       {SESSION_TYPE_ORDER.map((type) => {
         const { color, icon: Icon } = SESSION_TYPES[type];
         const selected = value === type;

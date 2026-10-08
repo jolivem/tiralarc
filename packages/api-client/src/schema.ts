@@ -201,6 +201,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/journals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["Journals_list"];
+        put?: never;
+        post: operations["Journals_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/journals/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["Journals_remove"];
+        options?: never;
+        head?: never;
+        patch: operations["Journals_update"];
+        trace?: never;
+    };
     "/api/v1/journal/sessions": {
         parameters: {
             query?: never;
@@ -247,6 +279,103 @@ export interface paths {
         options?: never;
         head?: never;
         patch: operations["Journal_update"];
+        trace?: never;
+    };
+    "/api/v1/profile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["Profile_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["Profile_update"];
+        trace?: never;
+    };
+    "/api/v1/profile/invitations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["Profile_listInvitations"];
+        put?: never;
+        /** Invite someone; they receive an email with a link to accept */
+        post: operations["Profile_invite"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/profile/invitations/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["Profile_removeInvitation"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/profile/sites": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["Profile_listSites"];
+        put?: never;
+        post: operations["Profile_addSite"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/profile/sites/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["Profile_removeSite"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/invitations/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["Invitations_accept"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
 }
@@ -353,13 +482,65 @@ export interface components {
             /** @description Replaces the self-assignable roles (ADMIN, if held, is kept). */
             roles: components["schemas"]["SelfAssignableRole"][];
         };
+        JournalDto: {
+            /** Format: uuid */
+            id: string;
+            /** @example Saison 2026-2027 */
+            title: string;
+            /** @example 2026-09-01 */
+            startDate: string;
+            /** @example 2027-08-31 */
+            endDate: string;
+            /** @description Number of sessions in the journal. */
+            sessionCount: number;
+        };
+        CreateJournalDto: {
+            /** @example Saison 2026-2027 */
+            title: string;
+            /**
+             * @description First day, inclusive (YYYY-MM-DD).
+             * @example 2026-09-01
+             */
+            startDate: string;
+            /**
+             * @description Last day, inclusive (YYYY-MM-DD). Not before `startDate`.
+             * @example 2027-08-31
+             */
+            endDate: string;
+        };
+        UpdateJournalDto: {
+            /** @example Saison 2026-2027 */
+            title?: string;
+            /**
+             * @description First day, inclusive.
+             * @example 2026-09-01
+             */
+            startDate?: string;
+            /**
+             * @description Last day, inclusive. The period must keep covering the journal's sessions.
+             * @example 2027-08-31
+             */
+            endDate?: string;
+        };
         /** @enum {string} */
-        SessionType: "TRAINING" | "COACHING" | "COMPETITION" | "STRENGTH";
+        SessionType: "TRAINING" | "COACHING" | "COMPETITION" | "STRENGTH" | "OTHER";
         /** @enum {string} */
-        Discipline: "INDOOR" | "TAE_NATIONAL" | "TAE_INTERNATIONAL" | "THREE_D" | "FIELD";
+        Discipline: "INDOOR" | "TAE_NATIONAL" | "TAE_INTERNATIONAL" | "THREE_D" | "FIELD" | "BEURSAULT" | "RUN_ARCHERY";
+        /**
+         * @description `OTHER` events only; null = default colour.
+         * @enum {string}
+         */
+        EventColor: "gray" | "red" | "pink" | "grape" | "violet" | "indigo" | "blue" | "cyan" | "teal" | "green" | "lime" | "yellow" | "orange";
+        /**
+         * @description `OTHER` events only; null = default pictogram.
+         * @enum {string}
+         */
+        EventIcon: "NOTE" | "STAR" | "FLAG" | "TOOL" | "CART" | "USERS" | "CAR" | "MEDICAL" | "GIFT" | "HEART" | "BELL" | "PIN";
         SessionSummaryDto: {
             /** Format: uuid */
             id: string;
+            /** Format: uuid */
+            journalId: string;
             type: components["schemas"]["SessionType"];
             /** @example 2026-10-03 */
             date: string;
@@ -369,6 +550,14 @@ export interface components {
             location: string | null;
             discipline: components["schemas"]["Discipline"] | null;
             score: number | null;
+            /** @description Analyses, or the text of an `OTHER` event. */
+            description: string | null;
+            /** @description `OTHER` events only. */
+            title: string | null;
+            /** @description `OTHER` events only; null = default colour. */
+            color: components["schemas"]["EventColor"] | null;
+            /** @description `OTHER` events only; null = default pictogram. */
+            icon: components["schemas"]["EventIcon"] | null;
         };
         SessionSuggestionsDto: {
             locations: string[];
@@ -378,9 +567,14 @@ export interface components {
             toImprove: string[];
         };
         CreateSessionDto: {
+            /**
+             * Format: uuid
+             * @description Journal the session is added to.
+             */
+            journalId: string;
             type: components["schemas"]["SessionType"];
             /**
-             * @description Local date (YYYY-MM-DD).
+             * @description Local date (YYYY-MM-DD), within the journal's period.
              * @example 2026-10-03
              */
             date: string;
@@ -395,6 +589,8 @@ export interface components {
         SessionDto: {
             /** Format: uuid */
             id: string;
+            /** Format: uuid */
+            journalId: string;
             type: components["schemas"]["SessionType"];
             /** @example 2026-10-03 */
             date: string;
@@ -404,12 +600,19 @@ export interface components {
             location: string | null;
             discipline: components["schemas"]["Discipline"] | null;
             score: number | null;
+            /** @description Analyses, or the text of an `OTHER` event. */
+            description: string | null;
+            /** @description `OTHER` events only. */
+            title: string | null;
+            /** @description `OTHER` events only; null = default colour. */
+            color: components["schemas"]["EventColor"] | null;
+            /** @description `OTHER` events only; null = default pictogram. */
+            icon: components["schemas"]["EventIcon"] | null;
             distanceMeters: number | null;
             arrowCount: number | null;
             objective: string | null;
             satisfaction: number | null;
             technique: number | null;
-            description: string | null;
             physicalFeeling: components["schemas"]["Feeling"] | null;
             mentalFeeling: components["schemas"]["Feeling"] | null;
             wentWell: string[];
@@ -444,6 +647,79 @@ export interface components {
             toImprove?: string[];
             /** @description Notes for the next session. */
             nextTime?: string | null;
+            /** @description Title of an `OTHER` event, shown in the calendar. */
+            title?: string | null;
+            color?: components["schemas"]["EventColor"] | null;
+            icon?: components["schemas"]["EventIcon"] | null;
+        };
+        /** @enum {string} */
+        AgeCategory: "U11" | "U13" | "U15" | "U18" | "U21" | "S1" | "S2" | "S3";
+        /** @enum {string} */
+        BowType: "RECURVE" | "COMPOUND" | "BAREBOW" | "LONGBOW" | "HUNTING" | "FREE";
+        ProfileDto: {
+            /** @example 0123456A */
+            licenceNumber: string | null;
+            category: components["schemas"]["AgeCategory"] | null;
+            bowType: components["schemas"]["BowType"] | null;
+            disciplines: components["schemas"]["Discipline"][];
+        };
+        UpdateProfileDto: {
+            licenceNumber?: string | null;
+            category?: components["schemas"]["AgeCategory"] | null;
+            bowType?: components["schemas"]["BowType"] | null;
+            /** @description Replaces the practised disciplines. */
+            disciplines?: components["schemas"]["Discipline"][];
+        };
+        /** @enum {string} */
+        InvitationStatus: "PENDING" | "ACCEPTED";
+        InvitationDto: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            /** Format: email */
+            email: string;
+            isCoach: boolean;
+            status: components["schemas"]["InvitationStatus"];
+            /** Format: date-time */
+            createdAt: string;
+        };
+        CreateInvitationDto: {
+            /** @example Camille Martin */
+            name: string;
+            /**
+             * Format: email
+             * @description Where the invitation is sent.
+             */
+            email: string;
+            /**
+             * @description True when the guest is the archer's coach.
+             * @default false
+             */
+            isCoach: boolean;
+        };
+        SiteDto: {
+            /** Format: uuid */
+            id: string;
+            label: string;
+            /** Format: uri */
+            url: string;
+        };
+        CreateSiteDto: {
+            /** @example FFTA */
+            label: string;
+            /**
+             * @description http(s) URL.
+             * @example https://www.ffta.fr
+             */
+            url: string;
+        };
+        AcceptInvitationDto: {
+            /** @description Token from the invitation link. */
+            token: string;
+        };
+        AcceptedInvitationDto: {
+            /** @description Display name (or email) of the archer who sent the invitation. */
+            invitedBy: string;
         };
     };
     responses: never;
@@ -913,9 +1189,144 @@ export interface operations {
             };
         };
     };
+    Journals_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JournalDto"][];
+                };
+            };
+            /** @description Archers only */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    Journals_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateJournalDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JournalDto"];
+                };
+            };
+            /** @description Archers only */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    Journals_remove: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Archers only */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    Journals_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateJournalDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JournalDto"];
+                };
+            };
+            /** @description Archers only */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Sessions would fall outside the new period */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     Journal_list: {
         parameters: {
             query: {
+                /** @description Journal to read. */
+                journalId: string;
                 /** @description First day, inclusive (YYYY-MM-DD). */
                 from: string;
                 /** @description Last day, inclusive (YYYY-MM-DD). At most 366 days after `from`. */
@@ -967,6 +1378,13 @@ export interface operations {
             };
             /** @description Archers only */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Unknown journal */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -1097,6 +1515,289 @@ export interface operations {
                 content?: never;
             };
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    Profile_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProfileDto"];
+                };
+            };
+            /** @description Archers only */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    Profile_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateProfileDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProfileDto"];
+                };
+            };
+            /** @description Archers only */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    Profile_listInvitations: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvitationDto"][];
+                };
+            };
+            /** @description Archers only */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    Profile_invite: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateInvitationDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvitationDto"];
+                };
+            };
+            /** @description CANNOT_INVITE_SELF */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Archers only */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description INVITATION_ALREADY_SENT, LIMIT_REACHED */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    Profile_removeInvitation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Archers only */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    Profile_listSites: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SiteDto"][];
+                };
+            };
+            /** @description Archers only */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    Profile_addSite: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateSiteDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SiteDto"];
+                };
+            };
+            /** @description Archers only */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description LIMIT_REACHED */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    Profile_removeSite: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Archers only */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    Invitations_accept: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AcceptInvitationDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AcceptedInvitationDto"];
+                };
+            };
+            /** @description INVALID_INVITATION_TOKEN */
+            400: {
                 headers: {
                     [name: string]: unknown;
                 };

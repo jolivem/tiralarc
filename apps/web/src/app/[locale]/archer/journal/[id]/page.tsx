@@ -6,6 +6,7 @@ import { SessionForm } from '@/components/journal/session-form';
 import { AnchorLink } from '@/components/links';
 import type { Locale } from '@/i18n/routing';
 import { getAuthedApi } from '@/lib/api';
+import { getJournals } from '@/lib/journals';
 
 const EMPTY_SUGGESTIONS = { locations: [], distances: [], wentWell: [], toImprove: [] };
 
@@ -17,9 +18,10 @@ export default async function SessionPage({ params }: PageProps<'/[locale]/arche
   const format = await getFormatter();
 
   const api = await getAuthedApi();
-  const [{ data: session }, { data: suggestions }] = await Promise.all([
+  const [{ data: session }, { data: suggestions }, journals] = await Promise.all([
     api.GET('/api/v1/journal/sessions/{id}', { params: { path: { id } } }),
     api.GET('/api/v1/journal/sessions/suggestions'),
+    getJournals(),
   ]);
   // Unknown id, or someone else's session (the API answers 404 for both).
   if (!session) notFound();
@@ -39,7 +41,11 @@ export default async function SessionPage({ params }: PageProps<'/[locale]/arche
         {t(`types.${session.type}`)} — {day}
         {session.startTime ? ` · ${session.startTime}` : ''}
       </Title>
-      <SessionForm session={session} suggestions={suggestions ?? EMPTY_SUGGESTIONS} />
+      <SessionForm
+        session={session}
+        journal={journals.find((j) => j.id === session.journalId)}
+        suggestions={suggestions ?? EMPTY_SUGGESTIONS}
+      />
     </Stack>
   );
 }

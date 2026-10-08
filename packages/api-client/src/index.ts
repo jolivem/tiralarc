@@ -9,10 +9,23 @@ export type User = Schemas['UserDto'];
 export type TokenPair = Schemas['TokenPairDto'];
 export type Role = Schemas['UserDto']['roles'][number];
 export type SelfAssignableRole = Schemas['RegisterDto']['roles'][number];
+export type Journal = Schemas['JournalDto'];
+export type JournalCreate = Schemas['CreateJournalDto'];
+export type JournalUpdate = Schemas['UpdateJournalDto'];
 export type JournalSession = Schemas['SessionDto'];
 export type JournalSessionSummary = Schemas['SessionSummaryDto'];
 export type JournalSessionUpdate = Schemas['UpdateSessionDto'];
 export type JournalSuggestions = Schemas['SessionSuggestionsDto'];
+export type ArcherProfile = Schemas['ProfileDto'];
+export type ArcherProfileUpdate = Schemas['UpdateProfileDto'];
+export type AgeCategory = NonNullable<Schemas['ProfileDto']['category']>;
+export type BowType = NonNullable<Schemas['ProfileDto']['bowType']>;
+export type Invitation = Schemas['InvitationDto'];
+export type InvitationCreate = Schemas['CreateInvitationDto'];
+export type FavoriteSite = Schemas['SiteDto'];
+export type FavoriteSiteCreate = Schemas['CreateSiteDto'];
+export type EventColor = NonNullable<Schemas['SessionDto']['color']>;
+export type EventIcon = NonNullable<Schemas['SessionDto']['icon']>;
 export type SessionType = Schemas['SessionDto']['type'];
 export type Discipline = NonNullable<Schemas['SessionDto']['discipline']>;
 export type Feeling = NonNullable<Schemas['SessionDto']['physicalFeeling']>;
@@ -34,7 +47,13 @@ export type ErrorCode =
   | 'INVALID_VERIFICATION_TOKEN'
   | 'INVALID_REFRESH_TOKEN'
   | 'INVALID_ID_TOKEN'
-  | 'PROVIDER_NOT_CONFIGURED';
+  | 'PROVIDER_NOT_CONFIGURED'
+  | 'SESSION_OUTSIDE_JOURNAL'
+  | 'JOURNAL_PERIOD_EXCLUDES_SESSIONS'
+  | 'INVITATION_ALREADY_SENT'
+  | 'INVALID_INVITATION_TOKEN'
+  | 'CANNOT_INVITE_SELF'
+  | 'LIMIT_REACHED';
 
 /** RFC 9457 error body returned by every failing API call. */
 export interface ProblemDetails {

@@ -50,7 +50,7 @@ export class JournalController {
     @CurrentUser() user: AuthenticatedUser,
     @Query() query: ListSessionsQuery,
   ): Promise<SessionSummaryDto[]> {
-    return this.journal.list(user.id, query.from, query.to);
+    return this.journal.list(user.id, query.journalId, query.from, query.to);
   }
 
   /** Declared before ':id' so "suggestions" isn't parsed as an id. */
@@ -62,6 +62,7 @@ export class JournalController {
 
   @Post()
   @ApiCreatedResponse({ type: SessionDto })
+  @ApiNotFoundResponse({ description: 'Unknown journal' })
   create(
     @CurrentUser() user: AuthenticatedUser,
     @Body() dto: CreateSessionDto,
