@@ -278,7 +278,14 @@
     "edit": "Edit journal",
     "editHint": "The period must keep covering the sessions already recorded in this journal.",
     "save": "Save",
-    "editLabel": "Edit journal {title}"
+    "editLabel": "Edit journal {title}",
+    "theme": "Month decoration",
+    "noTheme": "None",
+    "themes": {
+      "archery": "Archery"
+    },
+    "monthTheme": "Decoration for {month}",
+    "monthThemeHint": "Each month of the journal can have its own decoration around the calendar."
   },
   "profile": {
     "title": "Profile",

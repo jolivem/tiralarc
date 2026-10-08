@@ -9,8 +9,10 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Put,
 } from '@nestjs/common';
 import {
+  ApiBadRequestResponse,
   ApiBearerAuth,
   ApiConflictResponse,
   ApiCreatedResponse,
@@ -18,6 +20,7 @@ import {
   ApiNoContentResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
+  ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
 import {
@@ -26,7 +29,12 @@ import {
 } from '../common/decorators/current-user.decorator.js';
 import { Roles } from '../common/decorators/roles.decorator.js';
 import { Role } from '../generated/prisma/client.js';
-import { CreateJournalDto, JournalDto, UpdateJournalDto } from './dto/journal.dto.js';
+import {
+  CreateJournalDto,
+  JournalDto,
+  SetMonthThemeDto,
+  UpdateJournalDto,
+} from './dto/journal.dto.js';
 import { JournalService } from './journal.service.js';
 
 @ApiTags('journal')
@@ -62,6 +70,20 @@ export class JournalsController {
     @Body() dto: UpdateJournalDto,
   ): Promise<JournalDto> {
     return this.journal.updateJournal(user.id, id, dto);
+  }
+
+  @Put(':id/months/:month/theme')
+  @ApiOperation({ summary: 'Choose the calendar decoration of one month (YYYY-MM) of the journal' })
+  @ApiOkResponse({ type: JournalDto })
+  @ApiNotFoundResponse()
+  @ApiBadRequestResponse({ description: "Month outside the journal's period" })
+  setMonthTheme(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Param('month') month: string,
+    @Body() dto: SetMonthThemeDto,
+  ): Promise<JournalDto> {
+    return this.journal.setMonthTheme(user.id, id, month, dto.theme);
   }
 
   /** Also deletes the journal's sessions. */

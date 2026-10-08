@@ -87,3 +87,125 @@
     background: color-mix(in srgb, var(--type-color) 10%, transparent);
   }
 }
+
+/* Decoration theme around the calendar (calendar-frame.tsx). */
+.frame {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: 'top' 'content';
+  gap: var(--mantine-spacing-sm);
+
+  @media (min-width: $mantine-breakpoint-sm) {
+    grid-template-areas: 'top' 'content' 'bottom';
+  }
+
+  @media (min-width: $mantine-breakpoint-lg) {
+    grid-template-columns: 110px minmax(0, 1fr) 110px;
+    grid-template-areas:
+      'top top top'
+      'left content right'
+      'bottom bottom bottom';
+  }
+}
+
+.frameContent {
+  grid-area: content;
+}
+
+.frameBand {
+  display: block;
+  width: 100%;
+  object-fit: contain;
+  /* Line art on white: the white takes the page colour. */
+  mix-blend-mode: multiply;
+  user-select: none;
+  pointer-events: none;
+
+  @mixin dark {
+    filter: invert(1);
+    mix-blend-mode: screen;
+  }
+
+  &[data-band='top'] {
+    grid-area: top;
+    max-height: 180px;
+  }
+
+  &[data-band='bottom'] {
+    grid-area: bottom;
+    max-height: 180px;
+    display: none;
+
+    @media (min-width: $mantine-breakpoint-sm) {
+      display: block;
+    }
+  }
+
+  &[data-band='left'],
+  &[data-band='right'] {
+    align-self: center;
+    max-height: 100%;
+    display: none;
+
+    @media (min-width: $mantine-breakpoint-lg) {
+      display: block;
+    }
+  }
+
+  &[data-band='left'] {
+    grid-area: left;
+  }
+
+  &[data-band='right'] {
+    grid-area: right;
+  }
+}
+
+.themeChoice {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 6px;
+  border: 1px solid var(--mantine-color-default-border);
+  border-radius: var(--mantine-radius-md);
+
+  &[data-selected] {
+    border-color: var(--mantine-primary-color-filled);
+    box-shadow: inset 0 0 0 1px var(--mantine-primary-color-filled);
+    background: var(--mantine-primary-color-light);
+  }
+}
+
+.themeThumb {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  border-radius: var(--mantine-radius-sm);
+  background: #fff;
+  color: var(--mantine-color-gray-5);
+  overflow: hidden;
+
+  & img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+/* Desktop: the calendar (with its decoration) takes 80% of its base size, in both directions. */
+.calendarWidth {
+  @media (min-width: $mantine-breakpoint-md) {
+    /* An explicit width: with auto margins, a flex child would shrink to its content. */
+    width: 80%;
+    margin-inline: auto;
+  }
+}
+
+.calendarScale {
+  @media (min-width: $mantine-breakpoint-md) {
+    zoom: 0.8;
+  }
+}

@@ -233,6 +233,23 @@ export interface paths {
         patch: operations["Journals_update"];
         trace?: never;
     };
+    "/api/v1/journals/{id}/months/{month}/theme": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Choose the calendar decoration of one month (YYYY-MM) of the journal */
+        put: operations["Journals_setMonthTheme"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/journal/sessions": {
         parameters: {
             query?: never;
@@ -482,6 +499,18 @@ export interface components {
             /** @description Replaces the self-assignable roles (ADMIN, if held, is kept). */
             roles: components["schemas"]["SelfAssignableRole"][];
         };
+        MonthThemeDto: {
+            /**
+             * @description Month (YYYY-MM).
+             * @example 2026-10
+             */
+            month: string;
+            /**
+             * @description Theme id; each client maps it to its own artwork.
+             * @example archery
+             */
+            theme: string;
+        };
         JournalDto: {
             /** Format: uuid */
             id: string;
@@ -491,6 +520,8 @@ export interface components {
             startDate: string;
             /** @example 2027-08-31 */
             endDate: string;
+            /** @description Decoration of the calendar, for the months that have one (oldest first). */
+            monthThemes: components["schemas"]["MonthThemeDto"][];
             /** @description Number of sessions in the journal. */
             sessionCount: number;
         };
@@ -521,6 +552,13 @@ export interface components {
              * @example 2027-08-31
              */
             endDate?: string;
+        };
+        SetMonthThemeDto: {
+            /**
+             * @description Theme id, or null to remove the decoration of that month.
+             * @example archery
+             */
+            theme: string | null;
         };
         /** @enum {string} */
         SessionType: "TRAINING" | "COACHING" | "COMPETITION" | "STRENGTH" | "OTHER";
@@ -1315,6 +1353,52 @@ export interface operations {
             };
             /** @description Sessions would fall outside the new period */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    Journals_setMonthTheme: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                month: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetMonthThemeDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JournalDto"];
+                };
+            };
+            /** @description Month outside the journal's period */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Archers only */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

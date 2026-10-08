@@ -2,13 +2,15 @@
 
 import { Button, Group, LoadingOverlay, Box } from '@mantine/core';
 import { Schedule, type ScheduleEventData } from '@mantine/schedule';
-import { IconPlus } from '@tabler/icons-react';
+import { IconPalette, IconPlus } from '@tabler/icons-react';
 import type { Journal, JournalSessionSummary } from '@tiralarc/api-client';
 import dayjs from 'dayjs';
 import { useLocale, useTranslations } from 'next-intl';
 import { useEffect, useState, useTransition } from 'react';
 import { listSessions } from '@/app/actions/journal';
 import { useRouter } from '@/i18n/navigation';
+import { CalendarFrame } from './calendar-frame';
+import { MonthThemeModal, monthTheme } from './month-theme-modal';
 import { eventDisplay } from './event-display';
 import classes from './journal.module.css';
 import {
@@ -69,6 +71,10 @@ export function JournalView({ journal }: { journal: Journal }) {
   const [loading, startLoading] = useTransition();
   const [newSession, setNewSession] = useState<NewSessionDefaults | null>(null);
 
+  const [pickingTheme, setPickingTheme] = useState(false);
+  /** Displayed month, "YYYY-MM": each month has its own decoration. */
+  const month = date.slice(0, 7);
+
   const { from, to } = visibleRange(date);
   useEffect(() => {
     startLoading(async () => setSessions(await listSessions(journal.id, from, to)));
@@ -86,8 +92,15 @@ export function JournalView({ journal }: { journal: Journal }) {
   });
 
   return (
-    <Box pos="relative">
-      <Group justify="flex-end" mb="sm">
+    <Box pos="relative" className={classes.calendarWidth}>
+      <Group justify="flex-end" gap="sm" mb="sm">
+        <Button
+          variant="default"
+          leftSection={<IconPalette size={18} />}
+          onClick={() => setPickingTheme(true)}
+        >
+          {t('journals.theme')}
+        </Button>
         <Button
           leftSection={<IconPlus size={18} />}
           onClick={() => setNewSession({ date: today() })}
@@ -96,51 +109,61 @@ export function JournalView({ journal }: { journal: Journal }) {
         </Button>
       </Group>
       <LoadingOverlay visible={loading} overlayProps={{ blur: 1 }} loaderProps={{ size: 'sm' }} />
-      <Schedule
-        layout="responsive"
-        date={date}
-        onDateChange={setDate}
-        // Month only: no day / week / year views, so no view selector either.
-        view="month"
-        monthViewProps={{ viewSelectProps: { display: 'none' } }}
-        events={events}
-        // Not mode="static": @mantine/schedule 9.6.3 then leaks `withEventResize` to the DOM.
-        onEventClick={(event) => router.push(`/archer/journal/${event.id}`)}
-        onDayClick={(day) => setNewSession({ date: dayjs(day).format('YYYY-MM-DD') })}
-        renderEventBody={(event) => {
-          const session = (event.payload as EventPayload | undefined)?.session;
-          const Icon = session ? eventDisplay(session).icon : null;
-          return (
-            <span className={classes.eventBody}>
-              {Icon && <Icon size={14} style={{ flexShrink: 0 }} />}
-              {event.title}
-            </span>
-          );
-        }}
-        mobileMonthViewProps={{
-          // "samedi 3 octobre" rather than the default English order "Saturday, October 3".
-          eventsHeaderFormat: locale === 'fr' ? 'dddd D MMMM' : 'dddd, MMMM D',
-          // Bigger session dots (Schedule does not forward its own classNames to the mobile view).
-          classNames: {
-            mobileMonthViewDayIndicators: classes.dayIndicators,
-            mobileMonthViewDayIndicator: classes.dayIndicator,
-          },
-        }}
-        labels={{
-          day: t('schedule.day'),
-          week: t('schedule.week'),
-          month: t('schedule.month'),
-          year: t('schedule.year'),
-          allDay: t('schedule.allDay'),
-          today: t('schedule.today'),
-          next: t('schedule.next'),
-          previous: t('schedule.previous'),
-          noEvents: t('schedule.noEvents'),
-          agenda: t('schedule.agenda'),
-          more: t('schedule.more'),
-          viewSelectLabel: t('schedule.viewSelectLabel'),
-          moreLabel: (count) => t('schedule.moreLabel', { count }),
-        }}
+      <CalendarFrame theme={monthTheme(journal, month)}>
+        <div className={classes.calendarScale}>
+          <Schedule
+            layout="responsive"
+            date={date}
+            onDateChange={setDate}
+            // Month only: no day / week / year views, so no view selector either.
+            view="month"
+            monthViewProps={{ viewSelectProps: { display: 'none' } }}
+            events={events}
+            // Not mode="static": @mantine/schedule 9.6.3 then leaks `withEventResize` to the DOM.
+            onEventClick={(event) => router.push(`/archer/journal/${event.id}`)}
+            onDayClick={(day) => setNewSession({ date: dayjs(day).format('YYYY-MM-DD') })}
+            renderEventBody={(event) => {
+              const session = (event.payload as EventPayload | undefined)?.session;
+              const Icon = session ? eventDisplay(session).icon : null;
+              return (
+                <span className={classes.eventBody}>
+                  {Icon && <Icon size={14} style={{ flexShrink: 0 }} />}
+                  {event.title}
+                </span>
+              );
+            }}
+            mobileMonthViewProps={{
+              // "samedi 3 octobre" rather than the default English order "Saturday, October 3".
+              eventsHeaderFormat: locale === 'fr' ? 'dddd D MMMM' : 'dddd, MMMM D',
+              // Bigger session dots (Schedule does not forward its own classNames to the mobile view).
+              classNames: {
+                mobileMonthViewDayIndicators: classes.dayIndicators,
+                mobileMonthViewDayIndicator: classes.dayIndicator,
+              },
+            }}
+            labels={{
+              day: t('schedule.day'),
+              week: t('schedule.week'),
+              month: t('schedule.month'),
+              year: t('schedule.year'),
+              allDay: t('schedule.allDay'),
+              today: t('schedule.today'),
+              next: t('schedule.next'),
+              previous: t('schedule.previous'),
+              noEvents: t('schedule.noEvents'),
+              agenda: t('schedule.agenda'),
+              more: t('schedule.more'),
+              viewSelectLabel: t('schedule.viewSelectLabel'),
+              moreLabel: (count) => t('schedule.moreLabel', { count }),
+            }}
+          />
+        </div>
+      </CalendarFrame>
+      <MonthThemeModal
+        journal={journal}
+        month={month}
+        opened={pickingTheme}
+        onClose={() => setPickingTheme(false)}
       />
       <NewSessionModal
         journal={journal}

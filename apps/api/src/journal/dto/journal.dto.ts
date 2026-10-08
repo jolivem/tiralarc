@@ -11,10 +11,13 @@ import {
   Max,
   MaxLength,
   Min,
+  ValidateIf,
 } from 'class-validator';
 import { Discipline, Feeling, SessionType } from '../../generated/prisma/client.js';
 
 const DATE = /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/;
+export const MONTH = /^\d{4}-(0[1-9]|1[0-2])$/;
+const THEME = /^[a-z0-9-]{1,30}$/;
 const TIME = /^([01]\d|2[0-3]):[0-5]\d$/;
 const SESSION_TYPES = Object.values(SessionType);
 const DISCIPLINES = Object.values(Discipline);
@@ -100,6 +103,30 @@ export class UpdateJournalDto {
   endDate?: string;
 }
 
+export class MonthThemeDto {
+  @ApiProperty({ example: '2026-10', description: 'Month (YYYY-MM).' })
+  month!: string;
+
+  @ApiProperty({
+    example: 'archery',
+    description: 'Theme id; each client maps it to its own artwork.',
+  })
+  theme!: string;
+}
+
+export class SetMonthThemeDto {
+  @ApiProperty({
+    type: String,
+    nullable: true,
+    example: 'archery',
+    pattern: '^[a-z0-9-]{1,30}$',
+    description: 'Theme id, or null to remove the decoration of that month.',
+  })
+  @ValidateIf((_, value) => value !== null)
+  @Matches(THEME, { message: 'theme must be a lowercase slug' })
+  theme!: string | null;
+}
+
 /** A season's journal. */
 export class JournalDto {
   @ApiProperty({ format: 'uuid' })
@@ -113,6 +140,12 @@ export class JournalDto {
 
   @ApiProperty({ example: '2027-08-31' })
   endDate!: string;
+
+  @ApiProperty({
+    type: () => [MonthThemeDto],
+    description: 'Decoration of the calendar, for the months that have one (oldest first).',
+  })
+  monthThemes!: MonthThemeDto[];
 
   @ApiProperty({ description: 'Number of sessions in the journal.' })
   sessionCount!: number;

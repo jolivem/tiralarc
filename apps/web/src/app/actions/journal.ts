@@ -48,6 +48,23 @@ export async function updateJournal(id: string, values: JournalUpdate): Promise<
   return {};
 }
 
+/** Sets the calendar decoration of one month ("YYYY-MM") of a journal; null removes it. */
+export async function setMonthTheme(
+  id: string,
+  month: string,
+  theme: string | null,
+): Promise<ActionState> {
+  const result = await send(
+    (await getAuthedApi()).PUT('/api/v1/journals/{id}/months/{month}/theme', {
+      params: { path: { id, month } },
+      body: { theme },
+    }),
+  );
+  if (!result.ok) return result.state;
+  refresh();
+  return {};
+}
+
 /** Makes a journal the one the Journal section opens. */
 export async function selectJournal(id: string): Promise<void> {
   await rememberJournal(id);

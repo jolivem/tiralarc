@@ -230,6 +230,30 @@ describe('Journal (e2e)', () => {
       .send({ title: 'Volé' })
       .expect(404);
 
+    // Calendar decoration, month by month: an opaque theme id, removed with null.
+    const setTheme = (month: string, theme: string | null) =>
+      http()
+        .put(`/api/v1/journals/${current}/months/${month}/theme`)
+        .set(as(token))
+        .send({ theme });
+    await setTheme('2026-12', 'snow').expect(200);
+    const themed = await setTheme('2026-10', 'archery').expect(200);
+    expect(themed.body.monthThemes).toEqual([
+      { month: '2026-10', theme: 'archery' },
+      { month: '2026-12', theme: 'snow' },
+    ]);
+    expect((await setTheme('2026-12', null).expect(200)).body.monthThemes).toEqual([
+      { month: '2026-10', theme: 'archery' },
+    ]);
+    await setTheme('2026-10', '../etc').expect(400);
+    await setTheme('2025-01', 'archery').expect(400); // outside the journal's period
+    await setTheme('octobre', 'archery').expect(400);
+    await http()
+      .put(`/api/v1/journals/${current}/months/2026-10/theme`)
+      .set(as(otherArcher))
+      .send({ theme: 'archery' })
+      .expect(404);
+
     // Most recent season first.
     const list = await http().get('/api/v1/journals').set(as(token)).expect(200);
     expect(list.body).toEqual([

@@ -8,6 +8,8 @@ import {
   type EventColor,
   type EventIcon,
   type JournalDto,
+  MONTH,
+  type MonthThemeDto,
   MAX_LIST_ITEMS,
   type SessionDto,
   type SessionSuggestionsDto,
@@ -56,12 +58,23 @@ function asList(value: unknown): string[] {
   return Array.isArray(value) ? value.filter((v): v is string => typeof v === 'string') : [];
 }
 
+/** Stored as { "YYYY-MM": themeId }; anything else in the column is ignored. */
+function monthThemesOf(j: Journal): MonthThemeDto[] {
+  const stored = j.monthThemes;
+  if (!stored || typeof stored !== 'object' || Array.isArray(stored)) return [];
+  return Object.entries(stored)
+    .filter((entry): entry is [string, string] => typeof entry[1] === 'string')
+    .map(([month, theme]) => ({ month, theme }))
+    .sort((a, b) => a.month.localeCompare(b.month));
+}
+
 function toJournalDto(j: Journal, sessionCount: number): JournalDto {
   return {
     id: j.id,
     title: j.title,
     startDate: fromDbDate(j.startDate),
     endDate: fromDbDate(j.endDate),
+    monthThemes: monthThemesOf(j),
     sessionCount,
   };
 }
@@ -168,6 +181,36 @@ export class JournalService {
       include: { _count: { select: { sessions: true } } },
     });
     return toJournalDto(journal, journal._count.sessions);
+  }
+
+  /** Sets (or, with null, removes) the decoration of one month of the journal. */
+  async setMonthTheme(
+    userId: string,
+    id: string,
+    month: string,
+    theme: string | null,
+  ): Promise<JournalDto> {
+    const journal = await this.findOwnedJournal(userId, id);
+    const inPeriod =
+      MONTH.test(month) &&
+      month >= fromDbDate(journal.startDate).slice(0, 7) &&
+      month <= fromDbDate(journal.endDate).slice(0, 7);
+    if (!inPeriod) {
+      throw new ApiException(
+        HttpStatus.BAD_REQUEST,
+        ErrorCode.VALIDATION_FAILED,
+        '"month" must be a YYYY-MM month of the journal\'s period',
+      );
+    }
+    const themes = Object.fromEntries(monthThemesOf(journal).map((m) => [m.month, m.theme]));
+    if (theme === null) delete themes[month];
+    else themes[month] = theme;
+    const updated = await this.prisma.journal.update({
+      where: { id },
+      data: { monthThemes: themes },
+      include: { _count: { select: { sessions: true } } },
+    });
+    return toJournalDto(updated, updated._count.sessions);
   }
 
   /** Deletes the journal and its sessions. */

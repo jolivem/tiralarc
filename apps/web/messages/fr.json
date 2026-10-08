@@ -278,7 +278,14 @@
     "edit": "Modifier le journal",
     "editHint": "La période doit continuer à couvrir les séances déjà enregistrées dans ce journal.",
     "save": "Enregistrer",
-    "editLabel": "Modifier le journal {title}"
+    "editLabel": "Modifier le journal {title}",
+    "theme": "Décor du mois",
+    "noTheme": "Sans décor",
+    "themes": {
+      "archery": "Tir à l'arc"
+    },
+    "monthTheme": "Décor du mois — {month}",
+    "monthThemeHint": "Chaque mois du journal peut avoir son propre décor autour du calendrier."
   },
   "profile": {
     "title": "Profil",

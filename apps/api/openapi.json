@@ -752,6 +752,69 @@
         ]
       }
     },
+    "/api/v1/journals/{id}/months/{month}/theme": {
+      "put": {
+        "operationId": "Journals_setMonthTheme",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "month",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetMonthThemeDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JournalDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Month outside the journal's period"
+          },
+          "403": {
+            "description": "Archers only"
+          },
+          "404": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Choose the calendar decoration of one month (YYYY-MM) of the journal",
+        "tags": [
+          "journal"
+        ]
+      }
+    },
     "/api/v1/journal/sessions": {
       "get": {
         "operationId": "Journal_list",
@@ -1629,6 +1692,25 @@
           "roles"
         ]
       },
+      "MonthThemeDto": {
+        "type": "object",
+        "properties": {
+          "month": {
+            "type": "string",
+            "example": "2026-10",
+            "description": "Month (YYYY-MM)."
+          },
+          "theme": {
+            "type": "string",
+            "example": "archery",
+            "description": "Theme id; each client maps it to its own artwork."
+          }
+        },
+        "required": [
+          "month",
+          "theme"
+        ]
+      },
       "JournalDto": {
         "type": "object",
         "properties": {
@@ -1648,6 +1730,13 @@
             "type": "string",
             "example": "2027-08-31"
           },
+          "monthThemes": {
+            "description": "Decoration of the calendar, for the months that have one (oldest first).",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MonthThemeDto"
+            }
+          },
           "sessionCount": {
             "type": "number",
             "description": "Number of sessions in the journal."
@@ -1658,6 +1747,7 @@
           "title",
           "startDate",
           "endDate",
+          "monthThemes",
           "sessionCount"
         ]
       },
@@ -1707,6 +1797,21 @@
             "description": "Last day, inclusive. The period must keep covering the journal's sessions."
           }
         }
+      },
+      "SetMonthThemeDto": {
+        "type": "object",
+        "properties": {
+          "theme": {
+            "type": "string",
+            "nullable": true,
+            "example": "archery",
+            "pattern": "^[a-z0-9-]{1,30}$",
+            "description": "Theme id, or null to remove the decoration of that month."
+          }
+        },
+        "required": [
+          "theme"
+        ]
       },
       "SessionType": {
         "type": "string",

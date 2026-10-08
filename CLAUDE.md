@@ -36,6 +36,10 @@ the same API — keep it client-agnostic (no cookies, no web-only assumptions in
   a journal and its date stays within that period (`SESSION_OUTSIDE_JOURNAL`). The selected journal is a web-only
   preference (`tl_journal` cookie, `src/lib/journals.ts`); the API always takes an explicit `journalId`. A journal's period can only change while it
   still covers its sessions (`JOURNAL_PERIOD_EXCLUDES_SESSIONS`).
+- Calendar decoration themes: a journal stores one theme id per month (`monthThemes`, set from the Journal
+  page); the web catalogue is `components/journal/themes.ts`,
+  artwork in `apps/web/public/themes/<id>/` (`top`, optional `bottom` / `left` / `right`, `thumb`; black line art on
+  white). Adding a theme = image folder + catalogue entry + `journals.themes.<id>` in both message files.
 - Archer profile (`apps/api/src/profile/`, web `components/profile/`): sport details, favourite websites and people
   invited by email. Accepting an invitation (public `/invitations/accept`, token consumed on POST) grants no access yet.
 - `@mantine/schedule` 9.6.3 leaks some props to the DOM from MonthView / YearView: don't pass `mode="static"`,
