@@ -42,5 +42,21 @@ services:
       - '${MAILPIT_SMTP_PORT:-1025}:1025'
       - '${MAILPIT_UI_PORT:-8025}:8025'
 
+  # S3-compatible object storage for photos (dev): Versity Gateway serving a local folder.
+  # The API creates its bucket at startup in development.
+  s3:
+    image: versity/versitygw:latest
+    restart: unless-stopped
+    command: ['posix', '/data']
+    environment:
+      ROOT_ACCESS_KEY: ${S3_ACCESS_KEY:-tiralarc}
+      ROOT_SECRET_KEY: ${S3_SECRET_KEY:-tiralarc-secret}
+      VGW_PORT: ':9000'
+    ports:
+      - '${S3_PORT:-9000}:9000'
+    volumes:
+      - s3-data:/data
+
 volumes:
   mariadb-data:
+  s3-data:

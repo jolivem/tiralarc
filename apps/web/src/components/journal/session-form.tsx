@@ -110,11 +110,14 @@ export function SessionForm({
   session,
   journal,
   suggestions,
+  children,
 }: {
   session: JournalSession;
   /** The session's journal: its period bounds the date. */
   journal?: Journal;
   suggestions: JournalSuggestions;
+  /** Shown under the sheet, above the action bar (the event's photos). */
+  children?: ReactNode;
 }) {
   const t = useTranslations('journal');
   const [values, setValues] = useState(() => initialValues(session));
@@ -393,6 +396,8 @@ export function SessionForm({
           </Section>
         </>
       )}
+
+      {children}
 
       <Paper withBorder shadow="md" p="sm" radius="md" className={classes.actionBar}>
         <Group justify="space-between" gap="sm" wrap="nowrap">

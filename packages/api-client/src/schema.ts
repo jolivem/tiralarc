@@ -298,6 +298,40 @@ export interface paths {
         patch: operations["Journal_update"];
         trace?: never;
     };
+    "/api/v1/journal/sessions/{sessionId}/photos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Photos of an event; the URLs are signed and expire after 10 minutes */
+        get: operations["Photos_list"];
+        put?: never;
+        /** Attach a photo (JPEG, PNG or WebP, 10 MB max); it is resized */
+        post: operations["Photos_add"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/journal/sessions/{sessionId}/photos/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["Photos_remove"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/profile": {
         parameters: {
             query?: never;
@@ -689,6 +723,33 @@ export interface components {
             title?: string | null;
             color?: components["schemas"]["EventColor"] | null;
             icon?: components["schemas"]["EventIcon"] | null;
+        };
+        PhotoDto: {
+            /** Format: uuid */
+            id: string;
+            /**
+             * Format: uri
+             * @description Resized image (2000 px on its longest side at most).
+             */
+            url: string;
+            /**
+             * Format: uri
+             * @description Thumbnail (400 px).
+             */
+            thumbnailUrl: string;
+            /** @description Width of the resized image, in pixels. */
+            width: number;
+            /** @description Height of the resized image, in pixels. */
+            height: number;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        UploadPhotoDto: {
+            /**
+             * Format: binary
+             * @description JPEG, PNG or WebP, 10 MB max.
+             */
+            file: string;
         };
         /** @enum {string} */
         AgeCategory: "U11" | "U13" | "U15" | "U18" | "U21" | "S1" | "S2" | "S3";
@@ -1590,6 +1651,132 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["SessionDto"];
                 };
+            };
+            /** @description Archers only */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    Photos_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sessionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PhotoDto"][];
+                };
+            };
+            /** @description Archers only */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    Photos_add: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sessionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["UploadPhotoDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PhotoDto"];
+                };
+            };
+            /** @description INVALID_IMAGE */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Archers only */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description LIMIT_REACHED (10 photos per event) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description FILE_TOO_LARGE */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    Photos_remove: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sessionId: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Archers only */
             403: {

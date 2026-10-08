@@ -10,6 +10,7 @@ import { JournalModule } from './journal/journal.module.js';
 import { MailModule } from './mail/mail.module.js';
 import { ProfileModule } from './profile/profile.module.js';
 import { PrismaModule } from './prisma/prisma.module.js';
+import { StorageModule } from './storage/storage.module.js';
 import { UsersModule } from './users/users.module.js';
 
 @Module({
@@ -38,6 +39,7 @@ import { UsersModule } from './users/users.module.js';
     }),
     PrismaModule,
     MailModule,
+    StorageModule,
     HealthModule,
     AuthModule,
     UsersModule,

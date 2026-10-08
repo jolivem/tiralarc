@@ -25,6 +25,8 @@ export const ErrorCode = {
   INVALID_INVITATION_TOKEN: 'INVALID_INVITATION_TOKEN',
   CANNOT_INVITE_SELF: 'CANNOT_INVITE_SELF',
   LIMIT_REACHED: 'LIMIT_REACHED',
+  INVALID_IMAGE: 'INVALID_IMAGE',
+  FILE_TOO_LARGE: 'FILE_TOO_LARGE',
 } as const;
 
 export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];
@@ -42,6 +44,8 @@ export function defaultErrorCode(status: number): ErrorCode {
       return ErrorCode.NOT_FOUND;
     case HttpStatus.TOO_MANY_REQUESTS:
       return ErrorCode.TOO_MANY_REQUESTS;
+    case HttpStatus.PAYLOAD_TOO_LARGE:
+      return ErrorCode.FILE_TOO_LARGE;
     default:
       return ErrorCode.INTERNAL_ERROR;
   }

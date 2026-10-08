@@ -462,3 +462,33 @@ export class SessionSuggestionsDto {
   @ApiProperty({ type: [String] })
   toImprove!: string[];
 }
+
+/** `multipart/form-data` body of a photo upload. */
+export class UploadPhotoDto {
+  @ApiProperty({ type: 'string', format: 'binary', description: 'JPEG, PNG or WebP, 10 MB max.' })
+  file!: unknown;
+}
+
+/** A photo attached to an event. Both URLs are signed and short-lived: reload the list to renew them. */
+export class PhotoDto {
+  @ApiProperty({ format: 'uuid' })
+  id!: string;
+
+  @ApiProperty({
+    format: 'uri',
+    description: 'Resized image (2000 px on its longest side at most).',
+  })
+  url!: string;
+
+  @ApiProperty({ format: 'uri', description: 'Thumbnail (400 px).' })
+  thumbnailUrl!: string;
+
+  @ApiProperty({ description: 'Width of the resized image, in pixels.' })
+  width!: number;
+
+  @ApiProperty({ description: 'Height of the resized image, in pixels.' })
+  height!: number;
+
+  @ApiProperty({ format: 'date-time' })
+  createdAt!: Date;
+}

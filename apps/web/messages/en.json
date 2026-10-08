@@ -100,7 +100,9 @@
     "INVITATION_ALREADY_SENT": "This person is already invited.",
     "INVALID_INVITATION_TOKEN": "This invitation is invalid or has been withdrawn.",
     "CANNOT_INVITE_SELF": "You can't invite yourself.",
-    "LIMIT_REACHED": "You have reached the maximum number of items. Delete one to continue."
+    "LIMIT_REACHED": "You have reached the maximum number of items. Delete one to continue.",
+    "INVALID_IMAGE": "This file is not a JPEG, PNG or WebP image.",
+    "FILE_TOO_LARGE": "This photo is larger than 10 MB."
   },
   "validation": {
     "isEmail": "Invalid email address.",
@@ -252,6 +254,17 @@
       "HEART": "Heart",
       "BELL": "Reminder",
       "PIN": "Place"
+    },
+    "photos": {
+      "title": "Photos",
+      "count": "{count} / {max}",
+      "empty": "No photo for this event.",
+      "add": "Add photos",
+      "hint": "JPEG, PNG or WebP, 10 MB at most per photo. Photos are resized and stay private.",
+      "uploading": "Uploading {done} / {total}…",
+      "open": "Enlarge photo {n}",
+      "delete": "Delete photo",
+      "deleteBody": "The photo will be permanently deleted."
     }
   },
   "journals": {

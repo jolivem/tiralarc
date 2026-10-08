@@ -57,6 +57,20 @@ const envSchema = z.object({
    * app bundle ID (iOS). Empty = Apple sign-in disabled.
    */
   APPLE_CLIENT_IDS: commaSeparated,
+  /**
+   * Object storage for photos (any S3-compatible service). The defaults match the local
+   * gateway of docker-compose; production must set its own endpoint, bucket and keys.
+   */
+  S3_ENDPOINT: z.url().default('http://localhost:9000'),
+  S3_REGION: z.string().default('us-east-1'),
+  S3_BUCKET: z.string().default('tiralarc'),
+  S3_ACCESS_KEY: z.string().default('tiralarc'),
+  S3_SECRET_KEY: z.string().default('tiralarc-secret'),
+  /** Path-style URLs (endpoint/bucket/key): needed by local gateways and some providers. */
+  S3_FORCE_PATH_STYLE: z
+    .enum(['true', 'false'])
+    .default('true')
+    .transform((value) => value === 'true'),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
 });
 

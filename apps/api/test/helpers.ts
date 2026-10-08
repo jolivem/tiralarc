@@ -7,6 +7,7 @@ import { ApiException, ErrorCode } from '../src/common/errors.js';
 import { AuthProvider } from '../src/generated/prisma/client.js';
 import { MailService, type OutgoingMail } from '../src/mail/mail.service.js';
 import { PrismaService } from '../src/prisma/prisma.service.js';
+import { StorageService } from '../src/storage/storage.service.js';
 import { configureApp } from '../src/setup.js';
 
 /**
@@ -36,11 +37,27 @@ class FakeIdTokenVerifier {
   }
 }
 
+/** In-memory stand-in for the object storage: e2e tests need no S3 service. */
+class FakeStorage {
+  readonly files = new Map<string, Buffer>();
+  async put(key: string, body: Buffer) {
+    this.files.set(key, body);
+  }
+  async remove(keys: string[]) {
+    for (const key of keys) this.files.delete(key);
+  }
+  async signedUrl(key: string) {
+    return `https://storage.test/${key}?signature=fake`;
+  }
+}
+
 export interface TestContext {
   app: INestApplication<App>;
   prisma: PrismaService;
   /** Every email "sent" by the app. */
   outbox: OutgoingMail[];
+  /** Every file "stored" by the app, by key. */
+  files: Map<string, Buffer>;
 }
 
 export async function createTestApp(): Promise<TestContext> {
@@ -48,6 +65,8 @@ export async function createTestApp(): Promise<TestContext> {
   const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
     .overrideProvider(IdTokenVerifier)
     .useClass(FakeIdTokenVerifier)
+    .overrideProvider(StorageService)
+    .useClass(FakeStorage)
     .compile();
 
   const app = moduleRef.createNestApplication<INestApplication<App>>();
@@ -60,7 +79,8 @@ export async function createTestApp(): Promise<TestContext> {
 
   const prisma = app.get(PrismaService);
   await resetDatabase(prisma);
-  return { app, prisma, outbox };
+  const { files } = app.get<FakeStorage>(StorageService);
+  return { app, prisma, outbox, files };
 }
 
 export async function resetDatabase(prisma: PrismaService): Promise<void> {

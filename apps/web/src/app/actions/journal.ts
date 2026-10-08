@@ -126,6 +126,32 @@ export async function saveSession(id: string, values: JournalSessionUpdate): Pro
   return result.ok ? { notice: 'saved' } : result.state;
 }
 
+/** Attaches one photo (form field `file`) to an event; the API resizes and stores it. */
+export async function uploadPhoto(sessionId: string, form: FormData): Promise<ActionState> {
+  const result = await send(
+    (await getAuthedApi()).POST('/api/v1/journal/sessions/{sessionId}/photos', {
+      params: { path: { sessionId } },
+      // Sent as multipart (fetch sets the boundary itself); the typed body is only a placeholder.
+      body: { file: '' },
+      bodySerializer: () => form,
+    }),
+  );
+  if (!result.ok) return result.state;
+  refresh();
+  return {};
+}
+
+export async function deletePhoto(sessionId: string, id: string): Promise<ActionState> {
+  const result = await send(
+    (await getAuthedApi()).DELETE('/api/v1/journal/sessions/{sessionId}/photos/{id}', {
+      params: { path: { sessionId, id } },
+    }),
+  );
+  if (!result.ok) return result.state;
+  refresh();
+  return {};
+}
+
 export async function deleteSession(id: string): Promise<ActionState> {
   const result = await send(
     (await getAuthedApi()).DELETE('/api/v1/journal/sessions/{id}', { params: { path: { id } } }),

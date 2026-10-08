@@ -1069,6 +1069,152 @@
         ]
       }
     },
+    "/api/v1/journal/sessions/{sessionId}/photos": {
+      "get": {
+        "operationId": "Photos_list",
+        "parameters": [
+          {
+            "name": "sessionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PhotoDto"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Archers only"
+          },
+          "404": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Photos of an event; the URLs are signed and expire after 10 minutes",
+        "tags": [
+          "journal"
+        ]
+      },
+      "post": {
+        "operationId": "Photos_add",
+        "parameters": [
+          {
+            "name": "sessionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/UploadPhotoDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhotoDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "INVALID_IMAGE"
+          },
+          "403": {
+            "description": "Archers only"
+          },
+          "404": {
+            "description": ""
+          },
+          "409": {
+            "description": "LIMIT_REACHED (10 photos per event)"
+          },
+          "413": {
+            "description": "FILE_TOO_LARGE"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Attach a photo (JPEG, PNG or WebP, 10 MB max); it is resized",
+        "tags": [
+          "journal"
+        ]
+      }
+    },
+    "/api/v1/journal/sessions/{sessionId}/photos/{id}": {
+      "delete": {
+        "operationId": "Photos_remove",
+        "parameters": [
+          {
+            "name": "sessionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "403": {
+            "description": "Archers only"
+          },
+          "404": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "journal"
+        ]
+      }
+    },
     "/api/v1/profile": {
       "get": {
         "operationId": "Profile_get",
@@ -2342,6 +2488,58 @@
             ]
           }
         }
+      },
+      "PhotoDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "description": "Resized image (2000 px on its longest side at most)."
+          },
+          "thumbnailUrl": {
+            "type": "string",
+            "format": "uri",
+            "description": "Thumbnail (400 px)."
+          },
+          "width": {
+            "type": "number",
+            "description": "Width of the resized image, in pixels."
+          },
+          "height": {
+            "type": "number",
+            "description": "Height of the resized image, in pixels."
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "url",
+          "thumbnailUrl",
+          "width",
+          "height",
+          "createdAt"
+        ]
+      },
+      "UploadPhotoDto": {
+        "type": "object",
+        "properties": {
+          "file": {
+            "type": "string",
+            "format": "binary",
+            "description": "JPEG, PNG or WebP, 10 MB max."
+          }
+        },
+        "required": [
+          "file"
+        ]
       },
       "AgeCategory": {
         "type": "string",

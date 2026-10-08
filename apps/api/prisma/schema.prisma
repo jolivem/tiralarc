@@ -42,6 +42,7 @@ model User {
   archerProfile           ArcherProfile?
   profileInvitations      ProfileInvitation[]
   favoriteSites           FavoriteSite[]
+  sessionPhotos           SessionPhoto[]
   journalSessions         JournalSession[]
 
   @@map("users")
@@ -193,8 +194,9 @@ model JournalSession {
   createdAt       DateTime    @default(now()) @map("created_at") @db.DateTime(3)
   updatedAt       DateTime    @updatedAt @map("updated_at") @db.DateTime(3)
 
-  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  journal Journal @relation(fields: [journalId], references: [id], onDelete: Cascade)
+  user    User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  journal Journal        @relation(fields: [journalId], references: [id], onDelete: Cascade)
+  photos  SessionPhoto[]
 
   @@index([userId, date])
   @@index([journalId, date])
@@ -268,4 +270,23 @@ model FavoriteSite {
 
   @@index([userId])
   @@map("favorite_sites")
+}
+
+/// A photo attached to a journal event. The files (resized image + thumbnail) live in the
+/// object storage, under `<userId>/<sessionId>/<id>`; the original upload is not kept.
+model SessionPhoto {
+  id        String   @id @default(uuid()) @db.Char(36)
+  sessionId String   @map("session_id") @db.Char(36)
+  userId    String   @map("user_id") @db.Char(36)
+  width     Int      @db.SmallInt
+  height    Int      @db.SmallInt
+  sizeBytes Int      @map("size_bytes")
+  createdAt DateTime @default(now()) @map("created_at") @db.DateTime(3)
+
+  session JournalSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  user    User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId, createdAt])
+  @@index([userId])
+  @@map("session_photos")
 }

@@ -17,6 +17,7 @@ import {
   type UpdateJournalDto,
   type UpdateSessionDto,
 } from './dto/journal.dto.js';
+import { PhotosService } from './photos.service.js';
 
 const MAX_RANGE_DAYS = 366;
 /** Sessions scanned for suggestions, and suggestions returned per field. */
@@ -137,7 +138,10 @@ function toDto(s: JournalSession): SessionDto {
 /** Archers' journals. Every query is scoped to the owner: someone else's journal or session is a 404. */
 @Injectable()
 export class JournalService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly photos: PhotosService,
+  ) {}
 
   /** Most recent season first. */
   async listJournals(userId: string): Promise<JournalDto[]> {
@@ -213,10 +217,12 @@ export class JournalService {
     return toJournalDto(updated, updated._count.sessions);
   }
 
-  /** Deletes the journal and its sessions. */
+  /** Deletes the journal, its sessions and their photos. */
   async removeJournal(userId: string, id: string): Promise<void> {
     await this.findOwnedJournal(userId, id);
+    const photos = await this.photos.findByJournal(id);
     await this.prisma.journal.delete({ where: { id } });
+    await this.photos.removeFiles(photos);
   }
 
   async list(
@@ -302,7 +308,9 @@ export class JournalService {
 
   async remove(userId: string, id: string): Promise<void> {
     await this.findOwned(userId, id);
+    const photos = await this.photos.findBySession(id);
     await this.prisma.journalSession.delete({ where: { id } });
+    await this.photos.removeFiles(photos);
   }
 
   private async findOwnedJournal(userId: string, id: string): Promise<Journal> {

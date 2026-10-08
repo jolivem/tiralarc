@@ -29,7 +29,7 @@ pnpm --filter @tiralarc/api db:migrate        # crée les tables
 ### 1. Démarrer la base de données
 
 ```bash
-pnpm db:up            # MariaDB (:3307), Adminer (:8081), Mailpit (:8025)
+pnpm db:up            # MariaDB (:3307), Adminer (:8081), Mailpit (:8025), stockage S3 (:9000)
 ```
 
 ### 2a. Tout lancer d'un coup (recommandé)
@@ -75,6 +75,24 @@ pnpm db:down          # les données sont conservées (volume Docker)
 | Mailpit (emails de dev)  | http://localhost:8025               |
 
 Adminer : serveur `mariadb`, utilisateur `tiralarc`, mot de passe `tiralarc`, base `tiralarc`.
+
+## Photos des événements (stockage S3)
+
+Les photos jointes aux événements du journal sont rangées dans un stockage objet « compatible
+S3 », privé ; la base ne garde que leur fiche.
+
+- **En développement** : `pnpm db:up` démarre un service S3 local (Versity Gateway) sur
+  http://localhost:9000. L'API y crée son bucket `tiralarc` au démarrage. Rien à configurer : les
+  valeurs par défaut de `apps/api/.env.example` (`S3_…`) correspondent.
+- **Voir les fichiers** : `docker exec tiralarc-s3-1 find /data/tiralarc -type f`. Ils sont rangés
+  par archer puis par événement (`<archer>/<événement>/<photo>.webp` et `…-thumb.webp`).
+- **En production** : créer un bucket **privé** chez l'hébergeur choisi et renseigner `S3_ENDPOINT`,
+  `S3_REGION`, `S3_BUCKET`, `S3_ACCESS_KEY`, `S3_SECRET_KEY` (et `S3_FORCE_PATH_STYLE=false` si
+  l'hébergeur le demande). Le bucket doit être joignable depuis le navigateur des archers : les
+  photos sont lues par des liens signés valables 10 minutes.
+- **Limites** : 10 photos par événement, 10 Mo par envoi, JPEG / PNG / WebP. Chaque photo est
+  redimensionnée (2000 px au plus, plus une vignette) et ses métadonnées (dont le GPS) sont
+  retirées ; l'original n'est pas conservé.
 
 ## Comptes utilisateurs
 
@@ -169,6 +187,8 @@ est retiré plus tard, les journaux qui l'utilisaient s'affichent simplement san
   `docker compose -f docker/docker-compose.yml ps`.
 - **Port déjà utilisé** : changer `MARIADB_PORT` / `ADMINER_PORT` dans `docker/.env`, ou `PORT`
   dans `apps/api/.env` (et `API_URL` côté web en conséquence).
+- **L'envoi d'une photo échoue** : vérifier que le stockage tourne (`pnpm db:up`, conteneur
+  `tiralarc-s3-1`) ; l'API affiche « Storage unavailable » au démarrage s'il est injoignable.
 - **Pas d'email de confirmation** : vérifier que Mailpit tourne (`pnpm db:up`) et regarder
   http://localhost:8025.
 - **Après modification de `prisma/schema.prisma`** : `pnpm --filter @tiralarc/api db:migrate`.

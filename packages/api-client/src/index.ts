@@ -26,6 +26,7 @@ export type FavoriteSite = Schemas['SiteDto'];
 export type FavoriteSiteCreate = Schemas['CreateSiteDto'];
 export type EventColor = NonNullable<Schemas['SessionDto']['color']>;
 export type EventIcon = NonNullable<Schemas['SessionDto']['icon']>;
+export type SessionPhoto = Schemas['PhotoDto'];
 export type SessionType = Schemas['SessionDto']['type'];
 export type Discipline = NonNullable<Schemas['SessionDto']['discipline']>;
 export type Feeling = NonNullable<Schemas['SessionDto']['physicalFeeling']>;
@@ -53,7 +54,9 @@ export type ErrorCode =
   | 'INVITATION_ALREADY_SENT'
   | 'INVALID_INVITATION_TOKEN'
   | 'CANNOT_INVITE_SELF'
-  | 'LIMIT_REACHED';
+  | 'LIMIT_REACHED'
+  | 'INVALID_IMAGE'
+  | 'FILE_TOO_LARGE';
 
 /** RFC 9457 error body returned by every failing API call. */
 export interface ProblemDetails {
