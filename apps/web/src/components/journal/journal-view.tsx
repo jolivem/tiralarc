@@ -73,6 +73,8 @@ export function JournalView({ journal }: { journal: Journal }) {
   const [loading, startLoading] = useTransition();
   const [newSession, setNewSession] = useState<NewSessionDefaults | null>(null);
 
+  /** Day selected in the phone month view (larger screens open the dialog on a day click). */
+  const [pickedDay, setPickedDay] = useState<string | null>(null);
   const [pickingTheme, setPickingTheme] = useState(false);
   /** Displayed month, "YYYY-MM": each month has its own decoration. */
   const month = date.slice(0, 7);
@@ -129,7 +131,9 @@ export function JournalView({ journal }: { journal: Journal }) {
         )}
         <Button
           leftSection={<IconPlus size={18} />}
-          onClick={() => setNewSession({ date: today() })}
+          // The day picked in the calendar when there is one (phones select a day by tapping it),
+          // otherwise the calendar's own day: today, or a day of the month navigated to.
+          onClick={() => setNewSession({ date: pickedDay?.startsWith(month) ? pickedDay : date })}
         >
           {t('journal.newSession')}
         </Button>
@@ -179,6 +183,7 @@ export function JournalView({ journal }: { journal: Journal }) {
               );
             }}
             mobileMonthViewProps={{
+              onSelectedDateChange: (day) => setPickedDay(day && dayjs(day).format('YYYY-MM-DD')),
               // "samedi 3 octobre" rather than the default English order "Saturday, October 3".
               eventsHeaderFormat: locale === 'fr' ? 'dddd D MMMM' : 'dddd, MMMM D',
               // Bigger session dots (Schedule does not forward its own classNames to the mobile view).
