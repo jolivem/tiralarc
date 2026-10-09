@@ -40,6 +40,9 @@ the same API — keep it client-agnostic (no cookies, no web-only assumptions in
   page); the web catalogue is `components/journal/themes.ts`,
   artwork in `apps/web/public/themes/<id>/` (`top`, optional `bottom` / `left` / `right`, `thumb`; black line art on
   white). Adding a theme = image folder + catalogue entry + `journals.themes.<id>` in both message files.
+- Colouring the decoration: `monthThemes[].fills` holds "paint bucket" clicks (band, x, y as fractions, colour);
+  the web repaints them on a canvas (`components/journal/coloring.ts`, pure and unit-tested, + `calendar-frame.tsx`).
+  Flood fill stops at dark strokes, so artwork needs closed shapes; changing a month's theme clears its colouring.
 - Event photos: files go to S3-compatible storage through `StorageService` (`apps/api/src/storage/`, a local
   Versity Gateway on :9000 in dev, an in-memory fake in e2e tests); the DB keeps one `SessionPhoto` row. Uploads are
   re-encoded with `sharp` (2000 px + thumbnail, metadata dropped) and read back through 10-minute signed URLs.

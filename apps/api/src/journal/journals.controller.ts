@@ -32,6 +32,7 @@ import { Role } from '../generated/prisma/client.js';
 import {
   CreateJournalDto,
   JournalDto,
+  SetMonthColoringDto,
   SetMonthThemeDto,
   UpdateJournalDto,
 } from './dto/journal.dto.js';
@@ -84,6 +85,21 @@ export class JournalsController {
     @Body() dto: SetMonthThemeDto,
   ): Promise<JournalDto> {
     return this.journal.setMonthTheme(user.id, id, month, dto.theme);
+  }
+
+  @Put(':id/months/:month/coloring')
+  @ApiOperation({ summary: "Save the archer's colouring of one month's decoration" })
+  @ApiOkResponse({ type: JournalDto })
+  @ApiNotFoundResponse()
+  @ApiBadRequestResponse({ description: "Month outside the journal's period" })
+  @ApiConflictResponse({ description: 'MONTH_HAS_NO_THEME' })
+  setMonthColoring(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Param('month') month: string,
+    @Body() dto: SetMonthColoringDto,
+  ): Promise<JournalDto> {
+    return this.journal.setMonthColoring(user.id, id, month, dto.fills);
   }
 
   /** Also deletes the journal's sessions. */

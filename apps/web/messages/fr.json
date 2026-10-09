@@ -102,7 +102,8 @@
     "CANNOT_INVITE_SELF": "Vous ne pouvez pas vous inviter vous-même.",
     "LIMIT_REACHED": "Vous avez atteint le nombre maximum d'éléments. Supprimez-en un pour continuer.",
     "INVALID_IMAGE": "Ce fichier n'est pas une image JPEG, PNG ou WebP.",
-    "FILE_TOO_LARGE": "Cette photo dépasse 10 Mo."
+    "FILE_TOO_LARGE": "Cette photo dépasse 10 Mo.",
+    "MONTH_HAS_NO_THEME": "Choisissez d'abord un décor pour ce mois."
   },
   "validation": {
     "isEmail": "Adresse email invalide.",
@@ -298,7 +299,35 @@
       "archery": "Tir à l'arc"
     },
     "monthTheme": "Décor du mois — {month}",
-    "monthThemeHint": "Chaque mois du journal peut avoir son propre décor autour du calendrier."
+    "monthThemeHint": "Chaque mois du journal peut avoir son propre décor autour du calendrier.",
+    "coloring": {
+      "start": "Colorier",
+      "done": "Terminer",
+      "hint": "Choisissez une couleur, puis cliquez sur une zone du décor pour la remplir.",
+      "colors": "Couleurs",
+      "eraser": "Gomme",
+      "undo": "Annuler le dernier coup",
+      "clear": "Tout effacer",
+      "saving": "Enregistrement…",
+      "saved": "Coloriage enregistré.",
+      "palette": {
+        "red": "Rouge",
+        "orange": "Orange",
+        "yellow": "Jaune",
+        "lime": "Vert clair",
+        "green": "Vert",
+        "teal": "Turquoise",
+        "sky": "Bleu ciel",
+        "blue": "Bleu",
+        "violet": "Violet",
+        "pink": "Rose",
+        "brown": "Marron",
+        "beige": "Beige",
+        "gray": "Gris",
+        "black": "Noir",
+        "white": "Blanc"
+      }
+    }
   },
   "profile": {
     "title": "Profil",

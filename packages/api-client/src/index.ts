@@ -26,6 +26,7 @@ export type FavoriteSite = Schemas['SiteDto'];
 export type FavoriteSiteCreate = Schemas['CreateSiteDto'];
 export type EventColor = NonNullable<Schemas['SessionDto']['color']>;
 export type EventIcon = NonNullable<Schemas['SessionDto']['icon']>;
+export type ThemeFill = Schemas['FillDto'];
 export type SessionPhoto = Schemas['PhotoDto'];
 export type SessionType = Schemas['SessionDto']['type'];
 export type Discipline = NonNullable<Schemas['SessionDto']['discipline']>;
@@ -56,6 +57,7 @@ export type ErrorCode =
   | 'CANNOT_INVITE_SELF'
   | 'LIMIT_REACHED'
   | 'INVALID_IMAGE'
+  | 'MONTH_HAS_NO_THEME'
   | 'FILE_TOO_LARGE';
 
 /** RFC 9457 error body returned by every failing API call. */

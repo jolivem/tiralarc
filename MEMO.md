@@ -124,8 +124,9 @@ le sien : l'archer le choisit sur la page Journal, avec le bouton « Décor du m
 | `left`, `right` | colonnes latérales (facultatif, écrans ≥ 1200 px)  | 1 : 4 (portrait) | 300 × 1200 px     |
 | `thumb`         | vignette du sélecteur (obligatoire)                | 4 : 3            | 400 × 300 px      |
 
-- Trait **noir pur sur fond blanc**, sans gris ni dégradé, formes bien fermées (nécessaire pour le
-  futur coloriage).
+- Trait **noir pur sur fond blanc**, sans gris ni dégradé, formes bien fermées : le
+  coloriage (bouton « Colorier ») remplit la zone fermée sous le clic, et une forme ouverte
+  laisserait la couleur « fuir » dans tout le fond.
 - Format **SVG**, ou **PNG / WebP sans perte**. Pas de JPEG. Même format pour tous les fichiers
   d'un thème.
 - Laisser dégagé le bord de la bande qui touche le calendrier.

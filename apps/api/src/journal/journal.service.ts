@@ -7,6 +7,7 @@ import {
   type CreateSessionDto,
   type EventColor,
   type EventIcon,
+  type FillDto,
   type JournalDto,
   MONTH,
   type MonthThemeDto,
@@ -59,15 +60,32 @@ function asList(value: unknown): string[] {
   return Array.isArray(value) ? value.filter((v): v is string => typeof v === 'string') : [];
 }
 
-/** Stored as { "YYYY-MM": themeId }; anything else in the column is ignored. */
+/**
+ * Stored as { "YYYY-MM": { theme, fills } } (a bare theme id in older rows);
+ * anything else in the column is ignored.
+ */
 function monthThemesOf(j: Journal): MonthThemeDto[] {
   const stored = j.monthThemes;
   if (!stored || typeof stored !== 'object' || Array.isArray(stored)) return [];
   return Object.entries(stored)
-    .filter((entry): entry is [string, string] => typeof entry[1] === 'string')
-    .map(([month, theme]) => ({ month, theme }))
+    .flatMap(([month, value]): MonthThemeDto[] => {
+      if (typeof value === 'string') return [{ month, theme: value, fills: [] }];
+      if (!value || typeof value !== 'object' || Array.isArray(value)) return [];
+      const { theme, fills } = value;
+      if (typeof theme !== 'string') return [];
+      return [{ month, theme, fills: Array.isArray(fills) ? (fills as unknown as FillDto[]) : [] }];
+    })
     .sort((a, b) => a.month.localeCompare(b.month));
 }
+
+/** What `monthThemesOf` reads back. */
+const toStoredThemes = (months: MonthThemeDto[]) =>
+  Object.fromEntries(
+    months.map(({ month, theme, fills }) => [
+      month,
+      { theme, fills: fills.map(({ band, x, y, color }) => ({ band, x, y, color })) },
+    ]),
+  );
 
 function toJournalDto(j: Journal, sessionCount: number): JournalDto {
   return {
@@ -96,6 +114,20 @@ function assertPeriod(startDate: Date, endDate: Date): void {
       HttpStatus.BAD_REQUEST,
       ErrorCode.VALIDATION_FAILED,
       '"endDate" must not be before "startDate"',
+    );
+  }
+}
+
+function assertMonthOf(journal: Journal, month: string): void {
+  const inPeriod =
+    MONTH.test(month) &&
+    month >= fromDbDate(journal.startDate).slice(0, 7) &&
+    month <= fromDbDate(journal.endDate).slice(0, 7);
+  if (!inPeriod) {
+    throw new ApiException(
+      HttpStatus.BAD_REQUEST,
+      ErrorCode.VALIDATION_FAILED,
+      '"month" must be a YYYY-MM month of the journal\'s period',
     );
   }
 }
@@ -187,7 +219,10 @@ export class JournalService {
     return toJournalDto(journal, journal._count.sessions);
   }
 
-  /** Sets (or, with null, removes) the decoration of one month of the journal. */
+  /**
+   * Sets (or, with null, removes) the decoration of one month of the journal.
+   * The colouring belongs to the artwork: it is dropped when the theme changes.
+   */
   async setMonthTheme(
     userId: string,
     id: string,
@@ -195,23 +230,42 @@ export class JournalService {
     theme: string | null,
   ): Promise<JournalDto> {
     const journal = await this.findOwnedJournal(userId, id);
-    const inPeriod =
-      MONTH.test(month) &&
-      month >= fromDbDate(journal.startDate).slice(0, 7) &&
-      month <= fromDbDate(journal.endDate).slice(0, 7);
-    if (!inPeriod) {
+    assertMonthOf(journal, month);
+    const current = monthThemesOf(journal);
+    const kept = current.filter((m) => m.month !== month);
+    const previous = current.find((m) => m.month === month);
+    if (theme !== null) {
+      kept.push({ month, theme, fills: previous?.theme === theme ? previous.fills : [] });
+    }
+    return this.saveMonthThemes(id, kept);
+  }
+
+  /** Replaces the archer's colouring of a month's decoration. */
+  async setMonthColoring(
+    userId: string,
+    id: string,
+    month: string,
+    fills: FillDto[],
+  ): Promise<JournalDto> {
+    const journal = await this.findOwnedJournal(userId, id);
+    assertMonthOf(journal, month);
+    const months = monthThemesOf(journal);
+    const target = months.find((m) => m.month === month);
+    if (!target) {
       throw new ApiException(
-        HttpStatus.BAD_REQUEST,
-        ErrorCode.VALIDATION_FAILED,
-        '"month" must be a YYYY-MM month of the journal\'s period',
+        HttpStatus.CONFLICT,
+        ErrorCode.MONTH_HAS_NO_THEME,
+        'Choose a decoration for that month before colouring it',
       );
     }
-    const themes = Object.fromEntries(monthThemesOf(journal).map((m) => [m.month, m.theme]));
-    if (theme === null) delete themes[month];
-    else themes[month] = theme;
+    target.fills = fills;
+    return this.saveMonthThemes(id, months);
+  }
+
+  private async saveMonthThemes(id: string, months: MonthThemeDto[]): Promise<JournalDto> {
     const updated = await this.prisma.journal.update({
       where: { id },
-      data: { monthThemes: themes },
+      data: { monthThemes: toStoredThemes(months) },
       include: { _count: { select: { sessions: true } } },
     });
     return toJournalDto(updated, updated._count.sessions);

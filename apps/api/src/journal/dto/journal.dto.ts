@@ -1,9 +1,11 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 import {
   ArrayMaxSize,
   IsArray,
   IsIn,
   IsInt,
+  IsNumber,
   IsOptional,
   IsString,
   IsUUID,
@@ -12,11 +14,13 @@ import {
   MaxLength,
   Min,
   ValidateIf,
+  ValidateNested,
 } from 'class-validator';
 import { Discipline, Feeling, SessionType } from '../../generated/prisma/client.js';
 
 const DATE = /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/;
 export const MONTH = /^\d{4}-(0[1-9]|1[0-2])$/;
+const COLOR = /^#[0-9a-f]{6}$/;
 const THEME = /^[a-z0-9-]{1,30}$/;
 const TIME = /^([01]\d|2[0-3]):[0-5]\d$/;
 const SESSION_TYPES = Object.values(SessionType);
@@ -103,6 +107,42 @@ export class UpdateJournalDto {
   endDate?: string;
 }
 
+export const THEME_BANDS = ['top', 'bottom', 'left', 'right'] as const;
+export type ThemeBand = (typeof THEME_BANDS)[number];
+/** Colouring one decoration takes far fewer; this only bounds the stored size. */
+export const MAX_FILLS = 500;
+
+/** One "paint bucket" click on a theme's artwork: the closed area around the point takes the colour. */
+export class FillDto {
+  @ApiProperty({ enum: THEME_BANDS, enumName: 'ThemeBand', description: 'Which band was clicked.' })
+  @IsIn(THEME_BANDS)
+  band!: ThemeBand;
+
+  @ApiProperty({
+    minimum: 0,
+    maximum: 1,
+    description: 'Horizontal position in the band image (0 = left).',
+  })
+  @IsNumber()
+  @Min(0)
+  @Max(1)
+  x!: number;
+
+  @ApiProperty({
+    minimum: 0,
+    maximum: 1,
+    description: 'Vertical position in the band image (0 = top).',
+  })
+  @IsNumber()
+  @Min(0)
+  @Max(1)
+  y!: number;
+
+  @ApiProperty({ example: '#e03131', pattern: '^#[0-9a-f]{6}$' })
+  @Matches(COLOR, { message: 'color must be #rrggbb' })
+  color!: string;
+}
+
 export class MonthThemeDto {
   @ApiProperty({ example: '2026-10', description: 'Month (YYYY-MM).' })
   month!: string;
@@ -112,6 +152,25 @@ export class MonthThemeDto {
     description: 'Theme id; each client maps it to its own artwork.',
   })
   theme!: string;
+
+  @ApiProperty({
+    type: () => [FillDto],
+    description: "The archer's colouring of that month's decoration, in the order it was painted.",
+  })
+  fills!: FillDto[];
+}
+
+export class SetMonthColoringDto {
+  @ApiProperty({
+    type: () => [FillDto],
+    maxItems: MAX_FILLS,
+    description: 'Replaces the colouring.',
+  })
+  @IsArray()
+  @ArrayMaxSize(MAX_FILLS)
+  @ValidateNested({ each: true })
+  @Type(() => FillDto)
+  fills!: FillDto[];
 }
 
 export class SetMonthThemeDto {
@@ -120,7 +179,8 @@ export class SetMonthThemeDto {
     nullable: true,
     example: 'archery',
     pattern: '^[a-z0-9-]{1,30}$',
-    description: 'Theme id, or null to remove the decoration of that month.',
+    description:
+      'Theme id, or null to remove the decoration of that month. Changing it clears the colouring.',
   })
   @ValidateIf((_, value) => value !== null)
   @Matches(THEME, { message: 'theme must be a lowercase slug' })

@@ -250,6 +250,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/journals/{id}/months/{month}/coloring": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Save the archer's colouring of one month's decoration */
+        put: operations["Journals_setMonthColoring"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/journal/sessions": {
         parameters: {
             query?: never;
@@ -533,6 +550,21 @@ export interface components {
             /** @description Replaces the self-assignable roles (ADMIN, if held, is kept). */
             roles: components["schemas"]["SelfAssignableRole"][];
         };
+        /**
+         * @description Which band was clicked.
+         * @enum {string}
+         */
+        ThemeBand: "top" | "bottom" | "left" | "right";
+        FillDto: {
+            /** @description Which band was clicked. */
+            band: components["schemas"]["ThemeBand"];
+            /** @description Horizontal position in the band image (0 = left). */
+            x: number;
+            /** @description Vertical position in the band image (0 = top). */
+            y: number;
+            /** @example #e03131 */
+            color: string;
+        };
         MonthThemeDto: {
             /**
              * @description Month (YYYY-MM).
@@ -544,6 +576,8 @@ export interface components {
              * @example archery
              */
             theme: string;
+            /** @description The archer's colouring of that month's decoration, in the order it was painted. */
+            fills: components["schemas"]["FillDto"][];
         };
         JournalDto: {
             /** Format: uuid */
@@ -589,10 +623,14 @@ export interface components {
         };
         SetMonthThemeDto: {
             /**
-             * @description Theme id, or null to remove the decoration of that month.
+             * @description Theme id, or null to remove the decoration of that month. Changing it clears the colouring.
              * @example archery
              */
             theme: string | null;
+        };
+        SetMonthColoringDto: {
+            /** @description Replaces the colouring. */
+            fills: components["schemas"]["FillDto"][];
         };
         /** @enum {string} */
         SessionType: "TRAINING" | "COACHING" | "COMPETITION" | "STRENGTH" | "OTHER";
@@ -1460,6 +1498,59 @@ export interface operations {
                 content?: never;
             };
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    Journals_setMonthColoring: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                month: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetMonthColoringDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JournalDto"];
+                };
+            };
+            /** @description Month outside the journal's period */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Archers only */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description MONTH_HAS_NO_THEME */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

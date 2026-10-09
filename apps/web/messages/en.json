@@ -102,7 +102,8 @@
     "CANNOT_INVITE_SELF": "You can't invite yourself.",
     "LIMIT_REACHED": "You have reached the maximum number of items. Delete one to continue.",
     "INVALID_IMAGE": "This file is not a JPEG, PNG or WebP image.",
-    "FILE_TOO_LARGE": "This photo is larger than 10 MB."
+    "FILE_TOO_LARGE": "This photo is larger than 10 MB.",
+    "MONTH_HAS_NO_THEME": "Choose a decoration for this month first."
   },
   "validation": {
     "isEmail": "Invalid email address.",
@@ -298,7 +299,35 @@
       "archery": "Archery"
     },
     "monthTheme": "Decoration for {month}",
-    "monthThemeHint": "Each month of the journal can have its own decoration around the calendar."
+    "monthThemeHint": "Each month of the journal can have its own decoration around the calendar.",
+    "coloring": {
+      "start": "Colour",
+      "done": "Done",
+      "hint": "Pick a colour, then click an area of the decoration to fill it.",
+      "colors": "Colours",
+      "eraser": "Eraser",
+      "undo": "Undo last step",
+      "clear": "Clear all",
+      "saving": "Saving…",
+      "saved": "Colouring saved.",
+      "palette": {
+        "red": "Red",
+        "orange": "Orange",
+        "yellow": "Yellow",
+        "lime": "Light green",
+        "green": "Green",
+        "teal": "Teal",
+        "sky": "Sky blue",
+        "blue": "Blue",
+        "violet": "Violet",
+        "pink": "Pink",
+        "brown": "Brown",
+        "beige": "Beige",
+        "gray": "Gray",
+        "black": "Black",
+        "white": "White"
+      }
+    }
   },
   "profile": {
     "title": "Profile",

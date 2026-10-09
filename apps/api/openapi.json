@@ -815,6 +815,72 @@
         ]
       }
     },
+    "/api/v1/journals/{id}/months/{month}/coloring": {
+      "put": {
+        "operationId": "Journals_setMonthColoring",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "month",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetMonthColoringDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JournalDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Month outside the journal's period"
+          },
+          "403": {
+            "description": "Archers only"
+          },
+          "404": {
+            "description": ""
+          },
+          "409": {
+            "description": "MONTH_HAS_NO_THEME"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Save the archer's colouring of one month's decoration",
+        "tags": [
+          "journal"
+        ]
+      }
+    },
     "/api/v1/journal/sessions": {
       "get": {
         "operationId": "Journal_list",
@@ -1838,6 +1904,52 @@
           "roles"
         ]
       },
+      "ThemeBand": {
+        "type": "string",
+        "enum": [
+          "top",
+          "bottom",
+          "left",
+          "right"
+        ],
+        "description": "Which band was clicked."
+      },
+      "FillDto": {
+        "type": "object",
+        "properties": {
+          "band": {
+            "description": "Which band was clicked.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ThemeBand"
+              }
+            ]
+          },
+          "x": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1,
+            "description": "Horizontal position in the band image (0 = left)."
+          },
+          "y": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1,
+            "description": "Vertical position in the band image (0 = top)."
+          },
+          "color": {
+            "type": "string",
+            "example": "#e03131",
+            "pattern": "^#[0-9a-f]{6}$"
+          }
+        },
+        "required": [
+          "band",
+          "x",
+          "y",
+          "color"
+        ]
+      },
       "MonthThemeDto": {
         "type": "object",
         "properties": {
@@ -1850,11 +1962,19 @@
             "type": "string",
             "example": "archery",
             "description": "Theme id; each client maps it to its own artwork."
+          },
+          "fills": {
+            "description": "The archer's colouring of that month's decoration, in the order it was painted.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FillDto"
+            }
           }
         },
         "required": [
           "month",
-          "theme"
+          "theme",
+          "fills"
         ]
       },
       "JournalDto": {
@@ -1952,11 +2072,27 @@
             "nullable": true,
             "example": "archery",
             "pattern": "^[a-z0-9-]{1,30}$",
-            "description": "Theme id, or null to remove the decoration of that month."
+            "description": "Theme id, or null to remove the decoration of that month. Changing it clears the colouring."
           }
         },
         "required": [
           "theme"
+        ]
+      },
+      "SetMonthColoringDto": {
+        "type": "object",
+        "properties": {
+          "fills": {
+            "maxItems": 500,
+            "description": "Replaces the colouring.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FillDto"
+            }
+          }
+        },
+        "required": [
+          "fills"
         ]
       },
       "SessionType": {

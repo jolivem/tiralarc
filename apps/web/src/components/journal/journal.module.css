@@ -126,6 +126,18 @@
     mix-blend-mode: screen;
   }
 
+  /* Coloured canvas: strokes and fills are already drawn for the page colour. */
+  &[data-painted] {
+    mix-blend-mode: normal;
+    filter: none;
+  }
+
+  &[data-coloring] {
+    pointer-events: auto;
+    cursor: crosshair;
+    touch-action: manipulation;
+  }
+
   &[data-band='top'] {
     grid-area: top;
     max-height: 180px;

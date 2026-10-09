@@ -2,7 +2,7 @@
 
 import { Button, Group, LoadingOverlay, Box } from '@mantine/core';
 import { Schedule, type ScheduleEventData } from '@mantine/schedule';
-import { IconPalette, IconPlus } from '@tabler/icons-react';
+import { IconBrush, IconPalette, IconPlus } from '@tabler/icons-react';
 import type { Journal, JournalSessionSummary } from '@tiralarc/api-client';
 import dayjs from 'dayjs';
 import { useLocale, useTranslations } from 'next-intl';
@@ -10,6 +10,7 @@ import { useEffect, useState, useTransition } from 'react';
 import { listSessions } from '@/app/actions/journal';
 import { useRouter } from '@/i18n/navigation';
 import { CalendarFrame } from './calendar-frame';
+import { ColoringToolbar, DEFAULT_COLOR } from './coloring-toolbar';
 import { MonthThemeModal, monthTheme } from './month-theme-modal';
 import { eventDisplay } from './event-display';
 import classes from './journal.module.css';
@@ -20,6 +21,7 @@ import {
   today,
 } from './new-session-modal';
 import { SESSION_TYPES } from './session-types';
+import { useMonthColoring } from './use-month-coloring';
 
 const DEFAULT_DURATION_MINUTES = 60;
 
@@ -75,6 +77,21 @@ export function JournalView({ journal }: { journal: Journal }) {
   /** Displayed month, "YYYY-MM": each month has its own decoration. */
   const month = date.slice(0, 7);
 
+  const theme = monthTheme(journal, month);
+  const coloring = useMonthColoring(journal, month, theme);
+  const [coloringOn, setColoringOn] = useState(false);
+  const [tool, setTool] = useState<string>(DEFAULT_COLOR);
+  // Colouring needs a decoration: moving to a month without one leaves the mode.
+  const isColoring = coloringOn && theme !== null;
+  const coloringStatus =
+    coloring.status === 'saving'
+      ? t('journals.coloring.saving')
+      : coloring.status === 'saved'
+        ? t('journals.coloring.saved')
+        : coloring.status === 'idle' || coloring.status === undefined
+          ? ''
+          : t(`errors.${coloring.status}`);
+
   const { from, to } = visibleRange(date);
   useEffect(() => {
     startLoading(async () => setSessions(await listSessions(journal.id, from, to)));
@@ -101,6 +118,15 @@ export function JournalView({ journal }: { journal: Journal }) {
         >
           {t('journals.theme')}
         </Button>
+        {theme && !isColoring && (
+          <Button
+            variant="default"
+            leftSection={<IconBrush size={18} />}
+            onClick={() => setColoringOn(true)}
+          >
+            {t('journals.coloring.start')}
+          </Button>
+        )}
         <Button
           leftSection={<IconPlus size={18} />}
           onClick={() => setNewSession({ date: today() })}
@@ -109,7 +135,27 @@ export function JournalView({ journal }: { journal: Journal }) {
         </Button>
       </Group>
       <LoadingOverlay visible={loading} overlayProps={{ blur: 1 }} loaderProps={{ size: 'sm' }} />
-      <CalendarFrame theme={monthTheme(journal, month)}>
+      {isColoring && (
+        <ColoringToolbar
+          tool={tool}
+          onToolChange={setTool}
+          canUndo={coloring.canUndo}
+          onUndo={coloring.undo}
+          canClear={coloring.fills.length > 0}
+          onClear={() => coloring.change([])}
+          onDone={() => {
+            coloring.flush();
+            setColoringOn(false);
+          }}
+          status={coloringStatus}
+        />
+      )}
+      <CalendarFrame
+        theme={theme}
+        fills={coloring.fills}
+        tool={isColoring ? tool : null}
+        onFillsChange={coloring.change}
+      >
         <div className={classes.calendarScale}>
           <Schedule
             layout="responsive"

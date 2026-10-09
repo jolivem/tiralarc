@@ -239,12 +239,40 @@ describe('Journal (e2e)', () => {
     await setTheme('2026-12', 'snow').expect(200);
     const themed = await setTheme('2026-10', 'archery').expect(200);
     expect(themed.body.monthThemes).toEqual([
-      { month: '2026-10', theme: 'archery' },
-      { month: '2026-12', theme: 'snow' },
+      { month: '2026-10', theme: 'archery', fills: [] },
+      { month: '2026-12', theme: 'snow', fills: [] },
     ]);
     expect((await setTheme('2026-12', null).expect(200)).body.monthThemes).toEqual([
-      { month: '2026-10', theme: 'archery' },
+      { month: '2026-10', theme: 'archery', fills: [] },
     ]);
+
+    // Colouring: "paint bucket" clicks, kept month by month with the decoration.
+    const color = (month: string, fills: object[]) =>
+      http()
+        .put(`/api/v1/journals/${current}/months/${month}/coloring`)
+        .set(as(token))
+        .send({ fills });
+    const fills = [
+      { band: 'top', x: 0.15, y: 0.4, color: '#e03131' },
+      { band: 'left', x: 0.5, y: 0.25, color: '#1c7ed6' },
+    ];
+    expect((await color('2026-10', fills).expect(200)).body.monthThemes).toEqual([
+      { month: '2026-10', theme: 'archery', fills },
+    ]);
+    const noTheme = await color('2026-11', fills).expect(409);
+    expect(noTheme.body.code).toBe('MONTH_HAS_NO_THEME');
+    await color('2026-10', [{ band: 'middle', x: 2, y: -1, color: 'red' }]).expect(400);
+    await color('2025-01', fills).expect(400);
+    // Choosing the same decoration again keeps the colouring; another one starts blank.
+    expect((await setTheme('2026-10', 'archery').expect(200)).body.monthThemes[0].fills).toEqual(
+      fills,
+    );
+    expect((await setTheme('2026-10', 'snow').expect(200)).body.monthThemes[0].fills).toEqual([]);
+    await http()
+      .put(`/api/v1/journals/${current}/months/2026-10/coloring`)
+      .set(as(otherArcher))
+      .send({ fills })
+      .expect(404);
     await setTheme('2026-10', '../etc').expect(400);
     await setTheme('2025-01', 'archery').expect(400); // outside the journal's period
     await setTheme('octobre', 'archery').expect(400);

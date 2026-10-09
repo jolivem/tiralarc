@@ -6,6 +6,7 @@ import type {
   JournalUpdate,
   JournalSessionUpdate,
   SessionType,
+  ThemeFill,
 } from '@tiralarc/api-client';
 import { refresh } from 'next/cache';
 import { cookies } from 'next/headers';
@@ -63,6 +64,21 @@ export async function setMonthTheme(
   if (!result.ok) return result.state;
   refresh();
   return {};
+}
+
+/** Saves the archer's colouring of one month's decoration (no re-render: the page already shows it). */
+export async function saveMonthColoring(
+  id: string,
+  month: string,
+  fills: ThemeFill[],
+): Promise<ActionState> {
+  const result = await send(
+    (await getAuthedApi()).PUT('/api/v1/journals/{id}/months/{month}/coloring', {
+      params: { path: { id, month } },
+      body: { fills },
+    }),
+  );
+  return result.ok ? {} : result.state;
 }
 
 /** Makes a journal the one the Journal section opens. */
