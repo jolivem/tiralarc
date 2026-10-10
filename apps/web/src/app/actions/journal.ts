@@ -97,15 +97,11 @@ export async function deleteJournal(id: string): Promise<ActionState> {
   return {};
 }
 
-/** A journal's sessions between two days (inclusive, YYYY-MM-DD), for the calendar. */
-export async function listSessions(
-  journalId: string,
-  from: string,
-  to: string,
-): Promise<JournalSessionSummary[]> {
+/** The archer's events between two days (inclusive, YYYY-MM-DD), for the calendar. */
+export async function listSessions(from: string, to: string): Promise<JournalSessionSummary[]> {
   const result = await send(
     (await getAuthedApi()).GET('/api/v1/journal/sessions', {
-      params: { query: { journalId, from, to } },
+      params: { query: { from, to } },
     }),
   );
   return result.ok ? result.data : [];
@@ -113,7 +109,6 @@ export async function listSessions(
 
 /** Step 1 of the two-step entry: type + date (+ optional time), then open the event's form. */
 export async function createSession(input: {
-  journalId: string;
   type: SessionType;
   date: string;
   startTime?: string | null;
@@ -121,7 +116,6 @@ export async function createSession(input: {
   const result = await send(
     (await getAuthedApi()).POST('/api/v1/journal/sessions', {
       body: {
-        journalId: input.journalId,
         type: input.type,
         date: input.date,
         startTime: input.startTime || undefined,

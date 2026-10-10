@@ -18,6 +18,7 @@ import {
   ApiNoContentResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
+  ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
 import {
@@ -28,10 +29,12 @@ import { Roles } from '../common/decorators/roles.decorator.js';
 import { Role } from '../generated/prisma/client.js';
 import {
   CreateSessionDto,
+  JournalStatsDto,
   ListSessionsQuery,
   SessionDto,
   SessionSuggestionsDto,
   SessionSummaryDto,
+  StatsQuery,
   UpdateSessionDto,
 } from './dto/journal.dto.js';
 import { JournalService } from './journal.service.js';
@@ -50,7 +53,21 @@ export class JournalController {
     @CurrentUser() user: AuthenticatedUser,
     @Query() query: ListSessionsQuery,
   ): Promise<SessionSummaryDto[]> {
-    return this.journal.list(user.id, query.journalId, query.from, query.to);
+    return this.journal.list(user.id, query.from, query.to);
+  }
+
+  /** Declared before ':id' so "stats" isn't parsed as an id. */
+  @Get('stats')
+  @ApiOperation({
+    summary:
+      "Figures behind the archer's indicators (competitions, arrows per day), over a period or all time",
+  })
+  @ApiOkResponse({ type: JournalStatsDto })
+  stats(
+    @CurrentUser() user: AuthenticatedUser,
+    @Query() query: StatsQuery,
+  ): Promise<JournalStatsDto> {
+    return this.journal.stats(user.id, query.from, query.to);
   }
 
   /** Declared before ':id' so "suggestions" isn't parsed as an id. */
@@ -62,7 +79,6 @@ export class JournalController {
 
   @Post()
   @ApiCreatedResponse({ type: SessionDto })
-  @ApiNotFoundResponse({ description: 'Unknown journal' })
   create(
     @CurrentUser() user: AuthenticatedUser,
     @Body() dto: CreateSessionDto,

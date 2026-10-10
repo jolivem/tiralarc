@@ -8,7 +8,6 @@ import {
   IsNumber,
   IsOptional,
   IsString,
-  IsUUID,
   Matches,
   Max,
   MaxLength,
@@ -78,7 +77,8 @@ export class CreateJournalDto {
 
   @ApiProperty({
     example: '2027-08-31',
-    description: 'Last day, inclusive (YYYY-MM-DD). Not before `startDate`.',
+    description:
+      "Last day, inclusive (YYYY-MM-DD). Not before `startDate`; the period must not overlap another of the archer's journals.",
   })
   @Matches(DATE, { message: 'endDate must be YYYY-MM-DD' })
   endDate!: string;
@@ -100,7 +100,8 @@ export class UpdateJournalDto {
 
   @ApiPropertyOptional({
     example: '2027-08-31',
-    description: "Last day, inclusive. The period must keep covering the journal's sessions.",
+    description:
+      "Last day, inclusive. The period must not overlap another of the archer's journals.",
   })
   @IsOptional()
   @Matches(DATE, { message: 'endDate must be YYYY-MM-DD' })
@@ -187,7 +188,7 @@ export class SetMonthThemeDto {
   theme!: string | null;
 }
 
-/** A season's journal. */
+/** A season's journal: a named period. Its events are the archer's sessions dated within it. */
 export class JournalDto {
   @ApiProperty({ format: 'uuid' })
   id!: string;
@@ -207,15 +208,70 @@ export class JournalDto {
   })
   monthThemes!: MonthThemeDto[];
 
-  @ApiProperty({ description: 'Number of sessions in the journal.' })
+  @ApiProperty({ description: "Number of the archer's events dated within the period." })
   sessionCount!: number;
 }
 
-export class ListSessionsQuery {
-  @ApiProperty({ format: 'uuid', description: 'Journal to read.' })
-  @IsUUID()
-  journalId!: string;
+/** One competition of a journal, as listed in the archer's indicators. */
+export class CompetitionStatDto {
+  @ApiProperty({ format: 'uuid', description: 'Id of the event (session).' })
+  id!: string;
 
+  @ApiProperty({ example: '2026-10-03' })
+  date!: string;
+
+  @ApiProperty({ enum: DISCIPLINES, enumName: 'Discipline', nullable: true })
+  discipline!: Discipline | null;
+
+  @ApiProperty({ type: Number, nullable: true })
+  arrowCount!: number | null;
+
+  @ApiProperty({ type: Number, nullable: true })
+  score!: number | null;
+
+  @ApiProperty({ type: String, nullable: true })
+  location!: string | null;
+}
+
+export class ArrowsByDayDto {
+  @ApiProperty({ example: '2026-10-03' })
+  date!: string;
+
+  @ApiProperty({ description: 'Arrows shot that day, all types of events together.' })
+  arrows!: number;
+}
+
+/** What the indicators are drawn from. Running totals and per-discipline series are left to clients. */
+export class JournalStatsDto {
+  @ApiProperty({ type: () => [CompetitionStatDto], description: 'Competitions, oldest first.' })
+  competitions!: CompetitionStatDto[];
+
+  @ApiProperty({
+    type: () => [ArrowsByDayDto],
+    description: 'Days with a recorded number of arrows, oldest first.',
+  })
+  arrowsByDay!: ArrowsByDayDto[];
+}
+
+export class StatsQuery {
+  @ApiPropertyOptional({
+    example: '2026-09-01',
+    description: 'First day, inclusive (YYYY-MM-DD). Omitted = from the first event.',
+  })
+  @IsOptional()
+  @Matches(DATE, { message: 'from must be YYYY-MM-DD' })
+  from?: string;
+
+  @ApiPropertyOptional({
+    example: '2027-08-31',
+    description: 'Last day, inclusive (YYYY-MM-DD). Omitted = up to the last event.',
+  })
+  @IsOptional()
+  @Matches(DATE, { message: 'to must be YYYY-MM-DD' })
+  to?: string;
+}
+
+export class ListSessionsQuery {
   @ApiProperty({ example: '2026-10-01', description: 'First day, inclusive (YYYY-MM-DD).' })
   @Matches(DATE, { message: 'from must be YYYY-MM-DD' })
   from!: string;
@@ -229,17 +285,13 @@ export class ListSessionsQuery {
 }
 
 export class CreateSessionDto {
-  @ApiProperty({ format: 'uuid', description: 'Journal the session is added to.' })
-  @IsUUID()
-  journalId!: string;
-
   @ApiProperty({ enum: SESSION_TYPES, enumName: 'SessionType' })
   @IsIn(SESSION_TYPES)
   type!: SessionType;
 
   @ApiProperty({
     example: '2026-10-03',
-    description: "Local date (YYYY-MM-DD), within the journal's period.",
+    description: 'Local date (YYYY-MM-DD).',
   })
   @Matches(DATE, { message: 'date must be YYYY-MM-DD' })
   date!: string;
@@ -420,9 +472,6 @@ export class UpdateSessionDto {
 export class SessionSummaryDto {
   @ApiProperty({ format: 'uuid' })
   id!: string;
-
-  @ApiProperty({ format: 'uuid' })
-  journalId!: string;
 
   @ApiProperty({ enum: SESSION_TYPES, enumName: 'SessionType' })
   type!: SessionType;

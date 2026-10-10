@@ -654,6 +654,9 @@
           },
           "403": {
             "description": "Archers only"
+          },
+          "409": {
+            "description": "JOURNAL_OVERLAP"
           }
         },
         "security": [
@@ -707,7 +710,7 @@
             "description": ""
           },
           "409": {
-            "description": "Sessions would fall outside the new period"
+            "description": "JOURNAL_OVERLAP"
           }
         },
         "security": [
@@ -886,16 +889,6 @@
         "operationId": "Journal_list",
         "parameters": [
           {
-            "name": "journalId",
-            "required": true,
-            "in": "query",
-            "description": "Journal to read.",
-            "schema": {
-              "format": "uuid",
-              "type": "string"
-            }
-          },
-          {
             "name": "from",
             "required": true,
             "in": "query",
@@ -969,9 +962,6 @@
           },
           "403": {
             "description": "Archers only"
-          },
-          "404": {
-            "description": "Unknown journal"
           }
         },
         "security": [
@@ -979,6 +969,57 @@
             "bearer": []
           }
         ],
+        "tags": [
+          "journal"
+        ]
+      }
+    },
+    "/api/v1/journal/sessions/stats": {
+      "get": {
+        "operationId": "Journal_stats",
+        "parameters": [
+          {
+            "name": "from",
+            "required": false,
+            "in": "query",
+            "description": "First day, inclusive (YYYY-MM-DD). Omitted = from the first event.",
+            "schema": {
+              "example": "2026-09-01",
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "required": false,
+            "in": "query",
+            "description": "Last day, inclusive (YYYY-MM-DD). Omitted = up to the last event.",
+            "schema": {
+              "example": "2027-08-31",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JournalStatsDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Archers only"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Figures behind the archer's indicators (competitions, arrows per day), over a period or all time",
         "tags": [
           "journal"
         ]
@@ -2005,7 +2046,7 @@
           },
           "sessionCount": {
             "type": "number",
-            "description": "Number of sessions in the journal."
+            "description": "Number of the archer's events dated within the period."
           }
         },
         "required": [
@@ -2034,7 +2075,7 @@
           "endDate": {
             "type": "string",
             "example": "2027-08-31",
-            "description": "Last day, inclusive (YYYY-MM-DD). Not before `startDate`."
+            "description": "Last day, inclusive (YYYY-MM-DD). Not before `startDate`; the period must not overlap another of the archer's journals."
           }
         },
         "required": [
@@ -2060,7 +2101,7 @@
           "endDate": {
             "type": "string",
             "example": "2027-08-31",
-            "description": "Last day, inclusive. The period must keep covering the journal's sessions."
+            "description": "Last day, inclusive. The period must not overlap another of the archer's journals."
           }
         }
       },
@@ -2161,10 +2202,6 @@
             "type": "string",
             "format": "uuid"
           },
-          "journalId": {
-            "type": "string",
-            "format": "uuid"
-          },
           "type": {
             "allOf": [
               {
@@ -2232,7 +2269,6 @@
         },
         "required": [
           "id",
-          "journalId",
           "type",
           "date",
           "startTime",
@@ -2244,6 +2280,88 @@
           "title",
           "color",
           "icon"
+        ]
+      },
+      "CompetitionStatDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Id of the event (session)."
+          },
+          "date": {
+            "type": "string",
+            "example": "2026-10-03"
+          },
+          "discipline": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Discipline"
+              }
+            ]
+          },
+          "arrowCount": {
+            "type": "number",
+            "nullable": true
+          },
+          "score": {
+            "type": "number",
+            "nullable": true
+          },
+          "location": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "date",
+          "discipline",
+          "arrowCount",
+          "score",
+          "location"
+        ]
+      },
+      "ArrowsByDayDto": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "example": "2026-10-03"
+          },
+          "arrows": {
+            "type": "number",
+            "description": "Arrows shot that day, all types of events together."
+          }
+        },
+        "required": [
+          "date",
+          "arrows"
+        ]
+      },
+      "JournalStatsDto": {
+        "type": "object",
+        "properties": {
+          "competitions": {
+            "description": "Competitions, oldest first.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CompetitionStatDto"
+            }
+          },
+          "arrowsByDay": {
+            "description": "Days with a recorded number of arrows, oldest first.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ArrowsByDayDto"
+            }
+          }
+        },
+        "required": [
+          "competitions",
+          "arrowsByDay"
         ]
       },
       "SessionSuggestionsDto": {
@@ -2285,11 +2403,6 @@
       "CreateSessionDto": {
         "type": "object",
         "properties": {
-          "journalId": {
-            "type": "string",
-            "format": "uuid",
-            "description": "Journal the session is added to."
-          },
           "type": {
             "allOf": [
               {
@@ -2300,7 +2413,7 @@
           "date": {
             "type": "string",
             "example": "2026-10-03",
-            "description": "Local date (YYYY-MM-DD), within the journal's period."
+            "description": "Local date (YYYY-MM-DD)."
           },
           "startTime": {
             "type": "string",
@@ -2310,7 +2423,6 @@
           }
         },
         "required": [
-          "journalId",
           "type",
           "date"
         ]
@@ -2328,10 +2440,6 @@
         "type": "object",
         "properties": {
           "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "journalId": {
             "type": "string",
             "format": "uuid"
           },
@@ -2458,7 +2566,6 @@
         },
         "required": [
           "id",
-          "journalId",
           "type",
           "date",
           "startTime",

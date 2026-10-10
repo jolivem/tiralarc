@@ -26,6 +26,8 @@ export type FavoriteSite = Schemas['SiteDto'];
 export type FavoriteSiteCreate = Schemas['CreateSiteDto'];
 export type EventColor = NonNullable<Schemas['SessionDto']['color']>;
 export type EventIcon = NonNullable<Schemas['SessionDto']['icon']>;
+export type JournalStats = Schemas['JournalStatsDto'];
+export type CompetitionStat = Schemas['CompetitionStatDto'];
 export type ThemeFill = Schemas['FillDto'];
 export type SessionPhoto = Schemas['PhotoDto'];
 export type SessionType = Schemas['SessionDto']['type'];
@@ -50,8 +52,7 @@ export type ErrorCode =
   | 'INVALID_REFRESH_TOKEN'
   | 'INVALID_ID_TOKEN'
   | 'PROVIDER_NOT_CONFIGURED'
-  | 'SESSION_OUTSIDE_JOURNAL'
-  | 'JOURNAL_PERIOD_EXCLUDES_SESSIONS'
+  | 'JOURNAL_OVERLAP'
   | 'INVITATION_ALREADY_SENT'
   | 'INVALID_INVITATION_TOKEN'
   | 'CANNOT_INVITE_SELF'

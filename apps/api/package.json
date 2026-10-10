@@ -22,7 +22,8 @@
     "db:migrate": "prisma migrate dev && prisma generate",
     "db:deploy": "prisma migrate deploy",
     "postinstall": "prisma generate",
-    "user:make-admin": "dotenv run -q -f .env -- node dist/cli/make-admin.js"
+    "user:make-admin": "dotenv run -q -f .env -- node dist/cli/make-admin.js",
+    "db:seed-journal": "tsc -p tsconfig.build.json --outDir dist-openapi --tsBuildInfoFile dist-openapi/.tsbuildinfo && dotenv run -q -f .env -- node dist-openapi/cli/seed-journal.js"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1148.0",

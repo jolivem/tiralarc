@@ -24,7 +24,7 @@ describe('Event photos (e2e)', () => {
       await http()
         .post('/api/v1/journal/sessions')
         .set(as(archer))
-        .send({ journalId, type, date: '2026-10-10' })
+        .send({ type, date: '2026-10-10' })
         .expect(201)
     ).body.id as string;
   const upload = (sessionId: string, file: Buffer, token = archer, name = 'photo.jpg') =>
@@ -136,7 +136,7 @@ describe('Event photos (e2e)', () => {
     expect(list.body[0]).toMatchObject({ width: 200, height: 100 });
   });
 
-  it('deletes the files with their event and with their journal', async () => {
+  it('deletes the files with their event; a journal can go, its events and photos stay', async () => {
     const sessionId = await createSession();
     await upload(sessionId, picture).expect(201);
     const mine = () => [...ctx.files.keys()].filter((key) => key.includes(sessionId));
@@ -146,8 +146,13 @@ describe('Event photos (e2e)', () => {
 
     const other = await createSession();
     await upload(other, picture).expect(201);
-    expect(ctx.files.size).toBeGreaterThan(0);
+    const stored = ctx.files.size;
     await http().delete(`/api/v1/journals/${journalId}`).set(as(archer)).expect(204);
-    expect(ctx.files.size).toBe(0);
+    expect(ctx.files.size).toBe(stored);
+    const photos = await http()
+      .get(`/api/v1/journal/sessions/${other}/photos`)
+      .set(as(archer))
+      .expect(200);
+    expect(photos.body).toHaveLength(1);
   });
 });

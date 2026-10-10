@@ -1,6 +1,6 @@
 import { HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
 import { ApiException, ErrorCode } from '../common/errors.js';
-import type { Journal, JournalSession } from '../generated/prisma/client.js';
+import { type Journal, type JournalSession, SessionType } from '../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import {
   type CreateJournalDto,
@@ -9,6 +9,7 @@ import {
   type EventIcon,
   type FillDto,
   type JournalDto,
+  type JournalStatsDto,
   MONTH,
   type MonthThemeDto,
   MAX_LIST_ITEMS,
@@ -87,26 +88,11 @@ const toStoredThemes = (months: MonthThemeDto[]) =>
     ]),
   );
 
-function toJournalDto(j: Journal, sessionCount: number): JournalDto {
-  return {
-    id: j.id,
-    title: j.title,
-    startDate: fromDbDate(j.startDate),
-    endDate: fromDbDate(j.endDate),
-    monthThemes: monthThemesOf(j),
-    sessionCount,
-  };
-}
-
-function assertInJournal(journal: Journal, date: Date): void {
-  if (date < journal.startDate || date > journal.endDate) {
-    throw new ApiException(
-      HttpStatus.BAD_REQUEST,
-      ErrorCode.SESSION_OUTSIDE_JOURNAL,
-      "The session date is outside the journal's period",
-    );
-  }
-}
+/** The events of a journal: its owner's sessions dated within its period. */
+const eventsOf = (journal: Journal) => ({
+  userId: journal.userId,
+  date: { gte: journal.startDate, lte: journal.endDate },
+});
 
 function assertPeriod(startDate: Date, endDate: Date): void {
   if (endDate < startDate) {
@@ -135,7 +121,6 @@ function assertMonthOf(journal: Journal, month: string): void {
 function toSummary(s: JournalSession): SessionSummaryDto {
   return {
     id: s.id,
-    journalId: s.journalId,
     type: s.type,
     date: fromDbDate(s.date),
     startTime: s.startTime,
@@ -167,7 +152,11 @@ function toDto(s: JournalSession): SessionDto {
   };
 }
 
-/** Archers' journals. Every query is scoped to the owner: someone else's journal or session is a 404. */
+/**
+ * Archers' journals and events. A journal is a period: its events are the archer's
+ * sessions dated within it. Every query is scoped to the owner: someone else's
+ * journal or session is a 404.
+ */
 @Injectable()
 export class JournalService {
   constructor(
@@ -180,43 +169,33 @@ export class JournalService {
     const journals = await this.prisma.journal.findMany({
       where: { userId },
       orderBy: [{ startDate: 'desc' }, { createdAt: 'desc' }],
-      include: { _count: { select: { sessions: true } } },
     });
-    return journals.map((j) => toJournalDto(j, j._count.sessions));
+    return Promise.all(journals.map((journal) => this.toJournalDto(journal)));
   }
 
   async createJournal(userId: string, dto: CreateJournalDto): Promise<JournalDto> {
     const startDate = toDbDate(dto.startDate);
     const endDate = toDbDate(dto.endDate);
     assertPeriod(startDate, endDate);
+    await this.assertNoOverlap(userId, startDate, endDate);
     const journal = await this.prisma.journal.create({
       data: { userId, title: dto.title.trim(), startDate, endDate },
     });
-    return toJournalDto(journal, 0);
+    return this.toJournalDto(journal);
   }
 
-  /** The period can only change while it still covers every session of the journal. */
+  /** Events follow their dates: moving the period changes which ones the journal shows. */
   async updateJournal(userId: string, id: string, dto: UpdateJournalDto): Promise<JournalDto> {
     const current = await this.findOwnedJournal(userId, id);
     const startDate = dto.startDate !== undefined ? toDbDate(dto.startDate) : current.startDate;
     const endDate = dto.endDate !== undefined ? toDbDate(dto.endDate) : current.endDate;
     assertPeriod(startDate, endDate);
-    const outside = await this.prisma.journalSession.count({
-      where: { journalId: id, OR: [{ date: { lt: startDate } }, { date: { gt: endDate } }] },
-    });
-    if (outside > 0) {
-      throw new ApiException(
-        HttpStatus.CONFLICT,
-        ErrorCode.JOURNAL_PERIOD_EXCLUDES_SESSIONS,
-        `${outside} session(s) of the journal would be outside the new period`,
-      );
-    }
+    await this.assertNoOverlap(userId, startDate, endDate, id);
     const journal = await this.prisma.journal.update({
       where: { id },
       data: { title: dto.title?.trim(), startDate, endDate },
-      include: { _count: { select: { sessions: true } } },
     });
-    return toJournalDto(journal, journal._count.sessions);
+    return this.toJournalDto(journal);
   }
 
   /**
@@ -266,25 +245,17 @@ export class JournalService {
     const updated = await this.prisma.journal.update({
       where: { id },
       data: { monthThemes: toStoredThemes(months) },
-      include: { _count: { select: { sessions: true } } },
     });
-    return toJournalDto(updated, updated._count.sessions);
+    return this.toJournalDto(updated);
   }
 
-  /** Deletes the journal, its sessions and their photos. */
+  /** Deletes the journal only: the events of its period are kept. */
   async removeJournal(userId: string, id: string): Promise<void> {
     await this.findOwnedJournal(userId, id);
-    const photos = await this.photos.findByJournal(id);
     await this.prisma.journal.delete({ where: { id } });
-    await this.photos.removeFiles(photos);
   }
 
-  async list(
-    userId: string,
-    journalId: string,
-    from: string,
-    to: string,
-  ): Promise<SessionSummaryDto[]> {
+  async list(userId: string, from: string, to: string): Promise<SessionSummaryDto[]> {
     const start = toDbDate(from);
     const end = toDbDate(to);
     const days = (end.getTime() - start.getTime()) / 86_400_000;
@@ -295,12 +266,49 @@ export class JournalService {
         `"to" must be between "from" and ${MAX_RANGE_DAYS} days later`,
       );
     }
-    await this.findOwnedJournal(userId, journalId);
     const sessions = await this.prisma.journalSession.findMany({
-      where: { userId, journalId, date: { gte: start, lte: end } },
+      where: { userId, date: { gte: start, lte: end } },
       orderBy: [{ date: 'asc' }, { startTime: 'asc' }],
     });
     return sessions.map(toSummary);
+  }
+
+  /**
+   * Figures behind the archer's indicators, between two days (inclusive). Either bound
+   * can be left out: no bound at all means every event the archer ever recorded.
+   */
+  async stats(userId: string, from?: string, to?: string): Promise<JournalStatsDto> {
+    const period = {
+      userId,
+      date: { gte: from ? toDbDate(from) : undefined, lte: to ? toDbDate(to) : undefined },
+    };
+    const [competitions, arrows] = await Promise.all([
+      this.prisma.journalSession.findMany({
+        where: { ...period, type: SessionType.COMPETITION },
+        orderBy: [{ date: 'asc' }, { startTime: 'asc' }],
+        select: {
+          id: true,
+          date: true,
+          discipline: true,
+          arrowCount: true,
+          score: true,
+          location: true,
+        },
+      }),
+      this.prisma.journalSession.groupBy({
+        by: ['date'],
+        where: { ...period, arrowCount: { gt: 0 } },
+        _sum: { arrowCount: true },
+        orderBy: { date: 'asc' },
+      }),
+    ]);
+    return {
+      competitions: competitions.map((c) => ({ ...c, date: fromDbDate(c.date) })),
+      arrowsByDay: arrows.map((day) => ({
+        date: fromDbDate(day.date),
+        arrows: day._sum.arrowCount ?? 0,
+      })),
+    };
   }
 
   async suggestions(userId: string): Promise<SessionSuggestionsDto> {
@@ -319,15 +327,11 @@ export class JournalService {
   }
 
   async create(userId: string, dto: CreateSessionDto): Promise<SessionDto> {
-    const journal = await this.findOwnedJournal(userId, dto.journalId);
-    const date = toDbDate(dto.date);
-    assertInJournal(journal, date);
     const session = await this.prisma.journalSession.create({
       data: {
         userId,
-        journalId: journal.id,
         type: dto.type,
-        date,
+        date: toDbDate(dto.date),
         startTime: dto.startTime ?? null,
         wentWell: [],
         toImprove: [],
@@ -341,11 +345,8 @@ export class JournalService {
   }
 
   async update(userId: string, id: string, dto: UpdateSessionDto): Promise<SessionDto> {
-    const { journalId } = await this.findOwned(userId, id);
+    await this.findOwned(userId, id);
     const { date, wentWell, toImprove, location, title, ...rest } = dto;
-    if (date !== undefined) {
-      assertInJournal(await this.findOwnedJournal(userId, journalId), toDbDate(date));
-    }
     const session = await this.prisma.journalSession.update({
       where: { id },
       data: {
@@ -365,6 +366,41 @@ export class JournalService {
     const photos = await this.photos.findBySession(id);
     await this.prisma.journalSession.delete({ where: { id } });
     await this.photos.removeFiles(photos);
+  }
+
+  private async toJournalDto(journal: Journal): Promise<JournalDto> {
+    return {
+      id: journal.id,
+      title: journal.title,
+      startDate: fromDbDate(journal.startDate),
+      endDate: fromDbDate(journal.endDate),
+      monthThemes: monthThemesOf(journal),
+      sessionCount: await this.prisma.journalSession.count({ where: eventsOf(journal) }),
+    };
+  }
+
+  /** An archer's journals never share a day, so an event is in one journal at most. */
+  private async assertNoOverlap(
+    userId: string,
+    startDate: Date,
+    endDate: Date,
+    exceptId?: string,
+  ): Promise<void> {
+    const other = await this.prisma.journal.findFirst({
+      where: {
+        userId,
+        id: exceptId ? { not: exceptId } : undefined,
+        startDate: { lte: endDate },
+        endDate: { gte: startDate },
+      },
+    });
+    if (other) {
+      throw new ApiException(
+        HttpStatus.CONFLICT,
+        ErrorCode.JOURNAL_OVERLAP,
+        `The period overlaps the journal "${other.title}"`,
+      );
+    }
   }
 
   private async findOwnedJournal(userId: string, id: string): Promise<Journal> {

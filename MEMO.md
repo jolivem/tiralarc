@@ -76,6 +76,42 @@ pnpm db:down          # les données sont conservées (volume Docker)
 
 Adminer : serveur `mariadb`, utilisateur `tiralarc`, mot de passe `tiralarc`, base `tiralarc`.
 
+## Données de test
+
+Pour remplir le journal d'un archer avec une saison complète d'événements (compétition chaque
+samedi, entraînement chaque mercredi, renforcement chaque dimanche, coaching le 1er lundi du
+mois, fiches renseignées) :
+
+```bash
+pnpm --filter @tiralarc/api db:seed-journal vous@example.com
+```
+
+- Le compte doit exister et avoir le rôle archer.
+- Le journal rempli est celui dont la période contient la date du jour. S'il n'y en a pas, le
+  script crée « Saison 2026-2027 (test) » (1er septembre 2026 → 30 juin 2027).
+- Les données sont identiques d'une exécution à l'autre. Sans danger pendant que `pnpm dev`
+  tourne.
+
+**Si le journal contient déjà des événements**, le script s'arrête sans rien modifier et
+affiche :
+
+```
+The journal "Journal de test" already has 2 event(s). Run again with --replace to delete them all and seed it.
+ ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  …  Exit status 1
+```
+
+Ce n'est pas une panne : c'est un garde-fou contre les doublons (les lignes `ERR_PNPM…` signalent
+seulement ce refus). Pour continuer, relancer avec `--replace`, qui **supprime tous vos
+événements datés dans la période de ce journal** — y compris ceux saisis à la main — puis le
+remplit :
+
+```bash
+pnpm --filter @tiralarc/api db:seed-journal vous@example.com --replace
+```
+
+Le script ne sait pas ajouter sans vider : pour conserver des événements existants, ne pas
+utiliser `--replace` sur ce journal.
+
 ## Photos des événements (stockage S3)
 
 Les photos jointes aux événements du journal sont rangées dans un stockage objet « compatible

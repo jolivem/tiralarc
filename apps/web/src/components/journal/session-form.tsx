@@ -34,7 +34,6 @@ import {
   IconTrash,
 } from '@tabler/icons-react';
 import type {
-  Journal,
   Discipline,
   Feeling,
   JournalSession,
@@ -108,13 +107,10 @@ const toText = (value: string) => (value.trim() === '' ? null : value);
  */
 export function SessionForm({
   session,
-  journal,
   suggestions,
   children,
 }: {
   session: JournalSession;
-  /** The session's journal: its period bounds the date. */
-  journal?: Journal;
   suggestions: JournalSuggestions;
   /** Shown under the sheet, above the action bar (the event's photos). */
   children?: ReactNode;
@@ -161,8 +157,6 @@ export function SessionForm({
             label={t('date')}
             value={values.date}
             onChange={(date) => date && set('date', date)}
-            minDate={journal?.startDate}
-            maxDate={journal?.endDate}
             valueFormat="ddd D MMM YYYY"
             leftSection={<IconCalendar size={18} />}
           />

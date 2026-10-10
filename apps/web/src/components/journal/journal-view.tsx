@@ -25,12 +25,19 @@ import { useMonthColoring } from './use-month-coloring';
 
 const DEFAULT_DURATION_MINUTES = 60;
 
-/** Days to load for the visible month (with a margin for the neighbouring weeks shown). */
-function visibleRange(date: string): { from: string; to: string } {
+/**
+ * Days to load for the visible month (with a margin for the neighbouring weeks shown),
+ * kept within the journal's period: its events are those dated within it.
+ * Null when the month is entirely outside the period.
+ */
+function visibleRange(date: string, journal: Journal): { from: string; to: string } | null {
   const d = dayjs(date);
+  const from = d.startOf('month').subtract(7, 'day').format('YYYY-MM-DD');
+  const to = d.endOf('month').add(7, 'day').format('YYYY-MM-DD');
+  if (to < journal.startDate || from > journal.endDate) return null;
   return {
-    from: d.startOf('month').subtract(7, 'day').format('YYYY-MM-DD'),
-    to: d.endOf('month').add(7, 'day').format('YYYY-MM-DD'),
+    from: from < journal.startDate ? journal.startDate : from,
+    to: to > journal.endDate ? journal.endDate : to,
   };
 }
 
@@ -94,10 +101,12 @@ export function JournalView({ journal }: { journal: Journal }) {
           ? ''
           : t(`errors.${coloring.status}`);
 
-  const { from, to } = visibleRange(date);
+  const range = visibleRange(date, journal);
+  const from = range?.from;
+  const to = range?.to;
   useEffect(() => {
-    startLoading(async () => setSessions(await listSessions(journal.id, from, to)));
-  }, [journal.id, from, to]);
+    startLoading(async () => setSessions(from && to ? await listSessions(from, to) : []));
+  }, [from, to]);
 
   const events = sessions.map((session) => {
     // An "other" event is its title (or its text); a session is its type, with its score or place.

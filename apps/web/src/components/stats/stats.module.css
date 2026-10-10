@@ -1,0 +1,48 @@
+/*
+ * Chart colours. Categorical slots are assigned to disciplines in a fixed order
+ * (a discipline keeps its colour whatever else is on the chart); both modes were
+ * checked for colour-blind separation and contrast against the card surface.
+ */
+.viz {
+  --series-1: #2a78d6;
+  --series-2: #eb6834;
+  --series-3: #1baf7a;
+  --series-4: #eda100;
+  --series-5: #e87ba4;
+  --series-6: #008300;
+  --series-7: #4a3aa7;
+  --viz-grid: #e1e0d9;
+  --viz-axis: #898781;
+  --viz-today: #c3c2b7;
+
+  @mixin dark {
+    --series-1: #3987e5;
+    --series-2: #d95926;
+    --series-3: #199e70;
+    --series-4: #c98500;
+    --series-5: #d55181;
+    --series-6: #008300;
+    --series-7: #9085e9;
+    --viz-grid: #3a3a3a;
+    --viz-axis: #898781;
+    --viz-today: #5c5c5c;
+  }
+}
+
+.figure {
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.numeric {
+  font-variant-numeric: tabular-nums;
+}
+
+.swatch {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-right: 6px;
+  border-radius: 50%;
+}

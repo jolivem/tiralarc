@@ -77,7 +77,7 @@ function NewSessionForm({
   const submit = () => {
     if (!type || !date) return;
     startTransition(async () => {
-      setState(await createSession({ journalId: journal.id, type, date, startTime: time || null }));
+      setState(await createSession({ type, date, startTime: time || null }));
     });
   };
 

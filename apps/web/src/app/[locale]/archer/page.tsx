@@ -30,27 +30,24 @@ export default async function ArcherHomePage({ params }: PageProps<'/[locale]/ar
     getSelectedJournal(),
   ]);
 
-  // The selected journal's events over the months shown.
+  // The selected journal's events over the months shown: those dated within its period.
   const today = new Date().toISOString().slice(0, 10);
   const months = Array.from({ length: OVERVIEW_MONTHS }, (_, i) => addMonths(today.slice(0, 7), i));
-  const { data: sessions } = selected
-    ? await (
-        await getAuthedApi()
-      ).GET('/api/v1/journal/sessions', {
-        params: {
-          query: {
-            journalId: selected.id,
-            from: `${months[0]}-01`,
-            // The day before the first month not shown.
-            to: new Date(
-              Date.parse(`${addMonths(today.slice(0, 7), OVERVIEW_MONTHS)}-01`) - 86_400_000,
-            )
-              .toISOString()
-              .slice(0, 10),
-          },
-        },
-      })
-    : { data: undefined };
+  const firstDay = `${months[0]}-01`;
+  // The day before the first month not shown.
+  const lastDay = new Date(
+    Date.parse(`${addMonths(today.slice(0, 7), OVERVIEW_MONTHS)}-01`) - 86_400_000,
+  )
+    .toISOString()
+    .slice(0, 10);
+  const from = selected && selected.startDate > firstDay ? selected.startDate : firstDay;
+  const to = selected && selected.endDate < lastDay ? selected.endDate : lastDay;
+  const { data: sessions } =
+    selected && from <= to
+      ? await (
+          await getAuthedApi()
+        ).GET('/api/v1/journal/sessions', { params: { query: { from, to } } })
+      : { data: undefined };
 
   return (
     <SectionPage

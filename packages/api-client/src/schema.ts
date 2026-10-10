@@ -283,6 +283,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/journal/sessions/stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Figures behind the archer's indicators (competitions, arrows per day), over a period or all time */
+        get: operations["Journal_stats"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/journal/sessions/suggestions": {
         parameters: {
             query?: never;
@@ -590,7 +607,7 @@ export interface components {
             endDate: string;
             /** @description Decoration of the calendar, for the months that have one (oldest first). */
             monthThemes: components["schemas"]["MonthThemeDto"][];
-            /** @description Number of sessions in the journal. */
+            /** @description Number of the archer's events dated within the period. */
             sessionCount: number;
         };
         CreateJournalDto: {
@@ -602,7 +619,7 @@ export interface components {
              */
             startDate: string;
             /**
-             * @description Last day, inclusive (YYYY-MM-DD). Not before `startDate`.
+             * @description Last day, inclusive (YYYY-MM-DD). Not before `startDate`; the period must not overlap another of the archer's journals.
              * @example 2027-08-31
              */
             endDate: string;
@@ -616,7 +633,7 @@ export interface components {
              */
             startDate?: string;
             /**
-             * @description Last day, inclusive. The period must keep covering the journal's sessions.
+             * @description Last day, inclusive. The period must not overlap another of the archer's journals.
              * @example 2027-08-31
              */
             endDate?: string;
@@ -649,8 +666,6 @@ export interface components {
         SessionSummaryDto: {
             /** Format: uuid */
             id: string;
-            /** Format: uuid */
-            journalId: string;
             type: components["schemas"]["SessionType"];
             /** @example 2026-10-03 */
             date: string;
@@ -669,6 +684,31 @@ export interface components {
             /** @description `OTHER` events only; null = default pictogram. */
             icon: components["schemas"]["EventIcon"] | null;
         };
+        CompetitionStatDto: {
+            /**
+             * Format: uuid
+             * @description Id of the event (session).
+             */
+            id: string;
+            /** @example 2026-10-03 */
+            date: string;
+            discipline: components["schemas"]["Discipline"] | null;
+            arrowCount: number | null;
+            score: number | null;
+            location: string | null;
+        };
+        ArrowsByDayDto: {
+            /** @example 2026-10-03 */
+            date: string;
+            /** @description Arrows shot that day, all types of events together. */
+            arrows: number;
+        };
+        JournalStatsDto: {
+            /** @description Competitions, oldest first. */
+            competitions: components["schemas"]["CompetitionStatDto"][];
+            /** @description Days with a recorded number of arrows, oldest first. */
+            arrowsByDay: components["schemas"]["ArrowsByDayDto"][];
+        };
         SessionSuggestionsDto: {
             locations: string[];
             /** @description Distances in meters. */
@@ -677,14 +717,9 @@ export interface components {
             toImprove: string[];
         };
         CreateSessionDto: {
-            /**
-             * Format: uuid
-             * @description Journal the session is added to.
-             */
-            journalId: string;
             type: components["schemas"]["SessionType"];
             /**
-             * @description Local date (YYYY-MM-DD), within the journal's period.
+             * @description Local date (YYYY-MM-DD).
              * @example 2026-10-03
              */
             date: string;
@@ -699,8 +734,6 @@ export interface components {
         SessionDto: {
             /** Format: uuid */
             id: string;
-            /** Format: uuid */
-            journalId: string;
             type: components["schemas"]["SessionType"];
             /** @example 2026-10-03 */
             date: string;
@@ -1380,6 +1413,13 @@ export interface operations {
                 };
                 content?: never;
             };
+            /** @description JOURNAL_OVERLAP */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
         };
     };
     Journals_remove: {
@@ -1450,7 +1490,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Sessions would fall outside the new period */
+            /** @description JOURNAL_OVERLAP */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -1561,8 +1601,6 @@ export interface operations {
     Journal_list: {
         parameters: {
             query: {
-                /** @description Journal to read. */
-                journalId: string;
                 /** @description First day, inclusive (YYYY-MM-DD). */
                 from: string;
                 /** @description Last day, inclusive (YYYY-MM-DD). At most 366 days after `from`. */
@@ -1619,8 +1657,32 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Unknown journal */
-            404: {
+        };
+    };
+    Journal_stats: {
+        parameters: {
+            query?: {
+                /** @description First day, inclusive (YYYY-MM-DD). Omitted = from the first event. */
+                from?: string;
+                /** @description Last day, inclusive (YYYY-MM-DD). Omitted = up to the last event. */
+                to?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JournalStatsDto"];
+                };
+            };
+            /** @description Archers only */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };

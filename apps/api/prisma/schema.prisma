@@ -139,8 +139,9 @@ enum Feeling {
   EXHAUSTED
 }
 
-/// An archer's journal: the sessions of one season (e.g. school year 2026-2027).
-/// Both days are inclusive; an archer's journals may overlap.
+/// An archer's journal: a named period, typically one season (e.g. school year 2026-2027).
+/// Its events are the archer's sessions dated within the period (both days inclusive); there is no
+/// link between the two tables. An archer's journals do not overlap (enforced by the API).
 model Journal {
   id          String   @id @default(uuid()) @db.Char(36)
   userId      String   @map("user_id") @db.Char(36)
@@ -153,19 +154,18 @@ model Journal {
   createdAt   DateTime @default(now()) @map("created_at") @db.DateTime(3)
   updatedAt   DateTime @updatedAt @map("updated_at") @db.DateTime(3)
 
-  user     User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  sessions JournalSession[]
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, startDate])
   @@map("journals")
 }
 
-/// A journal entry: a calendar event plus its session sheet (or a free text for `OTHER` events).
+/// An archer's event: a calendar entry plus its session sheet (or a free text for `OTHER` events).
+/// It shows in the journal whose period covers its date, if any.
 /// Date and time are "wall clock" values (no time zone): 18:00 stays 18:00 on every device.
 model JournalSession {
   id              String      @id @default(uuid()) @db.Char(36)
   userId          String      @map("user_id") @db.Char(36)
-  journalId       String      @map("journal_id") @db.Char(36)
   type            SessionType
   date            DateTime    @db.Date
   /// "HH:mm"; null = all-day event.
@@ -194,12 +194,10 @@ model JournalSession {
   createdAt       DateTime    @default(now()) @map("created_at") @db.DateTime(3)
   updatedAt       DateTime    @updatedAt @map("updated_at") @db.DateTime(3)
 
-  user    User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  journal Journal        @relation(fields: [journalId], references: [id], onDelete: Cascade)
-  photos  SessionPhoto[]
+  user   User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  photos SessionPhoto[]
 
   @@index([userId, date])
-  @@index([journalId, date])
   @@map("journal_sessions")
 }
 

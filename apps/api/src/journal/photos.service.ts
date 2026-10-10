@@ -105,17 +105,10 @@ export class PhotosService {
     await this.removeFiles([photo]);
   }
 
-  /** Photos of events about to be deleted: read them before the rows cascade away. */
+  /** Photos of an event about to be deleted: read them before the rows cascade away. */
   findBySession(sessionId: string): Promise<PhotoRef[]> {
     return this.prisma.sessionPhoto.findMany({
       where: { sessionId },
-      select: { id: true, sessionId: true, userId: true },
-    });
-  }
-
-  findByJournal(journalId: string): Promise<PhotoRef[]> {
-    return this.prisma.sessionPhoto.findMany({
-      where: { session: { journalId } },
       select: { id: true, sessionId: true, userId: true },
     });
   }

@@ -54,6 +54,7 @@ export class JournalsController {
 
   @Post()
   @ApiCreatedResponse({ type: JournalDto })
+  @ApiConflictResponse({ description: 'JOURNAL_OVERLAP' })
   create(
     @CurrentUser() user: AuthenticatedUser,
     @Body() dto: CreateJournalDto,
@@ -64,7 +65,7 @@ export class JournalsController {
   @Patch(':id')
   @ApiOkResponse({ type: JournalDto })
   @ApiNotFoundResponse()
-  @ApiConflictResponse({ description: 'Sessions would fall outside the new period' })
+  @ApiConflictResponse({ description: 'JOURNAL_OVERLAP' })
   update(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id', new ParseUUIDPipe()) id: string,
@@ -102,7 +103,7 @@ export class JournalsController {
     return this.journal.setMonthColoring(user.id, id, month, dto.fills);
   }
 
-  /** Also deletes the journal's sessions. */
+  /** The events of the period are kept. */
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiNoContentResponse()
