@@ -43,6 +43,7 @@ model User {
   profileInvitations      ProfileInvitation[]
   favoriteSites           FavoriteSite[]
   sessionPhotos           SessionPhoto[]
+  goals                   Goal[]
   journalSessions         JournalSession[]
 
   @@map("users")
@@ -287,4 +288,30 @@ model SessionPhoto {
   @@index([sessionId, createdAt])
   @@index([userId])
   @@map("session_photos")
+}
+
+enum GoalType {
+  SPORT
+  TECHNIQUE
+  PHYSICAL
+  PERSONAL
+}
+
+/// A goal an archer sets for themselves. Reached once `achievedOn` is set.
+model Goal {
+  id          String    @id @default(uuid()) @db.Char(36)
+  userId      String    @map("user_id") @db.Char(36)
+  type        GoalType
+  description String    @db.VarChar(500)
+  /// Day the archer set the goal (they can backdate it), not the row's timestamp.
+  createdOn   DateTime  @map("created_on") @db.Date
+  /// Day the goal was reached; null = not yet.
+  achievedOn  DateTime? @map("achieved_on") @db.Date
+  createdAt   DateTime  @default(now()) @map("created_at") @db.DateTime(3)
+  updatedAt   DateTime  @updatedAt @map("updated_at") @db.DateTime(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdOn])
+  @@map("goals")
 }

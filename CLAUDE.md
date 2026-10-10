@@ -46,6 +46,9 @@ the same API — keep it client-agnostic (no cookies, no web-only assumptions in
 - Indicators (`/archer/stats`): `GET /journal/sessions/stats?from&to` (both optional = all time) returns raw figures; the web draws them with
   `@mantine/charts` (`components/stats/`). Chart colours are CSS variables in `stats.module.css` (light + dark sets
   checked for colour-blind separation); a discipline keeps its colour slot (`disciplineColor`).
+- Goals (`apps/api/src/goals/`, card on the Indicators page): type, description, the day it was set (`createdOn`,
+  editable) and the day it was reached (`achievedOn`; null = not reached — there is no separate boolean). They belong
+  to the archer, not to a journal or period.
 - Event photos: files go to S3-compatible storage through `StorageService` (`apps/api/src/storage/`, a local
   Versity Gateway on :9000 in dev, an in-memory fake in e2e tests); the DB keeps one `SessionPhoto` row. Uploads are
   re-encoded with `sharp` (2000 px + thumbnail, metadata dropped) and read back through 10-minute signed URLs.

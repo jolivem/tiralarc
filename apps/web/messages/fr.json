@@ -422,5 +422,38 @@
     "period": "Période des indicateurs",
     "allTime": "Tout le temps",
     "allTimeIntro": "Tous vos événements, toutes saisons confondues."
+  },
+  "goals": {
+    "title": "Objectifs",
+    "add": "Nouvel objectif",
+    "edit": "Modifier l'objectif",
+    "empty": "Aucun objectif pour l'instant. Fixez-en un pour suivre votre progression.",
+    "reached": "{count, plural, one {objectif atteint} other {objectifs atteints}}",
+    "progress": "{reached} objectifs atteints sur {total}",
+    "types": {
+      "SPORT": "Sportif",
+      "TECHNIQUE": "Technique",
+      "PHYSICAL": "Physique",
+      "PERSONAL": "Personnel"
+    },
+    "type": "Type",
+    "choose": "Choisir",
+    "description": "Description",
+    "descriptionPlaceholder": "Ex. : passer les 550 points en salle",
+    "createdOn": "Date de création",
+    "achieved": "Objectif atteint",
+    "achievedOn": "Atteint le",
+    "dateSet": "Fixé le {set}",
+    "datesReached": "Fixé le {set} · atteint le {reached}",
+    "markReached": "Marquer comme atteint : {goal}",
+    "markOpen": "Marquer comme non atteint : {goal}",
+    "editLabel": "Modifier l'objectif : {goal}",
+    "deleteLabel": "Supprimer l'objectif : {goal}",
+    "deleteTitle": "Supprimer cet objectif ?",
+    "deleteBody": "L'objectif « {goal} » sera définitivement supprimé.",
+    "create": "Créer l'objectif",
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "delete": "Supprimer"
   }
 }

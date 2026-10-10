@@ -1,6 +1,7 @@
 import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/server';
 import { SectionPage } from '@/components/section-page';
 import { ALL_TIME } from '@/components/stats/chart-utils';
+import { GoalsCard } from '@/components/stats/goals-card';
 import { PeriodSelect } from '@/components/stats/period-select';
 import { ArrowsCard, CompetitionsCard, ScoresCard } from '@/components/stats/stats-cards';
 import type { Locale } from '@/i18n/routing';
@@ -26,11 +27,14 @@ export default async function ArcherStatsPage({
   const journal =
     period === ALL_TIME ? null : (journals.find((j) => j.id === period) ?? selected ?? null);
 
-  const { data: stats } = await (
-    await getAuthedApi()
-  ).GET('/api/v1/journal/sessions/stats', {
-    params: { query: journal ? { from: journal.startDate, to: journal.endDate } : {} },
-  });
+  const api = await getAuthedApi();
+  const [{ data: stats }, { data: goals }] = await Promise.all([
+    api.GET('/api/v1/journal/sessions/stats', {
+      params: { query: journal ? { from: journal.startDate, to: journal.endDate } : {} },
+    }),
+    // Goals are the archer's, whatever the period shown.
+    api.GET('/api/v1/goals'),
+  ]);
   const { competitions, arrowsByDay } = stats ?? { competitions: [], arrowsByDay: [] };
 
   // Decided here so the server and the browser draw the same "today" marker.
@@ -52,6 +56,7 @@ export default async function ArcherStatsPage({
       }
       actions={<PeriodSelect journals={journals} value={journal?.id ?? ALL_TIME} />}
     >
+      <GoalsCard goals={goals ?? []} today={today} />
       <ArrowsCard period={span} arrowsByDay={arrowsByDay} today={today} />
       <ScoresCard period={span} competitions={competitions} today={today} />
       <CompetitionsCard competitions={competitions} />

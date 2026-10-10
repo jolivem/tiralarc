@@ -422,5 +422,38 @@
     "period": "Period of the indicators",
     "allTime": "All time",
     "allTimeIntro": "All your events, every season together."
+  },
+  "goals": {
+    "title": "Goals",
+    "add": "New goal",
+    "edit": "Edit goal",
+    "empty": "No goal yet. Set one to follow your progress.",
+    "reached": "{count, plural, one {goal reached} other {goals reached}}",
+    "progress": "{reached} goals reached out of {total}",
+    "types": {
+      "SPORT": "Sport",
+      "TECHNIQUE": "Technique",
+      "PHYSICAL": "Physical",
+      "PERSONAL": "Personal"
+    },
+    "type": "Type",
+    "choose": "Choose",
+    "description": "Description",
+    "descriptionPlaceholder": "E.g. score over 550 indoors",
+    "createdOn": "Date set",
+    "achieved": "Goal reached",
+    "achievedOn": "Reached on",
+    "dateSet": "Set on {set}",
+    "datesReached": "Set on {set} · reached on {reached}",
+    "markReached": "Mark as reached: {goal}",
+    "markOpen": "Mark as not reached: {goal}",
+    "editLabel": "Edit goal: {goal}",
+    "deleteLabel": "Delete goal: {goal}",
+    "deleteTitle": "Delete this goal?",
+    "deleteBody": "The goal “{goal}” will be permanently deleted.",
+    "create": "Create goal",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete"
   }
 }

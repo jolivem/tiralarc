@@ -1322,6 +1322,161 @@
         ]
       }
     },
+    "/api/v1/goals": {
+      "get": {
+        "operationId": "Goals_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/GoalDto"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Archers only"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "goals"
+        ]
+      },
+      "post": {
+        "operationId": "Goals_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateGoalDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GoalDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Archers only"
+          },
+          "409": {
+            "description": "LIMIT_REACHED"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "goals"
+        ]
+      }
+    },
+    "/api/v1/goals/{id}": {
+      "patch": {
+        "operationId": "Goals_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateGoalDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GoalDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Archers only"
+          },
+          "404": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "goals"
+        ]
+      },
+      "delete": {
+        "operationId": "Goals_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "403": {
+            "description": "Archers only"
+          },
+          "404": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "goals"
+        ]
+      }
+    },
     "/api/v1/profile": {
       "get": {
         "operationId": "Profile_get",
@@ -2783,6 +2938,115 @@
         "required": [
           "file"
         ]
+      },
+      "GoalType": {
+        "type": "string",
+        "enum": [
+          "SPORT",
+          "TECHNIQUE",
+          "PHYSICAL",
+          "PERSONAL"
+        ]
+      },
+      "GoalDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "type": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/GoalType"
+              }
+            ]
+          },
+          "description": {
+            "type": "string"
+          },
+          "createdOn": {
+            "type": "string",
+            "example": "2026-10-10",
+            "description": "Day the goal was set."
+          },
+          "achieved": {
+            "type": "boolean",
+            "description": "True once the goal has a day it was reached."
+          },
+          "achievedOn": {
+            "type": "string",
+            "nullable": true,
+            "example": "2027-02-06"
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "description",
+          "createdOn",
+          "achieved",
+          "achievedOn"
+        ]
+      },
+      "CreateGoalDto": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/GoalType"
+              }
+            ]
+          },
+          "description": {
+            "type": "string",
+            "example": "Passer les 550 points en salle",
+            "minLength": 1,
+            "maxLength": 500
+          },
+          "createdOn": {
+            "type": "string",
+            "example": "2026-10-10",
+            "description": "Day the goal was set (YYYY-MM-DD). Defaults to today."
+          },
+          "achievedOn": {
+            "type": "string",
+            "nullable": true,
+            "example": "2027-02-06",
+            "description": "Day the goal was reached (YYYY-MM-DD); omitted / null = not reached yet."
+          }
+        },
+        "required": [
+          "type",
+          "description"
+        ]
+      },
+      "UpdateGoalDto": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/GoalType"
+              }
+            ]
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          },
+          "createdOn": {
+            "type": "string",
+            "example": "2026-10-10"
+          },
+          "achievedOn": {
+            "type": "string",
+            "nullable": true,
+            "example": "2027-02-06"
+          }
+        }
       },
       "AgeCategory": {
         "type": "string",

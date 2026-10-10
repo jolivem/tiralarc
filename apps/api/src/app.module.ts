@@ -5,6 +5,7 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { LoggerModule } from 'nestjs-pino';
 import { AuthModule } from './auth/auth.module.js';
 import { type Env, validateEnv } from './config/env.js';
+import { GoalsModule } from './goals/goals.module.js';
 import { HealthModule } from './health/health.module.js';
 import { JournalModule } from './journal/journal.module.js';
 import { MailModule } from './mail/mail.module.js';
@@ -44,6 +45,7 @@ import { UsersModule } from './users/users.module.js';
     AuthModule,
     UsersModule,
     JournalModule,
+    GoalsModule,
     ProfileModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],

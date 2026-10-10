@@ -3,7 +3,7 @@
 État au 10 octobre 2026 (après la suppression du lien entre journaux et événements). La source de vérité reste `apps/api/prisma/schema.prisma` : ce document est à
 mettre à jour quand le schéma change.
 
-La base est une MariaDB de 11 tables. Tout part de `users` : supprimer un utilisateur supprime en cascade
+La base est une MariaDB de 12 tables. Tout part de `users` : supprimer un utilisateur supprime en cascade
 tout ce qui lui appartient.
 
 ## Vue d'ensemble
@@ -18,6 +18,7 @@ erDiagram
     users ||--o{ profile_invitations : "invite"
     users ||--o{ favorite_sites : "garde"
     users ||--o{ journals : "tient"
+    users ||--o{ goals : "se fixe"
     users ||--o{ journal_sessions : "possède"
     journal_sessions ||--o{ session_photos : "illustré par"
     users ||--o{ session_photos : "possède"
@@ -113,6 +114,14 @@ erDiagram
         varchar color "événement Divers"
         varchar icon "événement Divers"
     }
+    goals {
+        char36 id PK
+        char36 user_id FK
+        enum type "SPORT, TECHNIQUE, PHYSICAL, PERSONAL"
+        varchar description
+        date created_on "jour où l'objectif est fixé"
+        date achieved_on "nul = pas encore atteint"
+    }
     session_photos {
         char36 id PK
         char36 session_id FK
@@ -152,6 +161,12 @@ Les colonnes `created_at` et `updated_at`, présentes sur presque toutes les tab
 | `journals`         | Un journal par saison : titre, date de début et de fin. C'est une période, sans lien avec les événements. `month_themes` contient, mois par mois, le décor choisi et son coloriage.                                                                                          |
 | `journal_sessions` | Les événements de l'archer, tous types confondus. Ils n'appartiennent à aucun journal : ils s'affichent dans celui dont la période couvre leur date. Les champs de la fiche de séance sont facultatifs ; `title`, `color` et `icon` ne servent qu'aux événements « Divers ». |
 | `session_photos`   | La fiche de chaque photo (dimensions, poids). Les fichiers eux-mêmes sont dans le stockage S3, pas dans la base.                                                                                                                                                             |
+
+### Objectifs
+
+| Table   | Rôle                                                                                                                                             |
+| ------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `goals` | Les objectifs que l'archer se fixe : type, description, jour de création et jour où il est atteint. Ils ne dépendent d'aucun journal ni période. |
 
 ## Points à connaître
 

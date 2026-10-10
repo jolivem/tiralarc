@@ -366,6 +366,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/goals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["Goals_list"];
+        put?: never;
+        post: operations["Goals_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/goals/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["Goals_remove"];
+        options?: never;
+        head?: never;
+        patch: operations["Goals_update"];
+        trace?: never;
+    };
     "/api/v1/profile": {
         parameters: {
             query?: never;
@@ -821,6 +853,46 @@ export interface components {
              * @description JPEG, PNG or WebP, 10 MB max.
              */
             file: string;
+        };
+        /** @enum {string} */
+        GoalType: "SPORT" | "TECHNIQUE" | "PHYSICAL" | "PERSONAL";
+        GoalDto: {
+            /** Format: uuid */
+            id: string;
+            type: components["schemas"]["GoalType"];
+            description: string;
+            /**
+             * @description Day the goal was set.
+             * @example 2026-10-10
+             */
+            createdOn: string;
+            /** @description True once the goal has a day it was reached. */
+            achieved: boolean;
+            /** @example 2027-02-06 */
+            achievedOn: string | null;
+        };
+        CreateGoalDto: {
+            type: components["schemas"]["GoalType"];
+            /** @example Passer les 550 points en salle */
+            description: string;
+            /**
+             * @description Day the goal was set (YYYY-MM-DD). Defaults to today.
+             * @example 2026-10-10
+             */
+            createdOn?: string;
+            /**
+             * @description Day the goal was reached (YYYY-MM-DD); omitted / null = not reached yet.
+             * @example 2027-02-06
+             */
+            achievedOn?: string | null;
+        };
+        UpdateGoalDto: {
+            type?: components["schemas"]["GoalType"];
+            description?: string;
+            /** @example 2026-10-10 */
+            createdOn?: string;
+            /** @example 2027-02-06 */
+            achievedOn?: string | null;
         };
         /** @enum {string} */
         AgeCategory: "U11" | "U13" | "U15" | "U18" | "U21" | "S1" | "S2" | "S3";
@@ -1930,6 +2002,139 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Archers only */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    Goals_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GoalDto"][];
+                };
+            };
+            /** @description Archers only */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    Goals_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateGoalDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GoalDto"];
+                };
+            };
+            /** @description Archers only */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description LIMIT_REACHED */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    Goals_remove: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Archers only */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    Goals_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateGoalDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GoalDto"];
+                };
             };
             /** @description Archers only */
             403: {
