@@ -16,6 +16,7 @@
     "format:check": "prettier --check .",
     "db:up": "docker compose -f docker/docker-compose.yml up -d",
     "db:down": "docker compose -f docker/docker-compose.yml down",
+    "update:dev": "bash scripts/update.sh",
     "prepare": "husky"
   },
   "devDependencies": {
