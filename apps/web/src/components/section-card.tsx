@@ -1,38 +1,47 @@
 'use client';
 
-import { Card, Group, Text, ThemeIcon } from '@mantine/core';
-import { IconChartLine, IconFileText, IconId, IconNotebook } from '@tabler/icons-react';
+import { Text } from '@mantine/core';
+import type { CSSProperties } from 'react';
 import { Link } from '@/i18n/navigation';
+import { ARCHER_SECTIONS, type SectionKey } from './sections';
+import classes from './section-card.module.css';
 
-const ICONS = {
-  journal: IconNotebook,
-  sheets: IconFileText,
-  stats: IconChartLine,
-  profile: IconId,
-} as const;
+/** Slight tilts, so a row of notes looks stuck by hand. */
+const TILTS = ['-2deg', '1.5deg', '-1deg', '2deg'];
 
-/** Clickable card leading to an archer section (home dashboard). */
+/**
+ * Sticky note leading to an archer section (home notebook), in the colour of the
+ * section's divider tab.
+ */
 export function SectionCard({
   section,
   title,
   description,
+  index = 0,
 }: {
-  section: keyof typeof ICONS;
+  section: Exclude<SectionKey, 'home'>;
   title: string;
   description: string;
+  /** Position in its row, for the tilt. */
+  index?: number;
 }) {
-  const Icon = ICONS[section];
+  const { href, color, icon: Icon } = ARCHER_SECTIONS.find(({ key }) => key === section)!;
+  const style = {
+    '--note-light': `var(--mantine-color-${color}-1)`,
+    '--note-dark': `var(--mantine-color-${color}-9)`,
+    '--note-ink': `var(--mantine-color-${color}-9)`,
+    '--tilt': TILTS[index % TILTS.length],
+  } as CSSProperties;
+
   return (
-    <Card component={Link} href={`/archer/${section}`} withBorder radius="lg" padding="lg">
-      <Group gap="sm" mb="xs" wrap="nowrap">
-        <ThemeIcon variant="light" size={40} radius="md">
-          <Icon size={22} />
-        </ThemeIcon>
-        <Text fw={600}>{title}</Text>
-      </Group>
-      <Text size="sm" c="dimmed">
+    <Link href={href} className={classes.note} style={style}>
+      <span className={classes.title}>
+        <Icon size={20} stroke={2} />
+        {title}
+      </span>
+      <Text size="sm" className={classes.description}>
         {description}
       </Text>
-    </Card>
+    </Link>
   );
 }

@@ -1,17 +1,22 @@
-import { SimpleGrid } from '@mantine/core';
-import { getTranslations, setRequestLocale } from 'next-intl/server';
+import { Box, SimpleGrid, Stack, Text } from '@mantine/core';
+import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/server';
+import binder from '@/components/binder/binder.module.css';
 import { FirstJournalPrompt } from '@/components/journal/journal-modal';
 import { MonthsOverview } from '@/components/journal/months-overview';
+import { SeasonCalendar } from '@/components/journal/season-calendar';
+import { HandHeading, HandNote, Notebook } from '@/components/notebook/notebook';
 import { SectionCard } from '@/components/section-card';
-import { SectionPage } from '@/components/section-page';
 import type { Locale } from '@/i18n/routing';
 import { getAuthedApi } from '@/lib/api';
 import { getCurrentUser } from '@/lib/current-user';
 import { getJournals, getSelectedJournal } from '@/lib/journals';
 
-const SECTIONS = ['sheets', 'stats', 'profile'] as const;
-/** Months shown at the top of the page, starting with the current one. */
-const OVERVIEW_MONTHS = 3;
+type NoteSection = 'journal' | 'sheets' | 'stats' | 'profile';
+/** The sections' sticky notes: two at the bottom of each page. */
+const LEFT_NOTES: readonly NoteSection[] = ['journal', 'sheets'];
+const RIGHT_NOTES: readonly NoteSection[] = ['stats', 'profile'];
+/** Months shown in the notebook: the current one and the next. */
+const OVERVIEW_MONTHS = 2;
 
 /** "YYYY-MM" of the month `offset` months after `month`. */
 function addMonths(month: string, offset: number): string {
@@ -24,6 +29,8 @@ export default async function ArcherHomePage({ params }: PageProps<'/[locale]/ar
   const { locale } = await params;
   setRequestLocale(locale as Locale);
   const t = await getTranslations('archer');
+  const tJournals = await getTranslations('journals');
+  const format = await getFormatter();
   const [user, journals, selected] = await Promise.all([
     getCurrentUser(),
     getJournals(),
@@ -49,31 +56,78 @@ export default async function ArcherHomePage({ params }: PageProps<'/[locale]/ar
         ).GET('/api/v1/journal/sessions', { params: { query: { from, to } } })
       : { data: undefined };
 
-  return (
-    <SectionPage
-      title={t('homeTitle', { name: user?.displayName ?? user?.email ?? '' })}
-      intro={t('homeIntro')}
-    >
-      {selected && (
-        <MonthsOverview
-          title={selected.title}
-          months={months}
-          today={today}
-          sessions={sessions ?? []}
+  // The day, in the notebook's top right corner: on the right page from desktops up,
+  // on the first page when the pages are stacked.
+  const date = (
+    <HandNote align="end">
+      {format.dateTime(new Date(`${today}T12:00:00`), { dateStyle: 'full' })}
+    </HandNote>
+  );
+
+  // Two sticky notes side by side; `first` numbers them across both pages (tilts).
+  const notes = (sections: readonly NoteSection[], first: number) => (
+    // Room above each note for its strip of tape.
+    <SimpleGrid cols={{ base: 1, xs: 2 }} spacing="xl" verticalSpacing="xl" pt="xs">
+      {sections.map((section, i) => (
+        <SectionCard
+          key={section}
+          section={section}
+          index={first + i}
+          title={t(section)}
+          description={t(`${section}Intro`)}
         />
+      ))}
+    </SimpleGrid>
+  );
+
+  // An open notebook: on the left, this month and the next side by side; on the right,
+  // the day. The sections, stuck in as notes, line up at the bottom of both pages, two
+  // per page.
+  const left = (
+    <Stack gap="lg" h="100%">
+      <Box hiddenFrom="md">{date}</Box>
+      {selected ? (
+        <div>
+          <HandHeading>{t('calendar')}</HandHeading>
+          {/* A click opens the whole season. */}
+          <SeasonCalendar journal={selected} today={today}>
+            <MonthsOverview
+              months={months}
+              today={today}
+              sessions={sessions ?? []}
+              cols={{ base: 1, xs: 2 }}
+            />
+          </SeasonCalendar>
+        </div>
+      ) : (
+        <Text c="dimmed">{tJournals('noneBody')}</Text>
       )}
-      {/* 1 column on phones, 3 from tablets. */}
-      <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="md">
-        {SECTIONS.map((section) => (
-          <SectionCard
-            key={section}
-            section={section}
-            title={t(section)}
-            description={t(`${section}Intro`)}
-          />
-        ))}
-      </SimpleGrid>
+      <Box mt="auto">
+        <HandHeading>{t('sections')}</HandHeading>
+        {notes(LEFT_NOTES, 0)}
+      </Box>
+    </Stack>
+  );
+
+  const right = (
+    <Stack gap="xl" h="100%">
+      <Box visibleFrom="md">{date}</Box>
+      <Box mt="auto">{notes(RIGHT_NOTES, LEFT_NOTES.length)}</Box>
+    </Stack>
+  );
+
+  // Direct children of the archer layout's grid: the greeting sits on the desk above the
+  // notebook, and the divider tabs start level with the notebook.
+  return (
+    <>
+      <div className={binder.header}>
+        <HandHeading order={1}>
+          {t('homeTitle', { name: user?.displayName ?? user?.email ?? '' })}
+        </HandHeading>
+        <Text c="dimmed">{t('homeIntro')}</Text>
+      </div>
+      <Notebook left={left} right={right} label={t('home')} />
       {journals.length === 0 && <FirstJournalPrompt />}
-    </SectionPage>
+    </>
   );
 }

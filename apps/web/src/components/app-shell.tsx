@@ -18,14 +18,10 @@ import {
 import { useDisclosure } from '@mantine/hooks';
 import {
   IconArrowsExchange,
-  IconChartLine,
-  IconFileText,
   IconHome,
-  IconId,
   IconLogin,
   IconLogout,
   IconMoon,
-  IconNotebook,
   IconSun,
   IconTarget,
   IconUserCircle,
@@ -33,25 +29,24 @@ import {
 } from '@tabler/icons-react';
 import type { User } from '@tiralarc/api-client';
 import { useTranslations } from 'next-intl';
-import type { ComponentType, ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import { logout } from '@/app/actions/auth';
 import { Link, usePathname } from '@/i18n/navigation';
 import { hasBothProfiles, homePathFor, type Profile } from '@/lib/current-user-paths';
 import { LanguageSwitcher } from './language-switcher';
+import { ARCHER_SECTIONS, sectionOf, tabColors } from './sections';
 import classes from './app-shell.module.css';
 
-type ShellUser = Pick<User, 'displayName' | 'email' | 'roles'> & { profile: Profile | null };
-
-interface Section {
-  href: '/archer' | '/archer/journal' | '/archer/sheets' | '/archer/stats' | '/archer/profile';
-  label: string;
-  icon: ComponentType<{ size?: number; stroke?: number }>;
-}
+type ShellUser = Pick<User, 'displayName' | 'email' | 'roles'> & {
+  profile: Profile | null;
+  /** The selected journal (archer profile), shown in the middle of the header. */
+  journalTitle: string | null;
+};
 
 /**
  * Responsive frame.
- * - Archer profile: side menu from tablets up (≥ sm, 768px), bottom tab bar on phones;
- *   neither on the account page.
+ * - Archer profile: tabs along the bottom on phones; from tablets up (≥ sm, 768px) the
+ *   divider tabs are stuck to the pages instead (archer/layout.tsx). None on the account page.
  * - Anonymous visitors: links in the header from tablets up, burger menu on phones.
  * - Signed-in users: avatar menu (account, sign out) in the header.
  */
@@ -62,32 +57,35 @@ export function TiralarcShell({ user, children }: { user: ShellUser | null; chil
 
   // The account page shows on its own, closed with its cross: no archer menu there.
   const onAccountPage = pathname === '/account' || pathname.startsWith('/account/');
-  const sections: Section[] =
-    user?.profile === 'ARCHER' && !onAccountPage
-      ? [
-          { href: '/archer', label: t('archer.home'), icon: IconHome },
-          { href: '/archer/journal', label: t('archer.journal'), icon: IconNotebook },
-          { href: '/archer/sheets', label: t('archer.sheets'), icon: IconFileText },
-          { href: '/archer/stats', label: t('archer.stats'), icon: IconChartLine },
-          { href: '/archer/profile', label: t('archer.profile'), icon: IconId },
-        ]
-      : [];
+  const sections = user?.profile === 'ARCHER' && !onAccountPage ? ARCHER_SECTIONS : [];
   const hasSections = sections.length > 0;
-  const isActive = (href: string) =>
-    href === '/archer' ? pathname === href : pathname === href || pathname.startsWith(`${href}/`);
+  const current = hasSections ? sectionOf(pathname) : undefined;
 
   return (
     <AppShell
       header={{ height: 60 }}
       navbar={
         hasSections
-          ? { width: 240, breakpoint: 'sm', collapsed: { mobile: true } }
+          ? undefined
           : { width: 280, breakpoint: 'sm', collapsed: { mobile: !opened, desktop: true } }
       }
       footer={hasSections ? { height: { base: 64, sm: 0 } } : undefined}
       padding="md"
+      // Archer area: a desk; on phones, the tab bar edged with the colour of the open divider.
+      className={hasSections ? classes.desk : undefined}
+      style={
+        current
+          ? ({ ...tabColors(current), '--open-tab': 'var(--tab-filled)' } as CSSProperties)
+          : undefined
+      }
     >
       <AppShell.Header>
+        {user?.journalTitle && (
+          // Centred on the whole bar; from tablets up (no room between logo and buttons on phones).
+          <Text className={classes.journalTitle} visibleFrom="sm" truncate>
+            {user.journalTitle}
+          </Text>
+        )}
         <Group h="100%" px="md" justify="space-between" wrap="nowrap">
           <Group gap="xs" wrap="nowrap">
             {!user && (
@@ -134,54 +132,37 @@ export function TiralarcShell({ user, children }: { user: ShellUser | null; chil
         </Group>
       </AppShell.Header>
 
-      {hasSections ? (
-        // Tablet / desktop side menu. display:none on phones, where the bottom bar takes over.
-        <AppShell.Navbar p="sm" visibleFrom="sm" aria-label={t('nav.archerSection')}>
+      {/* From tablets up, the archer area's divider tabs are part of its pages (archer/layout.tsx). */}
+      {!hasSections && !user && (
+        // Phone-only menu for visitors: display:none from sm (links are in the header there).
+        <AppShell.Navbar p="md" hiddenFrom="sm">
           <Stack gap={4}>
-            {sections.map(({ href, label, icon: Icon }) => (
-              <NavLink
-                key={href}
-                component={Link}
-                href={href}
-                label={label}
-                leftSection={<Icon size={20} />}
-                active={isActive(href)}
-              />
-            ))}
+            <NavLink
+              component={Link}
+              href="/"
+              label={t('nav.home')}
+              leftSection={<IconHome size={18} />}
+              active={pathname === '/'}
+              onClick={close}
+            />
+            <NavLink
+              component={Link}
+              href="/login"
+              label={t('nav.login')}
+              leftSection={<IconLogin size={18} />}
+              active={pathname === '/login'}
+              onClick={close}
+            />
+            <NavLink
+              component={Link}
+              href="/register"
+              label={t('nav.register')}
+              leftSection={<IconUserPlus size={18} />}
+              active={pathname === '/register'}
+              onClick={close}
+            />
           </Stack>
         </AppShell.Navbar>
-      ) : (
-        !user && (
-          // Phone-only menu for visitors: display:none from sm (links are in the header there).
-          <AppShell.Navbar p="md" hiddenFrom="sm">
-            <Stack gap={4}>
-              <NavLink
-                component={Link}
-                href="/"
-                label={t('nav.home')}
-                leftSection={<IconHome size={18} />}
-                active={pathname === '/'}
-                onClick={close}
-              />
-              <NavLink
-                component={Link}
-                href="/login"
-                label={t('nav.login')}
-                leftSection={<IconLogin size={18} />}
-                active={pathname === '/login'}
-                onClick={close}
-              />
-              <NavLink
-                component={Link}
-                href="/register"
-                label={t('nav.register')}
-                leftSection={<IconUserPlus size={18} />}
-                active={pathname === '/register'}
-                onClick={close}
-              />
-            </Stack>
-          </AppShell.Navbar>
-        )
       )}
 
       <AppShell.Main>{children}</AppShell.Main>
@@ -189,19 +170,24 @@ export function TiralarcShell({ user, children }: { user: ShellUser | null; chil
       {hasSections && (
         <AppShell.Footer hiddenFrom="sm" className={classes.tabBar}>
           <nav aria-label={t('nav.mainNavigation')} className={classes.tabs}>
-            {sections.map(({ href, label, icon: Icon }) => (
-              <UnstyledButton
-                key={href}
-                component={Link}
-                href={href}
-                className={classes.tab}
-                data-active={isActive(href) || undefined}
-                aria-current={isActive(href) ? 'page' : undefined}
-              >
-                <Icon size={22} stroke={isActive(href) ? 2.2 : 1.6} />
-                <span className={classes.tabLabel}>{label}</span>
-              </UnstyledButton>
-            ))}
+            {sections.map((section) => {
+              const { key, href, icon: Icon } = section;
+              const active = current?.href === href;
+              return (
+                <UnstyledButton
+                  key={href}
+                  component={Link}
+                  href={href}
+                  className={classes.tab}
+                  data-active={active || undefined}
+                  aria-current={active ? 'page' : undefined}
+                  style={tabColors(section)}
+                >
+                  <Icon size={22} stroke={active ? 2.2 : 1.6} />
+                  <span className={classes.tabLabel}>{t(`archer.${key}`)}</span>
+                </UnstyledButton>
+              );
+            })}
           </nav>
         </AppShell.Footer>
       )}

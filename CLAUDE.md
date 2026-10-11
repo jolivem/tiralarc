@@ -34,7 +34,13 @@ the same API — keep it client-agnostic (no cookies, no web-only assumptions in
   (`src/components/links.tsx`), never `component={Link}`. Icons: `@tabler/icons-react`.
 - Signed-in user in Server Components: `getCurrentUser()` (`src/lib/current-user.ts`, one `/users/me` per request).
   Archer pages live under `src/app/[locale]/archer/`, guarded by its layout (ARCHER role); add new sections to
-  `sections` in `src/components/app-shell.tsx` (side menu + phone tab bar).
+  `ARCHER_SECTIONS` in `src/components/sections.ts` (each keeps one colour: divider tab + home sticky note).
+- Archer look: a diary on a desk. From tablets up the archer layout's grid puts binder divider tabs
+  (`components/binder/`, vertical labels) left of the page content; phones get tabs along the bottom (app-shell).
+  A page's direct child with `binder.header` sits above, the tabs then start level with the content.
+  The home page is an open notebook (`components/notebook/`: two ruled pages, stacked below md). Fonts:
+  `--font-hand` (Caveat, headings) and `--font-hand-upright` (Patrick Hand, the calendars). The selected
+  journal's title is centred in the header.
 - Journals: a `Journal` is a named period (title + inclusive start / end days), usually one season. There is no
   link to events: a journal's events are the archer's sessions dated within its period. An archer's journals must
   not overlap (`JOURNAL_OVERLAP`, checked by the API, not the database); deleting a journal keeps its events. The

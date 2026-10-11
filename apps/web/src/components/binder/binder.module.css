@@ -1,0 +1,106 @@
+/*
+ * Archer area layout (archer/layout.tsx): the divider tabs in a narrow column, stuck to
+ * the page content on its right. A page may put a header above the content (`.header`,
+ * e.g. the home greeting): the tabs then start level with the content, below it.
+ */
+.binder {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  max-width: 1260px;
+  margin-inline: auto;
+
+  @media (min-width: $mantine-breakpoint-sm) {
+    grid-template-columns: auto minmax(0, 1fr);
+    column-gap: 0;
+  }
+
+  /*
+   * Everything a page renders goes in the content column, full width (pages centred with
+   * auto margins would otherwise shrink to their content in a grid).
+   */
+  & > :not(.tabs) {
+    grid-column: 1 / -1;
+    width: 100%;
+
+    @media (min-width: $mantine-breakpoint-sm) {
+      grid-column: 2;
+    }
+  }
+}
+
+.header {
+  grid-row: 1;
+  margin-bottom: var(--mantine-spacing-lg);
+}
+
+.tabs {
+  display: none;
+
+  @media (min-width: $mantine-breakpoint-sm) {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 6px;
+    grid-column: 1;
+    grid-row: 1 / span 20;
+    align-self: start;
+    position: sticky;
+    top: calc(var(--app-shell-header-offset, 60px) + var(--mantine-spacing-md));
+    /* Level with the notebook's paper, inside its cover. */
+    padding-top: 22px;
+  }
+}
+
+/* With a page header, the tabs start below it, level with the content. */
+.binder:has(> .header) .tabs {
+  grid-row: 2 / span 20;
+}
+
+.tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: 34px;
+  min-height: 112px;
+  padding-block: 12px;
+  border-radius: 12px 0 0 12px;
+  background: var(--tab-light);
+  color: var(--tab-text);
+  font-weight: 600;
+  text-decoration: none;
+  box-shadow: inset -6px 0 8px -6px rgb(0 0 0 / 0.25);
+  transition:
+    width 150ms ease,
+    background-color 150ms ease;
+
+  &:hover {
+    width: 40px;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--tab-filled);
+    outline-offset: 2px;
+  }
+
+  /* The open divider: in front, sticking out further. */
+  &[data-active] {
+    width: 44px;
+    background: var(--tab-filled);
+    color: var(--tab-on-filled);
+    box-shadow: -3px 3px 8px rgb(0 0 0 / 0.2);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
+}
+
+/* Read bottom to top, like the label on a binder divider. */
+.label {
+  writing-mode: vertical-rl;
+  rotate: 180deg;
+  font-size: var(--mantine-font-size-sm);
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}

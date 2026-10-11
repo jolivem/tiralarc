@@ -69,13 +69,25 @@ function toEvent(session: JournalSessionSummary, title: string): ScheduleEventDa
   };
 }
 
-/** One journal: "New event" button + month calendar + quick-add dialog. */
-export function JournalView({ journal }: { journal: Journal }) {
+/**
+ * One journal: "New event" button + month calendar + quick-add dialog. Opens on
+ * `month` ("YYYY-MM") when given — today within it, otherwise its 1st.
+ */
+export function JournalView({
+  journal,
+  month: initialMonth,
+}: {
+  journal: Journal;
+  month?: string;
+}) {
   const t = useTranslations();
   const locale = useLocale();
   const router = useRouter();
   // A past or future season opens on its closest day rather than on an empty month.
-  const [date, setDate] = useState(() => clampToJournal(today(), journal));
+  const [date, setDate] = useState(() => {
+    const day = initialMonth && !today().startsWith(initialMonth) ? `${initialMonth}-01` : today();
+    return clampToJournal(day, journal);
+  });
   const [sessions, setSessions] = useState<JournalSessionSummary[]>([]);
   const [loading, startLoading] = useTransition();
   const [newSession, setNewSession] = useState<NewSessionDefaults | null>(null);

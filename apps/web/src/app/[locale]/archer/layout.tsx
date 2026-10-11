@@ -1,3 +1,5 @@
+import { BinderTabs } from '@/components/binder/binder-tabs';
+import binder from '@/components/binder/binder.module.css';
 import { redirect } from '@/i18n/navigation';
 import type { Locale } from '@/i18n/routing';
 import { getActiveProfile, getCurrentUser } from '@/lib/current-user';
@@ -15,5 +17,11 @@ export default async function ArcherLayout({ children, params }: LayoutProps<'/[
   if (profile !== 'ARCHER') {
     return redirect({ href: '/account', locale: locale as Locale });
   }
-  return children;
+  // The divider tabs, stuck to the left of whatever the page shows.
+  return (
+    <div className={binder.binder}>
+      <BinderTabs />
+      {children}
+    </div>
+  );
 }

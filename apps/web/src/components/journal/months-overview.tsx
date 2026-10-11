@@ -1,9 +1,10 @@
 'use client';
 
-import { Card, SimpleGrid, Text, Title } from '@mantine/core';
+import { SimpleGrid, type SimpleGridProps, Text } from '@mantine/core';
 import type { JournalSessionSummary } from '@tiralarc/api-client';
 import dayjs from 'dayjs';
 import { useFormatter, useTranslations } from 'next-intl';
+import { Link } from '@/i18n/navigation';
 import { eventDisplay } from './event-display';
 import classes from './journal.module.css';
 import { SESSION_TYPES } from './session-types';
@@ -12,23 +13,28 @@ import { SESSION_TYPES } from './session-types';
 const MAX_DOTS = 3;
 
 /**
- * Read-only glance at a journal: a few months side by side, each day carrying
- * one coloured dot per event. Nothing is clickable — the Journal section edits.
+ * Read-only glance at a journal, drawn straight on the notebook page: a few months,
+ * each day carrying one coloured dot per event. The Journal section edits: with
+ * `linkToJournal`, each month leads there, opened on that month.
  */
 export function MonthsOverview({
-  title,
   months,
   today,
   sessions,
+  cols = 1,
+  linkToJournal = false,
 }: {
-  title: string;
   /** Months to show, "YYYY-MM", in order. */
   months: string[];
   /** "YYYY-MM-DD", decided by the server so both renders agree. */
   today: string;
   sessions: JournalSessionSummary[];
+  /** Months per row. */
+  cols?: SimpleGridProps['cols'];
+  linkToJournal?: boolean;
 }) {
   const t = useTranslations('journal');
+  const tArcher = useTranslations('archer');
   const format = useFormatter();
 
   const byDay = new Map<string, JournalSessionSummary[]>();
@@ -44,61 +50,69 @@ export function MonthsOverview({
   );
 
   return (
-    <Card withBorder radius="lg" padding="lg">
-      <Title order={2} size="h5" tt="uppercase" c="dimmed" lts={0.5} mb="md">
-        {title}
-      </Title>
-      {/* 1 column on phones, side by side from tablets. */}
-      <SimpleGrid cols={{ base: 1, sm: months.length }} spacing="xl">
-        {months.map((month) => {
-          const first = dayjs(`${month}-01`);
-          // Empty cells before the 1st, so it falls under its weekday.
-          const offset = (first.day() + 6) % 7;
-          return (
-            <div key={month}>
-              <Text fw={600} ta="center" mb={6} tt="capitalize">
-                {format.dateTime(first.hour(12).toDate(), { month: 'long', year: 'numeric' })}
-              </Text>
-              <div className={classes.miniMonth}>
-                {weekdays.map((day, i) => (
-                  <Text key={i} size="xs" c="dimmed" ta="center" aria-hidden>
-                    {day}
-                  </Text>
-                ))}
-                {Array.from({ length: offset }, (_, i) => (
-                  <span key={`blank-${i}`} />
-                ))}
-                {Array.from({ length: first.daysInMonth() }, (_, i) => {
-                  const date = first.date(i + 1).format('YYYY-MM-DD');
-                  const events = byDay.get(date) ?? [];
-                  const names = events.map(label).join(', ');
-                  return (
-                    <div
-                      key={date}
-                      className={classes.miniDay}
-                      data-today={date === today || undefined}
-                      title={names || undefined}
-                    >
-                      <span>{i + 1}</span>
-                      <span className={classes.miniDots}>
-                        {events.slice(0, MAX_DOTS).map((event) => (
-                          <i
-                            key={event.id}
-                            style={{
-                              background: `var(--mantine-color-${eventDisplay(event).color}-filled)`,
-                            }}
-                          />
-                        ))}
-                      </span>
-                      {names && <span className={classes.srOnly}>{names}</span>}
-                    </div>
-                  );
-                })}
-              </div>
+    <SimpleGrid cols={cols} spacing="xl" className={classes.overview}>
+      {months.map((month) => {
+        const first = dayjs(`${month}-01`);
+        // Empty cells before the 1st, so it falls under its weekday.
+        const offset = (first.day() + 6) % 7;
+        const name = format.dateTime(first.hour(12).toDate(), { month: 'long', year: 'numeric' });
+        const content = (
+          <>
+            <Text ta="center" mb={6} tt="capitalize" className={classes.monthName}>
+              {name}
+            </Text>
+            <div className={classes.miniMonth}>
+              {weekdays.map((day, i) => (
+                <Text key={i} size="xs" c="dimmed" ta="center" aria-hidden>
+                  {day}
+                </Text>
+              ))}
+              {Array.from({ length: offset }, (_, i) => (
+                <span key={`blank-${i}`} />
+              ))}
+              {Array.from({ length: first.daysInMonth() }, (_, i) => {
+                const date = first.date(i + 1).format('YYYY-MM-DD');
+                const events = byDay.get(date) ?? [];
+                const names = events.map(label).join(', ');
+                return (
+                  <div
+                    key={date}
+                    className={classes.miniDay}
+                    data-today={date === today || undefined}
+                    title={names || undefined}
+                  >
+                    <span>{i + 1}</span>
+                    <span className={classes.miniDots}>
+                      {events.slice(0, MAX_DOTS).map((event) => (
+                        <i
+                          key={event.id}
+                          style={{
+                            background: `var(--mantine-color-${eventDisplay(event).color}-filled)`,
+                          }}
+                        />
+                      ))}
+                    </span>
+                    {names && <span className={classes.srOnly}>{names}</span>}
+                  </div>
+                );
+              })}
             </div>
-          );
-        })}
-      </SimpleGrid>
-    </Card>
+          </>
+        );
+        return linkToJournal ? (
+          <Link
+            key={month}
+            href={{ pathname: '/archer/journal', query: { month } }}
+            className={classes.monthLink}
+            aria-label={tArcher('openMonth', { month: name })}
+            title={tArcher('openMonth', { month: name })}
+          >
+            {content}
+          </Link>
+        ) : (
+          <div key={month}>{content}</div>
+        );
+      })}
+    </SimpleGrid>
   );
 }

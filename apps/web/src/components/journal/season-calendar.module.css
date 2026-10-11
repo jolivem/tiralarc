@@ -1,0 +1,26 @@
+/* The months on the home page: they open the whole season (season-calendar.tsx). */
+.trigger {
+  cursor: pointer;
+  border-radius: var(--mantine-radius-md);
+
+  &:hover {
+    background: rgb(0 0 0 / 0.03);
+
+    @mixin dark {
+      background: rgb(255 255 255 / 0.04);
+    }
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--mantine-primary-color-filled);
+    outline-offset: 4px;
+  }
+}
+
+/* The journal's name, handwritten like the notebook's headings. */
+.title {
+  font-family: var(--font-hand), 'Segoe Print', cursive;
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1.1;
+}

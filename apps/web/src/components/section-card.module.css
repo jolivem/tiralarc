@@ -1,0 +1,68 @@
+/* A sticky note held by a strip of tape (section-card.tsx). */
+.note {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 130px;
+  padding: 22px 16px 16px;
+  border-radius: 2px 2px 18px 2px;
+  background: var(--note-light);
+  color: var(--note-ink);
+  text-decoration: none;
+  box-shadow: 0 8px 14px -8px rgb(0 0 0 / 0.4);
+  transform: rotate(var(--tilt));
+  transition: transform 150ms ease;
+
+  @mixin dark {
+    background: var(--note-dark);
+    color: var(--mantine-color-white);
+  }
+
+  /* The tape. */
+  &::before {
+    content: '';
+    position: absolute;
+    top: -10px;
+    left: 50%;
+    width: 64px;
+    height: 20px;
+    translate: -50% 0;
+    rotate: -4deg;
+    background: rgb(255 255 255 / 0.55);
+    box-shadow: 0 1px 2px rgb(0 0 0 / 0.15);
+
+    @mixin dark {
+      background: rgb(255 255 255 / 0.2);
+    }
+  }
+
+  &:hover,
+  &:focus-visible {
+    transform: rotate(0) scale(1.03);
+  }
+
+  &:focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: 3px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
+}
+
+.title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-hand), 'Segoe Print', cursive;
+  font-size: 1.6rem;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.description {
+  color: inherit;
+  opacity: 0.85;
+}
