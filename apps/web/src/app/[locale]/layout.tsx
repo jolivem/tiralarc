@@ -13,7 +13,7 @@ import { Suspense } from 'react';
 import { TiralarcShell } from '@/components/app-shell';
 import { Providers } from '@/components/providers';
 import { routing } from '@/i18n/routing';
-import { getCurrentUser } from '@/lib/current-user';
+import { getActiveProfile, getCurrentUser } from '@/lib/current-user';
 
 const geistSans = Geist({ variable: '--font-geist-sans', subsets: ['latin'] });
 const geistMono = Geist_Mono({ variable: '--font-geist-mono', subsets: ['latin'] });
@@ -34,8 +34,13 @@ export default async function LocaleLayout({ children, params }: LayoutProps<'/[
   setRequestLocale(locale);
 
   // Drives the navigation only; pages and the archer layout enforce access themselves.
-  const user = await getCurrentUser();
-  const shellUser = user && { displayName: user.displayName, email: user.email, roles: user.roles };
+  const [user, profile] = await Promise.all([getCurrentUser(), getActiveProfile()]);
+  const shellUser = user && {
+    displayName: user.displayName,
+    email: user.email,
+    roles: user.roles,
+    profile,
+  };
 
   return (
     <html

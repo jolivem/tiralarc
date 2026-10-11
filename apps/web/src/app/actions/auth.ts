@@ -5,7 +5,12 @@ import { cookies } from 'next/headers';
 import { getLocale } from 'next-intl/server';
 import { type ActionState, send } from '@/lib/action-state';
 import { api, clientHeaders, getAuthedApi } from '@/lib/api';
-import { homePathFor } from '@/lib/current-user-paths';
+import {
+  hasBothProfiles,
+  homePathFor,
+  PROFILE_COOKIE,
+  type Profile,
+} from '@/lib/current-user-paths';
 import { JOURNAL_COOKIE } from '@/lib/journals';
 import { clearSession, REFRESH_COOKIE, writeSession } from '@/lib/session';
 import { redirect } from '@/i18n/navigation';
@@ -28,13 +33,16 @@ function safeNext(value: unknown): string | undefined {
 
 /**
  * Stores the session, then sends users without a role (new Google / Apple
- * accounts) to onboarding, and everyone else to where they were going.
+ * accounts) to onboarding, archers who also coach to the profile choice, and
+ * everyone else to where they were going.
  */
 async function completeSignIn(tokens: TokenPair, next?: string): Promise<never> {
   const cookieStore = await cookies();
   writeSession(cookieStore, tokens);
-  // A new session starts from the archer's default journal, not the last one selected.
+  // A new session starts from the archer's default journal, not the last one selected,
+  // and asks again for the profile.
   cookieStore.delete(JOURNAL_COOKIE);
+  cookieStore.delete(PROFILE_COOKIE);
   const locale = await getLocale();
   const me = await send(
     api.GET('/api/v1/users/me', {
@@ -47,7 +55,33 @@ async function completeSignIn(tokens: TokenPair, next?: string): Promise<never> 
       locale,
     });
   }
+  if (me.ok && hasBothProfiles(me.data.roles)) {
+    return redirect({
+      href: { pathname: '/choose-profile', query: next ? { next } : {} },
+      locale,
+    });
+  }
   return redirect({ href: next ?? homePathFor(me.ok ? me.data.roles : []), locale });
+}
+
+/** Signs in with one of the user's profiles (archer or coach), then goes on. */
+export async function chooseProfile(profile: Profile, next?: string): Promise<void> {
+  const me = await send((await getAuthedApi()).GET('/api/v1/users/me'));
+  const locale = await getLocale();
+  if (!me.ok) return redirect({ href: '/login', locale });
+  if (!me.data.roles.includes(profile)) {
+    return redirect({ href: homePathFor(me.data.roles), locale });
+  }
+  (await cookies()).set(PROFILE_COOKIE, profile, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    path: '/',
+  });
+  // A coach going to an archer page would be sent away: go home instead.
+  const target = safeNext(next);
+  const fits = target && (profile === 'ARCHER' || !target.startsWith('/archer'));
+  return redirect({ href: fits ? target : homePathFor(me.data.roles, profile), locale });
 }
 
 export async function login(_prev: ActionState, formData: FormData): Promise<ActionState> {
@@ -169,5 +203,6 @@ export async function logout(): Promise<void> {
     await send(api.POST('/api/v1/auth/logout', { body: { refreshToken } }));
   }
   clearSession(cookieStore);
+  cookieStore.delete(PROFILE_COOKIE);
   redirect({ href: '/login', locale: await getLocale() });
 }

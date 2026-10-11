@@ -1,0 +1,42 @@
+.choice {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 130px;
+  padding: var(--mantine-spacing-xs);
+  border-radius: var(--mantine-radius-md);
+
+  &:disabled {
+    cursor: wait;
+  }
+}
+
+/* Round badge with the profile's pictogram (same icons as the role picker). */
+.badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  color: var(--mantine-color-white);
+  background: var(--badge-color);
+  transition:
+    transform 120ms ease,
+    box-shadow 120ms ease;
+
+  &[data-profile='ARCHER'] {
+    --badge-color: var(--mantine-color-teal-filled);
+  }
+
+  &[data-profile='COACH'] {
+    --badge-color: var(--mantine-color-blue-filled);
+  }
+
+  .choice:hover:not(:disabled) &,
+  .choice:focus-visible & {
+    transform: scale(1.06);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--badge-color) 30%, transparent);
+  }
+}

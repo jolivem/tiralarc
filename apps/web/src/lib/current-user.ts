@@ -3,6 +3,7 @@ import type { User } from '@tiralarc/api-client';
 import { cookies } from 'next/headers';
 import { cache } from 'react';
 import { getAuthedApi } from './api';
+import { activeProfile, PROFILE_COOKIE, type Profile } from './current-user-paths';
 import { ACCESS_COOKIE } from './session';
 
 /**
@@ -18,5 +19,12 @@ export const getCurrentUser = cache(async (): Promise<User | null> => {
     return null;
   }
 });
+
+/** The signed-in user's active profile (see `PROFILE_COOKIE`), or null when signed out. */
+export async function getActiveProfile(): Promise<Profile | null> {
+  const user = await getCurrentUser();
+  if (!user) return null;
+  return activeProfile(user.roles, (await cookies()).get(PROFILE_COOKIE)?.value);
+}
 
 export { homePathFor } from './current-user-paths';

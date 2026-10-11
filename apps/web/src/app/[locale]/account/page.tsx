@@ -20,7 +20,7 @@ import { RolesForm } from '@/components/auth-forms';
 import { JournalsCard } from '@/components/journal/journals-card';
 import { redirect } from '@/i18n/navigation';
 import type { Locale } from '@/i18n/routing';
-import { getCurrentUser } from '@/lib/current-user';
+import { getActiveProfile, getCurrentUser } from '@/lib/current-user';
 import { getJournals, getSelectedJournal } from '@/lib/journals';
 
 const PROVIDER_LABELS = { GOOGLE: 'Google', APPLE: 'Apple' } as const;
@@ -41,8 +41,8 @@ export default async function AccountPage({ params }: PageProps<'/[locale]/accou
     });
   }
 
-  // Journals are an archer's: other users (coaches) don't see the card.
-  const isArcher = user.roles.includes('ARCHER');
+  // Journals are an archer's: coaches (and archers signed in as coach) don't see the card.
+  const isArcher = (await getActiveProfile()) === 'ARCHER';
   const [journals, selected] = isArcher
     ? await Promise.all([getJournals(), getSelectedJournal()])
     : [[], null];

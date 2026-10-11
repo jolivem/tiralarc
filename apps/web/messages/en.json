@@ -19,6 +19,7 @@
     "menu": "Menu",
     "toggleColorScheme": "Toggle light / dark theme",
     "account": "My account",
+    "switchProfile": "Switch profile",
     "userMenu": "User menu",
     "archerSection": "Archer area",
     "mainNavigation": "Main navigation"
@@ -38,6 +39,11 @@
     "COACH": "Coach",
     "ARCHER_description": "I practise archery",
     "COACH_description": "I coach archers"
+  },
+  "chooseProfile": {
+    "title": "Which profile do you sign in with?",
+    "body": "You are both an archer and a coach. Choose the profile for this session: you can switch from your account menu.",
+    "as": "Sign in as {profile}"
   },
   "login": {
     "title": "Sign in",

@@ -24,6 +24,9 @@ the same API — keep it client-agnostic (no cookies, no web-only assumptions in
 - Errors: throw `ApiException(status, ErrorCode.X, detail)`; codes in `apps/api/src/common/errors.ts`
   are public contract (mirrored in `packages/api-client/src/index.ts`) — clients translate them.
 - Roles: `ARCHER`/`COACH` self-assigned, `ADMIN` via `user:make-admin`; guard with `@Roles(...)`.
+  Web: users holding both pick a profile after each sign-in (`/choose-profile`, switchable from the avatar menu);
+  it's a web-only preference (`tl_profile` cookie, `src/lib/current-user-paths.ts`) — the API still grants both
+  roles. Read it with `getActiveProfile()`: the archer area and archer navigation need the ARCHER profile.
 - Web is bilingual (next-intl, `/fr`, `/en`): every user-facing string goes in `apps/web/messages/{fr,en}.json`;
   use `Link`/`redirect` from `@/i18n/navigation`, not `next/link`/`next/navigation`.
 - UI: Mantine 9 (no Tailwind). Responsive via Mantine props (`cols={{ base: 1, sm: 2 }}`, `hiddenFrom`,

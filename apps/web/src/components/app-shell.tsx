@@ -17,6 +17,7 @@ import {
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import {
+  IconArrowsExchange,
   IconChartLine,
   IconFileText,
   IconHome,
@@ -35,11 +36,11 @@ import { useTranslations } from 'next-intl';
 import type { ComponentType, ReactNode } from 'react';
 import { logout } from '@/app/actions/auth';
 import { Link, usePathname } from '@/i18n/navigation';
-import { homePathFor } from '@/lib/current-user-paths';
+import { hasBothProfiles, homePathFor, type Profile } from '@/lib/current-user-paths';
 import { LanguageSwitcher } from './language-switcher';
 import classes from './app-shell.module.css';
 
-type ShellUser = Pick<User, 'displayName' | 'email' | 'roles'>;
+type ShellUser = Pick<User, 'displayName' | 'email' | 'roles'> & { profile: Profile | null };
 
 interface Section {
   href: '/archer' | '/archer/journal' | '/archer/sheets' | '/archer/stats' | '/archer/profile';
@@ -49,7 +50,7 @@ interface Section {
 
 /**
  * Responsive frame.
- * - Archers: side menu from tablets up (≥ sm, 768px), bottom tab bar on phones.
+ * - Archer profile: side menu from tablets up (≥ sm, 768px), bottom tab bar on phones.
  * - Anonymous visitors: links in the header from tablets up, burger menu on phones.
  * - Signed-in users: avatar menu (account, sign out) in the header.
  */
@@ -58,15 +59,16 @@ export function TiralarcShell({ user, children }: { user: ShellUser | null; chil
   const pathname = usePathname();
   const [opened, { toggle, close }] = useDisclosure();
 
-  const sections: Section[] = user?.roles.includes('ARCHER')
-    ? [
-        { href: '/archer', label: t('archer.home'), icon: IconHome },
-        { href: '/archer/journal', label: t('archer.journal'), icon: IconNotebook },
-        { href: '/archer/sheets', label: t('archer.sheets'), icon: IconFileText },
-        { href: '/archer/stats', label: t('archer.stats'), icon: IconChartLine },
-        { href: '/archer/profile', label: t('archer.profile'), icon: IconId },
-      ]
-    : [];
+  const sections: Section[] =
+    user?.profile === 'ARCHER'
+      ? [
+          { href: '/archer', label: t('archer.home'), icon: IconHome },
+          { href: '/archer/journal', label: t('archer.journal'), icon: IconNotebook },
+          { href: '/archer/sheets', label: t('archer.sheets'), icon: IconFileText },
+          { href: '/archer/stats', label: t('archer.stats'), icon: IconChartLine },
+          { href: '/archer/profile', label: t('archer.profile'), icon: IconId },
+        ]
+      : [];
   const hasSections = sections.length > 0;
   const isActive = (href: string) =>
     href === '/archer' ? pathname === href : pathname === href || pathname.startsWith(`${href}/`);
@@ -95,7 +97,7 @@ export function TiralarcShell({ user, children }: { user: ShellUser | null; chil
               />
             )}
             <Link
-              href={user ? homePathFor(user.roles) : '/'}
+              href={user ? homePathFor(user.roles, user.profile ?? undefined) : '/'}
               className={classes.brand}
               onClick={close}
             >
@@ -227,6 +229,15 @@ function UserMenu({ user }: { user: ShellUser }) {
         <Menu.Item component={Link} href="/account" leftSection={<IconUserCircle size={16} />}>
           {t('account')}
         </Menu.Item>
+        {hasBothProfiles(user.roles) && (
+          <Menu.Item
+            component={Link}
+            href="/choose-profile"
+            leftSection={<IconArrowsExchange size={16} />}
+          >
+            {t('switchProfile')}
+          </Menu.Item>
+        )}
         <form action={logout}>
           <Menu.Item
             component="button"

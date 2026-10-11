@@ -19,6 +19,7 @@
     "menu": "Menu",
     "toggleColorScheme": "Changer le thème clair / sombre",
     "account": "Mon compte",
+    "switchProfile": "Changer de profil",
     "userMenu": "Menu utilisateur",
     "archerSection": "Espace archer",
     "mainNavigation": "Navigation principale"
@@ -38,6 +39,11 @@
     "COACH": "Coach",
     "ARCHER_description": "Je pratique le tir à l'arc",
     "COACH_description": "J'entraîne des archers"
+  },
+  "chooseProfile": {
+    "title": "Avec quel profil vous connecter ?",
+    "body": "Vous êtes archer et coach. Choisissez le profil de cette connexion : vous pourrez en changer depuis le menu de votre compte.",
+    "as": "Se connecter en tant que {profile}"
   },
   "login": {
     "title": "Connexion",
