@@ -14,10 +14,12 @@ import {
   Text,
   Title,
 } from '@mantine/core';
+import { IconX } from '@tabler/icons-react';
 import type { SelfAssignableRole } from '@tiralarc/api-client';
 import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/server';
 import { RolesForm } from '@/components/auth-forms';
 import { JournalsCard } from '@/components/journal/journals-card';
+import { ActionIconLink } from '@/components/links';
 import { redirect } from '@/i18n/navigation';
 import type { Locale } from '@/i18n/routing';
 import { getActiveProfile, getCurrentUser } from '@/lib/current-user';
@@ -56,11 +58,27 @@ export default async function AccountPage({ params }: PageProps<'/[locale]/accou
   return (
     <Container size="md" px={0}>
       <Stack gap="lg">
-        <Group gap="md" wrap="nowrap">
-          <Avatar name={name} color="initials" size="lg" />
-          <Title order={1} size="h2">
-            {t('account.title')}
-          </Title>
+        <Group justify="space-between" wrap="nowrap" align="flex-start">
+          <Group gap="md" wrap="nowrap">
+            <Avatar name={name} color="initials" size="lg" />
+            <Title order={1} size="h2">
+              {t('account.title')}
+            </Title>
+          </Group>
+          {/* The archer menu is hidden here (app-shell.tsx): this closes the page, back to it. */}
+          {isArcher && (
+            <ActionIconLink
+              href="/archer"
+              variant="subtle"
+              color="var(--mantine-color-text)"
+              size="xl"
+              radius="xl"
+              aria-label={t('account.close')}
+              title={t('account.close')}
+            >
+              <IconX size={28} stroke={2} />
+            </ActionIconLink>
+          )}
         </Group>
 
         {/* One column on phones, two from tablets (sm) up. */}

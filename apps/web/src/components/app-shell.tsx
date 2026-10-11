@@ -50,7 +50,8 @@ interface Section {
 
 /**
  * Responsive frame.
- * - Archer profile: side menu from tablets up (≥ sm, 768px), bottom tab bar on phones.
+ * - Archer profile: side menu from tablets up (≥ sm, 768px), bottom tab bar on phones;
+ *   neither on the account page.
  * - Anonymous visitors: links in the header from tablets up, burger menu on phones.
  * - Signed-in users: avatar menu (account, sign out) in the header.
  */
@@ -59,8 +60,10 @@ export function TiralarcShell({ user, children }: { user: ShellUser | null; chil
   const pathname = usePathname();
   const [opened, { toggle, close }] = useDisclosure();
 
+  // The account page shows on its own, closed with its cross: no archer menu there.
+  const onAccountPage = pathname === '/account' || pathname.startsWith('/account/');
   const sections: Section[] =
-    user?.profile === 'ARCHER'
+    user?.profile === 'ARCHER' && !onAccountPage
       ? [
           { href: '/archer', label: t('archer.home'), icon: IconHome },
           { href: '/archer/journal', label: t('archer.journal'), icon: IconNotebook },

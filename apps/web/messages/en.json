@@ -122,6 +122,7 @@
   },
   "account": {
     "title": "My account",
+    "close": "Close and go back home",
     "email": "Email",
     "roles": "Profiles",
     "signInMethods": "Sign-in",

@@ -122,6 +122,7 @@
   },
   "account": {
     "title": "Mon compte",
+    "close": "Fermer et revenir à l'accueil",
     "email": "Email",
     "roles": "Profils",
     "signInMethods": "Connexion",
