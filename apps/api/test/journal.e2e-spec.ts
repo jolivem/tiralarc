@@ -296,6 +296,31 @@ describe('Journal (e2e)', () => {
       .send({ theme: 'archery' })
       .expect(404);
 
+    // One default journal (opened at sign-in): choosing another moves it, false removes it.
+    expect(previous.body.isDefault).toBe(false);
+    expect((await patch({ isDefault: true }).expect(200)).body.isDefault).toBe(true);
+    const defaults = async () =>
+      (await http().get('/api/v1/journals').set(as(token)).expect(200)).body
+        .filter((j: { isDefault: boolean }) => j.isDefault)
+        .map((j: { id: string }) => j.id);
+    expect(await defaults()).toEqual([current]);
+    await http()
+      .patch(`/api/v1/journals/${previous.body.id}`)
+      .set(as(token))
+      .send({ isDefault: true })
+      .expect(200);
+    expect(await defaults()).toEqual([previous.body.id]);
+    // Editing the title only leaves the default alone.
+    await patch({ title: 'Extérieur 2027' }).expect(200);
+    expect(await defaults()).toEqual([previous.body.id]);
+    await http()
+      .patch(`/api/v1/journals/${previous.body.id}`)
+      .set(as(token))
+      .send({ isDefault: false })
+      .expect(200);
+    expect(await defaults()).toEqual([]);
+    await patch({ isDefault: 'oui' }).expect(400);
+
     // Most recent season first.
     const list = await http().get('/api/v1/journals').set(as(token)).expect(200);
     expect(list.body).toEqual([

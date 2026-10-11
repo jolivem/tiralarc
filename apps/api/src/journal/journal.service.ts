@@ -191,9 +191,18 @@ export class JournalService {
     const endDate = dto.endDate !== undefined ? toDbDate(dto.endDate) : current.endDate;
     assertPeriod(startDate, endDate);
     await this.assertNoOverlap(userId, startDate, endDate, id);
-    const journal = await this.prisma.journal.update({
-      where: { id },
-      data: { title: dto.title?.trim(), startDate, endDate },
+    const journal = await this.prisma.$transaction(async (tx) => {
+      if (dto.isDefault) {
+        // One default journal per archer: choosing this one unsets the other.
+        await tx.journal.updateMany({
+          where: { userId, isDefault: true, id: { not: id } },
+          data: { isDefault: false },
+        });
+      }
+      return tx.journal.update({
+        where: { id },
+        data: { title: dto.title?.trim(), startDate, endDate, isDefault: dto.isDefault },
+      });
     });
     return this.toJournalDto(journal);
   }
@@ -376,6 +385,7 @@ export class JournalService {
       endDate: fromDbDate(journal.endDate),
       monthThemes: monthThemesOf(journal),
       sessionCount: await this.prisma.journalSession.count({ where: eventsOf(journal) }),
+      isDefault: journal.isDefault,
     };
   }
 

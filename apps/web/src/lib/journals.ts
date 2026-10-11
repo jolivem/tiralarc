@@ -18,8 +18,9 @@ export const getJournals = cache(async (): Promise<Journal[]> => {
 });
 
 /**
- * The journal the archer works in: the selected one, otherwise the season
- * in progress, otherwise the most recent. Null when there is no journal yet.
+ * The journal the archer works in: the selected one, otherwise the default one
+ * (starred; the selection is cleared at sign-in, so it opens first), otherwise
+ * the season in progress, otherwise the most recent. Null when there is no journal yet.
  */
 export async function getSelectedJournal(): Promise<Journal | null> {
   const journals = await getJournals();
@@ -27,6 +28,7 @@ export async function getSelectedJournal(): Promise<Journal | null> {
   const today = new Date().toISOString().slice(0, 10);
   return (
     journals.find((j) => j.id === selectedId) ??
+    journals.find((j) => j.isDefault) ??
     journals.find((j) => j.startDate <= today && today <= j.endDate) ??
     journals[0] ??
     null

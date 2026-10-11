@@ -641,6 +641,8 @@ export interface components {
             monthThemes: components["schemas"]["MonthThemeDto"][];
             /** @description Number of the archer's events dated within the period. */
             sessionCount: number;
+            /** @description The journal to open at sign-in. At most one of the archer's journals has it. */
+            isDefault: boolean;
         };
         CreateJournalDto: {
             /** @example Saison 2026-2027 */
@@ -669,6 +671,8 @@ export interface components {
              * @example 2027-08-31
              */
             endDate?: string;
+            /** @description true makes it the archer's default journal (the one opened at sign-in) in place of any other; false leaves no default. */
+            isDefault?: boolean;
         };
         SetMonthThemeDto: {
             /**

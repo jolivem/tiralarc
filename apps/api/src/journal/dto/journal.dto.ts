@@ -3,6 +3,7 @@ import { Type } from 'class-transformer';
 import {
   ArrayMaxSize,
   IsArray,
+  IsBoolean,
   IsIn,
   IsInt,
   IsNumber,
@@ -106,6 +107,14 @@ export class UpdateJournalDto {
   @IsOptional()
   @Matches(DATE, { message: 'endDate must be YYYY-MM-DD' })
   endDate?: string;
+
+  @ApiPropertyOptional({
+    description:
+      "true makes it the archer's default journal (the one opened at sign-in) in place of any other; false leaves no default.",
+  })
+  @IsOptional()
+  @IsBoolean()
+  isDefault?: boolean;
 }
 
 export const THEME_BANDS = ['top', 'bottom', 'left', 'right'] as const;
@@ -210,6 +219,11 @@ export class JournalDto {
 
   @ApiProperty({ description: "Number of the archer's events dated within the period." })
   sessionCount!: number;
+
+  @ApiProperty({
+    description: "The journal to open at sign-in. At most one of the archer's journals has it.",
+  })
+  isDefault!: boolean;
 }
 
 /** One competition of a journal, as listed in the archer's indicators. */

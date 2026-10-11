@@ -35,7 +35,8 @@ the same API — keep it client-agnostic (no cookies, no web-only assumptions in
 - Journals: a `Journal` is a named period (title + inclusive start / end days), usually one season. There is no
   link to events: a journal's events are the archer's sessions dated within its period. An archer's journals must
   not overlap (`JOURNAL_OVERLAP`, checked by the API, not the database); deleting a journal keeps its events. The
-  selected journal is a web-only preference (`tl_journal` cookie, `src/lib/journals.ts`).
+  selected journal is a web-only preference (`tl_journal` cookie, `src/lib/journals.ts`), cleared at sign-in so the
+  archer's default journal (`isDefault`, starred on the Account page, one per archer, set via PATCH) opens first.
 - Calendar decoration themes: a journal stores one theme id per month (`monthThemes`, set from the Journal
   page); the web catalogue is `components/journal/themes.ts`,
   artwork in `apps/web/public/themes/<id>/` (`top`, optional `bottom` / `left` / `right`, `thumb`; black line art on

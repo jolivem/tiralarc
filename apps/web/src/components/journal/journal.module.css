@@ -54,13 +54,28 @@
   box-shadow: 0 0 0 1.5px var(--mantine-color-body);
 }
 
+/* A journal of the Account page list: the row, with its "default" star in the top-right corner. */
+.journalItem {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+
+.journalStar {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+}
+
 .journalRow {
   display: flex;
   align-items: center;
   gap: var(--mantine-spacing-sm);
-  flex: 1;
+  width: 100%;
   min-width: 0;
   padding: var(--mantine-spacing-xs) var(--mantine-spacing-sm);
+  /* Room for the star. */
+  padding-inline-end: 40px;
   border: 1px solid var(--mantine-color-default-border);
   border-radius: var(--mantine-radius-md);
 

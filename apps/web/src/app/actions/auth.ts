@@ -6,6 +6,7 @@ import { getLocale } from 'next-intl/server';
 import { type ActionState, send } from '@/lib/action-state';
 import { api, clientHeaders, getAuthedApi } from '@/lib/api';
 import { homePathFor } from '@/lib/current-user-paths';
+import { JOURNAL_COOKIE } from '@/lib/journals';
 import { clearSession, REFRESH_COOKIE, writeSession } from '@/lib/session';
 import { redirect } from '@/i18n/navigation';
 
@@ -30,7 +31,10 @@ function safeNext(value: unknown): string | undefined {
  * accounts) to onboarding, and everyone else to where they were going.
  */
 async function completeSignIn(tokens: TokenPair, next?: string): Promise<never> {
-  writeSession(await cookies(), tokens);
+  const cookieStore = await cookies();
+  writeSession(cookieStore, tokens);
+  // A new session starts from the archer's default journal, not the last one selected.
+  cookieStore.delete(JOURNAL_COOKIE);
   const locale = await getLocale();
   const me = await send(
     api.GET('/api/v1/users/me', {

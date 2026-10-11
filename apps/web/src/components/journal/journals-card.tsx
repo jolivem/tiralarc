@@ -11,11 +11,18 @@ import {
   ThemeIcon,
   UnstyledButton,
 } from '@mantine/core';
-import { IconCircleCheckFilled, IconNotebook, IconPencil, IconTrash } from '@tabler/icons-react';
+import {
+  IconCircleCheckFilled,
+  IconNotebook,
+  IconPencil,
+  IconStar,
+  IconStarFilled,
+  IconTrash,
+} from '@tabler/icons-react';
 import type { Journal } from '@tiralarc/api-client';
 import { useFormatter, useTranslations } from 'next-intl';
 import { useOptimistic, useState, useTransition } from 'react';
-import { deleteJournal, selectJournal } from '@/app/actions/journal';
+import { deleteJournal, selectJournal, updateJournal } from '@/app/actions/journal';
 import { FormError } from '@/components/form-feedback';
 import { ButtonLink } from '@/components/links';
 import type { ActionState } from '@/lib/action-state';
@@ -34,8 +41,9 @@ function useJournalPeriod() {
 }
 
 /**
- * Home dashboard card of the Journal section: the archer's journals (one per
- * season), with the selected one — the journal the Journal section opens.
+ * Account page card of the Journal section: the archer's journals (one per
+ * season), with the selected one — the journal the Journal section opens — and
+ * the starred default one, selected again at each sign-in.
  */
 export function JournalsCard({
   journals,
@@ -53,10 +61,20 @@ export function JournalsCard({
   const [state, setState] = useState<ActionState>({});
   const [deleting, startDeleting] = useTransition();
 
+  const [defaultId, setDefaultId] = useOptimistic(
+    journals.find((journal) => journal.isDefault)?.id ?? null,
+  );
+
   const select = (id: string) =>
     startSelecting(async () => {
       setCurrentId(id);
       await selectJournal(id);
+    });
+  // The starred journal opens at sign-in; starring it again removes the star.
+  const toggleDefault = (id: string, isDefault: boolean) =>
+    startSelecting(async () => {
+      setDefaultId(isDefault ? id : null);
+      await updateJournal(id, { isDefault });
     });
   const closeDelete = () => {
     setToDelete(null);
@@ -85,32 +103,53 @@ export function JournalsCard({
         <Stack gap="xs" mb="md" role="radiogroup" aria-label={t('journals.list')}>
           {journals.map((journal) => {
             const selected = journal.id === currentId;
+            const isDefault = journal.id === defaultId;
             return (
               <Group key={journal.id} gap={4} wrap="nowrap">
-                <UnstyledButton
-                  role="radio"
-                  aria-checked={selected}
-                  className={classes.journalRow}
-                  data-selected={selected || undefined}
-                  onClick={() => select(journal.id)}
-                >
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <Text fw={500} truncate>
-                      {journal.title}
-                    </Text>
-                    <Text size="sm" c="dimmed">
-                      {period(journal)} · {t('journals.sessions', { count: journal.sessionCount })}
-                    </Text>
-                  </div>
-                  {selected && (
-                    <IconCircleCheckFilled
-                      size={22}
-                      color="var(--mantine-primary-color-filled)"
-                      aria-label={t('journals.selected')}
-                      style={{ flexShrink: 0 }}
-                    />
-                  )}
-                </UnstyledButton>
+                <div className={classes.journalItem}>
+                  <UnstyledButton
+                    role="radio"
+                    aria-checked={selected}
+                    className={classes.journalRow}
+                    data-selected={selected || undefined}
+                    onClick={() => select(journal.id)}
+                  >
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <Text fw={500} truncate>
+                        {journal.title}
+                      </Text>
+                      <Text size="sm" c="dimmed">
+                        {period(journal)} ·{' '}
+                        {t('journals.sessions', { count: journal.sessionCount })}
+                      </Text>
+                    </div>
+                    {selected && (
+                      <IconCircleCheckFilled
+                        size={22}
+                        color="var(--mantine-primary-color-filled)"
+                        aria-label={t('journals.selected')}
+                        style={{ flexShrink: 0 }}
+                      />
+                    )}
+                  </UnstyledButton>
+                  {/* Outside the row button: a button can't contain another one. */}
+                  <ActionIcon
+                    className={classes.journalStar}
+                    variant="subtle"
+                    color={isDefault ? 'yellow' : 'gray'}
+                    size="md"
+                    aria-label={t('journals.defaultLabel', { title: journal.title })}
+                    aria-pressed={isDefault}
+                    title={t(isDefault ? 'journals.isDefault' : 'journals.makeDefault')}
+                    onClick={() => toggleDefault(journal.id, !isDefault)}
+                  >
+                    {isDefault ? (
+                      <IconStarFilled size={18} color="var(--mantine-color-yellow-filled)" />
+                    ) : (
+                      <IconStar size={18} />
+                    )}
+                  </ActionIcon>
+                </div>
                 <ActionIcon
                   variant="subtle"
                   color="gray"

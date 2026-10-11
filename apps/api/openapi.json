@@ -2202,6 +2202,10 @@
           "sessionCount": {
             "type": "number",
             "description": "Number of the archer's events dated within the period."
+          },
+          "isDefault": {
+            "type": "boolean",
+            "description": "The journal to open at sign-in. At most one of the archer's journals has it."
           }
         },
         "required": [
@@ -2210,7 +2214,8 @@
           "startDate",
           "endDate",
           "monthThemes",
-          "sessionCount"
+          "sessionCount",
+          "isDefault"
         ]
       },
       "CreateJournalDto": {
@@ -2257,6 +2262,10 @@
             "type": "string",
             "example": "2027-08-31",
             "description": "Last day, inclusive. The period must not overlap another of the archer's journals."
+          },
+          "isDefault": {
+            "type": "boolean",
+            "description": "true makes it the archer's default journal (the one opened at sign-in) in place of any other; false leaves no default."
           }
         }
       },
