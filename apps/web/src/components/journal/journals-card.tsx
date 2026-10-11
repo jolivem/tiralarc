@@ -11,14 +11,7 @@ import {
   ThemeIcon,
   UnstyledButton,
 } from '@mantine/core';
-import {
-  IconCircleCheckFilled,
-  IconNotebook,
-  IconPencil,
-  IconStar,
-  IconStarFilled,
-  IconTrash,
-} from '@tabler/icons-react';
+import { IconNotebook, IconPencil, IconStar, IconStarFilled, IconTrash } from '@tabler/icons-react';
 import type { Journal } from '@tiralarc/api-client';
 import { useFormatter, useTranslations } from 'next-intl';
 import { useOptimistic, useState, useTransition } from 'react';
@@ -123,14 +116,6 @@ export function JournalsCard({
                         {t('journals.sessions', { count: journal.sessionCount })}
                       </Text>
                     </div>
-                    {selected && (
-                      <IconCircleCheckFilled
-                        size={22}
-                        color="var(--mantine-primary-color-filled)"
-                        aria-label={t('journals.selected')}
-                        style={{ flexShrink: 0 }}
-                      />
-                    )}
                   </UnstyledButton>
                   {/* Outside the row button: a button can't contain another one. */}
                   <ActionIcon

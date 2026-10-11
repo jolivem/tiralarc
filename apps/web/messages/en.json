@@ -280,7 +280,6 @@
     "cancel": "Cancel",
     "period": "{start} – {end}",
     "sessions": "{count, plural, =0 {No events} one {# event} other {# events}}",
-    "selected": "Selected journal",
     "defaultLabel": "Default journal: {title}",
     "isDefault": "Journal shown by default at sign-in",
     "makeDefault": "Show this journal by default at sign-in",
