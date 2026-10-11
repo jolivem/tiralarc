@@ -62,11 +62,20 @@ export function LoginForm({ next }: { next?: string }) {
 export function RegisterForm() {
   const t = useTranslations();
   const fieldError = useFieldError();
+  const tValidation = useTranslations('validation');
   const [state, action, pending] = useActionState(register, initial);
   const [roles, setRoles] = useState<SelfAssignableRole[]>([]);
   // Controlled: React resets uncontrolled fields after each submission, which
   // would wipe what the user typed when the server rejects the form.
-  const [values, setValues] = useState({ displayName: '', email: '', password: '' });
+  const [values, setValues] = useState({
+    displayName: '',
+    email: '',
+    password: '',
+    passwordConfirm: '',
+  });
+  // Mismatch shown once the confirmation is left or the form submitted, not while typing it.
+  const [checkConfirm, setCheckConfirm] = useState(false);
+  const mismatch = values.passwordConfirm !== values.password;
   const bind = (name: keyof typeof values) => ({
     name,
     value: values[name],
@@ -79,7 +88,14 @@ export function RegisterForm() {
 
   return (
     <Stack gap="lg">
-      <form action={action}>
+      <form
+        action={action}
+        onSubmit={(e) => {
+          if (!mismatch) return;
+          e.preventDefault();
+          setCheckConfirm(true);
+        }}
+      >
         <Stack gap="md">
           <div>
             <Text fw={500} size="sm">
@@ -108,6 +124,19 @@ export function RegisterForm() {
             autoComplete="new-password"
             required
             minLength={8}
+          />
+          <PasswordInput
+            {...bind('passwordConfirm')}
+            label={t('register.passwordConfirm')}
+            autoComplete="new-password"
+            required
+            onBlur={() => setCheckConfirm(values.passwordConfirm !== '')}
+            error={
+              checkConfirm && mismatch
+                ? tValidation('passwordMismatch')
+                : // The server's verdict only while the fields still disagree.
+                  mismatch && fieldError(state, 'passwordConfirm')
+            }
           />
           <FormError state={state} />
           <Button type="submit" loading={pending} fullWidth>

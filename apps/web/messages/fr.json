@@ -52,6 +52,7 @@
     "rolesHint": "Vous pouvez cocher les deux.",
     "displayName": "Nom affiché",
     "passwordHint": "Mot de passe (8 caractères min.)",
+    "passwordConfirm": "Confirmer le mot de passe",
     "submit": "Créer mon compte",
     "socialHint": "Ou inscrivez-vous avec :",
     "haveAccount": "Déjà inscrit ?",
@@ -110,7 +111,8 @@
     "maxLength": "Trop long.",
     "arrayMinSize": "Choisissez au moins une option.",
     "default": "Valeur invalide.",
-    "isUrl": "Adresse invalide (elle doit commencer par https://)."
+    "isUrl": "Adresse invalide (elle doit commencer par https://).",
+    "passwordMismatch": "Les deux mots de passe ne correspondent pas."
   },
   "account": {
     "title": "Mon compte",

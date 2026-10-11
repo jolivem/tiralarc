@@ -52,6 +52,7 @@
     "rolesHint": "You can tick both.",
     "displayName": "Display name",
     "passwordHint": "Password (8 characters min.)",
+    "passwordConfirm": "Confirm password",
     "submit": "Create my account",
     "socialHint": "Or sign up with:",
     "haveAccount": "Already registered?",
@@ -110,7 +111,8 @@
     "maxLength": "Too long.",
     "arrayMinSize": "Choose at least one option.",
     "default": "Invalid value.",
-    "isUrl": "Invalid address (it must start with https://)."
+    "isUrl": "Invalid address (it must start with https://).",
+    "passwordMismatch": "The two passwords don't match."
   },
   "account": {
     "title": "My account",

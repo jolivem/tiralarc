@@ -64,6 +64,10 @@ export async function login(_prev: ActionState, formData: FormData): Promise<Act
 export async function register(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const roles = rolesFrom(formData);
   if (roles.length === 0) return { fieldErrors: { roles: ['arrayMinSize'] } };
+  // The form checks it too; this covers a submission made before the page's script ran.
+  if (formData.get('password') !== formData.get('passwordConfirm')) {
+    return { fieldErrors: { passwordConfirm: ['passwordMismatch'] } };
+  }
 
   const displayName = String(formData.get('displayName') ?? '').trim();
   const locale = await getLocale();
