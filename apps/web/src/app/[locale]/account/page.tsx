@@ -17,9 +17,11 @@ import {
 import type { SelfAssignableRole } from '@tiralarc/api-client';
 import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/server';
 import { RolesForm } from '@/components/auth-forms';
+import { JournalsCard } from '@/components/journal/journals-card';
 import { redirect } from '@/i18n/navigation';
 import type { Locale } from '@/i18n/routing';
 import { getCurrentUser } from '@/lib/current-user';
+import { getJournals, getSelectedJournal } from '@/lib/journals';
 
 const PROVIDER_LABELS = { GOOGLE: 'Google', APPLE: 'Apple' } as const;
 const ROLE_COLORS = { ADMIN: 'grape', ARCHER: 'teal', COACH: 'blue' } as const;
@@ -38,6 +40,12 @@ export default async function AccountPage({ params }: PageProps<'/[locale]/accou
       locale: locale as Locale,
     });
   }
+
+  // Journals are an archer's: other users (coaches) don't see the card.
+  const isArcher = user.roles.includes('ARCHER');
+  const [journals, selected] = isArcher
+    ? await Promise.all([getJournals(), getSelectedJournal()])
+    : [[], null];
 
   const name = user.displayName ?? user.email;
   const methods = [
@@ -103,6 +111,8 @@ export default async function AccountPage({ params }: PageProps<'/[locale]/accou
             </Stack>
           </Card>
         </SimpleGrid>
+
+        {isArcher && <JournalsCard journals={journals} selectedId={selected?.id ?? null} />}
       </Stack>
     </Container>
   );

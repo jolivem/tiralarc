@@ -45,14 +45,28 @@ export function NewJournalButton({ variant = 'light' }: { variant?: 'light' | 'f
   );
 }
 
-/** Dialog creating a journal, or editing `journal` when given (full screen on phones). */
+/**
+ * Opens the creation dialog as soon as the page shows: for an archer who has no
+ * journal yet. It comes back on each visit until a journal exists.
+ */
+export function FirstJournalPrompt() {
+  const [opened, setOpened] = useState(true);
+  return <JournalModal opened={opened} first onClose={() => setOpened(false)} />;
+}
+
+/**
+ * Dialog creating a journal, or editing `journal` when given (full screen on phones).
+ * `first` words it as the archer's first journal.
+ */
 export function JournalModal({
   opened,
   journal,
+  first = false,
   onClose,
 }: {
   opened: boolean;
   journal?: Journal;
+  first?: boolean;
   onClose: () => void;
 }) {
   const t = useTranslations('journals');
@@ -62,17 +76,25 @@ export function JournalModal({
     <Modal
       opened={opened}
       onClose={onClose}
-      title={<Text fw={600}>{t(journal ? 'edit' : 'new')}</Text>}
+      title={<Text fw={600}>{t(journal ? 'edit' : first ? 'noneTitle' : 'new')}</Text>}
       fullScreen={isPhone}
       centered
     >
       {/* Mounted on each opening so the form starts from the journal (or the defaults). */}
-      {opened && <JournalForm journal={journal} onDone={onClose} />}
+      {opened && <JournalForm journal={journal} first={first} onDone={onClose} />}
     </Modal>
   );
 }
 
-function JournalForm({ journal, onDone }: { journal?: Journal; onDone: () => void }) {
+function JournalForm({
+  journal,
+  first,
+  onDone,
+}: {
+  journal?: Journal;
+  first: boolean;
+  onDone: () => void;
+}) {
   const t = useTranslations('journals');
   const fieldError = useFieldError();
   const [season] = useState(currentSeason);
@@ -103,6 +125,7 @@ function JournalForm({ journal, onDone }: { journal?: Journal; onDone: () => voi
       }}
     >
       <Stack gap="lg">
+        {first && <Text size="sm">{t('noneBody')}</Text>}
         <Text size="sm" c="dimmed">
           {t(journal ? 'editHint' : 'newHint')}
         </Text>

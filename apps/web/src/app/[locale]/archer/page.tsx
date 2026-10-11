@@ -1,6 +1,6 @@
 import { SimpleGrid } from '@mantine/core';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
-import { JournalsCard } from '@/components/journal/journals-card';
+import { FirstJournalPrompt } from '@/components/journal/journal-modal';
 import { MonthsOverview } from '@/components/journal/months-overview';
 import { SectionCard } from '@/components/section-card';
 import { SectionPage } from '@/components/section-page';
@@ -73,7 +73,7 @@ export default async function ArcherHomePage({ params }: PageProps<'/[locale]/ar
           />
         ))}
       </SimpleGrid>
-      <JournalsCard journals={journals} selectedId={selected?.id ?? null} />
+      {journals.length === 0 && <FirstJournalPrompt />}
     </SectionPage>
   );
 }
