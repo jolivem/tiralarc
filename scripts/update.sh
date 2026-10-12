@@ -9,6 +9,8 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
+sudo chmod 666 /var/run/docker.sock
+
 pull=true
 start_dev=false
 for arg in "$@"; do
