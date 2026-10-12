@@ -19,12 +19,11 @@ import {
   TextInput,
   Title,
 } from '@mantine/core';
-import { DatePickerInput, TimeInput } from '@mantine/dates';
+import { DatePickerInput } from '@mantine/dates';
 import {
   IconArrowRight,
   IconCalendar,
   IconCheck,
-  IconClock,
   IconDeviceFloppy,
   IconMapPin,
   IconMoodEmpty,
@@ -101,7 +100,8 @@ const toNumber = (value: string | number) => (typeof value === 'number' ? value 
 const toText = (value: string) => (value.trim() === '' ? null : value);
 
 /**
- * Session sheet, mirroring the archer's paper sheet. Fields are controlled
+ * Session sheet, mirroring the archer's paper sheet. Events are a day's entry: no time
+ * field (an existing time, from before, is kept as it is). Fields are controlled
  * (React resets uncontrolled ones after a server action) and saved with an
  * explicit button. Repetitive fields offer what the archer already typed.
  */
@@ -159,12 +159,6 @@ export function SessionForm({
             onChange={(date) => date && set('date', date)}
             valueFormat="ddd D MMM YYYY"
             leftSection={<IconCalendar size={18} />}
-          />
-          <TimeInput
-            label={t('time')}
-            value={values.startTime ?? ''}
-            onChange={(e) => set('startTime', toText(e.currentTarget.value))}
-            leftSection={<IconClock size={18} />}
           />
           {form !== 'note' && (
             <NumberInput

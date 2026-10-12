@@ -7,5 +7,14 @@ export default async function ArcherSheetsPage({ params }: PageProps<'/[locale]/
   setRequestLocale(locale as Locale);
   const t = await getTranslations('archer');
 
-  return <SectionPage title={t('sheets')} intro={t('sheetsIntro')} badge={t('comingSoon')} />;
+  // Blank pages for now.
+  return (
+    <SectionPage
+      title={t('sheets')}
+      intro={t('sheetsIntro')}
+      badge={t('comingSoon')}
+      left={null}
+      right={null}
+    />
+  );
 }

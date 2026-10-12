@@ -90,6 +90,116 @@ export function regionAt(art: Artwork, x: number, y: number): Uint8Array | null 
   return mask;
 }
 
+/**
+ * True when the area reaches the edge of the image: the paper around a drawing (e.g.
+ * around hollow letters) rather than a closed shape inside it.
+ */
+export function touchesEdge({ width, height }: Artwork, mask: Uint8Array): boolean {
+  for (let x = 0; x < width; x++) {
+    if (mask[x] === 1 || mask[(height - 1) * width + x] === 1) return true;
+  }
+  for (let y = 0; y < height; y++) {
+    if (mask[y * width] === 1 || mask[y * width + width - 1] === 1) return true;
+  }
+  return false;
+}
+
+/**
+ * One point (fractions of the image size) in each closed shape forming hollow letters:
+ * the paper areas one stroke away from the paper around the drawing, not the holes of
+ * letters such as "o" (two strokes away), nor the paper around. Filling each point
+ * colours the letters, and only them.
+ */
+export function letterSeeds(art: Artwork): { x: number; y: number }[] {
+  const { width, height, light } = art;
+  const size = width * height;
+  // Connected areas of paper, and of strokes (4-neighbourhood, as in `regionAt`).
+  const area = new Int32Array(size).fill(-1);
+  const isPaper = (i: number) => at(light, i) >= PAPER;
+  const firstPixel: number[] = [];
+  const onEdge: boolean[] = [];
+  let areas = 0;
+  let strokes = 0;
+  const neighbours = (i: number): number[] => {
+    const col = i % width;
+    const out: number[] = [];
+    if (col > 0) out.push(i - 1);
+    if (col < width - 1) out.push(i + 1);
+    if (i >= width) out.push(i - width);
+    if (i < size - width) out.push(i + width);
+    return out;
+  };
+  const edge = (i: number) => {
+    const col = i % width;
+    return col === 0 || col === width - 1 || i < width || i >= size - width;
+  };
+  for (let seed = 0; seed < size; seed++) {
+    if (area[seed] !== -1) continue;
+    const paper = isPaper(seed);
+    // Paper areas get ids 0, 1…; strokes −2, −3…
+    const id = paper ? areas++ : -2 - strokes++;
+    if (paper) {
+      firstPixel.push(seed);
+      onEdge.push(false);
+    }
+    area[seed] = id;
+    const stack = [seed];
+    while (stack.length > 0) {
+      const i = stack.pop()!;
+      if (paper && edge(i)) onEdge[id] = true;
+      for (const n of neighbours(i)) {
+        if (area[n] === -1 && isPaper(n) === paper) {
+          area[n] = id;
+          stack.push(n);
+        }
+      }
+    }
+  }
+
+  // Which paper areas each stroke touches.
+  const touching = new Map<number, Set<number>>();
+  for (let i = 0; i < size; i++) {
+    const id = at(area, i);
+    if (id >= 0) continue;
+    for (const n of neighbours(i)) {
+      const other = at(area, n);
+      if (other < 0) continue;
+      let set = touching.get(id);
+      if (!set) touching.set(id, (set = new Set()));
+      set.add(other);
+    }
+  }
+  const strokesOf = new Map<number, number[]>();
+  for (const [stroke, touched] of touching) {
+    for (const a of touched) strokesOf.set(a, [...(strokesOf.get(a) ?? []), stroke]);
+  }
+
+  // Strokes crossed from the paper around the drawing: 1 = a letter, 2 = a hole in one…
+  const depth = new Array<number>(areas).fill(-1);
+  let queue = onEdge.flatMap((around, id) => (around ? [id] : []));
+  for (const id of queue) depth[id] = 0;
+  for (let d = 1; queue.length > 0; d++) {
+    const next: number[] = [];
+    for (const id of queue) {
+      for (const stroke of strokesOf.get(id) ?? []) {
+        for (const other of touching.get(stroke) ?? []) {
+          if (depth[other] === -1) {
+            depth[other] = d;
+            next.push(other);
+          }
+        }
+      }
+    }
+    queue = next;
+  }
+
+  return depth.flatMap((d, id) => {
+    if (d % 2 !== 1) return [];
+    const i = at(firstPixel, id);
+    return [{ x: ((i % width) + 0.5) / width, y: (Math.floor(i / width) + 0.5) / height }];
+  });
+}
+
 /** True when the fill's point lies in the paper area described by `mask`. */
 export function inRegion(art: Artwork, mask: Uint8Array, fill: Pick<Fill, 'x' | 'y'>): boolean {
   return mask[pixelOf(art, fill.x, fill.y)] === 1;

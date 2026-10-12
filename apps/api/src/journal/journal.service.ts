@@ -16,6 +16,7 @@ import {
   type SessionDto,
   type SessionSuggestionsDto,
   type SessionSummaryDto,
+  TITLE_BAND,
   type UpdateJournalDto,
   type UpdateSessionDto,
 } from './dto/journal.dto.js';
@@ -62,8 +63,8 @@ function asList(value: unknown): string[] {
 }
 
 /**
- * Stored as { "YYYY-MM": { theme, fills } } (a bare theme id in older rows);
- * anything else in the column is ignored.
+ * Stored as { "YYYY-MM": { theme, fills } } (a bare theme id in older rows); theme is null
+ * for a month without decoration whose name is coloured. Anything else is ignored.
  */
 function monthThemesOf(j: Journal): MonthThemeDto[] {
   const stored = j.monthThemes;
@@ -73,20 +74,25 @@ function monthThemesOf(j: Journal): MonthThemeDto[] {
       if (typeof value === 'string') return [{ month, theme: value, fills: [] }];
       if (!value || typeof value !== 'object' || Array.isArray(value)) return [];
       const { theme, fills } = value;
-      if (typeof theme !== 'string') return [];
+      if (typeof theme !== 'string' && theme !== null) return [];
       return [{ month, theme, fills: Array.isArray(fills) ? (fills as unknown as FillDto[]) : [] }];
     })
     .sort((a, b) => a.month.localeCompare(b.month));
 }
 
-/** What `monthThemesOf` reads back. */
+/** What `monthThemesOf` reads back; a month with neither decoration nor colouring is dropped. */
 const toStoredThemes = (months: MonthThemeDto[]) =>
   Object.fromEntries(
-    months.map(({ month, theme, fills }) => [
-      month,
-      { theme, fills: fills.map(({ band, x, y, color }) => ({ band, x, y, color })) },
-    ]),
+    months
+      .filter(({ theme, fills }) => theme !== null || fills.length > 0)
+      .map(({ month, theme, fills }) => [
+        month,
+        { theme, fills: fills.map(({ band, x, y, color }) => ({ band, x, y, color })) },
+      ]),
   );
+
+/** The colouring of the month's name (band `title`): it doesn't depend on the decoration. */
+const titleOnly = (fills: FillDto[]) => fills.filter((fill) => fill.band === TITLE_BAND);
 
 /** The events of a journal: its owner's sessions dated within its period. */
 const eventsOf = (journal: Journal) => ({
@@ -209,7 +215,8 @@ export class JournalService {
 
   /**
    * Sets (or, with null, removes) the decoration of one month of the journal.
-   * The colouring belongs to the artwork: it is dropped when the theme changes.
+   * The bands' colouring belongs to the artwork: it is dropped when the theme changes or
+   * goes, except the month name's (`title`), which doesn't depend on it.
    */
   async setMonthTheme(
     userId: string,
@@ -222,13 +229,15 @@ export class JournalService {
     const current = monthThemesOf(journal);
     const kept = current.filter((m) => m.month !== month);
     const previous = current.find((m) => m.month === month);
-    if (theme !== null) {
-      kept.push({ month, theme, fills: previous?.theme === theme ? previous.fills : [] });
-    }
+    const fills = previous?.fills ?? [];
+    kept.push({ month, theme, fills: previous?.theme === theme ? fills : titleOnly(fills) });
     return this.saveMonthThemes(id, kept);
   }
 
-  /** Replaces the archer's colouring of a month's decoration. */
+  /**
+   * Replaces the archer's colouring of a month: its decoration's bands and its name. A month
+   * without decoration can only have its name coloured.
+   */
   async setMonthColoring(
     userId: string,
     id: string,
@@ -239,14 +248,15 @@ export class JournalService {
     assertMonthOf(journal, month);
     const months = monthThemesOf(journal);
     const target = months.find((m) => m.month === month);
-    if (!target) {
+    if ((target?.theme ?? null) === null && titleOnly(fills).length !== fills.length) {
       throw new ApiException(
         HttpStatus.CONFLICT,
         ErrorCode.MONTH_HAS_NO_THEME,
-        'Choose a decoration for that month before colouring it',
+        "Choose a decoration for that month before colouring it (only the month's name can be coloured without one)",
       );
     }
-    target.fills = fills;
+    if (target) target.fills = fills;
+    else months.push({ month, theme: null, fills });
     return this.saveMonthThemes(id, months);
   }
 

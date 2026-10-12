@@ -200,11 +200,9 @@
       "EXHAUSTED": "Exhausted"
     },
     "newSession": "New event",
-    "newSessionHint": "Pick the type, date and time: the details to fill in come next.",
+    "newSessionHint": "Pick the type and date: the details to fill in come next.",
     "type": "Event type",
     "date": "Date",
-    "time": "Time",
-    "timeHint": "Optional: without a time, the event lasts all day.",
     "create": "Create event",
     "cancel": "Cancel",
     "info": "Details",
@@ -315,10 +313,26 @@
     },
     "monthTheme": "Decoration for {month}",
     "monthThemeHint": "Each month of the journal can have its own decoration around the calendar.",
+    "titleColor": "Colour of the month's name",
+    "noTitleColor": "No colour",
+    "pastels": {
+      "rose": "Rose",
+      "coral": "Coral",
+      "peach": "Peach",
+      "lemon": "Lemon",
+      "mint": "Mint",
+      "aqua": "Aqua",
+      "sky": "Sky",
+      "periwinkle": "Periwinkle",
+      "lavender": "Lavender",
+      "lilac": "Lilac",
+      "sand": "Sand",
+      "pearl": "Pearl grey"
+    },
     "coloring": {
       "start": "Colour",
       "done": "Done",
-      "hint": "Pick a colour, then click an area of the decoration to fill it.",
+      "hint": "Pick a colour, then click an area of the decoration or a letter of the month's name to fill it.",
       "colors": "Colours",
       "eraser": "Eraser",
       "undo": "Undo last step",
@@ -387,6 +401,21 @@
       "choose": "Choose",
       "save": "Save",
       "saved": "Profile saved."
+    },
+    "personalization": {
+      "title": "Personalisation",
+      "calendarFont": "Calendar font",
+      "calendarFontHint": "For the weekdays and day numbers, on the home page and in the journal.",
+      "calendarFontSample": "Mon Tue Wed — 1 2 3 14 25",
+      "save": "Save",
+      "saved": "Personalisation saved."
+    },
+    "calendarFonts": {
+      "dancing-script": "Dancing Script",
+      "satisfy": "Satisfy",
+      "courgette": "Courgette",
+      "kaushan-script": "Kaushan Script",
+      "great-vibes": "Great Vibes"
     },
     "categories": {
       "U11": "U11",

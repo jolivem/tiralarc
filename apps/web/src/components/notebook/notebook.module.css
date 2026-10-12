@@ -31,9 +31,16 @@
     --margin: 52px;
   }
 
-  @media (min-width: $mantine-breakpoint-md) {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    gap: 0;
+  &[data-plain] {
+    --paper-line: transparent;
+  }
+
+  /* Two pages side by side (a single wide page keeps one column). */
+  &:has(> [data-side]) {
+    @media (min-width: $mantine-breakpoint-md) {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 0;
+    }
   }
 }
 

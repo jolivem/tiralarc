@@ -870,7 +870,7 @@
             "description": ""
           },
           "409": {
-            "description": "MONTH_HAS_NO_THEME"
+            "description": "MONTH_HAS_NO_THEME: decoration bands coloured in a month without decoration"
           }
         },
         "security": [
@@ -878,7 +878,7 @@
             "bearer": []
           }
         ],
-        "summary": "Save the archer's colouring of one month's decoration",
+        "summary": "Save the archer's colouring of one month (its decoration and its name)",
         "tags": [
           "journal"
         ]
@@ -2106,15 +2106,16 @@
           "top",
           "bottom",
           "left",
-          "right"
+          "right",
+          "title"
         ],
-        "description": "Which band was clicked."
+        "description": "Which band was clicked: one of the theme's artwork bands, or `title` (the month's name in hollow letters, drawn by the client)."
       },
       "FillDto": {
         "type": "object",
         "properties": {
           "band": {
-            "description": "Which band was clicked.",
+            "description": "Which band was clicked: one of the theme's artwork bands, or `title` (the month's name in hollow letters, drawn by the client).",
             "allOf": [
               {
                 "$ref": "#/components/schemas/ThemeBand"
@@ -2156,11 +2157,12 @@
           },
           "theme": {
             "type": "string",
+            "nullable": true,
             "example": "archery",
-            "description": "Theme id; each client maps it to its own artwork."
+            "description": "Theme id; each client maps it to its own artwork. Null: no decoration, only the month's name is coloured."
           },
           "fills": {
-            "description": "The archer's colouring of that month's decoration, in the order it was painted.",
+            "description": "The archer's colouring of that month (decoration bands and name), in the order it was painted.",
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/FillDto"
@@ -2277,7 +2279,7 @@
             "nullable": true,
             "example": "archery",
             "pattern": "^[a-z0-9-]{1,30}$",
-            "description": "Theme id, or null to remove the decoration of that month. Changing it clears the colouring."
+            "description": "Theme id, or null to remove the decoration of that month. Changing or removing it clears the artwork bands' colouring; the `title` band (the month's name) keeps its own."
           }
         },
         "required": [
@@ -3110,13 +3112,20 @@
             "items": {
               "$ref": "#/components/schemas/Discipline"
             }
+          },
+          "calendarFont": {
+            "type": "string",
+            "nullable": true,
+            "example": "dancing-script",
+            "description": "Font of the calendars' weekdays and day numbers: an id each client maps to its own font; null = the client's default."
           }
         },
         "required": [
           "licenceNumber",
           "category",
           "bowType",
-          "disciplines"
+          "disciplines",
+          "calendarFont"
         ]
       },
       "UpdateProfileDto": {
@@ -3149,6 +3158,13 @@
             "items": {
               "$ref": "#/components/schemas/Discipline"
             }
+          },
+          "calendarFont": {
+            "type": "string",
+            "nullable": true,
+            "example": "dancing-script",
+            "pattern": "^[a-z0-9-]{1,30}$",
+            "description": "Font id of the calendars; null goes back to the client's default."
           }
         }
       },

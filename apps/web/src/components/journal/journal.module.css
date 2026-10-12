@@ -231,6 +231,106 @@
   }
 }
 
+/*
+ * Month view cells. Other months' days are blank cells (`data-static`): no frame, so only
+ * the month's own days show. A cell draws its top and left lines, so a blank keeps the
+ * ones closing a real day: its top line below the last full week (trailing blanks), and
+ * the left line of the first blank after the month's last day.
+ */
+.monthDay[data-static] {
+  border-inline-end-color: transparent;
+  border-block-end-color: transparent;
+  background: transparent;
+
+  & + & {
+    border-inline-start-color: transparent;
+  }
+
+  /*
+   * Before the 1st (followed by a day of the month; the week's first child is Mantine's
+   * events layer, not a cell): nothing on the left or above to close.
+   */
+  &:has(~ .monthDay:not([data-static])) {
+    border-inline-start-color: transparent;
+    border-block-start-color: transparent;
+  }
+}
+
+/*
+ * "Today" (top left, just right of the red margin line) and "Month decoration" / "New
+ * event" (top right corner): pulled into the page's padding (notebook.module.css: --line,
+ * the ruling step; the left padding is the margin line plus spacing-md).
+ */
+.pageActions {
+  margin-top: calc(var(--mantine-spacing-xs) - var(--line, 0px));
+  margin-right: calc(var(--mantine-spacing-xs) - var(--mantine-spacing-lg));
+  margin-bottom: var(--mantine-spacing-xs);
+  margin-left: calc(var(--mantine-spacing-xs) - var(--mantine-spacing-md));
+}
+
+/* The calendar's heading (month-title.tsx), in place of the schedule's own. */
+.monthHeader {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--mantine-spacing-xs);
+  margin-bottom: var(--mantine-spacing-sm);
+}
+
+.monthHeading {
+  display: flex;
+  flex: 0 1 46rem;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0;
+}
+
+/* Hollow letters: same shape as the canvas they're drawn on (month-title.tsx). */
+.monthLettering {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1600 / 260;
+  user-select: none;
+
+  &[data-coloring] {
+    cursor: crosshair;
+    touch-action: manipulation;
+  }
+}
+
+/* Frameless arrows, in the page's ink. */
+.monthArrow {
+  flex-shrink: 0;
+  color: inherit;
+}
+
+/* The phone month view's own heading, replaced by ours. */
+.hiddenHeader {
+  display: none;
+}
+
+/*
+ * Weekday names ("lun.", "mar."…) and day numbers, in the archer's calligraphy font, as on
+ * the home page's calendar (`.overview`). The weekdays have no frame: only the days are boxed.
+ */
+.weekday {
+  border: none;
+  font-family: var(--font-calendar, var(--font-hand-upright)), 'Segoe Print', cursive;
+  font-size: 1.1rem;
+}
+
+.dayLabel,
+.mobileDay {
+  font-family: var(--font-calendar, var(--font-hand-upright)), 'Segoe Print', cursive;
+  font-size: 1.2rem;
+}
+
+/* The day's number in its box's top right corner (the box is a row: pushed to its end). */
+.dayLabel {
+  margin-inline-start: auto;
+}
+
+/* Drawn straight on the notebook's paper. */
 .calendarScale {
   @media (min-width: $mantine-breakpoint-md) {
     zoom: 0.8;
@@ -283,11 +383,11 @@
 }
 
 /*
- * The home page and season calendars (months-overview.tsx) are handwritten: an upright
- * hand (Caveat, the notebook headings' hand, has no upright version).
+ * The home page and season calendars (months-overview.tsx) are handwritten, in the
+ * archer's calligraphy font (`--font-calendar`, chosen on the Profile page; set on <html>).
  */
 .overview {
-  font-family: var(--font-hand-upright), 'Segoe Print', cursive;
+  font-family: var(--font-calendar, var(--font-hand-upright)), 'Segoe Print', cursive;
 
   /* Mantine's Text sets its own font: take the hand instead. */
   & :global(.mantine-Text-root) {

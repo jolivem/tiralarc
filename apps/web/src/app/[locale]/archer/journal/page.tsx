@@ -26,7 +26,7 @@ export default async function ArcherJournalPage({
 
   if (!journal) {
     return (
-      <SectionPage title={t('archer.journal')} intro={t('archer.journalIntro')}>
+      <SectionPage title={t('archer.journal')} intro={t('archer.journalIntro')} plain>
         <Paper withBorder radius="lg" p="xl">
           <Stack align="flex-start" gap="sm">
             <Text fw={600}>{t('journals.noneTitle')}</Text>
@@ -48,6 +48,8 @@ export default async function ArcherJournalPage({
     <SectionPage
       title={journal.title}
       intro={t('journals.period', { start: day(journal.startDate), end: day(journal.endDate) })}
+      // Unruled paper: the calendar draws its own grid.
+      plain
     >
       {/* Remounted when another journal or month is asked for, so the calendar opens on it. */}
       <JournalView key={`${journal.id}:${month ?? ''}`} journal={journal} month={month} />

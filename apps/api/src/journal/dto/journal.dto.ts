@@ -117,14 +117,25 @@ export class UpdateJournalDto {
   isDefault?: boolean;
 }
 
-export const THEME_BANDS = ['top', 'bottom', 'left', 'right'] as const;
+/**
+ * Colourable areas: the theme's artwork bands, and `title`, the month's name drawn in
+ * hollow letters by the client (it doesn't depend on the theme's artwork).
+ */
+export const THEME_BANDS = ['top', 'bottom', 'left', 'right', 'title'] as const;
 export type ThemeBand = (typeof THEME_BANDS)[number];
+/** The band whose colouring outlives a change of theme. */
+export const TITLE_BAND: ThemeBand = 'title';
 /** Colouring one decoration takes far fewer; this only bounds the stored size. */
 export const MAX_FILLS = 500;
 
 /** One "paint bucket" click on a theme's artwork: the closed area around the point takes the colour. */
 export class FillDto {
-  @ApiProperty({ enum: THEME_BANDS, enumName: 'ThemeBand', description: 'Which band was clicked.' })
+  @ApiProperty({
+    enum: THEME_BANDS,
+    enumName: 'ThemeBand',
+    description:
+      "Which band was clicked: one of the theme's artwork bands, or `title` (the month's name in hollow letters, drawn by the client).",
+  })
   @IsIn(THEME_BANDS)
   band!: ThemeBand;
 
@@ -158,14 +169,18 @@ export class MonthThemeDto {
   month!: string;
 
   @ApiProperty({
+    type: String,
+    nullable: true,
     example: 'archery',
-    description: 'Theme id; each client maps it to its own artwork.',
+    description:
+      "Theme id; each client maps it to its own artwork. Null: no decoration, only the month's name is coloured.",
   })
-  theme!: string;
+  theme!: string | null;
 
   @ApiProperty({
     type: () => [FillDto],
-    description: "The archer's colouring of that month's decoration, in the order it was painted.",
+    description:
+      "The archer's colouring of that month (decoration bands and name), in the order it was painted.",
   })
   fills!: FillDto[];
 }
@@ -190,7 +205,7 @@ export class SetMonthThemeDto {
     example: 'archery',
     pattern: '^[a-z0-9-]{1,30}$',
     description:
-      'Theme id, or null to remove the decoration of that month. Changing it clears the colouring.',
+      "Theme id, or null to remove the decoration of that month. Changing or removing it clears the artwork bands' colouring; the `title` band (the month's name) keeps its own.",
   })
   @ValidateIf((_, value) => value !== null)
   @Matches(THEME, { message: 'theme must be a lowercase slug' })

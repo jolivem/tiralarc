@@ -3,7 +3,7 @@
 import { useComputedColorScheme } from '@mantine/core';
 import type { ThemeFill } from '@tiralarc/api-client';
 import { type MouseEvent, type ReactNode, useEffect, useRef, useState } from 'react';
-import { type Artwork, inRegion, paint, regionAt, toArtwork } from './coloring';
+import { type Artwork, inRegion, paint, regionAt, toArtwork, touchesEdge } from './coloring';
 import classes from './journal.module.css';
 import { type ThemeBand, type ThemeId, themeImage, THEMES } from './themes';
 
@@ -73,9 +73,7 @@ function Band({
   tool: ColoringTool;
   onFillsChange: (fills: ThemeFill[]) => void;
 }) {
-  const dark = useComputedColorScheme('light') === 'dark';
   const [art, setArt] = useState<Artwork | null>(null);
-  const canvas = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -99,22 +97,58 @@ function Band({
     };
   }, [src]);
 
-  const own = fills.filter((fill) => fill.band === band);
-  // Repaint when the colouring of this band changes, not on every render.
-  const signature = JSON.stringify(own);
-  useEffect(() => {
-    const context = canvas.current?.getContext('2d');
-    if (!art || !context) return;
-    const line: [number, number, number] = dark ? [255, 255, 255] : [0, 0, 0];
-    const pixels = paint(art, JSON.parse(signature) as ThemeFill[], line);
-    context.putImageData(new ImageData(pixels, art.width, art.height), 0, 0);
-  }, [art, signature, dark]);
-
   if (!art) {
     // Decorative, and static files of unknown size: a plain <img> rather than next/image.
     // eslint-disable-next-line @next/next/no-img-element
     return <img src={src} alt="" className={classes.frameBand} data-band={band} />;
   }
+  return (
+    <ColorableCanvas
+      art={art}
+      band={band}
+      fills={fills}
+      tool={tool}
+      onFillsChange={onFillsChange}
+      className={classes.frameBand}
+    />
+  );
+}
+
+/**
+ * Line art with the archer's colouring painted on it (`fills` of its `band`); with a
+ * `tool`, clicking colours or clears the closed area under the pointer.
+ */
+export function ColorableCanvas({
+  art,
+  band,
+  fills,
+  tool,
+  onFillsChange,
+  className,
+  enclosedOnly = false,
+}: {
+  art: Artwork;
+  band: ThemeFill['band'];
+  fills: ThemeFill[];
+  tool: ColoringTool;
+  onFillsChange: (fills: ThemeFill[]) => void;
+  className?: string;
+  /** Only closed shapes take colour, not the paper around the drawing (hollow letters). */
+  enclosedOnly?: boolean;
+}) {
+  const dark = useComputedColorScheme('light') === 'dark';
+  const canvas = useRef<HTMLCanvasElement>(null);
+
+  const own = fills.filter((fill) => fill.band === band);
+  // Repaint when the colouring of this band changes, not on every render.
+  const signature = JSON.stringify(own);
+  useEffect(() => {
+    const context = canvas.current?.getContext('2d');
+    if (!context) return;
+    const line: [number, number, number] = dark ? [255, 255, 255] : [0, 0, 0];
+    const pixels = paint(art, JSON.parse(signature) as ThemeFill[], line);
+    context.putImageData(new ImageData(pixels, art.width, art.height), 0, 0);
+  }, [art, signature, dark]);
 
   const click = (event: MouseEvent<HTMLCanvasElement>) => {
     if (!tool) return;
@@ -128,6 +162,7 @@ function Band({
     if (x < 0 || x > 1 || y < 0 || y > 1) return;
     const region = regionAt(art, x, y);
     if (!region) return; // on a stroke
+    if (enclosedOnly && touchesEdge(art, region)) return; // around the drawing
     // Whatever was painted in this area is replaced, so the list doesn't grow with repaints.
     const kept = fills.filter((fill) => fill.band !== band || !inRegion(art, region, fill));
     const round = (value: number) => Math.round(value * 10_000) / 10_000;
@@ -141,7 +176,7 @@ function Band({
       ref={canvas}
       width={art.width}
       height={art.height}
-      className={classes.frameBand}
+      className={className}
       data-band={band}
       data-painted
       data-coloring={tool ? true : undefined}

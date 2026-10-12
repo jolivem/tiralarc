@@ -34,6 +34,7 @@ function toProfileDto(profile: ArcherProfile | null): ProfileDto {
     category: profile?.category ?? null,
     bowType: profile?.bowType ?? null,
     disciplines: stored.filter((d): d is Discipline => DISCIPLINES.includes(d as string)),
+    calendarFont: profile?.calendarFont ?? null,
   };
 }
 
@@ -81,7 +82,8 @@ export class ProfileService {
     };
     const profile = await this.prisma.archerProfile.upsert({
       where: { userId },
-      create: { userId, disciplines: [], ...data },
+      // Fields left out of the PATCH come as `undefined`: don't let them unset the default.
+      create: { userId, ...data, disciplines: data.disciplines ?? [] },
       update: data,
     });
     return toProfileDto(profile);

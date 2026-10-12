@@ -200,11 +200,9 @@
       "EXHAUSTED": "Épuisé"
     },
     "newSession": "Nouvel événement",
-    "newSessionHint": "Choisissez le type, la date et l'heure : les informations à saisir s'afficheront ensuite.",
+    "newSessionHint": "Choisissez le type et la date : les informations à saisir s'afficheront ensuite.",
     "type": "Type d'événement",
     "date": "Date",
-    "time": "Heure",
-    "timeHint": "Facultatif : sans heure, l'événement occupe la journée.",
     "create": "Créer l'événement",
     "cancel": "Annuler",
     "info": "Informations",
@@ -315,10 +313,26 @@
     },
     "monthTheme": "Décor du mois — {month}",
     "monthThemeHint": "Chaque mois du journal peut avoir son propre décor autour du calendrier.",
+    "titleColor": "Couleur du nom du mois",
+    "noTitleColor": "Sans couleur",
+    "pastels": {
+      "rose": "Rose",
+      "coral": "Corail",
+      "peach": "Pêche",
+      "lemon": "Citron",
+      "mint": "Menthe",
+      "aqua": "Vert d'eau",
+      "sky": "Ciel",
+      "periwinkle": "Pervenche",
+      "lavender": "Lavande",
+      "lilac": "Lilas",
+      "sand": "Sable",
+      "pearl": "Gris perle"
+    },
     "coloring": {
       "start": "Colorier",
       "done": "Terminer",
-      "hint": "Choisissez une couleur, puis cliquez sur une zone du décor pour la remplir.",
+      "hint": "Choisissez une couleur, puis cliquez sur une zone du décor ou une lettre du nom du mois pour la remplir.",
       "colors": "Couleurs",
       "eraser": "Gomme",
       "undo": "Annuler le dernier coup",
@@ -387,6 +401,21 @@
       "choose": "Choisir",
       "save": "Enregistrer",
       "saved": "Profil enregistré."
+    },
+    "personalization": {
+      "title": "Personnalisation",
+      "calendarFont": "Police des calendriers",
+      "calendarFontHint": "Pour les jours de la semaine et les numéros des jours, sur l'accueil et dans le journal.",
+      "calendarFontSample": "lun. mar. mer. — 1 2 3 14 25",
+      "save": "Enregistrer",
+      "saved": "Personnalisation enregistrée."
+    },
+    "calendarFonts": {
+      "dancing-script": "Dancing Script",
+      "satisfy": "Satisfy",
+      "courgette": "Courgette",
+      "kaushan-script": "Kaushan Script",
+      "great-vibes": "Great Vibes"
     },
     "categories": {
       "U11": "U11",

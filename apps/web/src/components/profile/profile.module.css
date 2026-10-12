@@ -1,0 +1,12 @@
+/* A choice of the calendars' font (configuration-card.tsx): its name, then a sample, in it. */
+.fontName {
+  display: block;
+  font-size: 1.25rem;
+  line-height: 1.3;
+}
+
+.fontSample {
+  display: block;
+  font-size: 1rem;
+  opacity: 0.7;
+}

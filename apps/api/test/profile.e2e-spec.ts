@@ -42,6 +42,7 @@ describe('Profile (e2e)', () => {
       category: null,
       bowType: null,
       disciplines: [],
+      calendarFont: null,
     });
 
     const saved = await http()
@@ -52,6 +53,7 @@ describe('Profile (e2e)', () => {
         category: 'S1',
         bowType: 'RECURVE',
         disciplines: ['INDOOR', 'BEURSAULT', 'RUN_ARCHERY'],
+        calendarFont: 'great-vibes',
       })
       .expect(200);
     expect(saved.body).toEqual({
@@ -59,23 +61,35 @@ describe('Profile (e2e)', () => {
       category: 'S1',
       bowType: 'RECURVE',
       disciplines: ['INDOOR', 'BEURSAULT', 'RUN_ARCHERY'],
+      calendarFont: 'great-vibes',
     });
 
     // Partial update; null clears a field.
     const cleared = await http()
       .patch('/api/v1/profile')
       .set(as(archer))
-      .send({ category: null, disciplines: [] })
+      .send({ category: null, disciplines: [], calendarFont: null })
       .expect(200);
-    expect(cleared.body).toMatchObject({ category: null, bowType: 'RECURVE', disciplines: [] });
+    expect(cleared.body).toMatchObject({
+      category: null,
+      bowType: 'RECURVE',
+      disciplines: [],
+      calendarFont: null,
+    });
 
     const bad = await http()
       .patch('/api/v1/profile')
       .set(as(archer))
-      .send({ category: 'U99', bowType: 'CROSSBOW', disciplines: ['INDOOR', 'INDOOR'] })
+      .send({
+        category: 'U99',
+        bowType: 'CROSSBOW',
+        disciplines: ['INDOOR', 'INDOOR'],
+        calendarFont: 'Comic Sans!',
+      })
       .expect(400);
     expect(bad.body.errors.map((e: { field: string }) => e.field).sort()).toEqual([
       'bowType',
+      'calendarFont',
       'category',
       'disciplines',
     ]);
@@ -83,6 +97,13 @@ describe('Profile (e2e)', () => {
     // Each archer has their own profile.
     const other = await http().get('/api/v1/profile').set(as(otherArcher)).expect(200);
     expect(other.body.bowType).toBeNull();
+    // A first save may carry a single field (e.g. the Personalisation card's font).
+    const first = await http()
+      .patch('/api/v1/profile')
+      .set(as(otherArcher))
+      .send({ calendarFont: 'satisfy' })
+      .expect(200);
+    expect(first.body).toMatchObject({ disciplines: [], calendarFont: 'satisfy' });
   });
 
   it('invites people by email and lets them accept', async () => {

@@ -258,7 +258,7 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        /** Save the archer's colouring of one month's decoration */
+        /** Save the archer's colouring of one month (its decoration and its name) */
         put: operations["Journals_setMonthColoring"];
         post?: never;
         delete?: never;
@@ -600,12 +600,12 @@ export interface components {
             roles: components["schemas"]["SelfAssignableRole"][];
         };
         /**
-         * @description Which band was clicked.
+         * @description Which band was clicked: one of the theme's artwork bands, or `title` (the month's name in hollow letters, drawn by the client).
          * @enum {string}
          */
-        ThemeBand: "top" | "bottom" | "left" | "right";
+        ThemeBand: "top" | "bottom" | "left" | "right" | "title";
         FillDto: {
-            /** @description Which band was clicked. */
+            /** @description Which band was clicked: one of the theme's artwork bands, or `title` (the month's name in hollow letters, drawn by the client). */
             band: components["schemas"]["ThemeBand"];
             /** @description Horizontal position in the band image (0 = left). */
             x: number;
@@ -621,11 +621,11 @@ export interface components {
              */
             month: string;
             /**
-             * @description Theme id; each client maps it to its own artwork.
+             * @description Theme id; each client maps it to its own artwork. Null: no decoration, only the month's name is coloured.
              * @example archery
              */
-            theme: string;
-            /** @description The archer's colouring of that month's decoration, in the order it was painted. */
+            theme: string | null;
+            /** @description The archer's colouring of that month (decoration bands and name), in the order it was painted. */
             fills: components["schemas"]["FillDto"][];
         };
         JournalDto: {
@@ -676,7 +676,7 @@ export interface components {
         };
         SetMonthThemeDto: {
             /**
-             * @description Theme id, or null to remove the decoration of that month. Changing it clears the colouring.
+             * @description Theme id, or null to remove the decoration of that month. Changing or removing it clears the artwork bands' colouring; the `title` band (the month's name) keeps its own.
              * @example archery
              */
             theme: string | null;
@@ -908,6 +908,11 @@ export interface components {
             category: components["schemas"]["AgeCategory"] | null;
             bowType: components["schemas"]["BowType"] | null;
             disciplines: components["schemas"]["Discipline"][];
+            /**
+             * @description Font of the calendars' weekdays and day numbers: an id each client maps to its own font; null = the client's default.
+             * @example dancing-script
+             */
+            calendarFont: string | null;
         };
         UpdateProfileDto: {
             licenceNumber?: string | null;
@@ -915,6 +920,11 @@ export interface components {
             bowType?: components["schemas"]["BowType"] | null;
             /** @description Replaces the practised disciplines. */
             disciplines?: components["schemas"]["Discipline"][];
+            /**
+             * @description Font id of the calendars; null goes back to the client's default.
+             * @example dancing-script
+             */
+            calendarFont?: string | null;
         };
         /** @enum {string} */
         InvitationStatus: "PENDING" | "ACCEPTED";
@@ -1665,7 +1675,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description MONTH_HAS_NO_THEME */
+            /** @description MONTH_HAS_NO_THEME: decoration bands coloured in a month without decoration */
             409: {
                 headers: {
                     [name: string]: unknown;

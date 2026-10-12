@@ -89,11 +89,15 @@ export class JournalsController {
   }
 
   @Put(':id/months/:month/coloring')
-  @ApiOperation({ summary: "Save the archer's colouring of one month's decoration" })
+  @ApiOperation({
+    summary: "Save the archer's colouring of one month (its decoration and its name)",
+  })
   @ApiOkResponse({ type: JournalDto })
   @ApiNotFoundResponse()
   @ApiBadRequestResponse({ description: "Month outside the journal's period" })
-  @ApiConflictResponse({ description: 'MONTH_HAS_NO_THEME' })
+  @ApiConflictResponse({
+    description: 'MONTH_HAS_NO_THEME: decoration bands coloured in a month without decoration',
+  })
   setMonthColoring(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id', new ParseUUIDPipe()) id: string,

@@ -38,8 +38,12 @@ the same API — keep it client-agnostic (no cookies, no web-only assumptions in
 - Archer look: a diary on a desk. From tablets up the archer layout's grid puts binder divider tabs
   (`components/binder/`, vertical labels) left of the page content; phones get tabs along the bottom (app-shell).
   A page's direct child with `binder.header` sits above, the tabs then start level with the content.
-  The home page is an open notebook (`components/notebook/`: two ruled pages, stacked below md). Fonts:
-  `--font-hand` (Caveat, headings) and `--font-hand-upright` (Patrick Hand, the calendars). The selected
+  The home page is an open notebook (`components/notebook/`: two ruled pages, stacked below md); the other
+  sections use `SectionPage`, which puts the title above the same notebook (two pages via `left`/`right`, or one
+  wide page via `children` for content the fold would cut: calendar, charts). Fonts:
+  `--font-hand` (Caveat, headings) and `--font-calendar` (the calendars' weekdays and day numbers: one of five
+  calligraphy fonts, `src/lib/calendar-fonts.ts`, chosen on the Profile page — `calendarFont` in the API's archer
+  profile — and set on `<html>` by the root layout; `--font-hand-upright`, Patrick Hand, as fallback). The selected
   journal's title is centred in the header.
 - Journals: a `Journal` is a named period (title + inclusive start / end days), usually one season. There is no
   link to events: a journal's events are the archer's sessions dated within its period. An archer's journals must
@@ -52,7 +56,10 @@ the same API — keep it client-agnostic (no cookies, no web-only assumptions in
   white). Adding a theme = image folder + catalogue entry + `journals.themes.<id>` in both message files.
 - Colouring the decoration: `monthThemes[].fills` holds "paint bucket" clicks (band, x, y as fractions, colour);
   the web repaints them on a canvas (`components/journal/coloring.ts`, pure and unit-tested, + `calendar-frame.tsx`).
-  Flood fill stops at dark strokes, so artwork needs closed shapes; changing a month's theme clears its colouring.
+  Flood fill stops at dark strokes, so artwork needs closed shapes; changing a month's theme clears its colouring,
+  except band `title` (the only one allowed without a theme: such a month is stored with `theme: null`): the Journal calendar's heading (`month-title.tsx`), the month's name drawn on a fixed-size
+  canvas as hollow letters (`--font-month`, Ribeye, outline only), coloured like the bands (inside letters only), or
+  all at once in a pastel from the decoration dialog (`letterSeeds`: one fill per letter, holes of "o" left out).
 - Indicators (`/archer/stats`): `GET /journal/sessions/stats?from&to` (both optional = all time) returns raw figures; the web draws them with
   `@mantine/charts` (`components/stats/`). Chart colours are CSS variables in `stats.module.css` (light + dark sets
   checked for colour-blind separation); a discipline keeps its colour slot (`disciplineColor`).

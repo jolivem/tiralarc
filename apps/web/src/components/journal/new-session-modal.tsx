@@ -1,9 +1,9 @@
 'use client';
 
-import { Button, Group, Modal, SimpleGrid, Stack, Text } from '@mantine/core';
-import { DatePickerInput, TimeInput } from '@mantine/dates';
+import { Button, Group, Modal, Stack, Text } from '@mantine/core';
+import { DatePickerInput } from '@mantine/dates';
 import { useMediaQuery } from '@mantine/hooks';
-import { IconCalendar, IconClock } from '@tabler/icons-react';
+import { IconCalendar } from '@tabler/icons-react';
 import type { Journal, SessionType } from '@tiralarc/api-client';
 import dayjs from 'dayjs';
 import { useTranslations } from 'next-intl';
@@ -15,13 +15,12 @@ import { TypePicker } from './type-picker';
 
 export interface NewSessionDefaults {
   date: string;
-  time?: string;
 }
 
 /**
- * Step 1 of the two-step entry: type + date (+ optional time). Full screen on
- * phones. On success the server action redirects to the event's own form,
- * whose fields depend on the type.
+ * Step 1 of the two-step entry: type + date. Full screen on phones. On success the
+ * server action redirects to the event's own form, whose fields (time included)
+ * depend on the type.
  */
 export function NewSessionModal({
   journal,
@@ -48,7 +47,7 @@ export function NewSessionModal({
       {/* Remount on each opening so the form starts from the clicked day. */}
       {defaults && (
         <NewSessionForm
-          key={`${defaults.date}${defaults.time}`}
+          key={defaults.date}
           journal={journal}
           defaults={defaults}
           onCancel={onClose}
@@ -70,14 +69,14 @@ function NewSessionForm({
   const t = useTranslations('journal');
   const [type, setType] = useState<SessionType | null>(null);
   const [date, setDate] = useState<string | null>(clampToJournal(defaults.date, journal));
-  const [time, setTime] = useState(defaults.time ?? '');
   const [state, setState] = useState<ActionState>({});
   const [pending, startTransition] = useTransition();
 
   const submit = () => {
     if (!type || !date) return;
     startTransition(async () => {
-      setState(await createSession({ type, date, startTime: time || null }));
+      // No time here: the event's own form (opened next) sets it, if it has one.
+      setState(await createSession({ type, date, startTime: null }));
     });
   };
 
@@ -87,25 +86,17 @@ function NewSessionForm({
         {t('newSessionHint')}
       </Text>
       <TypePicker value={type} onChange={setType} />
-      <SimpleGrid cols={{ base: 1, xs: 2 }} spacing="md">
-        <DatePickerInput
-          label={t('date')}
-          value={date}
-          onChange={setDate}
-          minDate={journal.startDate}
-          maxDate={journal.endDate}
-          valueFormat="dddd D MMMM YYYY"
-          leftSection={<IconCalendar size={18} />}
-          required
-        />
-        <TimeInput
-          label={t('time')}
-          description={t('timeHint')}
-          value={time}
-          onChange={(e) => setTime(e.currentTarget.value)}
-          leftSection={<IconClock size={18} />}
-        />
-      </SimpleGrid>
+      <DatePickerInput
+        label={t('date')}
+        value={date}
+        onChange={setDate}
+        minDate={journal.startDate}
+        maxDate={journal.endDate}
+        valueFormat="dddd D MMMM YYYY"
+        leftSection={<IconCalendar size={18} />}
+        required
+        maw={{ xs: 320 }}
+      />
       <FormError state={state} />
       <Group justify="flex-end" gap="sm">
         <Button variant="default" onClick={onCancel}>

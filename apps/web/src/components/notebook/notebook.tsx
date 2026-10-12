@@ -2,27 +2,46 @@ import type { ReactNode } from 'react';
 import classes from './notebook.module.css';
 
 /**
+ * What a notebook shows: two pages (`left` and `right`), or one wide page (`children`)
+ * for content the fold would cut, such as a calendar or charts.
+ */
+export type NotebookPages =
+  | { left: ReactNode; right: ReactNode; children?: never }
+  | { children: ReactNode; left?: never; right?: never };
+
+/**
  * An open notebook: a cover holding two ruled pages, side by side from desktops up
- * (md), one above the other on smaller screens.
+ * (md), one above the other on smaller screens — or a single wide page.
  */
 export function Notebook({
-  left,
-  right,
   label,
-}: {
-  left: ReactNode;
-  right: ReactNode;
+  plain = false,
+  ...pages
+}: NotebookPages & {
   /** Accessible name of the whole spread. */
   label?: string;
+  /** Unruled paper (the margin line stays), e.g. under a calendar. */
+  plain?: boolean;
 }) {
   return (
-    <div className={classes.notebook} role="group" aria-label={label}>
-      <section className={classes.page} data-side="left">
-        {left}
-      </section>
-      <section className={classes.page} data-side="right">
-        {right}
-      </section>
+    <div
+      className={classes.notebook}
+      role="group"
+      aria-label={label}
+      data-plain={plain || undefined}
+    >
+      {pages.right === undefined ? (
+        <section className={classes.page}>{pages.children}</section>
+      ) : (
+        <>
+          <section className={classes.page} data-side="left">
+            {pages.left}
+          </section>
+          <section className={classes.page} data-side="right">
+            {pages.right}
+          </section>
+        </>
+      )}
     </div>
   );
 }

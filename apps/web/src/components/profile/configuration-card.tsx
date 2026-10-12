@@ -16,9 +16,12 @@ const BOW_TYPES: BowType[] = ['RECURVE', 'COMPOUND', 'BAREBOW', 'LONGBOW', 'HUNT
 /** Sport details: licence, category, bow and practised disciplines. */
 export function ConfigurationCard({ profile }: { profile: ArcherProfile }) {
   const t = useTranslations();
+  // Only this card's fields: the Personalisation card saves the others on its own.
   const [values, setValues] = useState({
-    ...profile,
     licenceNumber: profile.licenceNumber ?? '',
+    category: profile.category,
+    bowType: profile.bowType,
+    disciplines: profile.disciplines,
   });
   const [state, setState] = useState<ActionState>({});
   const [pending, startTransition] = useTransition();

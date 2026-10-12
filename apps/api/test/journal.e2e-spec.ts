@@ -266,22 +266,40 @@ describe('Journal (e2e)', () => {
         .put(`/api/v1/journals/${current}/months/${month}/coloring`)
         .set(as(token))
         .send({ fills });
+    const title = { band: 'title', x: 0.3, y: 0.5, color: '#ffd43b' };
     const fills = [
       { band: 'top', x: 0.15, y: 0.4, color: '#e03131' },
       { band: 'left', x: 0.5, y: 0.25, color: '#1c7ed6' },
+      title,
     ];
     expect((await color('2026-10', fills).expect(200)).body.monthThemes).toEqual([
       { month: '2026-10', theme: 'archery', fills },
     ]);
+    // Without decoration, only the month's name can be coloured.
     const noTheme = await color('2026-11', fills).expect(409);
     expect(noTheme.body.code).toBe('MONTH_HAS_NO_THEME');
+    expect((await color('2026-11', [title]).expect(200)).body.monthThemes).toEqual([
+      { month: '2026-10', theme: 'archery', fills },
+      { month: '2026-11', theme: null, fills: [title] },
+    ]);
+    // A decoration chosen then removed keeps the name's colouring; uncoloured, the month goes.
+    await setTheme('2026-11', 'snow').expect(200);
+    expect((await setTheme('2026-11', null).expect(200)).body.monthThemes[1]).toEqual({
+      month: '2026-11',
+      theme: null,
+      fills: [title],
+    });
+    expect((await color('2026-11', []).expect(200)).body.monthThemes).toHaveLength(1);
     await color('2026-10', [{ band: 'middle', x: 2, y: -1, color: 'red' }]).expect(400);
     await color('2025-01', fills).expect(400);
-    // Choosing the same decoration again keeps the colouring; another one starts blank.
+    // Choosing the same decoration again keeps the colouring; another one starts blank,
+    // but for the month's name (drawn by the client, not part of the artwork).
     expect((await setTheme('2026-10', 'archery').expect(200)).body.monthThemes[0].fills).toEqual(
       fills,
     );
-    expect((await setTheme('2026-10', 'snow').expect(200)).body.monthThemes[0].fills).toEqual([]);
+    expect((await setTheme('2026-10', 'snow').expect(200)).body.monthThemes[0].fills).toEqual([
+      title,
+    ]);
     await http()
       .put(`/api/v1/journals/${current}/months/2026-10/coloring`)
       .set(as(otherArcher))

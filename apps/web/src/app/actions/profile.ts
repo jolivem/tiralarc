@@ -23,7 +23,10 @@ async function mutate(
 
 export async function saveProfile(values: ArcherProfileUpdate): Promise<ActionState> {
   const result = await send((await getAuthedApi()).PATCH('/api/v1/profile', { body: values }));
-  return result.ok ? { notice: 'saved' } : result.state;
+  if (!result.ok) return result.state;
+  // The root layout sets the calendars' font from the profile.
+  refresh();
+  return { notice: 'saved' };
 }
 
 /** Adds a guest; the API emails them the invitation. */

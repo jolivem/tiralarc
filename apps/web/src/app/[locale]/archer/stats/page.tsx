@@ -1,3 +1,4 @@
+import { Stack } from '@mantine/core';
 import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/server';
 import { SectionPage } from '@/components/section-page';
 import { ALL_TIME } from '@/components/stats/chart-utils';
@@ -56,10 +57,13 @@ export default async function ArcherStatsPage({
       }
       actions={<PeriodSelect journals={journals} value={journal?.id ?? ALL_TIME} />}
     >
-      <GoalsCard goals={goals ?? []} today={today} />
-      <ArrowsCard period={span} arrowsByDay={arrowsByDay} today={today} />
-      <ScoresCard period={span} competitions={competitions} today={today} />
-      <CompetitionsCard competitions={competitions} />
+      {/* One wide page, so the charts keep their width. */}
+      <Stack gap="lg">
+        <GoalsCard goals={goals ?? []} today={today} />
+        <ArrowsCard period={span} arrowsByDay={arrowsByDay} today={today} />
+        <ScoresCard period={span} competitions={competitions} today={today} />
+        <CompetitionsCard competitions={competitions} />
+      </Stack>
     </SectionPage>
   );
 }

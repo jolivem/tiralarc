@@ -5,14 +5,27 @@ import '@mantine/schedule/styles.css';
 import '../globals.css';
 import { ColorSchemeScript, mantineHtmlProps } from '@mantine/core';
 import type { Metadata } from 'next';
-import { Caveat, Geist, Geist_Mono, Patrick_Hand } from 'next/font/google';
+import {
+  Caveat,
+  Courgette,
+  Dancing_Script,
+  Geist,
+  Geist_Mono,
+  Great_Vibes,
+  Kaushan_Script,
+  Patrick_Hand,
+  Ribeye,
+  Satisfy,
+} from 'next/font/google';
 import { notFound } from 'next/navigation';
 import { hasLocale, NextIntlClientProvider } from 'next-intl';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
-import { Suspense } from 'react';
+import { type CSSProperties, Suspense } from 'react';
 import { TiralarcShell } from '@/components/app-shell';
 import { Providers } from '@/components/providers';
 import { routing } from '@/i18n/routing';
+import { getArcherProfile } from '@/lib/archer-profile';
+import { calendarFont, calendarFontFamily } from '@/lib/calendar-fonts';
 import { getActiveProfile, getCurrentUser } from '@/lib/current-user';
 import { getSelectedJournal } from '@/lib/journals';
 
@@ -26,6 +39,47 @@ const patrickHand = Patrick_Hand({
   subsets: ['latin'],
   weight: '400',
 });
+/** The Journal's month name, drawn hollow and coloured in by the archer (journal/month-title.tsx). */
+const ribeye = Ribeye({
+  variable: '--font-month',
+  subsets: ['latin', 'latin-ext'],
+  weight: '400',
+});
+/*
+ * The calendars' calligraphy fonts (lib/calendar-fonts.ts): the archer picks one on the
+ * Profile page. Not preloaded: only the chosen one is downloaded, when a calendar shows.
+ * (next/font wants each loader call assigned to its own module-level const.)
+ */
+const dancingScript = Dancing_Script({
+  variable: '--font-cal-dancing-script',
+  subsets: ['latin'],
+  preload: false,
+});
+const satisfy = Satisfy({
+  variable: '--font-cal-satisfy',
+  subsets: ['latin'],
+  weight: '400',
+  preload: false,
+});
+const courgette = Courgette({
+  variable: '--font-cal-courgette',
+  subsets: ['latin'],
+  weight: '400',
+  preload: false,
+});
+const kaushanScript = Kaushan_Script({
+  variable: '--font-cal-kaushan-script',
+  subsets: ['latin'],
+  weight: '400',
+  preload: false,
+});
+const greatVibes = Great_Vibes({
+  variable: '--font-cal-great-vibes',
+  subsets: ['latin'],
+  weight: '400',
+  preload: false,
+});
+const calendarFonts = [dancingScript, satisfy, courgette, kaushanScript, greatVibes];
 
 export function generateStaticParams() {
   return routing.locales.map((locale) => ({ locale }));
@@ -44,8 +98,15 @@ export default async function LocaleLayout({ children, params }: LayoutProps<'/[
 
   // Drives the navigation only; pages and the archer layout enforce access themselves.
   const [user, profile] = await Promise.all([getCurrentUser(), getActiveProfile()]);
-  // The journal the archer works in, named in the middle of the header.
-  const journal = profile === 'ARCHER' ? await getSelectedJournal() : null;
+  // The journal the archer works in, named in the middle of the header; and the font of
+  // their calendars, on <html> so dialogs (portals) get it too.
+  const [journal, archerProfile] =
+    profile === 'ARCHER'
+      ? await Promise.all([getSelectedJournal(), getArcherProfile()])
+      : [null, null];
+  const fontStyle = {
+    '--font-calendar': calendarFontFamily(calendarFont(archerProfile?.calendarFont)),
+  } as CSSProperties;
   const shellUser = user && {
     displayName: user.displayName,
     email: user.email,
@@ -57,7 +118,10 @@ export default async function LocaleLayout({ children, params }: LayoutProps<'/[
   return (
     <html
       lang={locale}
-      className={`${geistSans.variable} ${geistMono.variable} ${caveat.variable} ${patrickHand.variable}`}
+      className={[geistSans, geistMono, caveat, patrickHand, ribeye, ...calendarFonts]
+        .map((font) => font.variable)
+        .join(' ')}
+      style={fontStyle}
       {...mantineHtmlProps}
     >
       <head>

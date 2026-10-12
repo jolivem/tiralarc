@@ -233,6 +233,8 @@ model ArcherProfile {
   bowType       BowType?     @map("bow_type")
   /// Array of `Discipline` values.
   disciplines   Json
+  /// Font id of the calendars' days (each client maps it to its own font); null = the client's default.
+  calendarFont  String?      @map("calendar_font") @db.VarChar(30)
   createdAt     DateTime     @default(now()) @map("created_at") @db.DateTime(3)
   updatedAt     DateTime     @updatedAt @map("updated_at") @db.DateTime(3)
 

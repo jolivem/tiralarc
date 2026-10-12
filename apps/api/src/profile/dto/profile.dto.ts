@@ -18,6 +18,8 @@ const BOW_TYPES = Object.values(BowType);
 const DISCIPLINES = Object.values(Discipline);
 export const INVITATION_STATUSES = ['PENDING', 'ACCEPTED'] as const;
 export type InvitationStatus = (typeof INVITATION_STATUSES)[number];
+/** Font ids are client-side catalogue keys, like decoration themes. */
+const FONT = /^[a-z0-9-]{1,30}$/;
 
 /** An archer's sport details. */
 export class ProfileDto {
@@ -32,6 +34,15 @@ export class ProfileDto {
 
   @ApiProperty({ enum: DISCIPLINES, enumName: 'Discipline', isArray: true })
   disciplines!: Discipline[];
+
+  @ApiProperty({
+    type: String,
+    nullable: true,
+    example: 'dancing-script',
+    description:
+      "Font of the calendars' weekdays and day numbers: an id each client maps to its own font; null = the client's default.",
+  })
+  calendarFont!: string | null;
 }
 
 /** PATCH body: every field optional; `null` clears a field. */
@@ -63,6 +74,17 @@ export class UpdateProfileDto {
   @ArrayUnique()
   @IsIn(DISCIPLINES, { each: true })
   disciplines?: Discipline[];
+
+  @ApiPropertyOptional({
+    type: String,
+    nullable: true,
+    example: 'dancing-script',
+    pattern: '^[a-z0-9-]{1,30}$',
+    description: "Font id of the calendars; null goes back to the client's default.",
+  })
+  @IsOptional()
+  @Matches(FONT, { message: 'calendarFont must be a lowercase slug' })
+  calendarFont?: string | null;
 }
 
 export class CreateInvitationDto {

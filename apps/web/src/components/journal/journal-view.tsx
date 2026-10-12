@@ -1,11 +1,11 @@
 'use client';
 
-import { Button, Group, LoadingOverlay, Box } from '@mantine/core';
+import { ActionIcon, Box, Button, Group, LoadingOverlay, Tooltip } from '@mantine/core';
 import { Schedule, type ScheduleEventData } from '@mantine/schedule';
-import { IconBrush, IconPalette, IconPlus } from '@tabler/icons-react';
+import { IconPalette, IconPlus } from '@tabler/icons-react';
 import type { Journal, JournalSessionSummary } from '@tiralarc/api-client';
 import dayjs from 'dayjs';
-import { useLocale, useTranslations } from 'next-intl';
+import { useFormatter, useLocale, useTranslations } from 'next-intl';
 import { useEffect, useState, useTransition } from 'react';
 import { listSessions } from '@/app/actions/journal';
 import { useRouter } from '@/i18n/navigation';
@@ -21,25 +21,32 @@ import {
   today,
 } from './new-session-modal';
 import { SESSION_TYPES } from './session-types';
+import { MonthTitle, titleFills, useLettering } from './month-title';
 import { useMonthColoring } from './use-month-coloring';
 
 const DEFAULT_DURATION_MINUTES = 60;
 
 /**
- * Days to load for the visible month (with a margin for the neighbouring weeks shown),
- * kept within the journal's period: its events are those dated within it.
+ * Days to load for the visible month (the calendar shows no other month's days), kept
+ * within the journal's period: its events are those dated within it.
  * Null when the month is entirely outside the period.
  */
 function visibleRange(date: string, journal: Journal): { from: string; to: string } | null {
   const d = dayjs(date);
-  const from = d.startOf('month').subtract(7, 'day').format('YYYY-MM-DD');
-  const to = d.endOf('month').add(7, 'day').format('YYYY-MM-DD');
+  const from = d.startOf('month').format('YYYY-MM-DD');
+  const to = d.endOf('month').format('YYYY-MM-DD');
   if (to < journal.startDate || from > journal.endDate) return null;
   return {
     from: from < journal.startDate ? journal.startDate : from,
     to: to > journal.endDate ? journal.endDate : to,
   };
 }
+
+/** The 1st of the month `offset` months after the one of `date` ("YYYY-MM-DD"). */
+const addMonth = (date: string, offset: number) =>
+  dayjs(date).add(offset, 'month').startOf('month').format('YYYY-MM-DD');
+
+const capitalize = (text: string) => text.charAt(0).toLocaleUpperCase() + text.slice(1);
 
 type EventPayload = { session: JournalSessionSummary };
 
@@ -82,6 +89,7 @@ export function JournalView({
 }) {
   const t = useTranslations();
   const locale = useLocale();
+  const format = useFormatter();
   const router = useRouter();
   // A past or future season opens on its closest day rather than on an empty month.
   const [date, setDate] = useState(() => {
@@ -102,8 +110,8 @@ export function JournalView({
   const coloring = useMonthColoring(journal, month, theme);
   const [coloringOn, setColoringOn] = useState(false);
   const [tool, setTool] = useState<string>(DEFAULT_COLOR);
-  // Colouring needs a decoration: moving to a month without one leaves the mode.
-  const isColoring = coloringOn && theme !== null;
+  // The month's name can always be coloured; its decoration too, when it has one.
+  const isColoring = coloringOn;
   const coloringStatus =
     coloring.status === 'saving'
       ? t('journals.coloring.saving')
@@ -112,6 +120,24 @@ export function JournalView({
         : coloring.status === 'idle' || coloring.status === undefined
           ? ''
           : t(`errors.${coloring.status}`);
+
+  // "Octobre": the calendar's heading, drawn without the year (screen readers get it).
+  const monthDate = new Date(`${month}-15T12:00:00`);
+  const monthName = capitalize(format.dateTime(monthDate, { month: 'long' }));
+  const monthLabel = capitalize(format.dateTime(monthDate, { month: 'long', year: 'numeric' }));
+  const lettering = useLettering(monthName);
+  // One colour for the whole name (chosen in the decoration dialog), or none.
+  const titleColors = new Set(
+    coloring.fills.filter((fill) => fill.band === 'title').map((fill) => fill.color),
+  );
+  const titleColor = titleColors.size === 1 ? [...titleColors][0]! : null;
+  const colorTitle = (color: string | null) => {
+    if (!lettering) return;
+    const others = coloring.fills.filter((fill) => fill.band !== 'title');
+    coloring.change(color ? [...others, ...titleFills(lettering, color)] : others);
+    // Saved at once: choosing another decoration next must not lose it.
+    coloring.flush();
+  };
 
   const range = visibleRange(date, journal);
   const from = range?.from;
@@ -132,116 +158,151 @@ export function JournalView({
   });
 
   return (
-    <Box pos="relative" className={classes.calendarWidth}>
-      <Group justify="flex-end" gap="sm" mb="sm">
-        <Button
-          variant="default"
-          leftSection={<IconPalette size={18} />}
-          onClick={() => setPickingTheme(true)}
-        >
-          {t('journals.theme')}
+    <div>
+      {/* In the page's top corners, outside the narrower calendar: "Today" left, the rest right. */}
+      <Group justify="space-between" gap="xs" className={classes.pageActions}>
+        <Button variant="default" size="sm" onClick={() => setDate(today())}>
+          {t('schedule.today')}
         </Button>
-        {theme && !isColoring && (
-          <Button
-            variant="default"
-            leftSection={<IconBrush size={18} />}
-            onClick={() => setColoringOn(true)}
-          >
-            {t('journals.coloring.start')}
-          </Button>
-        )}
-        <Button
-          leftSection={<IconPlus size={18} />}
-          // The day picked in the calendar when there is one (phones select a day by tapping it),
-          // otherwise the calendar's own day: today, or a day of the month navigated to.
-          onClick={() => setNewSession({ date: pickedDay?.startsWith(month) ? pickedDay : date })}
-        >
-          {t('journal.newSession')}
-        </Button>
+        <Group gap="xs">
+          <Tooltip label={t('journals.theme')}>
+            <ActionIcon
+              variant="default"
+              size="lg"
+              aria-label={t('journals.theme')}
+              onClick={() => setPickingTheme(true)}
+            >
+              <IconPalette size={18} />
+            </ActionIcon>
+          </Tooltip>
+          <Tooltip label={t('journal.newSession')}>
+            <ActionIcon
+              size="lg"
+              aria-label={t('journal.newSession')}
+              // The day picked in the calendar when there is one (phones select a day by tapping it),
+              // otherwise the calendar's own day: today, or a day of the month navigated to.
+              onClick={() =>
+                setNewSession({ date: pickedDay?.startsWith(month) ? pickedDay : date })
+              }
+            >
+              <IconPlus size={18} />
+            </ActionIcon>
+          </Tooltip>
+        </Group>
       </Group>
-      <LoadingOverlay visible={loading} overlayProps={{ blur: 1 }} loaderProps={{ size: 'sm' }} />
-      {isColoring && (
-        <ColoringToolbar
-          tool={tool}
-          onToolChange={setTool}
-          canUndo={coloring.canUndo}
-          onUndo={coloring.undo}
-          canClear={coloring.fills.length > 0}
-          onClear={() => coloring.change([])}
-          onDone={() => {
-            coloring.flush();
-            setColoringOn(false);
-          }}
-          status={coloringStatus}
-        />
-      )}
-      <CalendarFrame
-        theme={theme}
-        fills={coloring.fills}
-        tool={isColoring ? tool : null}
-        onFillsChange={coloring.change}
-      >
-        <div className={classes.calendarScale}>
-          <Schedule
-            layout="responsive"
-            date={date}
-            onDateChange={setDate}
-            // Month only: no day / week / year views, so no view selector either.
-            view="month"
-            monthViewProps={{ viewSelectProps: { display: 'none' } }}
-            events={events}
-            // Not mode="static": @mantine/schedule 9.6.3 then leaks `withEventResize` to the DOM.
-            onEventClick={(event) => router.push(`/archer/journal/${event.id}`)}
-            onDayClick={(day) => setNewSession({ date: dayjs(day).format('YYYY-MM-DD') })}
-            renderEventBody={(event) => {
-              const session = (event.payload as EventPayload | undefined)?.session;
-              const Icon = session ? eventDisplay(session).icon : null;
-              return (
-                <span className={classes.eventBody}>
-                  {Icon && <Icon size={14} style={{ flexShrink: 0 }} />}
-                  {event.title}
-                </span>
-              );
+      <Box pos="relative" className={classes.calendarWidth}>
+        <LoadingOverlay visible={loading} overlayProps={{ blur: 1 }} loaderProps={{ size: 'sm' }} />
+        {isColoring && (
+          <ColoringToolbar
+            tool={tool}
+            onToolChange={setTool}
+            canUndo={coloring.canUndo}
+            onUndo={coloring.undo}
+            canClear={coloring.fills.length > 0}
+            onClear={() => coloring.change([])}
+            onDone={() => {
+              coloring.flush();
+              setColoringOn(false);
             }}
-            mobileMonthViewProps={{
-              onSelectedDateChange: (day) => setPickedDay(day && dayjs(day).format('YYYY-MM-DD')),
-              // "samedi 3 octobre" rather than the default English order "Saturday, October 3".
-              eventsHeaderFormat: locale === 'fr' ? 'dddd D MMMM' : 'dddd, MMMM D',
-              // Bigger session dots (Schedule does not forward its own classNames to the mobile view).
-              classNames: {
-                mobileMonthViewDayIndicators: classes.dayIndicators,
-                mobileMonthViewDayIndicator: classes.dayIndicator,
-              },
-            }}
-            labels={{
-              day: t('schedule.day'),
-              week: t('schedule.week'),
-              month: t('schedule.month'),
-              year: t('schedule.year'),
-              allDay: t('schedule.allDay'),
-              today: t('schedule.today'),
-              next: t('schedule.next'),
-              previous: t('schedule.previous'),
-              noEvents: t('schedule.noEvents'),
-              agenda: t('schedule.agenda'),
-              more: t('schedule.more'),
-              viewSelectLabel: t('schedule.viewSelectLabel'),
-              moreLabel: (count) => t('schedule.moreLabel', { count }),
-            }}
+            status={coloringStatus}
           />
-        </div>
-      </CalendarFrame>
-      <MonthThemeModal
-        journal={journal}
-        month={month}
-        opened={pickingTheme}
-        onClose={() => setPickingTheme(false)}
-      />
-      <NewSessionModal
-        journal={journal}
-        defaults={newSession}
-        onClose={() => setNewSession(null)}
-      />
-    </Box>
+        )}
+        <CalendarFrame
+          theme={theme}
+          fills={coloring.fills}
+          tool={isColoring ? tool : null}
+          onFillsChange={coloring.change}
+        >
+          <div className={classes.calendarScale}>
+            <MonthTitle
+              label={monthLabel}
+              art={lettering}
+              fills={coloring.fills}
+              tool={isColoring ? tool : null}
+              onFillsChange={coloring.change}
+              onPrevious={() => setDate(addMonth(date, -1))}
+              onNext={() => setDate(addMonth(date, 1))}
+              labels={{ previous: t('schedule.previous'), next: t('schedule.next') }}
+            />
+            <Schedule
+              layout="responsive"
+              date={date}
+              onDateChange={setDate}
+              // Month only: no day / week / year views, so no view selector either.
+              view="month"
+              // Only the month's own days: the previous and next months' cells stay blank.
+              // Its heading is MonthTitle, above.
+              monthViewProps={{
+                withHeader: false,
+                withOutsideDays: false,
+                classNames: {
+                  monthViewDay: classes.monthDay,
+                  monthViewWeekday: classes.weekday,
+                  monthViewDayLabel: classes.dayLabel,
+                },
+              }}
+              events={events}
+              // Not mode="static": @mantine/schedule 9.6.3 then leaks `withEventResize` to the DOM.
+              onEventClick={(event) => router.push(`/archer/journal/${event.id}`)}
+              onDayClick={(day) => setNewSession({ date: dayjs(day).format('YYYY-MM-DD') })}
+              renderEventBody={(event) => {
+                const session = (event.payload as EventPayload | undefined)?.session;
+                const Icon = session ? eventDisplay(session).icon : null;
+                return (
+                  <span className={classes.eventBody}>
+                    {Icon && <Icon size={14} style={{ flexShrink: 0 }} />}
+                    {event.title}
+                  </span>
+                );
+              }}
+              mobileMonthViewProps={{
+                withOutsideDays: false,
+                onSelectedDateChange: (day) => setPickedDay(day && dayjs(day).format('YYYY-MM-DD')),
+                // "samedi 3 octobre" rather than the default English order "Saturday, October 3".
+                eventsHeaderFormat: locale === 'fr' ? 'dddd D MMMM' : 'dddd, MMMM D',
+                // Bigger session dots (Schedule does not forward its own classNames to the mobile view).
+                classNames: {
+                  mobileMonthViewHeader: classes.hiddenHeader,
+                  mobileMonthViewWeekday: classes.weekday,
+                  mobileMonthViewDay: classes.mobileDay,
+                  mobileMonthViewDayIndicators: classes.dayIndicators,
+                  mobileMonthViewDayIndicator: classes.dayIndicator,
+                },
+              }}
+              labels={{
+                day: t('schedule.day'),
+                week: t('schedule.week'),
+                month: t('schedule.month'),
+                year: t('schedule.year'),
+                allDay: t('schedule.allDay'),
+                today: t('schedule.today'),
+                next: t('schedule.next'),
+                previous: t('schedule.previous'),
+                noEvents: t('schedule.noEvents'),
+                agenda: t('schedule.agenda'),
+                more: t('schedule.more'),
+                viewSelectLabel: t('schedule.viewSelectLabel'),
+                moreLabel: (count) => t('schedule.moreLabel', { count }),
+              }}
+            />
+          </div>
+        </CalendarFrame>
+        <MonthThemeModal
+          journal={journal}
+          month={month}
+          opened={pickingTheme}
+          onClose={() => setPickingTheme(false)}
+          titleColor={titleColor}
+          // Once the name is drawn (its font loaded).
+          onTitleColorChange={lettering ? colorTitle : undefined}
+          onStartColoring={isColoring ? undefined : () => setColoringOn(true)}
+        />
+        <NewSessionModal
+          journal={journal}
+          defaults={newSession}
+          onClose={() => setNewSession(null)}
+        />
+      </Box>
+    </div>
   );
 }

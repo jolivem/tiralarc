@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { inRegion, paint, regionAt, toArtwork } from './coloring';
+import { inRegion, letterSeeds, paint, regionAt, toArtwork, touchesEdge } from './coloring';
 
 /**
  * 9 × 5 drawing: a closed box (#) in the middle of the paper (.).
@@ -61,5 +61,44 @@ describe('colouring', () => {
     expect(pixel(out, 4, 2)).toEqual([0, 0, 255, 255]);
     expect(pixel(out, 0, 0)).toEqual([0, 255, 0, 255]); // the paper around the box is one area
     expect(pixel(out, 1, 1)).toEqual([255, 255, 255, 255]); // stroke, in white (dark mode)
+  });
+
+  it('finds the letters of hollow lettering, not the holes inside them', () => {
+    // An outlined "O": its body (the ring between both outlines) and its hole.
+    const rows = [
+      '...........',
+      '.#########.',
+      '.#.......#.',
+      '.#.#####.#.',
+      '.#.#...#.#.',
+      '.#.#####.#.',
+      '.#.......#.',
+      '.#########.',
+      '...........',
+    ];
+    const width = 11;
+    const rgba = new Uint8ClampedArray(width * rows.length * 4);
+    rows
+      .join('')
+      .split('')
+      .forEach((cell, i) => rgba.set(cell === '#' ? [0, 0, 0, 255] : [255, 255, 255, 255], i * 4));
+    const art = toArtwork(rgba, width, rows.length);
+    const point = (col: number, row: number) => ({
+      x: (col + 0.5) / width,
+      y: (row + 0.5) / rows.length,
+    });
+
+    const seeds = letterSeeds(art);
+    expect(seeds).toHaveLength(1);
+    const body = regionAt(art, seeds[0]!.x, seeds[0]!.y)!;
+    expect(inRegion(art, body, point(2, 2))).toBe(true); // the ring
+    expect(inRegion(art, body, point(5, 4))).toBe(false); // the hole
+    expect(inRegion(art, body, point(0, 0))).toBe(false); // around
+  });
+
+  it('tells the paper around the drawing from a closed shape', () => {
+    const art = drawing();
+    expect(touchesEdge(art, regionAt(art, at(3, 2).x, at(3, 2).y)!)).toBe(false);
+    expect(touchesEdge(art, regionAt(art, at(7, 2).x, at(7, 2).y)!)).toBe(true);
   });
 });
