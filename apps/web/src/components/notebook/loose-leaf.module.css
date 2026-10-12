@@ -1,0 +1,84 @@
+/*
+ * A loose-leaf sheet (loose-leaf.tsx): white paper ruled in blue, a red margin line, and
+ * punched holes down its left edge, through which the desk (--desk, app-shell) shows.
+ * --step is the ruling step; --margin the distance of the margin line.
+ */
+.leaf {
+  --paper: #fff;
+  --ink: #2f3a4a;
+  --rule: rgb(90 135 190 / 0.3);
+  --margin-line: rgb(212 80 80 / 0.55);
+  --step: 30px;
+  --margin: 96px;
+  --hole: 12px;
+  --hole-x: 22px;
+  --hole-gap: 168px;
+  /* The first hole's centre, from the sheet's top edge. */
+  --hole-first: 90px;
+
+  position: relative;
+  padding: var(--step) var(--mantine-spacing-md) calc(var(--step) * 1.5)
+    calc(var(--margin) + var(--mantine-spacing-md));
+  border-radius: 4px;
+  color: var(--ink);
+  background-color: var(--paper);
+  background-image:
+    linear-gradient(
+      to right,
+      transparent calc(var(--margin) - 1px),
+      var(--margin-line) calc(var(--margin) - 1px) calc(var(--margin) + 1px),
+      transparent calc(var(--margin) + 1px)
+    ),
+    repeating-linear-gradient(
+      to bottom,
+      transparent 0 calc(var(--step) - 1px),
+      var(--rule) calc(var(--step) - 1px) var(--step)
+    );
+  box-shadow: 0 14px 30px -16px rgb(0 0 0 / 0.45);
+
+  @mixin dark {
+    --paper: #2a2621;
+    --ink: #e9e2d4;
+    --rule: rgb(120 160 220 / 0.14);
+    --margin-line: rgb(240 120 120 / 0.35);
+  }
+
+  @media (min-width: $mantine-breakpoint-sm) {
+    --margin: 152px;
+    --hole: 16px;
+    --hole-x: 34px;
+    --hole-gap: 192px;
+    --hole-first: 110px;
+
+    padding-right: var(--mantine-spacing-xl);
+  }
+
+  /* The holes: the desk seen through, with a faint shadow on their rim. */
+  &::before {
+    content: '';
+    position: absolute;
+    inset-block: 0;
+    left: calc(var(--hole-x) - var(--hole) / 2);
+    width: var(--hole);
+    pointer-events: none;
+    background-image: radial-gradient(
+      circle at center,
+      var(--desk, var(--mantine-color-body)) calc(var(--hole) / 2 - 1.5px),
+      rgb(0 0 0 / 0.28) calc(var(--hole) / 2 - 1px) calc(var(--hole) / 2),
+      transparent calc(var(--hole) / 2 + 0.5px)
+    );
+    background-size: var(--hole) var(--hole-gap);
+    /* Each hole is centred in its tile: shift the tiles so the first one sits at --hole-first. */
+    background-position: center calc(var(--hole-first) - var(--hole-gap) / 2);
+    background-repeat: repeat-y;
+  }
+}
+
+/*
+ * RuledStack (ruled-stack.tsx): blocks one under the other, each pushed by script onto
+ * the first ruled line free after the one above (so 0 to one line apart).
+ */
+.ruledStack {
+  display: flex;
+  flex-direction: column;
+}

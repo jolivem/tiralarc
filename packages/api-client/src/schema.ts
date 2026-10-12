@@ -1743,6 +1743,13 @@ export interface operations {
                 };
                 content?: never;
             };
+            /** @description DAY_FULL: that day already has 4 events */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
         };
     };
     Journal_stats: {
@@ -1899,6 +1906,13 @@ export interface operations {
                 content?: never;
             };
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description DAY_FULL: moved to a day that already has 4 events */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

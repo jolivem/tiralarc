@@ -1,12 +1,20 @@
 'use client';
 
-import { ActionIcon, Box, Button, Group, LoadingOverlay, Tooltip } from '@mantine/core';
+import {
+  ActionIcon,
+  Box,
+  Button,
+  Group,
+  LoadingOverlay,
+  Tooltip,
+  UnstyledButton,
+} from '@mantine/core';
 import { Schedule, type ScheduleEventData } from '@mantine/schedule';
 import { IconPalette, IconPlus } from '@tabler/icons-react';
 import type { Journal, JournalSessionSummary } from '@tiralarc/api-client';
 import dayjs from 'dayjs';
 import { useFormatter, useLocale, useTranslations } from 'next-intl';
-import { useEffect, useState, useTransition } from 'react';
+import { type CSSProperties, useEffect, useState, useTransition } from 'react';
 import { listSessions } from '@/app/actions/journal';
 import { useRouter } from '@/i18n/navigation';
 import { CalendarFrame } from './calendar-frame';
@@ -74,6 +82,27 @@ function toEvent(session: JournalSessionSummary, title: string): ScheduleEventDa
     color,
     payload: { session },
   };
+}
+
+type DayPayload = { sessions: JournalSessionSummary[] };
+
+/** One all-day entry per day with events (untimed first, then by time), for the month view. */
+function toDayEvents(
+  sessions: JournalSessionSummary[],
+  labelOf: (session: JournalSessionSummary) => string,
+): ScheduleEventData<DayPayload>[] {
+  const byDay = new Map<string, JournalSessionSummary[]>();
+  const sorted = [...sessions].sort((a, b) => (a.startTime ?? '').localeCompare(b.startTime ?? ''));
+  for (const session of sorted)
+    byDay.set(session.date, [...(byDay.get(session.date) ?? []), session]);
+  return [...byDay].map(([day, list]) => ({
+    id: `day-${day}`,
+    title: list.map(labelOf).join(', '),
+    start: `${day} 00:00:00`,
+    end: dayjs(day).add(1, 'day').format('YYYY-MM-DD 00:00:00'),
+    color: 'gray',
+    payload: { sessions: list },
+  }));
 }
 
 /**
@@ -146,16 +175,22 @@ export function JournalView({
     startLoading(async () => setSessions(from && to ? await listSessions(from, to) : []));
   }, [from, to]);
 
-  const events = sessions.map((session) => {
-    // An "other" event is its title (or its text); a session is its type, with its score or place.
+  /** An "other" event is its title (or its text); a session is its type, with its score or place. */
+  const labelOf = (session: JournalSessionSummary) => {
     const note =
       SESSION_TYPES[session.type].form === 'note' &&
       (session.title || session.description?.split('\n')[0]);
     const parts = [note || t(`journal.typesShort.${session.type}`)];
     if (session.score !== null) parts.push(String(session.score));
     else if (session.location) parts.push(session.location);
-    return toEvent(session, parts.join(' · '));
-  });
+    return parts.join(' · ');
+  };
+  // The phone view lists events one by one; the large month view shows one entry per day.
+  const events = sessions.map((session) => toEvent(session, labelOf(session)));
+  // For the month view only: Schedule spreads `monthViewProps` after its own props, so these
+  // replace its events there. (Its types leave `events` out of monthViewProps, hence the
+  // separate object, spread in.)
+  const perDay = { events: toDayEvents(sessions, labelOf), maxEventsPerDay: 1 };
 
   return (
     <div>
@@ -239,6 +274,43 @@ export function JournalView({
                   monthViewDay: classes.monthDay,
                   monthViewWeekday: classes.weekday,
                   monthViewDayLabel: classes.dayLabel,
+                },
+                // One entry per day, filling the room under the day's number: its events
+                // (up to 4) as their icon alone, as large as they fit — one in
+                // the middle, two side by side, three or four in a square. Each opens its
+                // event; a click beside them adds one on that day. (The phone view keeps
+                // its list of names: it gets the events one by one.)
+                ...perDay,
+                renderEvent: (event, props) => {
+                  const day = (event.payload as DayPayload | undefined)?.sessions ?? [];
+                  return (
+                    <div className={classes.dayDots} style={props.style} data-count={day.length}>
+                      {day.map((session) => {
+                        const { color, icon: Icon } = eventDisplay(session);
+                        const label = labelOf(session);
+                        return (
+                          <div key={session.id} className={classes.dotCell}>
+                            <UnstyledButton
+                              className={classes.dot}
+                              style={
+                                {
+                                  '--dot-color': `var(--mantine-color-${color}-filled)`,
+                                } as CSSProperties
+                              }
+                              title={label}
+                              aria-label={label}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                router.push(`/archer/journal/${session.id}`);
+                              }}
+                            >
+                              <Icon size="100%" color="var(--dot-color)" />
+                            </UnstyledButton>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
                 },
               }}
               events={events}

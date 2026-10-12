@@ -62,7 +62,8 @@ export type ErrorCode =
   | 'LIMIT_REACHED'
   | 'INVALID_IMAGE'
   | 'MONTH_HAS_NO_THEME'
-  | 'FILE_TOO_LARGE';
+  | 'FILE_TOO_LARGE'
+  | 'DAY_FULL';
 
 /** RFC 9457 error body returned by every failing API call. */
 export interface ProblemDetails {

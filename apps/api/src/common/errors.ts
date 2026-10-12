@@ -27,6 +27,7 @@ export const ErrorCode = {
   INVALID_IMAGE: 'INVALID_IMAGE',
   MONTH_HAS_NO_THEME: 'MONTH_HAS_NO_THEME',
   FILE_TOO_LARGE: 'FILE_TOO_LARGE',
+  DAY_FULL: 'DAY_FULL',
 } as const;
 
 export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];

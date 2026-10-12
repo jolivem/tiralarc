@@ -109,6 +109,7 @@
     "INVALID_IMAGE": "Ce fichier n'est pas une image JPEG, PNG ou WebP.",
     "FILE_TOO_LARGE": "Cette photo dépasse 10 Mo.",
     "MONTH_HAS_NO_THEME": "Choisissez d'abord un décor pour ce mois.",
+    "DAY_FULL": "Ce jour a déjà 4 événements, le maximum.",
     "JOURNAL_OVERLAP": "Cette période chevauche un autre de vos journaux. Deux journaux ne peuvent pas couvrir la même date."
   },
   "validation": {
@@ -174,7 +175,7 @@
       "TRAINING": "Entraînement",
       "COACHING": "Coaching",
       "COMPETITION": "Compétition",
-      "STRENGTH": "Renforcement musculaire",
+      "STRENGTH": "Renfo. musculaire",
       "OTHER": "Divers"
     },
     "typesShort": {
@@ -194,10 +195,10 @@
       "RUN_ARCHERY": "Run Archery"
     },
     "feelings": {
-      "GREAT": "Très bien",
-      "OK": "Neutre",
-      "BAD": "Pas bien",
-      "EXHAUSTED": "Épuisé"
+      "GREAT": "YEAH !",
+      "OK": "OK",
+      "BAD": "BOF",
+      "EXHAUSTED": "DOWN"
     },
     "newSession": "Nouvel événement",
     "newSessionHint": "Choisissez le type et la date : les informations à saisir s'afficheront ensuite.",
@@ -225,6 +226,7 @@
     "toImprove": "Ce qui est à améliorer",
     "nextTime": "Next — pour la prochaine séance",
     "save": "Enregistrer",
+    "saveAndClose": "Enregistrer et fermer",
     "saved": "Enregistré.",
     "unsaved": "Modifications non enregistrées",
     "delete": "Supprimer",
@@ -272,9 +274,12 @@
       "count": "{count} / {max}",
       "empty": "Aucune photo pour cet événement.",
       "add": "Ajouter des photos",
-      "hint": "JPEG, PNG ou WebP, 10 Mo au plus par photo. Les photos sont redimensionnées et restent privées.",
+      "hint": "JPEG, PNG ou WebP, 10 Mo au plus par photo.\nLes photos sont redimensionnées et restent privées.",
       "uploading": "Envoi {done} / {total}…",
-      "open": "Agrandir la photo {n}",
+      "openStack": "Voir les photos ({count})",
+      "previous": "Photo précédente",
+      "next": "Photo suivante",
+      "position": "{n} / {total}",
       "delete": "Supprimer la photo",
       "deleteBody": "La photo sera définitivement supprimée."
     }

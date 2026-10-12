@@ -4,7 +4,7 @@
   align-items: center;
   justify-content: center;
   gap: 6px;
-  min-height: 84px;
+  min-height: 104px;
   padding: var(--mantine-spacing-xs);
   border: 1px solid var(--mantine-color-default-border);
   border-radius: var(--mantine-radius-md);
@@ -13,6 +13,76 @@
     border-color: var(--type-color);
     box-shadow: inset 0 0 0 1px var(--type-color);
     background: color-mix(in srgb, var(--type-color) 10%, transparent);
+  }
+}
+
+/*
+ * A day's events in the month view (journal-view.tsx, renderEvent): Mantine places the
+ * entry over the room under the day's number; it holds 1 to 4 icons, as large as they
+ * fit — one in the middle, two side by side, three or four in a 2 × 2 square.
+ * Clicks between the icons go through to the day (adding an event on it).
+ */
+.dayDots {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-auto-rows: minmax(0, 1fr);
+  gap: 4px;
+  padding: 2px;
+  pointer-events: none;
+
+  &[data-count='2'] {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  &[data-count='3'],
+  &[data-count='4'] {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: repeat(2, minmax(0, 1fr));
+  }
+
+  /* Three: two above, one centred below. */
+  &[data-count='3'] > :last-child {
+    grid-column: 1 / -1;
+  }
+}
+
+/* An icon's room: the icon is the largest square it holds. */
+.dotCell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  min-height: 0;
+  container-type: size;
+}
+
+.dot {
+  --dot-size: calc(min(100cqw, 100cqh) * 0.94);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--dot-size);
+  height: var(--dot-size);
+  /* Just the icon: no badge, no frame around it. */
+  border: none;
+  border-radius: var(--mantine-radius-sm);
+  background: none;
+  box-shadow: none;
+  pointer-events: auto;
+  transition: transform 100ms ease;
+
+  &:hover {
+    transform: scale(1.06);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--mantine-primary-color-filled);
+    outline-offset: 1px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
   }
 }
 
@@ -26,11 +96,200 @@
   text-overflow: ellipsis;
 }
 
-/* Save / delete bar: stays visible at the bottom of the screen, above the phone tab bar. */
+/*
+ * An event's sheet ([id]/page.tsx, session-form.tsx), written on the loose leaf's lines
+ * (--step, notebook/loose-leaf.module.css): its title and date on the first two lines, each
+ * box's name on one line (RuledStack puts the boxes' tops on lines). In the archer's
+ * calligraphy font (`--font-calendar`, chosen on the Profile page).
+ *
+ * A text's line box is n steps high and ends on a ruled line; its baseline sits about
+ * 0.3em below the middle of the box, so `top` lowers it onto the line (2px above it).
+ */
+.sheetTitle,
+.boxTitle,
+.sheetDate {
+  --lines: 1;
+
+  position: relative;
+  top: calc(var(--step, 30px) * var(--lines) / 2 - 2px - 0.3em);
+  margin: 0;
+  font-family: var(--font-calendar, var(--font-hand)), 'Segoe Print', cursive;
+  font-weight: 400;
+  line-height: calc(var(--step, 30px) * var(--lines));
+}
+
+/*
+ * Title and date share the first two lines of the sheet, written on the second
+ * (wrapped: no gap between rows).
+ */
+.sheetHeader {
+  min-height: calc(var(--step, 30px) * 2);
+  gap: 0 var(--mantine-spacing-sm);
+}
+
+.sheetTitle {
+  --lines: 2;
+
+  font-size: 3.3rem;
+}
+
+/* On the sheet's first line (the title takes two). */
+.sheetDate {
+  --lines: 1;
+
+  margin-inline-start: auto;
+  font-size: 1.7rem;
+  text-align: end;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+
+.boxTitle {
+  height: var(--step, 30px);
+  font-size: 1.6rem;
+  /* Bold (fonts without a bold face get a synthesised one). */
+  font-weight: 700;
+}
+
+/*
+ * The Informations box's fields (session-form.tsx), on the sheet's lines (--step): one
+ * column of names, as wide as the longest (so every field starts at the same place), one of
+ * fields. A row is one line: the name written on its ruled line, the compact field (30px,
+ * as high as a line) resting on it; what goes under a field (`.fieldBelow`) takes the next
+ * line(s). Rows grow only by whole lines, so the next ones stay on the ruling.
+ */
+.fieldGrid {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  grid-auto-rows: minmax(var(--step, 30px), auto);
+  align-items: start;
+  column-gap: var(--mantine-spacing-md);
+}
+
+/* A row's cells are the grid's own (names in column 1, fields in column 2). */
+.fieldRow {
+  display: contents;
+}
+
+/* Names and typed values in the archer's font (Profile page); chips keep the plain one. */
+.fieldName {
+  position: relative;
+  top: calc(var(--step, 30px) / 2 - 2px - 0.3em);
+  grid-column: 1;
+  white-space: nowrap;
+  font-family: var(--font-calendar, var(--font-hand)), 'Segoe Print', cursive;
+  font-size: 1.25rem;
+  line-height: var(--step, 30px);
+}
+
+/* The fields' text (inputs, and the date picker's button), as large as a 30px field allows. */
+.fieldGrid :global(.mantine-Input-input) {
+  font-family: var(--font-calendar, var(--font-hand)), 'Segoe Print', cursive;
+  font-size: 1.15rem;
+}
+
+.fieldValue,
+.fieldBelow {
+  grid-column: 2;
+  min-width: 0;
+}
+
+/* A hint under a field: written on its own line. */
+.fieldHint {
+  position: relative;
+  top: calc(var(--step, 30px) / 2 - 2px - 0.3em);
+  line-height: var(--step, 30px);
+}
+
+/*
+ * Chips spread over lines: each row of chips (23px, Mantine's xs) plus the gap under it is
+ * one line, and the padding makes the whole a whole number of lines.
+ */
+.chipLines {
+  column-gap: 6px;
+  row-gap: calc(var(--step, 30px) - 23px);
+  padding-block: 3px 4px;
+}
+
+/* Delete / save / save-and-close bar, above the sheet: stays under the header while scrolling. */
 .actionBar {
   position: sticky;
-  bottom: calc(var(--app-shell-footer-offset, 0px) + var(--mantine-spacing-xs));
+  top: calc(var(--app-shell-header-offset, 0px) + var(--mantine-spacing-xs));
   z-index: 10;
+}
+
+/*
+ * The four faces of a feeling (session-form.tsx), framed together; the sheet shows through.
+ * The frame starts right under the box's name (one line), and its top padding sets the
+ * faces' round buttons (52px, Mantine ActionIcon) so their bottom rests on the second
+ * ruled line below: 2 lines − 52px − the 1px border − the line's own 1px.
+ */
+.feelingBox {
+  padding: calc(var(--step, 30px) * 2 - 54px) var(--mantine-spacing-xs) var(--mantine-spacing-sm);
+  border: 1px solid color-mix(in srgb, currentColor 30%, transparent);
+  border-radius: var(--mantine-radius-md);
+}
+
+/*
+ * Writing typed on the sheet (free texts, list lines): the calligraphy fonts have small
+ * letters for their size, so a little larger than body text — still within a 30px line.
+ */
+.ruledText,
+.ruledLine {
+  --ruled-font-size: 1.35rem;
+  /* Shown in an empty field: three grey dots on the line, then a pen (Tabler's pencil). */
+  --pen: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 46 24'%3E%3Cg fill='%23868e96'%3E%3Ccircle cx='3' cy='20' r='1.7'/%3E%3Ccircle cx='9' cy='20' r='1.7'/%3E%3Ccircle cx='15' cy='20' r='1.7'/%3E%3C/g%3E%3Cg transform='translate(21 0)' fill='none' stroke='%23868e96' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 20h4L18.5 9.5a2.83 2.83 0 0 0-4-4L4 16v4'/%3E%3Cpath d='M13.5 6.5l4 4'/%3E%3C/g%3E%3C/svg%3E");
+  --pen-size: 34.5px 18px;
+  /* Its top: resting on the first ruled line. */
+  --pen-top: calc(var(--step, 30px) - 21px);
+}
+
+/*
+ * Free-text areas (session-form.tsx, RULED_TEXT): unframed and see-through, one text line
+ * per ruled line, the writing resting on it (the top padding lowers the first line's
+ * baseline onto the line, like `.boxTitle`).
+ */
+.ruledText {
+  padding-top: calc(var(--step, 30px) / 2 - 2px - 0.3em);
+  padding-bottom: 0;
+  /* Handwritten in the archer's font (Profile page), as large as a ruled line allows. */
+  font-family: var(--font-calendar, var(--font-hand)), 'Segoe Print', cursive;
+  font-size: var(--ruled-font-size);
+  line-height: var(--step, 30px);
+  color: inherit;
+  background: transparent;
+
+  /*
+   * Empty and not being written in: "…" and a small grey pen at the start of the first line
+   * (resting on it), saying "write here". Drawn as a background, so nothing moves.
+   */
+  &:placeholder-shown:not(:focus) {
+    background: var(--pen) no-repeat left 2px top var(--pen-top) / var(--pen-size);
+  }
+}
+
+/*
+ * A line of the "went well" / "to improve" lists: unframed and see-through, one ruled
+ * line high, its text resting on the line; room kept on the left for its symbol (Mantine
+ * centres the left section over the line's height).
+ */
+.ruledLine {
+  height: var(--step, 30px);
+  min-height: var(--step, 30px);
+  padding-top: calc(var(--step, 30px) / 2 - 2px - 0.3em);
+  padding-bottom: 0;
+  padding-inline-start: 28px;
+  font-family: var(--font-calendar, var(--font-hand)), 'Segoe Print', cursive;
+  font-size: var(--ruled-font-size);
+  line-height: var(--step, 30px);
+  color: inherit;
+  background: transparent;
+
+  /* Empty and not being written in: "…" and the pen, right after the line's symbol. */
+  &:placeholder-shown:not(:focus) {
+    background: var(--pen) no-repeat left 28px top var(--pen-top) / var(--pen-size);
+  }
 }
 
 .feeling[data-selected] {
@@ -232,6 +491,14 @@
 }
 
 /*
+ * Taller days than Mantine's (52px + 24px a row, one row here): room for the badges
+ * (`.dayDots`, below the number; Mantine keeps 30px above and 22px below them).
+ */
+.calendarScale .monthDay {
+  height: 140px;
+}
+
+/*
  * Month view cells. Other months' days are blank cells (`data-static`): no frame, so only
  * the month's own days show. A cell draws its top and left lines, so a blank keeps the
  * ones closing a real day: its top line below the last full week (trailing blanks), and
@@ -337,20 +604,134 @@
   }
 }
 
-/* Event photos (session-photos.tsx). */
-.photoThumb {
-  display: block;
-  aspect-ratio: 1;
-  overflow: hidden;
-  border-radius: var(--mantine-radius-md);
-  background: var(--mantine-color-default-hover);
+/*
+ * Event photos (session-photos.tsx): a stack of polaroids pinned to the sheet. The top one
+ * shows the first photo (or, with none, a grey square); up to two blank ones peek out
+ * behind it, askew. The pin holds them all at the top.
+ */
+.polaroids {
+  position: relative;
+  width: min(100%, 220px);
+  aspect-ratio: 220 / 262;
+  /* Room above for the pin, below for the polaroids peeking out. */
+  margin: 10px auto 6px;
+}
 
-  & img {
-    display: block;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
+.polaroid {
+  position: absolute;
+  inset: 0;
+  display: block;
+  padding: 10px 10px 46px;
+  border-radius: 2px;
+  background: #fdfdfb;
+  box-shadow:
+    0 0 0 1px rgb(0 0 0 / 0.06),
+    0 8px 16px -8px rgb(0 0 0 / 0.5);
+
+  /* The two behind: askew either way, just their corners out of the top one. */
+  &[data-depth='1'] {
+    transform: rotate(-5deg) translate(-8px, 3px);
   }
+
+  &[data-depth='2'] {
+    transform: rotate(4.5deg) translate(9px, 6px);
+  }
+
+  &[data-top] {
+    z-index: 1;
+    transform: rotate(-1.5deg);
+    transition: transform 150ms ease;
+  }
+
+  &[data-top]:hover {
+    transform: rotate(0deg) scale(1.02);
+  }
+
+  &[data-top]:focus-visible {
+    outline: 2px solid var(--mantine-primary-color-filled);
+    outline-offset: 3px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    &[data-top] {
+      transition: none;
+    }
+  }
+}
+
+.polaroidPhoto {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  background: #dee2e6;
+  color: #868e96;
+  /* A thin black frame, drawn over the picture's edge: a white photo still reads as one. */
+  outline: 1px solid rgb(0 0 0 / 0.75);
+  outline-offset: -1px;
+
+  /* No photo yet: the whole polaroid greyed. */
+  [data-empty] > & {
+    background: #e9ecef;
+    color: #adb5bd;
+  }
+}
+
+/* The polaroid's handwritten count, on the right of its wide bottom margin. */
+.polaroidCaption {
+  position: absolute;
+  inset-inline: 10px;
+  bottom: 10px;
+  font-family: var(--font-calendar, var(--font-hand)), 'Segoe Print', cursive;
+  font-size: 1.2rem;
+  line-height: 26px;
+  text-align: end;
+  color: #495057;
+
+  [data-empty] > & {
+    color: #adb5bd;
+  }
+}
+
+/* "Add photos": right of the stack, one ruled line above its top. */
+.addPhotos {
+  position: absolute;
+  z-index: 3;
+  top: calc(var(--step, 30px) * -1);
+  left: calc(100% + var(--mantine-spacing-md));
+}
+
+/* Previous / next photo: either side of the stack, halfway down. */
+.stackArrow {
+  position: absolute;
+  z-index: 3;
+  top: 50%;
+  translate: 0 -50%;
+
+  &[data-side='left'] {
+    right: calc(100% + var(--mantine-spacing-md));
+  }
+
+  &[data-side='right'] {
+    left: calc(100% + var(--mantine-spacing-md));
+  }
+}
+
+/* A red pushpin through the top of the stack. */
+.pin {
+  position: absolute;
+  z-index: 2;
+  top: -9px;
+  left: 50%;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  translate: -50% 0;
+  background: radial-gradient(circle at 35% 30%, #ff9b9b 0 18%, #e03131 45%, #8f1414 100%);
+  box-shadow: 1px 4px 4px rgb(0 0 0 / 0.35);
+  pointer-events: none;
 }
 
 .photoFull {

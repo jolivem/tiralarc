@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- A target, outer to centre: white, black, blue, red, yellow; black strokes. -->
+  <g stroke="#000" stroke-width="2.5">
+    <circle cx="50" cy="50" r="47" fill="#fff"/>
+    <circle cx="50" cy="50" r="37.5" fill="#000"/>
+    <circle cx="50" cy="50" r="28" fill="#1c7ed6"/>
+    <circle cx="50" cy="50" r="18.5" fill="#e03131"/>
+    <circle cx="50" cy="50" r="9" fill="#ffd43b"/>
+  </g>
+</svg>

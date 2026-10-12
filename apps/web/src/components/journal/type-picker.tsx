@@ -37,7 +37,7 @@ export function TypePicker({
             }
             onClick={() => onChange(type)}
           >
-            <Icon size={26} color={`var(--mantine-color-${color}-filled)`} />
+            <Icon size={44} color={`var(--mantine-color-${color}-filled)`} />
             <Text size="sm" fw={500} ta="center" lh={1.2}>
               {t(`typesShort.${type}`)}
             </Text>

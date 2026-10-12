@@ -13,6 +13,7 @@ import {
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
+  ApiConflictResponse,
   ApiCreatedResponse,
   ApiForbiddenResponse,
   ApiNoContentResponse,
@@ -79,6 +80,7 @@ export class JournalController {
 
   @Post()
   @ApiCreatedResponse({ type: SessionDto })
+  @ApiConflictResponse({ description: 'DAY_FULL: that day already has 4 events' })
   create(
     @CurrentUser() user: AuthenticatedUser,
     @Body() dto: CreateSessionDto,
@@ -99,6 +101,7 @@ export class JournalController {
   @Patch(':id')
   @ApiOkResponse({ type: SessionDto })
   @ApiNotFoundResponse()
+  @ApiConflictResponse({ description: 'DAY_FULL: moved to a day that already has 4 events' })
   update(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id', new ParseUUIDPipe()) id: string,

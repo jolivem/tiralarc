@@ -962,6 +962,9 @@
           },
           "403": {
             "description": "Archers only"
+          },
+          "409": {
+            "description": "DAY_FULL: that day already has 4 events"
           }
         },
         "security": [
@@ -1132,6 +1135,9 @@
           },
           "404": {
             "description": ""
+          },
+          "409": {
+            "description": "DAY_FULL: moved to a day that already has 4 events"
           }
         },
         "security": [

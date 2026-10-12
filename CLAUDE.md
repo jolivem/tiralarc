@@ -60,6 +60,12 @@ the same API — keep it client-agnostic (no cookies, no web-only assumptions in
   except band `title` (the only one allowed without a theme: such a month is stored with `theme: null`): the Journal calendar's heading (`month-title.tsx`), the month's name drawn on a fixed-size
   canvas as hollow letters (`--font-month`, Ribeye, outline only), coloured like the bands (inside letters only), or
   all at once in a pastel from the decoration dialog (`letterSeeds`: one fill per letter, holes of "o" left out).
+- Event sheet (`/archer/journal/[id]`): a loose leaf (`components/notebook/loose-leaf.tsx`, ruled every `--step`
+  = 30px) drawn by `SessionForm`, its action bar sticky above it. `RuledStack` pushes each box onto a ruled line;
+  names, Informations rows (`FieldRow`, xs fields = one line) and free texts (`RULED_TEXT`) are sized to sit on the
+  lines — keep new content on that grid. At most 4 events per day (`DAY_FULL`, checked by the API); the month view
+  shows one entry per day with up to 4 icons. Event icons (`session-types.ts`): drawings in
+  `public/icons/events/` (`imageIcon` = one-colour mask, `pictureIcon` = own colours).
 - Indicators (`/archer/stats`): `GET /journal/sessions/stats?from&to` (both optional = all time) returns raw figures; the web draws them with
   `@mantine/charts` (`components/stats/`). Chart colours are CSS variables in `stats.module.css` (light + dark sets
   checked for colour-blind separation); a discipline keeps its colour slot (`disciplineColor`).

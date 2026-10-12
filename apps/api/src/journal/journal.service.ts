@@ -23,6 +23,8 @@ import {
 import { PhotosService } from './photos.service.js';
 
 const MAX_RANGE_DAYS = 366;
+/** Events on one day of the calendar (the calendar shows one badge each). */
+export const MAX_EVENTS_PER_DAY = 4;
 /** Sessions scanned for suggestions, and suggestions returned per field. */
 const SUGGESTION_SOURCE_SESSIONS = 300;
 const MAX_SUGGESTIONS = 15;
@@ -346,6 +348,7 @@ export class JournalService {
   }
 
   async create(userId: string, dto: CreateSessionDto): Promise<SessionDto> {
+    await this.assertDayHasRoom(userId, toDbDate(dto.date));
     const session = await this.prisma.journalSession.create({
       data: {
         userId,
@@ -364,8 +367,12 @@ export class JournalService {
   }
 
   async update(userId: string, id: string, dto: UpdateSessionDto): Promise<SessionDto> {
-    await this.findOwned(userId, id);
+    const current = await this.findOwned(userId, id);
     const { date, wentWell, toImprove, location, title, ...rest } = dto;
+    // Moved to another day: that day must have room for it.
+    if (date !== undefined && date !== fromDbDate(current.date)) {
+      await this.assertDayHasRoom(userId, toDbDate(date));
+    }
     const session = await this.prisma.journalSession.update({
       where: { id },
       data: {
@@ -397,6 +404,18 @@ export class JournalService {
       sessionCount: await this.prisma.journalSession.count({ where: eventsOf(journal) }),
       isDefault: journal.isDefault,
     };
+  }
+
+  /** At most `MAX_EVENTS_PER_DAY` events on one day of the archer's calendar. */
+  private async assertDayHasRoom(userId: string, date: Date): Promise<void> {
+    const count = await this.prisma.journalSession.count({ where: { userId, date } });
+    if (count >= MAX_EVENTS_PER_DAY) {
+      throw new ApiException(
+        HttpStatus.CONFLICT,
+        ErrorCode.DAY_FULL,
+        `At most ${MAX_EVENTS_PER_DAY} events per day`,
+      );
+    }
   }
 
   /** An archer's journals never share a day, so an event is in one journal at most. */

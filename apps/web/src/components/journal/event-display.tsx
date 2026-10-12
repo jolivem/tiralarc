@@ -61,6 +61,18 @@ export function eventDisplay(session: Pick<JournalSessionSummary, 'type' | 'colo
   };
 }
 
+/** An event's icon in its colour (usable from Server Components: the lookup runs here). */
+export function EventIcon({
+  session,
+  size = 32,
+}: {
+  session: Pick<JournalSessionSummary, 'type' | 'color' | 'icon'>;
+  size?: number;
+}) {
+  const { color, icon: Icon } = eventDisplay(session);
+  return <Icon size={size} color={`var(--mantine-color-${color}-filled)`} aria-hidden />;
+}
+
 export function ColorPicker({
   value,
   onChange,

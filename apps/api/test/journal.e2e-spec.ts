@@ -39,6 +39,33 @@ describe('Journal (e2e)', () => {
     await ctx.app.close();
   });
 
+  it('allows at most 4 events on one day', async () => {
+    const add = (date: string) =>
+      http().post('/api/v1/journal/sessions').set(as(otherArcher)).send({ type: 'OTHER', date });
+    const ids: string[] = [];
+    for (let i = 0; i < 4; i++) ids.push((await add('2027-03-15').expect(201)).body.id);
+    const full = await add('2027-03-15').expect(409);
+    expect(full.body.code).toBe('DAY_FULL');
+    // Moving an event onto the full day is refused too; staying on it is fine.
+    const other = (await add('2027-03-16').expect(201)).body.id as string;
+    const move = (id: string, date: string) =>
+      http().patch(`/api/v1/journal/sessions/${id}`).set(as(otherArcher)).send({ date });
+    expect((await move(other, '2027-03-15').expect(409)).body.code).toBe('DAY_FULL');
+    await move(ids[0]!, '2027-03-15').expect(200);
+    // Another archer's day is their own.
+    await http()
+      .post('/api/v1/journal/sessions')
+      .set(as(archer))
+      .send({ type: 'OTHER', date: '2027-03-15' })
+      .expect(201)
+      .then(({ body }) =>
+        http().delete(`/api/v1/journal/sessions/${body.id}`).set(as(archer)).expect(204),
+      );
+    for (const id of [...ids, other]) {
+      await http().delete(`/api/v1/journal/sessions/${id}`).set(as(otherArcher)).expect(204);
+    }
+  });
+
   it('creates, fills, lists, reads and deletes a session', async () => {
     const created = await http()
       .post('/api/v1/journal/sessions')
