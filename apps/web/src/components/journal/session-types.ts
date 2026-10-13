@@ -17,7 +17,7 @@ export const SESSION_TYPES: Record<
 > = {
   TRAINING: {
     color: 'teal',
-    // Lavender inside.
+    // Lavender limbs and grip; the space between string and bow stays clear.
     icon: pictureIcon('/icons/events/training-colour.png', 'TrainingIcon', ICON_SCALE),
     form: 'sheet',
   },
