@@ -292,6 +292,26 @@
   }
 }
 
+/*
+ * The review of an event still to come (session-form.tsx): greyed, its fields disabled.
+ * Empty fields lose their pen: there is nothing to write there yet.
+ */
+.locked,
+.fieldName[data-locked] {
+  opacity: 0.55;
+}
+
+.ruledText:placeholder-shown:disabled,
+.ruledLine:placeholder-shown:disabled {
+  background: transparent;
+}
+
+/* An event whose review isn't written yet: its icon in grey (calendar). */
+.pendingIcon {
+  filter: grayscale(1);
+  opacity: 0.6;
+}
+
 .feeling[data-selected] {
   outline: 2px solid var(--mantine-primary-color-filled);
   outline-offset: 1px;

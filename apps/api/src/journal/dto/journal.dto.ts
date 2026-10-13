@@ -548,6 +548,15 @@ export class SessionSummaryDto {
     description: '`OTHER` events only; null = default pictogram.',
   })
   icon!: EventIcon | null;
+
+  @ApiProperty({
+    description:
+      'Whether the review of a training, coaching or competition is written: at least one of ' +
+      'arrowCount, score, satisfaction, technique, description, physicalFeeling, mentalFeeling, ' +
+      'wentWell, toImprove, nextTime is filled. Always true for the other types (nothing to ' +
+      'review). Clients fill the review only once the day has come.',
+  })
+  completed!: boolean;
 }
 
 /** Full session sheet. */

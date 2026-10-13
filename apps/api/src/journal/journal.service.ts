@@ -126,6 +126,33 @@ function assertMonthOf(journal: Journal, month: string): void {
   }
 }
 
+/** Types whose sheet ends with a review, written after the session. */
+const REVIEWED_TYPES: SessionType[] = [
+  SessionType.TRAINING,
+  SessionType.COACHING,
+  SessionType.COMPETITION,
+];
+
+/** The review is written once any of its fields is (see `SessionSummaryDto.completed`). */
+function isCompleted(s: JournalSession): boolean {
+  if (!REVIEWED_TYPES.includes(s.type)) return true;
+  const values = [
+    s.arrowCount,
+    s.score,
+    s.satisfaction,
+    s.technique,
+    s.description,
+    s.physicalFeeling,
+    s.mentalFeeling,
+    s.nextTime,
+  ];
+  return (
+    values.some((value) => value !== null) ||
+    asList(s.wentWell).length > 0 ||
+    asList(s.toImprove).length > 0
+  );
+}
+
 function toSummary(s: JournalSession): SessionSummaryDto {
   return {
     id: s.id,
@@ -140,6 +167,7 @@ function toSummary(s: JournalSession): SessionSummaryDto {
     title: s.title,
     color: s.color as EventColor | null,
     icon: s.icon as EventIcon | null,
+    completed: isCompleted(s),
   };
 }
 

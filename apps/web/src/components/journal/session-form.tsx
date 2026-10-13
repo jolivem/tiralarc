@@ -36,7 +36,7 @@ import type {
   SessionType,
 } from '@tiralarc/api-client';
 import { useTranslations } from 'next-intl';
-import { type ReactNode, useId, useState, useTransition } from 'react';
+import { createContext, type ReactNode, useId, useState, useTransition } from 'react';
 import { deleteSession, saveSession } from '@/app/actions/journal';
 import { FormError } from '@/components/form-feedback';
 import { LooseLeaf } from '@/components/notebook/loose-leaf';
@@ -47,6 +47,7 @@ import { ColorPicker, IconPicker } from './event-display';
 import { type EventIconComponent, imageIcon } from './image-icon';
 import { PASTELS } from './month-title';
 import classes from './journal.module.css';
+import { today } from './new-session-modal';
 import { DISCIPLINE_ORDER, SESSION_TYPES } from './session-types';
 
 /**
@@ -129,6 +130,12 @@ function visibleLines(lines: string[]): string[] {
   return lines.slice(0, Math.min(lines.length, lastFilled + 2));
 }
 
+/**
+ * True while the sheet's event is still to come (its review locked): read by what the page
+ * puts in the sheet (the photos), which can't tell from the server what "today" is for the user.
+ */
+export const SheetLockedContext = createContext(false);
+
 /** NumberInput gives '' when emptied. */
 const toNumber = (value: string | number) => (typeof value === 'number' ? value : null);
 const toText = (value: string) => (value.trim() === '' ? null : value);
@@ -194,6 +201,9 @@ export function SessionForm({
 
   const { form } = SESSION_TYPES[values.type];
   const hasSheet = form === 'sheet';
+  // An event still to come is planned only (date, duration, place, discipline, distance,
+  // objective): its review (everything else) opens on the day itself.
+  const locked = hasSheet && values.date > today();
   // The archer's own disciplines (Profile page), plus the event's if it is no longer one
   // of them; all of them when the profile lists none.
   const shownDisciplines = DISCIPLINE_ORDER.filter(
@@ -352,10 +362,11 @@ export function SessionForm({
                         allowDecimal={false}
                       />
                     </FieldRow>
-                    <FieldRow id={`${fieldId}-arrows`} label={t('arrows')}>
+                    <FieldRow id={`${fieldId}-arrows`} label={t('arrows')} locked={locked}>
                       <NumberInput
                         id={`${fieldId}-arrows`}
                         size="xs"
+                        disabled={locked}
                         maw={NUMBER_WIDTH}
                         value={values.arrowCount ?? ''}
                         onChange={(v) => set('arrowCount', toNumber(v))}
@@ -365,10 +376,11 @@ export function SessionForm({
                         allowDecimal={false}
                       />
                     </FieldRow>
-                    <FieldRow id={`${fieldId}-score`} label={t('score')}>
+                    <FieldRow id={`${fieldId}-score`} label={t('score')} locked={locked}>
                       <NumberInput
                         id={`${fieldId}-score`}
                         size="xs"
+                        disabled={locked}
                         maw={NUMBER_WIDTH}
                         value={values.score ?? ''}
                         onChange={(v) => set('score', toNumber(v))}
@@ -427,7 +439,7 @@ export function SessionForm({
                 </Alert>
               )}
             </Section>
-            {children}
+            <SheetLockedContext value={locked}>{children}</SheetLockedContext>
           </SimpleGrid>
 
           {hasSheet && (
@@ -444,26 +456,35 @@ export function SessionForm({
                 />
               </Section>
 
-              <Section title={t('selfAssessment')}>
+              {locked && (
+                <Text size="sm" c="dimmed" className={classes.fieldHint}>
+                  {t('reviewLocked')}
+                </Text>
+              )}
+
+              <Section title={t('selfAssessment')} locked={locked}>
                 <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="xl">
                   <Rating
                     label={t('satisfaction')}
                     notRated={t('notRated')}
                     value={values.satisfaction}
                     onChange={(v) => set('satisfaction', v)}
+                    disabled={locked}
                   />
                   <Rating
                     label={t('technique')}
                     notRated={t('notRated')}
                     value={values.technique}
                     onChange={(v) => set('technique', v)}
+                    disabled={locked}
                   />
                 </SimpleGrid>
               </Section>
 
-              <Section title={t('description')} gap={0}>
+              <Section title={t('description')} gap={0} locked={locked}>
                 <Textarea
                   {...RULED_TEXT}
+                  disabled={locked}
                   aria-label={t('description')}
                   value={values.description ?? ''}
                   onChange={(e) => set('description', toText(e.currentTarget.value))}
@@ -475,18 +496,20 @@ export function SessionForm({
 
               <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
                 {/* No gap: the faces' frame starts on the title's line (see .feelingBox). */}
-                <Section title={t('physical')} gap={0}>
+                <Section title={t('physical')} gap={0} locked={locked}>
                   <FeelingPicker
                     label={t('physical')}
                     value={values.physicalFeeling}
                     onChange={(v) => set('physicalFeeling', v)}
+                    disabled={locked}
                   />
                 </Section>
-                <Section title={t('mental')} gap={0}>
+                <Section title={t('mental')} gap={0} locked={locked}>
                   <FeelingPicker
                     label={t('mental')}
                     value={values.mentalFeeling}
                     onChange={(v) => set('mentalFeeling', v)}
+                    disabled={locked}
                   />
                 </Section>
               </SimpleGrid>
@@ -501,10 +524,12 @@ export function SessionForm({
                     title={t(list)}
                     gap={0}
                     mih={`calc(var(--step) * ${1 + LIST_LINES})`}
+                    locked={locked}
                   >
                     {visibleLines(values[list]).map((line, index) => (
                       <Autocomplete
                         key={index}
+                        disabled={locked}
                         variant="unstyled"
                         classNames={{ input: classes.ruledLine }}
                         // Blank: lets CSS tell an empty line and draw the pen in it.
@@ -529,9 +554,10 @@ export function SessionForm({
                 ))}
               </SimpleGrid>
 
-              <Section title={t('nextTime')} gap={0}>
+              <Section title={t('nextTime')} gap={0} locked={locked}>
                 <Textarea
                   {...RULED_TEXT}
+                  disabled={locked}
                   aria-label={t('nextTime')}
                   value={values.nextTime ?? ''}
                   onChange={(e) => set('nextTime', toText(e.currentTarget.value))}
@@ -585,16 +611,24 @@ function FieldRow({
   id,
   label,
   below,
+  locked,
   children,
 }: {
   id?: string;
   label: string;
   below?: ReactNode;
+  /** Greyed name: a review field of an event still to come. */
+  locked?: boolean;
   children: ReactNode;
 }) {
   return (
     <div className={classes.fieldRow}>
-      <Text component="label" htmlFor={id} className={classes.fieldName}>
+      <Text
+        component="label"
+        htmlFor={id}
+        className={classes.fieldName}
+        data-locked={locked || undefined}
+      >
         {label}
       </Text>
       <div className={classes.fieldValue}>{children}</div>
@@ -608,6 +642,7 @@ function Section({
   title,
   gap = 'xs',
   mih,
+  locked,
   children,
 }: {
   title: string;
@@ -615,10 +650,12 @@ function Section({
   gap?: number | string;
   /** Height kept even when the box shows less (e.g. a list's lines still to come). */
   mih?: string;
+  /** Greyed: part of the review of an event still to come (its fields are disabled). */
+  locked?: boolean;
   children: ReactNode;
 }) {
   return (
-    <Stack component="section" gap={gap} mih={mih}>
+    <Stack component="section" gap={gap} mih={mih} className={locked ? classes.locked : undefined}>
       <Title order={2} className={classes.boxTitle}>
         {title}
       </Title>
@@ -640,11 +677,13 @@ function Rating({
   notRated,
   value,
   onChange,
+  disabled,
 }: {
   label: string;
   notRated: string;
   value: number | null;
   onChange: (value: number) => void;
+  disabled?: boolean;
 }) {
   return (
     <Stack gap={8}>
@@ -663,6 +702,7 @@ function Rating({
         step={1}
         value={value ?? 0}
         onChange={onChange}
+        disabled={disabled}
         color={ratingColor(value)}
         marks={Array.from({ length: 11 }, (_, v) => ({
           value: v,
@@ -679,10 +719,12 @@ function FeelingPicker({
   label,
   value,
   onChange,
+  disabled,
 }: {
   label: string;
   value: Feeling | null;
   onChange: (value: Feeling | null) => void;
+  disabled?: boolean;
 }) {
   const t = useTranslations('journal.feelings');
   return (
@@ -707,6 +749,7 @@ function FeelingPicker({
               color={selected ? color : 'gray'}
               className={classes.feeling}
               data-selected={selected || undefined}
+              disabled={disabled}
               onClick={() => onChange(selected ? null : feeling)}
             >
               <Icon size={36} color={selected ? FEELING_INK : undefined} />

@@ -287,7 +287,10 @@ export function JournalView({
                     <div className={classes.dayDots} style={props.style} data-count={day.length}>
                       {day.map((session) => {
                         const { color, icon: Icon } = eventDisplay(session);
-                        const label = labelOf(session);
+                        // Greyed until its review is written (planned, or not filled in yet).
+                        const label = session.completed
+                          ? labelOf(session)
+                          : `${labelOf(session)} (${t('journal.toComplete')})`;
                         return (
                           <div key={session.id} className={classes.dotCell}>
                             <UnstyledButton
@@ -304,7 +307,11 @@ export function JournalView({
                                 router.push(`/archer/journal/${session.id}`);
                               }}
                             >
-                              <Icon size="100%" color="var(--dot-color)" />
+                              <Icon
+                                size="100%"
+                                color="var(--dot-color)"
+                                className={session.completed ? undefined : classes.pendingIcon}
+                              />
                             </UnstyledButton>
                           </div>
                         );
@@ -322,7 +329,13 @@ export function JournalView({
                 const Icon = session ? eventDisplay(session).icon : null;
                 return (
                   <span className={classes.eventBody}>
-                    {Icon && <Icon size={14} style={{ flexShrink: 0 }} />}
+                    {Icon && (
+                      <Icon
+                        size={14}
+                        style={{ flexShrink: 0 }}
+                        className={session?.completed ? undefined : classes.pendingIcon}
+                      />
+                    )}
                     {event.title}
                   </span>
                 );

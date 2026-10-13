@@ -2437,6 +2437,10 @@
                 "$ref": "#/components/schemas/EventIcon"
               }
             ]
+          },
+          "completed": {
+            "type": "boolean",
+            "description": "Whether the review of a training, coaching or competition is written: at least one of arrowCount, score, satisfaction, technique, description, physicalFeeling, mentalFeeling, wentWell, toImprove, nextTime is filled. Always true for the other types (nothing to review). Clients fill the review only once the day has come."
           }
         },
         "required": [
@@ -2451,7 +2455,8 @@
           "description",
           "title",
           "color",
-          "icon"
+          "icon",
+          "completed"
         ]
       },
       "CompetitionStatDto": {
@@ -2679,6 +2684,10 @@
               }
             ]
           },
+          "completed": {
+            "type": "boolean",
+            "description": "Whether the review of a training, coaching or competition is written: at least one of arrowCount, score, satisfaction, technique, description, physicalFeeling, mentalFeeling, wentWell, toImprove, nextTime is filled. Always true for the other types (nothing to review). Clients fill the review only once the day has come."
+          },
           "distanceMeters": {
             "type": "number",
             "nullable": true
@@ -2749,6 +2758,7 @@
           "title",
           "color",
           "icon",
+          "completed",
           "distanceMeters",
           "arrowCount",
           "objective",

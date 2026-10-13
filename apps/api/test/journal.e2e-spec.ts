@@ -79,7 +79,22 @@ describe('Journal (e2e)', () => {
       startTime: '18:30',
       wentWell: [],
       score: null,
+      completed: false,
     });
+
+    // Planning fields alone don't complete the sheet; one review field does.
+    const planned = await http()
+      .patch(`/api/v1/journal/sessions/${id}`)
+      .set(as(archer))
+      .send({ location: 'Gymnase', objective: 'Tenue', distanceMeters: 18 })
+      .expect(200);
+    expect(planned.body).toMatchObject({ completed: false });
+    const reviewed = await http()
+      .patch(`/api/v1/journal/sessions/${id}`)
+      .set(as(archer))
+      .send({ toImprove: ['Lâcher'] })
+      .expect(200);
+    expect(reviewed.body).toMatchObject({ completed: true });
 
     const sheet = {
       location: '  Gymnase municipal ',
@@ -131,6 +146,15 @@ describe('Journal (e2e)', () => {
     await http().get(`/api/v1/journal/sessions/${id}`).set(as(archer)).expect(200);
     await http().delete(`/api/v1/journal/sessions/${id}`).set(as(archer)).expect(204);
     await http().get(`/api/v1/journal/sessions/${id}`).set(as(archer)).expect(404);
+
+    // Nothing to review on a strength session: it is complete as it is.
+    const strength = await http()
+      .post('/api/v1/journal/sessions')
+      .set(as(archer))
+      .send({ type: 'STRENGTH', date: '2026-10-06' })
+      .expect(201);
+    expect(strength.body).toMatchObject({ completed: true });
+    await http().delete(`/api/v1/journal/sessions/${strength.body.id}`).set(as(archer)).expect(204);
   });
 
   it("keeps each archer's journal private", async () => {

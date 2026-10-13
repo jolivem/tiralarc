@@ -20,12 +20,13 @@ import {
 } from '@tabler/icons-react';
 import type { SessionPhoto } from '@tiralarc/api-client';
 import { useTranslations } from 'next-intl';
-import { useRef, useState, useTransition } from 'react';
+import { use, useRef, useState, useTransition } from 'react';
 import { deletePhoto, uploadPhoto } from '@/app/actions/journal';
 import { FormError } from '@/components/form-feedback';
 import { useRouter } from '@/i18n/navigation';
 import type { ActionState } from '@/lib/action-state';
 import classes from './journal.module.css';
+import { SheetLockedContext } from './session-form';
 
 /** Same limits as the API (which enforces them). */
 const MAX_PHOTOS = 10;
@@ -40,7 +41,8 @@ const STACKED_BEHIND = 2;
  * Photos of an event, as a stack of polaroids pinned to the sheet: the first photo on top,
  * the next ones peeking out behind it; with none, a greyed polaroid (a click picks photos).
  * The top polaroid opens a viewer to go through them and delete one. Saved right away,
- * independently of the sheet's "Save" button.
+ * independently of the sheet's "Save" button. An event still to come takes no photos yet
+ * (greyed; the ones it may already have can still be viewed and deleted).
  */
 export function SessionPhotos({
   sessionId,
@@ -51,6 +53,7 @@ export function SessionPhotos({
 }) {
   const t = useTranslations('journal');
   const router = useRouter();
+  const locked = use(SheetLockedContext);
   const [state, setState] = useState<ActionState>({});
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
   const [uploading, startUploading] = useTransition();
@@ -109,7 +112,7 @@ export function SessionPhotos({
 
   return (
     // Unframed, like the sheet's other boxes (session-form.tsx): its name on a ruled line.
-    <section>
+    <section className={locked ? classes.locked : undefined}>
       {/* No visible title (screen readers still get one): the stack starts at the top. */}
       <h2 className={classes.srOnly}>{t('photos.title')}</h2>
       <Stack gap="xs">
@@ -130,6 +133,14 @@ export function SessionPhotos({
               <img src={first.thumbnailUrl} alt="" className={classes.polaroidPhoto} />
               <span className={classes.polaroidCaption}>{caption}</span>
             </UnstyledButton>
+          ) : locked ? (
+            // Empty and still to come: the greyed polaroid alone.
+            <div className={classes.polaroid} data-top data-empty title={t('photos.locked')}>
+              <span className={classes.polaroidPhoto}>
+                <IconPhoto size={48} stroke={1.2} />
+              </span>
+              <span className={classes.polaroidCaption}>{caption}</span>
+            </div>
           ) : (
             // Empty: a greyed polaroid; a click picks photos.
             <FileButton onChange={upload} accept={ACCEPT} multiple resetRef={resetFiles}>
@@ -189,7 +200,7 @@ export function SessionPhotos({
                   className={classes.addPhotos}
                   aria-label={t('photos.add')}
                   loading={uploading}
-                  disabled={remaining <= 0}
+                  disabled={locked || remaining <= 0}
                 >
                   <IconPhotoPlus size={20} />
                 </ActionIcon>
@@ -203,7 +214,7 @@ export function SessionPhotos({
         <Text size="xs" c="dimmed" ta="center" role="status" style={{ whiteSpace: 'pre-line' }}>
           {progress
             ? t('photos.uploading', { done: progress.done + 1, total: progress.total })
-            : t('photos.hint')}
+            : t(locked ? 'photos.locked' : 'photos.hint')}
         </Text>
       </Stack>
 
