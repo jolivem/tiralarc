@@ -67,10 +67,20 @@ the same API — keep it client-agnostic (no cookies, no web-only assumptions in
   shows one entry per day with up to 4 icons. Planning vs review: on a future day the sheet only takes date,
   duration, place, discipline, distance and objective (the rest greyed, `locked` in `SessionForm`, also given to the photos through
   `SheetLockedContext`: no upload); the API's
-  `completed` (derived: any review field filled; always true for strength / other) greys the icon in the calendar.
+  `completed` (derived: any review field filled; always true for strength / other / custom) and the date decide
+  the calendars' greying (`pendingReason` in `event-display.tsx`: review missing, or a type without review on a future day).
   Event icons (`session-types.ts`): drawings in
   `public/icons/events/` (`imageIcon` = one-colour mask, `pictureIcon` = own colours).
-- Indicators (`/archer/stats`): `GET /journal/sessions/stats?from&to` (both optional = all time) returns raw figures; the web draws them with
+- Custom event types: an archer defines up to 4 (`/journal/event-types`: title, colour, icon; `LIMIT_REACHED`),
+  offered after the built-in types in the new-event dialog ("+" card, pencil to edit) and in the legend.
+  Their events are `CUSTOM` (`customTypeId`, set at creation only; summaries embed `customType`) with a free text
+  only. `OTHER` ("Divers") is no longer offered but old events keep it; deleting a custom type turns its events
+  into `OTHER` events with the same title / colour / icon.
+- Indicators (`/archer/stats`): `GET /journal/sessions/stats?from&to` (both optional = all time) returns raw figures
+  (competitions, `scores` of trainings / coachings / competitions, arrows per day, `eventsByDay` per type,
+  `physicalFeelingsByDay` / `mentalFeelingsByDay`; the events and feelings cards are HTML histograms, `BarColumns`, above the type icons /
+  the faces of `components/journal/feelings.ts`; custom and "Divers" events count as "Autre"); charts stop at today, written "Auj."
+  on the axis (`withToday`), with a centred choice bar (`ChoiceBar`) on top; the web draws them with
   `@mantine/charts` (`components/stats/`). Chart colours are CSS variables in `stats.module.css` (light + dark sets
   checked for colour-blind separation); a discipline keeps its colour slot (`disciplineColor`).
 - Goals (`apps/api/src/goals/`, card on the Indicators page): type, description, the day it was set (`createdOn`,

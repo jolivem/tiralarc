@@ -45,6 +45,7 @@ model User {
   sessionPhotos           SessionPhoto[]
   goals                   Goal[]
   journalSessions         JournalSession[]
+  customEventTypes        CustomEventType[]
 
   @@map("users")
 }
@@ -121,6 +122,8 @@ enum SessionType {
   STRENGTH
   /// Any other event: a date and a free text (`description`).
   OTHER
+  /// An event of one of the archer's own types (`customTypeId`): a date and a free text.
+  CUSTOM
 }
 
 enum Discipline {
@@ -165,14 +168,12 @@ model Journal {
 
 /// An archer's event: a calendar entry plus its session sheet (or a free text for `OTHER` events).
 /// It shows in the journal whose period covers its date, if any.
-/// Date and time are "wall clock" values (no time zone): 18:00 stays 18:00 on every device.
+/// An event is a day's entry, without a time; its date is a calendar day (no time zone).
 model JournalSession {
   id              String      @id @default(uuid()) @db.Char(36)
   userId          String      @map("user_id") @db.Char(36)
   type            SessionType
   date            DateTime    @db.Date
-  /// "HH:mm"; null = all-day event.
-  startTime       String?     @map("start_time") @db.VarChar(5)
   durationMinutes Int?        @map("duration_minutes") @db.SmallInt
   location        String?     @db.VarChar(200)
   discipline      Discipline?
@@ -194,14 +195,37 @@ model JournalSession {
   title           String?     @db.VarChar(100)
   color           String?     @db.VarChar(20)
   icon            String?     @db.VarChar(20)
+  /// `CUSTOM` events only: their type (title, colour and pictogram come from it).
+  customTypeId    String?     @map("custom_type_id") @db.Char(36)
   createdAt       DateTime    @default(now()) @map("created_at") @db.DateTime(3)
   updatedAt       DateTime    @updatedAt @map("updated_at") @db.DateTime(3)
 
-  user   User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  photos SessionPhoto[]
+  user       User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  customType CustomEventType? @relation(fields: [customTypeId], references: [id], onDelete: SetNull)
+  photos     SessionPhoto[]
 
   @@index([userId, date])
+  @@index([customTypeId])
   @@map("journal_sessions")
+}
+
+/// An event type the archer defined (a few at most, see MAX_CUSTOM_TYPES). Deleting one turns its
+/// events into `OTHER` events with the same title, colour and pictogram (done by the API).
+model CustomEventType {
+  id        String   @id @default(uuid()) @db.Char(36)
+  userId    String   @map("user_id") @db.Char(36)
+  title     String   @db.VarChar(40)
+  /// See EVENT_COLORS / EVENT_ICONS.
+  color     String   @db.VarChar(20)
+  icon      String   @db.VarChar(20)
+  createdAt DateTime @default(now()) @map("created_at") @db.DateTime(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.DateTime(3)
+
+  user     User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sessions JournalSession[]
+
+  @@index([userId])
+  @@map("custom_event_types")
 }
 
 /// FFTA age categories.

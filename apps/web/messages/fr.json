@@ -176,14 +176,16 @@
       "COACHING": "Coaching",
       "COMPETITION": "Compétition",
       "STRENGTH": "Renfo. musculaire",
-      "OTHER": "Divers"
+      "OTHER": "Divers",
+      "CUSTOM": "Personnalisé"
     },
     "typesShort": {
       "TRAINING": "Entraînement",
       "COACHING": "Coaching",
       "COMPETITION": "Compétition",
       "STRENGTH": "Renfo",
-      "OTHER": "Divers"
+      "OTHER": "Divers",
+      "CUSTOM": "Perso"
     },
     "disciplines": {
       "INDOOR": "Salle",
@@ -226,7 +228,11 @@
     "toImprove": "Ce qui est à améliorer",
     "nextTime": "Next — pour la prochaine séance",
     "save": "Enregistrer",
-    "saveAndClose": "Enregistrer et fermer",
+    "close": "Fermer",
+    "leaveTitle": "Quitter sans enregistrer ?",
+    "leaveBody": "Des modifications de cette fiche n'ont pas été enregistrées. Si vous quittez maintenant, elles seront perdues.",
+    "stay": "Rester sur la fiche",
+    "leaveWithoutSaving": "Quitter sans enregistrer",
     "saved": "Enregistré.",
     "unsaved": "Modifications non enregistrées",
     "delete": "Supprimer",
@@ -234,10 +240,23 @@
     "deleteBody": "L'événement et sa fiche seront définitivement supprimés.",
     "reviewLocked": "Événement à venir : le bilan se remplira à partir du jour de l'événement.",
     "toComplete": "fiche à compléter",
+    "upcoming": "à venir",
+    "futureDateTitle": "Déplacer l'événement à une date future ?",
+    "futureDateBody": "Un événement à venir repasse « à compléter » : son bilan (flèches, score, auto-évaluation, description et analyses, ressentis, points positifs et à améliorer, prochaine fois) sera effacé à l'enregistrement. La date, la durée, le lieu, la discipline, la distance et l'objectif sont conservés.",
+    "futureDateConfirm": "Déplacer et effacer le bilan",
+    "legend": "Légende",
+    "customTypes": {
+      "add": "Ajouter un type d'événement",
+      "newTitle": "Nouveau type d'événement",
+      "editTitle": "Modifier le type d'événement",
+      "edit": "Modifier « {title} »",
+      "name": "Titre",
+      "deleteBody": "Les événements déjà notés avec ce type sont conservés : ils deviennent des événements « Divers » avec le même titre, la même couleur et le même pictogramme."
+    },
     "strengthComing": "Le formulaire du renforcement musculaire arrive bientôt. Vous pouvez déjà placer la séance dans le calendrier.",
-    "back": "Journal",
     "allDay": "Journée",
     "note": "Texte libre",
+    "customDescription": "Description",
     "title": "Titre",
     "titleHint": "Affiché dans le calendrier, avec la couleur et le pictogramme.",
     "color": "Couleur",
@@ -466,12 +485,50 @@
     "date": "Date",
     "arrows": "Flèches",
     "cumulativeArrows": "Flèches cumulées",
+    "events": "Répartition des événements",
+    "eventsTotal": "événements sur la période, jusqu'à aujourd'hui",
+    "noEvents": "Aucun événement pour l'instant.",
+    "otherEvents": "Autre",
+    "feelings": {
+      "physical": {
+        "title": "Ressentis physiques",
+        "total": "événements avec un ressenti physique sur la période, jusqu'à aujourd'hui",
+        "none": "Aucun ressenti physique noté pour l'instant : il se choisit dans la fiche de chaque séance."
+      },
+      "mental": {
+        "title": "Ressentis mentaux",
+        "total": "événements avec un ressenti mental sur la période, jusqu'à aujourd'hui",
+        "none": "Aucun ressenti mental noté pour l'instant : il se choisit dans la fiche de chaque séance."
+      }
+    },
+    "todayShort": "Auj.",
+    "range": {
+      "label": "Période affichée",
+      "7": "7 jours",
+      "30": "30 jours",
+      "90": "90 jours",
+      "180": "180 jours",
+      "all": "Tout"
+    },
     "arrowsTotal": "flèches enregistrées sur la période, tous types d'événements confondus",
     "noArrows": "Aucun nombre de flèches saisi pour l'instant : il se renseigne dans la fiche de chaque séance.",
     "scores": "Scores par discipline",
-    "scoresHint": "Scores des compétitions, une courbe par discipline pratiquée.",
-    "noScores": "Aucune compétition avec un score et une discipline pour l'instant.",
-    "today": "Aujourd'hui",
+    "scoresHint": "Une courbe par discipline pratiquée.",
+    "noScores": "Aucun entraînement, coaching ou compétition avec un score et une discipline pour l'instant.",
+    "noScoresOfType": "Aucun score avec une discipline pour ce type d'événement jusqu'à aujourd'hui.",
+    "scoreTypes": {
+      "label": "Événements affichés",
+      "COMPETITION": "Compétitions",
+      "TRAINING": "Entraînements",
+      "COACHING": "Coachings",
+      "all": "Tout",
+      "short": {
+        "COMPETITION": "Compét.",
+        "TRAINING": "Entraîn.",
+        "COACHING": "Coach.",
+        "all": "Tout"
+      }
+    },
     "period": "Période des indicateurs",
     "allTime": "Tout le temps",
     "allTimeIntro": "Tous vos événements, toutes saisons confondues."

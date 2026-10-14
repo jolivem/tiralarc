@@ -1,10 +1,16 @@
 import { HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
 import { ApiException, ErrorCode } from '../common/errors.js';
-import { type Journal, type JournalSession, SessionType } from '../generated/prisma/client.js';
+import {
+  type CustomEventType,
+  type Journal,
+  type JournalSession,
+  SessionType,
+} from '../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import {
   type CreateJournalDto,
   type CreateSessionDto,
+  type CustomEventTypeDto,
   type EventColor,
   type EventIcon,
   type FillDto,
@@ -153,12 +159,24 @@ function isCompleted(s: JournalSession): boolean {
   );
 }
 
-function toSummary(s: JournalSession): SessionSummaryDto {
+export function toCustomTypeDto(type: CustomEventType): CustomEventTypeDto {
+  return {
+    id: type.id,
+    title: type.title,
+    color: type.color as EventColor,
+    icon: type.icon as EventIcon,
+  };
+}
+
+/** A session as read back: with its custom type (`CUSTOM` events), which the DTOs embed. */
+type SessionRow = JournalSession & { customType: CustomEventType | null };
+const WITH_TYPE = { customType: true } as const;
+
+function toSummary(s: SessionRow): SessionSummaryDto {
   return {
     id: s.id,
     type: s.type,
     date: fromDbDate(s.date),
-    startTime: s.startTime,
     durationMinutes: s.durationMinutes,
     location: s.location,
     discipline: s.discipline,
@@ -167,11 +185,12 @@ function toSummary(s: JournalSession): SessionSummaryDto {
     title: s.title,
     color: s.color as EventColor | null,
     icon: s.icon as EventIcon | null,
+    customType: s.customType ? toCustomTypeDto(s.customType) : null,
     completed: isCompleted(s),
   };
 }
 
-function toDto(s: JournalSession): SessionDto {
+function toDto(s: SessionRow): SessionDto {
   return {
     ...toSummary(s),
     distanceMeters: s.distanceMeters,
@@ -317,7 +336,9 @@ export class JournalService {
     }
     const sessions = await this.prisma.journalSession.findMany({
       where: { userId, date: { gte: start, lte: end } },
-      orderBy: [{ date: 'asc' }, { startTime: 'asc' }],
+      // A day's events in the order they were entered.
+      orderBy: [{ date: 'asc' }, { createdAt: 'asc' }],
+      include: WITH_TYPE,
     });
     return sessions.map(toSummary);
   }
@@ -331,10 +352,10 @@ export class JournalService {
       userId,
       date: { gte: from ? toDbDate(from) : undefined, lte: to ? toDbDate(to) : undefined },
     };
-    const [competitions, arrows] = await Promise.all([
+    const [competitions, scores, arrows, events, physical, mental] = await Promise.all([
       this.prisma.journalSession.findMany({
         where: { ...period, type: SessionType.COMPETITION },
-        orderBy: [{ date: 'asc' }, { startTime: 'asc' }],
+        orderBy: [{ date: 'asc' }, { createdAt: 'asc' }],
         select: {
           id: true,
           date: true,
@@ -344,19 +365,67 @@ export class JournalService {
           location: true,
         },
       }),
+      this.prisma.journalSession.findMany({
+        where: {
+          ...period,
+          type: { in: REVIEWED_TYPES },
+          score: { not: null },
+          discipline: { not: null },
+        },
+        orderBy: [{ date: 'asc' }, { createdAt: 'asc' }],
+        select: { id: true, date: true, type: true, discipline: true, score: true },
+      }),
       this.prisma.journalSession.groupBy({
         by: ['date'],
         where: { ...period, arrowCount: { gt: 0 } },
         _sum: { arrowCount: true },
         orderBy: { date: 'asc' },
       }),
+      this.prisma.journalSession.groupBy({
+        by: ['date', 'type'],
+        where: period,
+        _count: { _all: true },
+        orderBy: [{ date: 'asc' }, { type: 'asc' }],
+      }),
+      this.prisma.journalSession.groupBy({
+        by: ['date', 'physicalFeeling'],
+        where: { ...period, physicalFeeling: { not: null } },
+        _count: { _all: true },
+        orderBy: [{ date: 'asc' }, { physicalFeeling: 'asc' }],
+      }),
+      this.prisma.journalSession.groupBy({
+        by: ['date', 'mentalFeeling'],
+        where: { ...period, mentalFeeling: { not: null } },
+        _count: { _all: true },
+        orderBy: [{ date: 'asc' }, { mentalFeeling: 'asc' }],
+      }),
     ]);
     return {
       competitions: competitions.map((c) => ({ ...c, date: fromDbDate(c.date) })),
+      // The query leaves neither field null; checked again for the types.
+      scores: scores.flatMap(({ date, discipline, score, ...s }) =>
+        discipline && score !== null ? [{ ...s, date: fromDbDate(date), discipline, score }] : [],
+      ),
       arrowsByDay: arrows.map((day) => ({
         date: fromDbDate(day.date),
         arrows: day._sum.arrowCount ?? 0,
       })),
+      eventsByDay: events.map((day) => ({
+        date: fromDbDate(day.date),
+        type: day.type,
+        count: day._count._all,
+      })),
+      // The queries leave no null feeling; checked again for the types.
+      physicalFeelingsByDay: physical.flatMap(({ date, physicalFeeling, _count }) =>
+        physicalFeeling
+          ? [{ date: fromDbDate(date), feeling: physicalFeeling, count: _count._all }]
+          : [],
+      ),
+      mentalFeelingsByDay: mental.flatMap(({ date, mentalFeeling, _count }) =>
+        mentalFeeling
+          ? [{ date: fromDbDate(date), feeling: mentalFeeling, count: _count._all }]
+          : [],
+      ),
     };
   }
 
@@ -376,16 +445,19 @@ export class JournalService {
   }
 
   async create(userId: string, dto: CreateSessionDto): Promise<SessionDto> {
+    const custom = dto.type === SessionType.CUSTOM;
+    if (custom) await this.assertOwnedType(userId, dto.customTypeId);
     await this.assertDayHasRoom(userId, toDbDate(dto.date));
     const session = await this.prisma.journalSession.create({
       data: {
         userId,
         type: dto.type,
+        customTypeId: custom ? dto.customTypeId : null,
         date: toDbDate(dto.date),
-        startTime: dto.startTime ?? null,
         wentWell: [],
         toImprove: [],
       },
+      include: WITH_TYPE,
     });
     return toDto(session);
   }
@@ -397,14 +469,24 @@ export class JournalService {
   async update(userId: string, id: string, dto: UpdateSessionDto): Promise<SessionDto> {
     const current = await this.findOwned(userId, id);
     const { date, wentWell, toImprove, location, title, ...rest } = dto;
+    // A custom event gets its type when created: there is no type id to switch to here.
+    if (rest.type === SessionType.CUSTOM && current.type !== SessionType.CUSTOM) {
+      throw new ApiException(
+        HttpStatus.BAD_REQUEST,
+        ErrorCode.VALIDATION_FAILED,
+        'An event becomes CUSTOM only when created (with its "customTypeId")',
+      );
+    }
     // Moved to another day: that day must have room for it.
     if (date !== undefined && date !== fromDbDate(current.date)) {
       await this.assertDayHasRoom(userId, toDbDate(date));
     }
     const session = await this.prisma.journalSession.update({
       where: { id },
+      include: WITH_TYPE,
       data: {
         ...rest,
+        ...(rest.type !== undefined && rest.type !== SessionType.CUSTOM && { customTypeId: null }),
         ...(date !== undefined && { date: toDbDate(date) }),
         ...(location !== undefined && { location: location?.trim() || null }),
         ...(title !== undefined && { title: title?.trim() || null }),
@@ -476,9 +558,24 @@ export class JournalService {
     return journal;
   }
 
-  private async findOwned(userId: string, id: string): Promise<JournalSession> {
-    const session = await this.prisma.journalSession.findFirst({ where: { id, userId } });
+  private async findOwned(userId: string, id: string): Promise<SessionRow> {
+    const session = await this.prisma.journalSession.findFirst({
+      where: { id, userId },
+      include: WITH_TYPE,
+    });
     if (!session) throw new NotFoundException('Session not found');
     return session;
+  }
+
+  /** A `CUSTOM` event needs one of the archer's own types (someone else's is as good as unknown). */
+  private async assertOwnedType(userId: string, id: string | undefined): Promise<void> {
+    const type = id && (await this.prisma.customEventType.findFirst({ where: { id, userId } }));
+    if (!type) {
+      throw new ApiException(
+        HttpStatus.BAD_REQUEST,
+        ErrorCode.VALIDATION_FAILED,
+        'A CUSTOM event needs "customTypeId": one of your event types',
+      );
+    }
   }
 }

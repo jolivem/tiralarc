@@ -6,6 +6,7 @@ import {
   Autocomplete,
   Button,
   Chip,
+  CloseButton,
   Group,
   Modal,
   NumberInput,
@@ -35,7 +36,7 @@ import type {
   JournalSuggestions,
   SessionType,
 } from '@tiralarc/api-client';
-import { useTranslations } from 'next-intl';
+import { useFormatter, useTranslations } from 'next-intl';
 import { createContext, type ReactNode, useId, useState, useTransition } from 'react';
 import { deleteSession, saveSession } from '@/app/actions/journal';
 import { FormError } from '@/components/form-feedback';
@@ -44,32 +45,11 @@ import { RuledStack } from '@/components/notebook/ruled-stack';
 import { useRouter } from '@/i18n/navigation';
 import type { ActionState } from '@/lib/action-state';
 import { ColorPicker, IconPicker } from './event-display';
-import { type EventIconComponent, imageIcon } from './image-icon';
-import { PASTELS } from './month-title';
+import { FEELING_INK, FEELINGS } from './feelings';
 import classes from './journal.module.css';
 import { today } from './new-session-modal';
 import { DISCIPLINE_ORDER, SESSION_TYPES } from './session-types';
 
-/**
- * The four faces of the paper sheet (drawings in public/icons/feelings/), each on a pastel
- * of the month-name palette when selected: yellow, pink, blue, green.
- */
-const FEELINGS: { value: Feeling; icon: EventIconComponent; color: string }[] = [
-  {
-    value: 'GREAT',
-    icon: imageIcon('/icons/feelings/great.png', 'GreatIcon'),
-    color: PASTELS.lemon,
-  },
-  { value: 'OK', icon: imageIcon('/icons/feelings/ok.png', 'OkIcon'), color: PASTELS.rose },
-  { value: 'BAD', icon: imageIcon('/icons/feelings/bad.png', 'BadIcon'), color: PASTELS.sky },
-  {
-    value: 'EXHAUSTED',
-    icon: imageIcon('/icons/feelings/exhausted.png', 'ExhaustedIcon'),
-    color: PASTELS.mint,
-  },
-];
-/** A selected face, dark on its pastel (white would vanish on it). */
-const FEELING_INK = '#343a40';
 const DEFAULT_NOTE_COLOR = 'gray';
 /** The distances offered as one-tap chips (others are typed in the field). */
 const QUICK_DISTANCES = [18, 50, 70];
@@ -99,7 +79,6 @@ function initialValues(s: JournalSession): Values {
   return {
     type: s.type,
     date: s.date,
-    startTime: s.startTime,
     durationMinutes: s.durationMinutes,
     location: s.location,
     discipline: s.discipline,
@@ -120,6 +99,32 @@ function initialValues(s: JournalSession): Values {
     icon: s.icon,
   };
 }
+
+/** The review (what a future event can't have yet), emptied; the same fields the API checks. */
+const NO_REVIEW = {
+  arrowCount: null,
+  score: null,
+  satisfaction: null,
+  technique: null,
+  description: null,
+  physicalFeeling: null,
+  mentalFeeling: null,
+  wentWell: Array<string>(LIST_LINES).fill(''),
+  toImprove: Array<string>(LIST_LINES).fill(''),
+  nextTime: null,
+} satisfies Partial<Values>;
+
+const hasReview = (v: Values) =>
+  [
+    v.arrowCount,
+    v.score,
+    v.satisfaction,
+    v.technique,
+    v.description,
+    v.physicalFeeling,
+    v.mentalFeeling,
+    v.nextTime,
+  ].some((value) => value !== null) || [...v.wentWell, ...v.toImprove].some((line) => line.trim());
 
 /**
  * The lines of a list shown on the sheet: the ones up to the last filled, then one blank to
@@ -142,7 +147,7 @@ const toText = (value: string) => (value.trim() === '' ? null : value);
 
 /**
  * Session sheet, mirroring the archer's paper sheet. Events are a day's entry: no time
- * field (an existing time, from before, is kept as it is). Fields are controlled
+ * field. Fields are controlled
  * (React resets uncontrolled ones after a server action) and saved with an
  * explicit button. Repetitive fields offer what the archer already typed.
  */
@@ -150,15 +155,15 @@ export function SessionForm({
   session,
   suggestions,
   disciplines,
-  header,
+  title,
   children,
 }: {
   session: JournalSession;
   suggestions: JournalSuggestions;
   /** The disciplines the archer practises (Profile page): the only ones offered. */
   disciplines: Discipline[];
-  /** Top of the sheet: the event's title and day. */
-  header: ReactNode;
+  /** Top left of the sheet: the event's type and icon (its day, top right, follows the form). */
+  title: ReactNode;
   /** Shown right of the Informations box (the event's photos); below it on small screens. */
   children?: ReactNode;
 }) {
@@ -172,6 +177,10 @@ export function SessionForm({
   const [saving, startSaving] = useTransition();
   const [deleting, startDeleting] = useTransition();
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [confirmLeave, setConfirmLeave] = useState(false);
+  /** A future day picked for an event with a review, waiting for the archer's go-ahead. */
+  const [futureDate, setFutureDate] = useState<string | null>(null);
+  const format = useFormatter();
 
   const dirty = JSON.stringify(values) !== saved;
   const set = <K extends keyof Values>(key: K, value: Values[K]) => {
@@ -184,20 +193,20 @@ export function SessionForm({
       values[list].map((line, i) => (i === index ? value : line)),
     );
 
-  /** Saves (when there is something to save); then, with `close`, back to the event's month. */
-  const save = (close = false) =>
+  const save = () =>
     startSaving(async () => {
       const snapshot = values;
-      if (dirty) {
-        const result = await saveSession(session.id, snapshot);
-        setState(result);
-        if (result.code) return;
-        setSaved(JSON.stringify(snapshot));
-      }
-      if (close) {
-        router.push({ pathname: '/archer/journal', query: { month: snapshot.date.slice(0, 7) } });
-      }
+      const result = await saveSession(session.id, snapshot);
+      setState(result);
+      if (!result.code) setSaved(JSON.stringify(snapshot));
     });
+
+  /** Back to the month of the event as saved (unsaved changes are dropped: asked first). */
+  const leave = () => {
+    const { date } = JSON.parse(saved) as Values;
+    router.push({ pathname: '/archer/journal', query: { month: date.slice(0, 7) } });
+  };
+  const close = () => (dirty ? setConfirmLeave(true) : leave());
 
   const { form } = SESSION_TYPES[values.type];
   const hasSheet = form === 'sheet';
@@ -210,10 +219,36 @@ export function SessionForm({
     (d) => disciplines.length === 0 || disciplines.includes(d) || d === values.discipline,
   );
 
-  // Above the sheet, following the scroll: delete on the left; save, save and close on the right.
+  /** Moving a reviewed session to a future day empties its review: asked first. */
+  const changeDate = (date: string) => {
+    if (hasSheet && date > today() && hasReview(values)) setFutureDate(date);
+    else set('date', date);
+  };
+  const confirmFutureDate = () => {
+    if (!futureDate) return;
+    setState({});
+    setValues((v) => ({ ...v, ...NO_REVIEW, date: futureDate }));
+    setFutureDate(null);
+  };
+
+  /*
+    The type and its icon on the left; the day, underlined, in the top right corner;
+    both written on the second of the sheet's first two lines (a wrapped date: on the
+    next two). Noon, so the calendar day is the same in every time zone.
+  */
+  const header = (
+    <Group justify="space-between" align="flex-start" className={classes.sheetHeader}>
+      {title}
+      <time dateTime={values.date} className={classes.sheetDate}>
+        {format.dateTime(new Date(`${values.date}T12:00:00`), { dateStyle: 'full' })}
+      </time>
+    </Group>
+  );
+
+  // Above the sheet, following the scroll: delete on the left; save, then close on the right.
   const actionBar = (
     <Paper withBorder shadow="md" p="sm" radius="md" className={classes.actionBar}>
-      {/* Wraps on narrow screens: three buttons don't fit a phone's width. */}
+      {/* Wraps on narrow screens. */}
       <Group justify="space-between" gap="sm">
         <Button
           variant="subtle"
@@ -228,17 +263,14 @@ export function SessionForm({
             {dirty ? t('unsaved') : state.notice === 'saved' ? t('saved') : ''}
           </Text>
           <Button
-            variant="default"
             leftSection={<IconDeviceFloppy size={18} />}
-            onClick={() => save()}
+            onClick={save}
             loading={saving}
             disabled={!dirty}
           >
             {t('save')}
           </Button>
-          <Button leftSection={<IconCheck size={18} />} onClick={() => save(true)} loading={saving}>
-            {t('saveAndClose')}
-          </Button>
+          <CloseButton size="lg" aria-label={t('close')} title={t('close')} onClick={close} />
         </Group>
       </Group>
       {state.code && (
@@ -257,8 +289,15 @@ export function SessionForm({
         {header}
         {/* A blank line between the title and the first box. */}
         <RuledStack leadingLines={1}>
-          {/* Informations (its fields in one column) on the left, the photos on its right. */}
-          <SimpleGrid cols={{ base: 1, md: 2 }} spacing="xl" verticalSpacing="var(--step)">
+          {/*
+            Informations (its fields in one column) on the left, the photos on its right; the
+            whole width when the type takes no photos.
+          */}
+          <SimpleGrid
+            cols={{ base: 1, md: children ? 2 : 1 }}
+            spacing="xl"
+            verticalSpacing="var(--step)"
+          >
             <Section title={t('info')} gap={0}>
               {/*
                 One ruled line per field: its name on the left (one column, as wide as the
@@ -270,12 +309,12 @@ export function SessionForm({
                     id={`${fieldId}-date`}
                     size="xs"
                     value={values.date}
-                    onChange={(date) => date && set('date', date)}
+                    onChange={(date) => date && changeDate(date)}
                     valueFormat="ddd D MMM YYYY"
                     leftSection={<IconCalendar size={16} />}
                   />
                 </FieldRow>
-                {form !== 'note' && (
+                {(form === 'sheet' || form === 'none') && (
                   <FieldRow id={`${fieldId}-duration`} label={t('duration')}>
                     <NumberInput
                       id={`${fieldId}-duration`}
@@ -333,9 +372,9 @@ export function SessionForm({
                     <FieldRow
                       id={`${fieldId}-distance`}
                       label={t('distance')}
-                      // One tap for the usual distances, on the line under the field.
+                      // One tap for the usual distances: all three on the line under the field.
                       below={
-                        <Group className={classes.chipLines}>
+                        <Group className={classes.chipLines} wrap="nowrap">
                           {QUICK_DISTANCES.map((d) => (
                             <Chip
                               key={d}
@@ -412,20 +451,32 @@ export function SessionForm({
                 )}
               </div>
 
-              {hasSheet ? null : form === 'note' ? (
+              {hasSheet ? null : form === 'note' || form === 'text' ? (
                 <Stack gap="md" mt="md">
-                  <ColorPicker
-                    value={values.color ?? DEFAULT_NOTE_COLOR}
-                    onChange={(color) => set('color', color)}
-                  />
-                  <IconPicker
-                    value={values.icon ?? 'NOTE'}
-                    color={values.color ?? DEFAULT_NOTE_COLOR}
-                    onChange={(icon) => set('icon', icon)}
-                  />
+                  {/* A custom event looks like its type (set where the type is defined). */}
+                  {form === 'note' && (
+                    <>
+                      <ColorPicker
+                        value={values.color ?? DEFAULT_NOTE_COLOR}
+                        onChange={(color) => set('color', color)}
+                      />
+                      <IconPicker
+                        value={values.icon ?? 'NOTE'}
+                        color={values.color ?? DEFAULT_NOTE_COLOR}
+                        onChange={(icon) => set('icon', icon)}
+                      />
+                    </>
+                  )}
                   <Textarea
                     {...RULED_TEXT}
-                    label={t('note')}
+                    label={form === 'text' ? t('customDescription') : t('note')}
+                    // A custom event's "Description": written like the fields' names, in the
+                    // archer's font (Profile page).
+                    classNames={
+                      form === 'text'
+                        ? { ...RULED_TEXT.classNames, label: classes.fieldName }
+                        : RULED_TEXT.classNames
+                    }
                     value={values.description ?? ''}
                     onChange={(e) => set('description', toText(e.currentTarget.value))}
                     autosize
@@ -594,6 +645,44 @@ export function SessionForm({
               }
             >
               {t('delete')}
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
+
+      <Modal
+        opened={confirmLeave}
+        onClose={() => setConfirmLeave(false)}
+        title={<Text fw={600}>{t('leaveTitle')}</Text>}
+        centered
+      >
+        <Stack>
+          <Text size="sm">{t('leaveBody')}</Text>
+          <Group justify="flex-end">
+            <Button variant="default" onClick={() => setConfirmLeave(false)}>
+              {t('stay')}
+            </Button>
+            <Button color="red" onClick={leave}>
+              {t('leaveWithoutSaving')}
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
+
+      <Modal
+        opened={futureDate !== null}
+        onClose={() => setFutureDate(null)}
+        title={<Text fw={600}>{t('futureDateTitle')}</Text>}
+        centered
+      >
+        <Stack>
+          <Text size="sm">{t('futureDateBody')}</Text>
+          <Group justify="flex-end">
+            <Button variant="default" onClick={() => setFutureDate(null)}>
+              {t('cancel')}
+            </Button>
+            <Button color="orange" onClick={confirmFutureDate}>
+              {t('futureDateConfirm')}
             </Button>
           </Group>
         </Stack>

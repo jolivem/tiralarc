@@ -11,7 +11,7 @@ import {
 } from '@mantine/core';
 import { Schedule, type ScheduleEventData } from '@mantine/schedule';
 import { IconPalette, IconPlus } from '@tabler/icons-react';
-import type { Journal, JournalSessionSummary } from '@tiralarc/api-client';
+import type { CustomEventType, Journal, JournalSessionSummary } from '@tiralarc/api-client';
 import dayjs from 'dayjs';
 import { useFormatter, useLocale, useTranslations } from 'next-intl';
 import { type CSSProperties, useEffect, useState, useTransition } from 'react';
@@ -20,7 +20,8 @@ import { useRouter } from '@/i18n/navigation';
 import { CalendarFrame } from './calendar-frame';
 import { ColoringToolbar, DEFAULT_COLOR } from './coloring-toolbar';
 import { MonthThemeModal, monthTheme } from './month-theme-modal';
-import { eventDisplay } from './event-display';
+import { eventDisplay, pendingReason } from './event-display';
+import { EventLegend } from './event-legend';
 import classes from './journal.module.css';
 import {
   clampToJournal,
@@ -31,8 +32,6 @@ import {
 import { SESSION_TYPES } from './session-types';
 import { MonthTitle, titleFills, useLettering } from './month-title';
 import { useMonthColoring } from './use-month-coloring';
-
-const DEFAULT_DURATION_MINUTES = 60;
 
 /**
  * Days to load for the visible month (the calendar shows no other month's days), kept
@@ -58,42 +57,27 @@ const capitalize = (text: string) => text.charAt(0).toLocaleUpperCase() + text.s
 
 type EventPayload = { session: JournalSessionSummary };
 
-/** Calendar entries: timed sessions on their slot, others as all-day events. */
+/** Calendar entries: an event is a day's entry (no time), shown as an all-day event. */
 function toEvent(session: JournalSessionSummary, title: string): ScheduleEventData<EventPayload> {
-  const { color } = eventDisplay(session);
-  if (!session.startTime) {
-    return {
-      id: session.id,
-      title,
-      start: `${session.date} 00:00:00`,
-      end: dayjs(session.date).add(1, 'day').format('YYYY-MM-DD 00:00:00'),
-      color,
-      payload: { session },
-    };
-  }
-  const start = dayjs(`${session.date}T${session.startTime}`);
   return {
     id: session.id,
     title,
-    start: start.format('YYYY-MM-DD HH:mm:ss'),
-    end: start
-      .add(session.durationMinutes || DEFAULT_DURATION_MINUTES, 'minute')
-      .format('YYYY-MM-DD HH:mm:ss'),
-    color,
+    start: `${session.date} 00:00:00`,
+    end: dayjs(session.date).add(1, 'day').format('YYYY-MM-DD 00:00:00'),
+    color: eventDisplay(session).color,
     payload: { session },
   };
 }
 
 type DayPayload = { sessions: JournalSessionSummary[] };
 
-/** One all-day entry per day with events (untimed first, then by time), for the month view. */
+/** One all-day entry per day with events (in the order they were entered), for the month view. */
 function toDayEvents(
   sessions: JournalSessionSummary[],
   labelOf: (session: JournalSessionSummary) => string,
 ): ScheduleEventData<DayPayload>[] {
   const byDay = new Map<string, JournalSessionSummary[]>();
-  const sorted = [...sessions].sort((a, b) => (a.startTime ?? '').localeCompare(b.startTime ?? ''));
-  for (const session of sorted)
+  for (const session of sessions)
     byDay.set(session.date, [...(byDay.get(session.date) ?? []), session]);
   return [...byDay].map(([day, list]) => ({
     id: `day-${day}`,
@@ -111,9 +95,12 @@ function toDayEvents(
  */
 export function JournalView({
   journal,
+  customTypes,
   month: initialMonth,
 }: {
   journal: Journal;
+  /** The archer's own event types (new-event dialog, legend). */
+  customTypes: CustomEventType[];
   month?: string;
 }) {
   const t = useTranslations();
@@ -126,6 +113,8 @@ export function JournalView({
     return clampToJournal(day, journal);
   });
   const [sessions, setSessions] = useState<JournalSessionSummary[]>([]);
+  // The events are loaded in the browser, so its clock decides which days are still to come.
+  const todayDate = today();
   const [loading, startLoading] = useTransition();
   const [newSession, setNewSession] = useState<NewSessionDefaults | null>(null);
 
@@ -171,16 +160,21 @@ export function JournalView({
   const range = visibleRange(date, journal);
   const from = range?.from;
   const to = range?.to;
+  // Reloaded when a custom type changes too: its events carry its title, colour and pictogram.
+  const typesKey = JSON.stringify(customTypes);
   useEffect(() => {
     startLoading(async () => setSessions(from && to ? await listSessions(from, to) : []));
-  }, [from, to]);
+  }, [from, to, typesKey]);
 
-  /** An "other" event is its title (or its text); a session is its type, with its score or place. */
+  /**
+   * An "other" event is its title (or its text), a custom one its type's title; a session is its
+   * type, with its score or place.
+   */
   const labelOf = (session: JournalSessionSummary) => {
     const note =
       SESSION_TYPES[session.type].form === 'note' &&
       (session.title || session.description?.split('\n')[0]);
-    const parts = [note || t(`journal.typesShort.${session.type}`)];
+    const parts = [note || session.customType?.title || t(`journal.typesShort.${session.type}`)];
     if (session.score !== null) parts.push(String(session.score));
     else if (session.location) parts.push(session.location);
     return parts.join(' · ');
@@ -200,6 +194,7 @@ export function JournalView({
           {t('schedule.today')}
         </Button>
         <Group gap="xs">
+          <EventLegend customTypes={customTypes} />
           <Tooltip label={t('journals.theme')}>
             <ActionIcon
               variant="default"
@@ -287,10 +282,11 @@ export function JournalView({
                     <div className={classes.dayDots} style={props.style} data-count={day.length}>
                       {day.map((session) => {
                         const { color, icon: Icon } = eventDisplay(session);
-                        // Greyed until its review is written (planned, or not filled in yet).
-                        const label = session.completed
-                          ? labelOf(session)
-                          : `${labelOf(session)} (${t('journal.toComplete')})`;
+                        // Greyed until its review is written, or (no review) until its day.
+                        const pending = pendingReason(session, todayDate);
+                        const label = pending
+                          ? `${labelOf(session)} (${t(`journal.${pending}`)})`
+                          : labelOf(session);
                         return (
                           <div key={session.id} className={classes.dotCell}>
                             <UnstyledButton
@@ -310,7 +306,7 @@ export function JournalView({
                               <Icon
                                 size="100%"
                                 color="var(--dot-color)"
-                                className={session.completed ? undefined : classes.pendingIcon}
+                                className={pending ? classes.pendingIcon : undefined}
                               />
                             </UnstyledButton>
                           </div>
@@ -333,7 +329,11 @@ export function JournalView({
                       <Icon
                         size={14}
                         style={{ flexShrink: 0 }}
-                        className={session?.completed ? undefined : classes.pendingIcon}
+                        className={
+                          session && pendingReason(session, todayDate)
+                            ? classes.pendingIcon
+                            : undefined
+                        }
                       />
                     )}
                     {event.title}
@@ -384,6 +384,7 @@ export function JournalView({
         />
         <NewSessionModal
           journal={journal}
+          customTypes={customTypes}
           defaults={newSession}
           onClose={() => setNewSession(null)}
         />

@@ -1,10 +1,16 @@
-import { Stack } from '@mantine/core';
+import { SimpleGrid, Stack } from '@mantine/core';
 import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/server';
 import { SectionPage } from '@/components/section-page';
 import { ALL_TIME } from '@/components/stats/chart-utils';
 import { GoalsCard } from '@/components/stats/goals-card';
 import { PeriodSelect } from '@/components/stats/period-select';
-import { ArrowsCard, CompetitionsCard, ScoresCard } from '@/components/stats/stats-cards';
+import {
+  ArrowsCard,
+  CompetitionsCard,
+  EventsCard,
+  FeelingsCard,
+  ScoresCard,
+} from '@/components/stats/stats-cards';
 import type { Locale } from '@/i18n/routing';
 import { getAuthedApi } from '@/lib/api';
 import { getJournals, getSelectedJournal } from '@/lib/journals';
@@ -36,13 +42,32 @@ export default async function ArcherStatsPage({
     // Goals are the archer's, whatever the period shown.
     api.GET('/api/v1/goals'),
   ]);
-  const { competitions, arrowsByDay } = stats ?? { competitions: [], arrowsByDay: [] };
+  const {
+    competitions,
+    scores,
+    arrowsByDay,
+    eventsByDay,
+    physicalFeelingsByDay,
+    mentalFeelingsByDay,
+  } = stats ?? {
+    competitions: [],
+    scores: [],
+    arrowsByDay: [],
+    eventsByDay: [],
+    physicalFeelingsByDay: [],
+    mentalFeelingsByDay: [],
+  };
 
   // Decided here so the server and the browser draw the same "today" marker.
   const today = new Date().toISOString().slice(0, 10);
-  // All time: the charts span from the first to the last recorded event.
+  // All time: the charts span from the first recorded event to the last one, or to today if
+  // later (so the arrows card's "last n days" end today).
   const days = [...competitions.map((c) => c.date), ...arrowsByDay.map((d) => d.date)].sort();
-  const span = journal ?? { startDate: days[0] ?? today, endDate: days.at(-1) ?? today };
+  const last = days.at(-1) ?? today;
+  const span = journal ?? {
+    startDate: days[0] ?? today,
+    endDate: last > today ? last : today,
+  };
   // Noon, so the calendar day is the same in every time zone.
   const day = (date: string) =>
     format.dateTime(new Date(`${date}T12:00:00`), { dateStyle: 'medium' });
@@ -60,8 +85,24 @@ export default async function ArcherStatsPage({
       {/* One wide page, so the charts keep their width. */}
       <Stack gap="lg">
         <GoalsCard goals={goals ?? []} today={today} />
-        <ArrowsCard period={span} arrowsByDay={arrowsByDay} today={today} />
-        <ScoresCard period={span} competitions={competitions} today={today} />
+        {/* Side by side on large screens, one above the other below. */}
+        <SimpleGrid cols={{ base: 1, md: 2 }} spacing="lg">
+          <ArrowsCard period={span} arrowsByDay={arrowsByDay} today={today} />
+          <ScoresCard period={span} scores={scores} today={today} />
+          <EventsCard period={span} eventsByDay={eventsByDay} today={today} />
+          <FeelingsCard
+            kind="physical"
+            period={span}
+            feelingsByDay={physicalFeelingsByDay}
+            today={today}
+          />
+          <FeelingsCard
+            kind="mental"
+            period={span}
+            feelingsByDay={mentalFeelingsByDay}
+            today={today}
+          />
+        </SimpleGrid>
         <CompetitionsCard competitions={competitions} />
       </Stack>
     </SectionPage>

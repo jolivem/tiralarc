@@ -70,13 +70,13 @@ describe('Journal (e2e)', () => {
     const created = await http()
       .post('/api/v1/journal/sessions')
       .set(as(archer))
-      .send({ type: 'TRAINING', date: '2026-10-05', startTime: '18:30' })
+      .send({ type: 'TRAINING', date: '2026-10-05' })
       .expect(201);
     const id = created.body.id as string;
+    expect(created.body).not.toHaveProperty('startTime');
     expect(created.body).toMatchObject({
       type: 'TRAINING',
       date: '2026-10-05',
-      startTime: '18:30',
       wentWell: [],
       score: null,
       completed: false,
@@ -128,9 +128,9 @@ describe('Journal (e2e)', () => {
     const cleared = await http()
       .patch(`/api/v1/journal/sessions/${id}`)
       .set(as(archer))
-      .send({ startTime: null, score: null })
+      .send({ score: null })
       .expect(200);
-    expect(cleared.body).toMatchObject({ startTime: null, score: null, arrowCount: 60 });
+    expect(cleared.body).toMatchObject({ score: null, arrowCount: 60 });
 
     const october = await http()
       .get(`/api/v1/journal/sessions?from=2026-10-01&to=2026-10-31`)
@@ -191,6 +191,7 @@ describe('Journal (e2e)', () => {
     await http().get(october).expect(401);
     await http().get('/api/v1/journals').set(as(coach)).expect(403);
 
+    // Events have no time any more: one is refused like any unknown field.
     const bad = await http()
       .post('/api/v1/journal/sessions')
       .set(as(archer))
@@ -431,9 +432,9 @@ describe('Journal (e2e)', () => {
     const created = await http()
       .post('/api/v1/journal/sessions')
       .set(as(archer))
-      .send({ type: 'OTHER', date: '2026-12-05', startTime: '10:00' })
+      .send({ type: 'OTHER', date: '2026-12-05' })
       .expect(201);
-    expect(created.body).toMatchObject({ type: 'OTHER', startTime: '10:00', description: null });
+    expect(created.body).toMatchObject({ type: 'OTHER', description: null });
     await http()
       .patch(`/api/v1/journal/sessions/${created.body.id}`)
       .set(as(archer))
@@ -460,6 +461,88 @@ describe('Journal (e2e)', () => {
     ]);
   });
 
+  it('lets an archer define up to 4 event types, used by their custom events', async () => {
+    const types = '/api/v1/journal/event-types';
+    const define = (token: string, title: string) =>
+      http().post(types).set(as(token)).send({ title, color: 'pink', icon: 'HEART' });
+    const kine = await define(archer, ' Kiné ').expect(201);
+    expect(kine.body).toMatchObject({ title: 'Kiné', color: 'pink', icon: 'HEART' });
+    await http()
+      .post(types)
+      .set(as(archer))
+      .send({ title: ' ', color: 'red', icon: 'X' })
+      .expect(400);
+
+    // A custom event needs one of the archer's own types.
+    const add = (token: string, customTypeId?: string) =>
+      http()
+        .post('/api/v1/journal/sessions')
+        .set(as(token))
+        .send({ type: 'CUSTOM', date: '2027-01-12', customTypeId });
+    await add(archer).expect(400);
+    await add(otherArcher, kine.body.id).expect(400);
+    const event = await add(archer, kine.body.id).expect(201);
+    expect(event.body).toMatchObject({
+      type: 'CUSTOM',
+      completed: true,
+      customType: { id: kine.body.id, title: 'Kiné', color: 'pink', icon: 'HEART' },
+    });
+    // It only becomes custom when created.
+    const training = await http()
+      .post('/api/v1/journal/sessions')
+      .set(as(archer))
+      .send({ type: 'TRAINING', date: '2027-01-13' })
+      .expect(201);
+    await http()
+      .patch(`/api/v1/journal/sessions/${training.body.id}`)
+      .set(as(archer))
+      .send({ type: 'CUSTOM' })
+      .expect(400);
+
+    // Its events follow a change of the type.
+    await http()
+      .patch(`${types}/${kine.body.id}`)
+      .set(as(archer))
+      .send({ title: 'Ostéo', color: 'teal' })
+      .expect(200);
+    await http().patch(`${types}/${kine.body.id}`).set(as(otherArcher)).send({}).expect(404);
+    const january = await http()
+      .get('/api/v1/journal/sessions?from=2027-01-12&to=2027-01-12')
+      .set(as(archer))
+      .expect(200);
+    expect(january.body[0].customType).toMatchObject({ title: 'Ostéo', color: 'teal' });
+
+    // Four at most; another archer's are their own.
+    for (const title of ['B', 'C', 'D']) await define(archer, title).expect(201);
+    expect((await define(archer, 'E').expect(409)).body.code).toBe('LIMIT_REACHED');
+    const listed = await http().get(types).set(as(archer)).expect(200);
+    expect(listed.body.map((t: { title: string }) => t.title)).toEqual(['Ostéo', 'B', 'C', 'D']);
+    expect((await http().get(types).set(as(otherArcher)).expect(200)).body).toEqual([]);
+    await http().get(types).set(as(coach)).expect(403);
+
+    // Deleting a type keeps its events, as other events that look the same.
+    await http().delete(`${types}/${kine.body.id}`).set(as(otherArcher)).expect(404);
+    await http().delete(`${types}/${kine.body.id}`).set(as(archer)).expect(204);
+    const kept = await http()
+      .get(`/api/v1/journal/sessions/${event.body.id}`)
+      .set(as(archer))
+      .expect(200);
+    expect(kept.body).toMatchObject({
+      type: 'OTHER',
+      customType: null,
+      title: 'Ostéo',
+      color: 'teal',
+      icon: 'HEART',
+    });
+
+    for (const { id } of (await http().get(types).set(as(archer))).body as { id: string }[]) {
+      await http().delete(`${types}/${id}`).set(as(archer)).expect(204);
+    }
+    for (const id of [event.body.id, training.body.id]) {
+      await http().delete(`/api/v1/journal/sessions/${id}`).set(as(archer)).expect(204);
+    }
+  });
+
   it('summarises a period, or all time, for the indicators', async () => {
     const token = await signUp('j-stats', ['ARCHER']);
     const add = async (type: string, date: string, data: object) => {
@@ -482,9 +565,15 @@ describe('Journal (e2e)', () => {
       location: 'Gymnase',
     });
     const first = await add('COMPETITION', '2026-10-03', { discipline: 'INDOOR' });
-    await add('TRAINING', '2026-11-07', { arrowCount: 90, score: 800 });
-    await add('TRAINING', '2026-10-14', { arrowCount: 120 });
+    await add('TRAINING', '2026-11-07', { arrowCount: 90, score: 800, physicalFeeling: 'GREAT' });
+    await add('TRAINING', '2026-10-14', {
+      arrowCount: 120,
+      physicalFeeling: 'BAD',
+      mentalFeeling: 'OK',
+    });
     await add('COACHING', '2026-10-20', {}); // no arrows recorded: not a data point
+    const coached = await add('COACHING', '2026-10-21', { discipline: 'INDOOR', score: 270 });
+    const trained = await add('TRAINING', '2026-10-28', { discipline: 'FIELD', score: 310 });
     // After the period asked for below.
     await add('COMPETITION', '2027-10-10', { arrowCount: 72, score: 600 });
 
@@ -511,10 +600,32 @@ describe('Journal (e2e)', () => {
           location: 'Gymnase',
         },
       ],
+      // Scored events of the three reviewed types, with a discipline (the 800 has none).
+      scores: [
+        { id: coached, date: '2026-10-21', type: 'COACHING', discipline: 'INDOOR', score: 270 },
+        { id: trained, date: '2026-10-28', type: 'TRAINING', discipline: 'FIELD', score: 310 },
+        { id: second, date: '2026-11-07', type: 'COMPETITION', discipline: 'INDOOR', score: 540 },
+      ],
       arrowsByDay: [
         { date: '2026-10-14', arrows: 120 },
         { date: '2026-11-07', arrows: 150 },
       ],
+      // Every event, counted per day and type.
+      eventsByDay: [
+        { date: '2026-10-03', type: 'COMPETITION', count: 1 },
+        { date: '2026-10-14', type: 'TRAINING', count: 1 },
+        { date: '2026-10-20', type: 'COACHING', count: 1 },
+        { date: '2026-10-21', type: 'COACHING', count: 1 },
+        { date: '2026-10-28', type: 'TRAINING', count: 1 },
+        { date: '2026-11-07', type: 'TRAINING', count: 1 },
+        { date: '2026-11-07', type: 'COMPETITION', count: 1 },
+      ],
+      // Events with a physical feeling only.
+      physicalFeelingsByDay: [
+        { date: '2026-10-14', feeling: 'BAD', count: 1 },
+        { date: '2026-11-07', feeling: 'GREAT', count: 1 },
+      ],
+      mentalFeelingsByDay: [{ date: '2026-10-14', feeling: 'OK', count: 1 }],
     });
     // Without bounds: every event the archer recorded.
     const allTime = await http().get('/api/v1/journal/sessions/stats').set(as(token)).expect(200);

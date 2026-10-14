@@ -4,6 +4,7 @@ import { JournalView } from '@/components/journal/journal-view';
 import { NewJournalButton } from '@/components/journal/journal-modal';
 import { SectionPage } from '@/components/section-page';
 import type { Locale } from '@/i18n/routing';
+import { getAuthedApi } from '@/lib/api';
 import { getSelectedJournal } from '@/lib/journals';
 
 const MONTH = /^\d{4}-(0[1-9]|1[0-2])$/;
@@ -22,7 +23,10 @@ export default async function ArcherJournalPage({
   const month = typeof requested === 'string' && MONTH.test(requested) ? requested : undefined;
   const t = await getTranslations();
   const format = await getFormatter();
-  const journal = await getSelectedJournal();
+  const [journal, { data: customTypes }] = await Promise.all([
+    getSelectedJournal(),
+    (await getAuthedApi()).GET('/api/v1/journal/event-types'),
+  ]);
 
   if (!journal) {
     return (
@@ -52,7 +56,12 @@ export default async function ArcherJournalPage({
       plain
     >
       {/* Remounted when another journal or month is asked for, so the calendar opens on it. */}
-      <JournalView key={`${journal.id}:${month ?? ''}`} journal={journal} month={month} />
+      <JournalView
+        key={`${journal.id}:${month ?? ''}`}
+        journal={journal}
+        customTypes={customTypes ?? []}
+        month={month}
+      />
     </SectionPage>
   );
 }

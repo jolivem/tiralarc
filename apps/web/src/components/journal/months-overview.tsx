@@ -5,7 +5,7 @@ import type { JournalSessionSummary } from '@tiralarc/api-client';
 import dayjs from 'dayjs';
 import { useFormatter, useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
-import { eventDisplay } from './event-display';
+import { eventDisplay, pendingReason } from './event-display';
 import classes from './journal.module.css';
 import { SESSION_TYPES } from './session-types';
 
@@ -41,9 +41,14 @@ export function MonthsOverview({
   for (const session of sessions) {
     byDay.set(session.date, [...(byDay.get(session.date) ?? []), session]);
   }
-  const label = (session: JournalSessionSummary) =>
-    (SESSION_TYPES[session.type].form === 'note' && session.title) ||
-    t(`typesShort.${session.type}`);
+  const label = (session: JournalSessionSummary) => {
+    const name =
+      (SESSION_TYPES[session.type].form === 'note' && session.title) ||
+      session.customType?.title ||
+      t(`typesShort.${session.type}`);
+    const pending = pendingReason(session, today);
+    return pending ? `${name} (${t(pending)})` : name;
+  };
   // Monday first; 2024-01-01 was a Monday.
   const weekdays = Array.from({ length: 7 }, (_, i) =>
     format.dateTime(new Date(2024, 0, 1 + i, 12), { weekday: 'narrow' }),
@@ -86,6 +91,8 @@ export function MonthsOverview({
                       {events.slice(0, MAX_DOTS).map((event) => (
                         <i
                           key={event.id}
+                          // Lighter until its review is written, or (no review) until its day.
+                          data-pending={pendingReason(event, today) !== null || undefined}
                           style={{
                             background: `var(--mantine-color-${eventDisplay(event).color}-filled)`,
                           }}

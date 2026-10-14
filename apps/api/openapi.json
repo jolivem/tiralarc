@@ -1182,6 +1182,163 @@
         ]
       }
     },
+    "/api/v1/journal/event-types": {
+      "get": {
+        "operationId": "EventTypes_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CustomEventTypeDto"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Archers only"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "The archer's own event types (`CUSTOM` events), oldest first",
+        "tags": [
+          "journal"
+        ]
+      },
+      "post": {
+        "operationId": "EventTypes_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCustomEventTypeDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomEventTypeDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Archers only"
+          },
+          "409": {
+            "description": "LIMIT_REACHED: the archer already has 4 event types"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "journal"
+        ]
+      }
+    },
+    "/api/v1/journal/event-types/{id}": {
+      "patch": {
+        "operationId": "EventTypes_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateCustomEventTypeDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomEventTypeDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Archers only"
+          },
+          "404": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "journal"
+        ]
+      },
+      "delete": {
+        "operationId": "EventTypes_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "403": {
+            "description": "Archers only"
+          },
+          "404": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Deletes an event type; its events become `OTHER` events with its title, colour and pictogram",
+        "tags": [
+          "journal"
+        ]
+      }
+    },
     "/api/v1/journal/sessions/{sessionId}/photos": {
       "get": {
         "operationId": "Photos_list",
@@ -2315,7 +2472,8 @@
           "COACHING",
           "COMPETITION",
           "STRENGTH",
-          "OTHER"
+          "OTHER",
+          "CUSTOM"
         ]
       },
       "Discipline": {
@@ -2367,6 +2525,41 @@
         ],
         "description": "`OTHER` events only; null = default pictogram."
       },
+      "CustomEventTypeDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string",
+            "example": "Kiné"
+          },
+          "color": {
+            "description": "Colour of its events in the calendars (the season overview draws them in it).",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/EventColor"
+              }
+            ]
+          },
+          "icon": {
+            "description": "Pictogram of its events in the month calendar.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/EventIcon"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "color",
+          "icon"
+        ]
+      },
       "SessionSummaryDto": {
         "type": "object",
         "properties": {
@@ -2384,11 +2577,6 @@
           "date": {
             "type": "string",
             "example": "2026-10-03"
-          },
-          "startTime": {
-            "type": "string",
-            "nullable": true,
-            "example": "18:30"
           },
           "durationMinutes": {
             "type": "number",
@@ -2438,6 +2626,16 @@
               }
             ]
           },
+          "customType": {
+            "nullable": true,
+            "description": "`CUSTOM` events only: their type, whose title, colour and pictogram they show.",
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CustomEventTypeDto"
+              }
+            ]
+          },
           "completed": {
             "type": "boolean",
             "description": "Whether the review of a training, coaching or competition is written: at least one of arrowCount, score, satisfaction, technique, description, physicalFeeling, mentalFeeling, wentWell, toImprove, nextTime is filled. Always true for the other types (nothing to review). Clients fill the review only once the day has come."
@@ -2447,7 +2645,6 @@
           "id",
           "type",
           "date",
-          "startTime",
           "durationMinutes",
           "location",
           "discipline",
@@ -2456,6 +2653,7 @@
           "title",
           "color",
           "icon",
+          "customType",
           "completed"
         ]
       },
@@ -2501,6 +2699,104 @@
           "location"
         ]
       },
+      "ScoreStatDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Id of the event (session)."
+          },
+          "date": {
+            "type": "string",
+            "example": "2026-10-03"
+          },
+          "type": {
+            "description": "TRAINING, COACHING or COMPETITION.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SessionType"
+              }
+            ]
+          },
+          "discipline": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Discipline"
+              }
+            ]
+          },
+          "score": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "date",
+          "type",
+          "discipline",
+          "score"
+        ]
+      },
+      "EventsByDayDto": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "example": "2026-10-03"
+          },
+          "type": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SessionType"
+              }
+            ]
+          },
+          "count": {
+            "type": "number",
+            "description": "Events of that type on that day."
+          }
+        },
+        "required": [
+          "date",
+          "type",
+          "count"
+        ]
+      },
+      "Feeling": {
+        "type": "string",
+        "enum": [
+          "GREAT",
+          "OK",
+          "BAD",
+          "EXHAUSTED"
+        ]
+      },
+      "FeelingsByDayDto": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "example": "2026-10-03"
+          },
+          "feeling": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Feeling"
+              }
+            ]
+          },
+          "count": {
+            "type": "number",
+            "description": "Events of that day with that feeling."
+          }
+        },
+        "required": [
+          "date",
+          "feeling",
+          "count"
+        ]
+      },
       "ArrowsByDayDto": {
         "type": "object",
         "properties": {
@@ -2528,6 +2824,34 @@
               "$ref": "#/components/schemas/CompetitionStatDto"
             }
           },
+          "scores": {
+            "description": "Trainings, coachings and competitions with both a score and a discipline, oldest first.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ScoreStatDto"
+            }
+          },
+          "eventsByDay": {
+            "description": "Number of events per day and type (days with events only), oldest first.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EventsByDayDto"
+            }
+          },
+          "physicalFeelingsByDay": {
+            "description": "Physical feeling of the events, counted per day (events with one only), oldest first.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FeelingsByDayDto"
+            }
+          },
+          "mentalFeelingsByDay": {
+            "description": "Mental feeling of the events, counted per day (events with one only), oldest first.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FeelingsByDayDto"
+            }
+          },
           "arrowsByDay": {
             "description": "Days with a recorded number of arrows, oldest first.",
             "type": "array",
@@ -2538,6 +2862,10 @@
         },
         "required": [
           "competitions",
+          "scores",
+          "eventsByDay",
+          "physicalFeelingsByDay",
+          "mentalFeelingsByDay",
           "arrowsByDay"
         ]
       },
@@ -2592,25 +2920,15 @@
             "example": "2026-10-03",
             "description": "Local date (YYYY-MM-DD)."
           },
-          "startTime": {
+          "customTypeId": {
             "type": "string",
-            "nullable": true,
-            "example": "18:30",
-            "description": "Local time (HH:mm); omitted / null = all-day."
+            "format": "uuid",
+            "description": "Required for a `CUSTOM` event (one of the archer's event types), ignored otherwise."
           }
         },
         "required": [
           "type",
           "date"
-        ]
-      },
-      "Feeling": {
-        "type": "string",
-        "enum": [
-          "GREAT",
-          "OK",
-          "BAD",
-          "EXHAUSTED"
         ]
       },
       "SessionDto": {
@@ -2630,11 +2948,6 @@
           "date": {
             "type": "string",
             "example": "2026-10-03"
-          },
-          "startTime": {
-            "type": "string",
-            "nullable": true,
-            "example": "18:30"
           },
           "durationMinutes": {
             "type": "number",
@@ -2681,6 +2994,16 @@
             "allOf": [
               {
                 "$ref": "#/components/schemas/EventIcon"
+              }
+            ]
+          },
+          "customType": {
+            "nullable": true,
+            "description": "`CUSTOM` events only: their type, whose title, colour and pictogram they show.",
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CustomEventTypeDto"
               }
             ]
           },
@@ -2749,7 +3072,6 @@
           "id",
           "type",
           "date",
-          "startTime",
           "durationMinutes",
           "location",
           "discipline",
@@ -2758,6 +3080,7 @@
           "title",
           "color",
           "icon",
+          "customType",
           "completed",
           "distanceMeters",
           "arrowCount",
@@ -2785,11 +3108,6 @@
           "date": {
             "type": "string",
             "example": "2026-10-03"
-          },
-          "startTime": {
-            "type": "string",
-            "nullable": true,
-            "example": "18:30"
           },
           "durationMinutes": {
             "type": "number",
@@ -2906,6 +3224,61 @@
           },
           "icon": {
             "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/EventIcon"
+              }
+            ]
+          }
+        }
+      },
+      "CreateCustomEventTypeDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "example": "Kiné",
+            "minLength": 1,
+            "maxLength": 40
+          },
+          "color": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/EventColor"
+              }
+            ]
+          },
+          "icon": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/EventIcon"
+              }
+            ]
+          }
+        },
+        "required": [
+          "title",
+          "color",
+          "icon"
+        ]
+      },
+      "UpdateCustomEventTypeDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "example": "Kiné",
+            "minLength": 1,
+            "maxLength": 40
+          },
+          "color": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/EventColor"
+              }
+            ]
+          },
+          "icon": {
             "allOf": [
               {
                 "$ref": "#/components/schemas/EventIcon"

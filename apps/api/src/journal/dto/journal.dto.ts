@@ -9,6 +9,7 @@ import {
   IsNumber,
   IsOptional,
   IsString,
+  IsUUID,
   Matches,
   Max,
   MaxLength,
@@ -22,7 +23,6 @@ const DATE = /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/;
 export const MONTH = /^\d{4}-(0[1-9]|1[0-2])$/;
 const COLOR = /^#[0-9a-f]{6}$/;
 const THEME = /^[a-z0-9-]{1,30}$/;
-const TIME = /^([01]\d|2[0-3]):[0-5]\d$/;
 const SESSION_TYPES = Object.values(SessionType);
 const DISCIPLINES = Object.values(Discipline);
 const FEELINGS = Object.values(Feeling);
@@ -61,6 +61,68 @@ export const EVENT_ICONS = [
   'PIN',
 ] as const;
 export type EventIcon = (typeof EVENT_ICONS)[number];
+
+/** Event types an archer can define. */
+export const MAX_CUSTOM_TYPES = 4;
+
+/** An event type the archer defined: how its events show in the calendars. */
+export class CustomEventTypeDto {
+  @ApiProperty({ format: 'uuid' })
+  id!: string;
+
+  @ApiProperty({ example: 'Kiné' })
+  title!: string;
+
+  @ApiProperty({
+    enum: EVENT_COLORS,
+    enumName: 'EventColor',
+    description: 'Colour of its events in the calendars (the season overview draws them in it).',
+  })
+  color!: EventColor;
+
+  @ApiProperty({
+    enum: EVENT_ICONS,
+    enumName: 'EventIcon',
+    description: 'Pictogram of its events in the month calendar.',
+  })
+  icon!: EventIcon;
+}
+
+export class CreateCustomEventTypeDto {
+  @ApiProperty({ example: 'Kiné', minLength: 1, maxLength: 40 })
+  @IsString()
+  @Matches(/\S/, { message: 'title must not be blank' })
+  @MaxLength(40)
+  title!: string;
+
+  @ApiProperty({ enum: EVENT_COLORS, enumName: 'EventColor' })
+  @IsIn(EVENT_COLORS)
+  color!: EventColor;
+
+  @ApiProperty({ enum: EVENT_ICONS, enumName: 'EventIcon' })
+  @IsIn(EVENT_ICONS)
+  icon!: EventIcon;
+}
+
+/** PATCH body: every field optional. Its events follow the change. */
+export class UpdateCustomEventTypeDto {
+  @ApiPropertyOptional({ example: 'Kiné', minLength: 1, maxLength: 40 })
+  @IsOptional()
+  @IsString()
+  @Matches(/\S/, { message: 'title must not be blank' })
+  @MaxLength(40)
+  title?: string;
+
+  @ApiPropertyOptional({ enum: EVENT_COLORS, enumName: 'EventColor' })
+  @IsOptional()
+  @IsIn(EVENT_COLORS)
+  color?: EventColor;
+
+  @ApiPropertyOptional({ enum: EVENT_ICONS, enumName: 'EventIcon' })
+  @IsOptional()
+  @IsIn(EVENT_ICONS)
+  icon?: EventIcon;
+}
 
 /** Max items in "what went well" / "to improve" (3 lines, like the paper sheet). */
 export const MAX_LIST_ITEMS = 3;
@@ -262,6 +324,50 @@ export class CompetitionStatDto {
   location!: string | null;
 }
 
+/** A training, coaching or competition with a score and a discipline, for the score charts. */
+export class ScoreStatDto {
+  @ApiProperty({ format: 'uuid', description: 'Id of the event (session).' })
+  id!: string;
+
+  @ApiProperty({ example: '2026-10-03' })
+  date!: string;
+
+  @ApiProperty({
+    enum: SESSION_TYPES,
+    enumName: 'SessionType',
+    description: 'TRAINING, COACHING or COMPETITION.',
+  })
+  type!: SessionType;
+
+  @ApiProperty({ enum: DISCIPLINES, enumName: 'Discipline' })
+  discipline!: Discipline;
+
+  @ApiProperty()
+  score!: number;
+}
+
+export class EventsByDayDto {
+  @ApiProperty({ example: '2026-10-03' })
+  date!: string;
+
+  @ApiProperty({ enum: SESSION_TYPES, enumName: 'SessionType' })
+  type!: SessionType;
+
+  @ApiProperty({ description: 'Events of that type on that day.' })
+  count!: number;
+}
+
+export class FeelingsByDayDto {
+  @ApiProperty({ example: '2026-10-03' })
+  date!: string;
+
+  @ApiProperty({ enum: FEELINGS, enumName: 'Feeling' })
+  feeling!: Feeling;
+
+  @ApiProperty({ description: 'Events of that day with that feeling.' })
+  count!: number;
+}
+
 export class ArrowsByDayDto {
   @ApiProperty({ example: '2026-10-03' })
   date!: string;
@@ -274,6 +380,33 @@ export class ArrowsByDayDto {
 export class JournalStatsDto {
   @ApiProperty({ type: () => [CompetitionStatDto], description: 'Competitions, oldest first.' })
   competitions!: CompetitionStatDto[];
+
+  @ApiProperty({
+    type: () => [ScoreStatDto],
+    description:
+      'Trainings, coachings and competitions with both a score and a discipline, oldest first.',
+  })
+  scores!: ScoreStatDto[];
+
+  @ApiProperty({
+    type: () => [EventsByDayDto],
+    description: 'Number of events per day and type (days with events only), oldest first.',
+  })
+  eventsByDay!: EventsByDayDto[];
+
+  @ApiProperty({
+    type: () => [FeelingsByDayDto],
+    description:
+      'Physical feeling of the events, counted per day (events with one only), oldest first.',
+  })
+  physicalFeelingsByDay!: FeelingsByDayDto[];
+
+  @ApiProperty({
+    type: () => [FeelingsByDayDto],
+    description:
+      'Mental feeling of the events, counted per day (events with one only), oldest first.',
+  })
+  mentalFeelingsByDay!: FeelingsByDayDto[];
 
   @ApiProperty({
     type: () => [ArrowsByDayDto],
@@ -326,14 +459,13 @@ export class CreateSessionDto {
   date!: string;
 
   @ApiPropertyOptional({
-    type: String,
-    nullable: true,
-    example: '18:30',
-    description: 'Local time (HH:mm); omitted / null = all-day.',
+    format: 'uuid',
+    description:
+      "Required for a `CUSTOM` event (one of the archer's event types), ignored otherwise.",
   })
   @IsOptional()
-  @Matches(TIME, { message: 'startTime must be HH:mm' })
-  startTime?: string | null;
+  @IsUUID()
+  customTypeId?: string;
 }
 
 /** PATCH body: every field optional; `null` clears a field. */
@@ -347,11 +479,6 @@ export class UpdateSessionDto {
   @IsOptional()
   @Matches(DATE, { message: 'date must be YYYY-MM-DD' })
   date?: string;
-
-  @ApiPropertyOptional({ type: String, nullable: true, example: '18:30' })
-  @IsOptional()
-  @Matches(TIME, { message: 'startTime must be HH:mm' })
-  startTime?: string | null;
 
   @ApiPropertyOptional({ type: Number, nullable: true, minimum: 0, maximum: 1440 })
   @IsOptional()
@@ -508,9 +635,6 @@ export class SessionSummaryDto {
   @ApiProperty({ example: '2026-10-03' })
   date!: string;
 
-  @ApiProperty({ type: String, nullable: true, example: '18:30' })
-  startTime!: string | null;
-
   @ApiProperty({ type: Number, nullable: true })
   durationMinutes!: number | null;
 
@@ -548,6 +672,13 @@ export class SessionSummaryDto {
     description: '`OTHER` events only; null = default pictogram.',
   })
   icon!: EventIcon | null;
+
+  @ApiProperty({
+    type: () => CustomEventTypeDto,
+    nullable: true,
+    description: '`CUSTOM` events only: their type, whose title, colour and pictogram they show.',
+  })
+  customType!: CustomEventTypeDto | null;
 
   @ApiProperty({
     description:

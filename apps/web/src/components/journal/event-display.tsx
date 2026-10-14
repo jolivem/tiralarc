@@ -51,24 +51,36 @@ export const EVENT_ICONS: Record<EventIcon, typeof IconNote> = {
   PIN: IconMapPin,
 };
 
-/** Calendar colour and icon of an event: its own for an "other" event, its type's otherwise. */
-export function eventDisplay(session: Pick<JournalSessionSummary, 'type' | 'color' | 'icon'>) {
+type DisplayedSession = Pick<JournalSessionSummary, 'type' | 'color' | 'icon' | 'customType'>;
+
+/**
+ * Calendar colour and icon of an event: its own for an "other" event, its custom type's for a
+ * custom one, its type's otherwise.
+ */
+export function eventDisplay(session: DisplayedSession) {
   const type = SESSION_TYPES[session.type];
-  if (type.form !== 'note') return { color: type.color, icon: type.icon };
+  const own = type.form === 'note' ? session : type.form === 'text' ? session.customType : null;
   return {
-    color: session.color ?? type.color,
-    icon: session.icon ? EVENT_ICONS[session.icon] : type.icon,
+    color: own?.color ?? type.color,
+    icon: own?.icon ? EVENT_ICONS[own.icon] : type.icon,
   };
 }
 
+/**
+ * Why an event is greyed in the calendars, if it is: its review is still to write
+ * ("toComplete"), or, for a type without review, its day is still to come ("upcoming").
+ * `today` is "YYYY-MM-DD".
+ */
+export function pendingReason(
+  session: Pick<JournalSessionSummary, 'completed' | 'date'>,
+  today: string,
+): 'toComplete' | 'upcoming' | null {
+  if (!session.completed) return 'toComplete';
+  return session.date > today ? 'upcoming' : null;
+}
+
 /** An event's icon in its colour (usable from Server Components: the lookup runs here). */
-export function EventIcon({
-  session,
-  size = 32,
-}: {
-  session: Pick<JournalSessionSummary, 'type' | 'color' | 'icon'>;
-  size?: number;
-}) {
+export function EventIcon({ session, size = 32 }: { session: DisplayedSession; size?: number }) {
   const { color, icon: Icon } = eventDisplay(session);
   return <Icon size={size} color={`var(--mantine-color-${color}-filled)`} aria-hidden />;
 }
@@ -76,9 +88,12 @@ export function EventIcon({
 export function ColorPicker({
   value,
   onChange,
+  colors = EVENT_COLORS,
 }: {
   value: EventColor;
   onChange: (color: EventColor) => void;
+  /** The colours offered (all of them by default). */
+  colors?: EventColor[];
 }) {
   const t = useTranslations('journal');
   return (
@@ -87,7 +102,7 @@ export function ColorPicker({
         {t('color')}
       </Text>
       <Group gap="xs" role="radiogroup" aria-label={t('color')}>
-        {EVENT_COLORS.map((color) => (
+        {colors.map((color) => (
           <ColorSwatch
             key={color}
             component="button"

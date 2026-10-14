@@ -1,6 +1,7 @@
 'use server';
 
 import type {
+  CustomEventTypeInput,
   JournalCreate,
   JournalSessionSummary,
   JournalUpdate,
@@ -107,23 +108,48 @@ export async function listSessions(from: string, to: string): Promise<JournalSes
   return result.ok ? result.data : [];
 }
 
-/** Step 1 of the two-step entry: type + date (+ optional time), then open the event's form. */
+/** Step 1 of the two-step entry: type + date, then open the event's form. */
 export async function createSession(input: {
   type: SessionType;
+  /** `CUSTOM` events: which of the archer's types. */
+  customTypeId?: string;
   date: string;
-  startTime?: string | null;
 }): Promise<ActionState> {
   const result = await send(
     (await getAuthedApi()).POST('/api/v1/journal/sessions', {
-      body: {
-        type: input.type,
-        date: input.date,
-        startTime: input.startTime || undefined,
-      },
+      body: { type: input.type, customTypeId: input.customTypeId, date: input.date },
     }),
   );
   if (!result.ok) return result.state;
   return redirect({ href: `/archer/journal/${result.data.id}`, locale: await getLocale() });
+}
+
+/** Defines (no id) or changes one of the archer's event types; the new one's id comes back. */
+export async function saveEventType(
+  id: string | null,
+  values: CustomEventTypeInput,
+): Promise<ActionState & { id?: string }> {
+  const api = await getAuthedApi();
+  const result = await send(
+    id
+      ? api.PATCH('/api/v1/journal/event-types/{id}', { params: { path: { id } }, body: values })
+      : api.POST('/api/v1/journal/event-types', { body: values }),
+  );
+  if (!result.ok) return result.state;
+  refresh();
+  return { id: result.data.id };
+}
+
+/** Its events stay, as "other" events that look the same. */
+export async function deleteEventType(id: string): Promise<ActionState> {
+  const result = await send(
+    (await getAuthedApi()).DELETE('/api/v1/journal/event-types/{id}', {
+      params: { path: { id } },
+    }),
+  );
+  if (!result.ok) return result.state;
+  refresh();
+  return {};
 }
 
 export async function saveSession(id: string, values: JournalSessionUpdate): Promise<ActionState> {

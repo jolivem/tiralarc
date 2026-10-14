@@ -94,7 +94,6 @@ erDiagram
         char36 user_id FK
         enum type "5 types d'événement"
         date date
-        varchar start_time "HH:mm, nul = journée"
         smallint duration_minutes
         varchar location
         enum discipline "7 disciplines"
@@ -177,8 +176,8 @@ Les colonnes `created_at` et `updated_at`, présentes sur presque toutes les tab
 - **Suppressions en cascade** : supprimer un utilisateur supprime tout ce qui lui appartient, et supprimer un
   événement supprime les fiches de ses photos (leurs fichiers sont effacés par l'API, pas par la base).
   Supprimer un journal ne supprime que lui : ses événements restent.
-- **Dates du journal** : `date`, `start_date` et `end_date` sont des jours sans fuseau horaire, et
-  `start_time` un texte `HH:mm` — 18 h reste 18 h sur tous les appareils.
+- **Dates du journal** : `date`, `start_date` et `end_date` sont des jours sans fuseau horaire. Un
+  événement n'a pas d'heure : c'est une entrée du jour.
 - **Colonnes JSON** : `month_themes`, `disciplines`, `went_well` et `to_improve` contiennent de petites
   listes ou structures que l'API valide ; la base ne contrôle pas leur forme.
 - **`user_id` sur `session_photos`** : il est redondant avec l'événement, mais permet à l'API de vérifier

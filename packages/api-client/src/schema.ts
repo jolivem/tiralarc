@@ -332,6 +332,40 @@ export interface paths {
         patch: operations["Journal_update"];
         trace?: never;
     };
+    "/api/v1/journal/event-types": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The archer's own event types (`CUSTOM` events), oldest first */
+        get: operations["EventTypes_list"];
+        put?: never;
+        post: operations["EventTypes_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/journal/event-types/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Deletes an event type; its events become `OTHER` events with its title, colour and pictogram */
+        delete: operations["EventTypes_remove"];
+        options?: never;
+        head?: never;
+        patch: operations["EventTypes_update"];
+        trace?: never;
+    };
     "/api/v1/journal/sessions/{sessionId}/photos": {
         parameters: {
             query?: never;
@@ -686,7 +720,7 @@ export interface components {
             fills: components["schemas"]["FillDto"][];
         };
         /** @enum {string} */
-        SessionType: "TRAINING" | "COACHING" | "COMPETITION" | "STRENGTH" | "OTHER";
+        SessionType: "TRAINING" | "COACHING" | "COMPETITION" | "STRENGTH" | "OTHER" | "CUSTOM";
         /** @enum {string} */
         Discipline: "INDOOR" | "TAE_NATIONAL" | "TAE_INTERNATIONAL" | "THREE_D" | "FIELD" | "BEURSAULT" | "RUN_ARCHERY";
         /**
@@ -699,14 +733,22 @@ export interface components {
          * @enum {string}
          */
         EventIcon: "NOTE" | "STAR" | "FLAG" | "TOOL" | "CART" | "USERS" | "CAR" | "MEDICAL" | "GIFT" | "HEART" | "BELL" | "PIN";
+        CustomEventTypeDto: {
+            /** Format: uuid */
+            id: string;
+            /** @example Kiné */
+            title: string;
+            /** @description Colour of its events in the calendars (the season overview draws them in it). */
+            color: components["schemas"]["EventColor"];
+            /** @description Pictogram of its events in the month calendar. */
+            icon: components["schemas"]["EventIcon"];
+        };
         SessionSummaryDto: {
             /** Format: uuid */
             id: string;
             type: components["schemas"]["SessionType"];
             /** @example 2026-10-03 */
             date: string;
-            /** @example 18:30 */
-            startTime: string | null;
             durationMinutes: number | null;
             location: string | null;
             discipline: components["schemas"]["Discipline"] | null;
@@ -719,6 +761,8 @@ export interface components {
             color: components["schemas"]["EventColor"] | null;
             /** @description `OTHER` events only; null = default pictogram. */
             icon: components["schemas"]["EventIcon"] | null;
+            /** @description `CUSTOM` events only: their type, whose title, colour and pictogram they show. */
+            customType: components["schemas"]["CustomEventTypeDto"] | null;
             /** @description Whether the review of a training, coaching or competition is written: at least one of arrowCount, score, satisfaction, technique, description, physicalFeeling, mentalFeeling, wentWell, toImprove, nextTime is filled. Always true for the other types (nothing to review). Clients fill the review only once the day has come. */
             completed: boolean;
         };
@@ -735,6 +779,35 @@ export interface components {
             score: number | null;
             location: string | null;
         };
+        ScoreStatDto: {
+            /**
+             * Format: uuid
+             * @description Id of the event (session).
+             */
+            id: string;
+            /** @example 2026-10-03 */
+            date: string;
+            /** @description TRAINING, COACHING or COMPETITION. */
+            type: components["schemas"]["SessionType"];
+            discipline: components["schemas"]["Discipline"];
+            score: number;
+        };
+        EventsByDayDto: {
+            /** @example 2026-10-03 */
+            date: string;
+            type: components["schemas"]["SessionType"];
+            /** @description Events of that type on that day. */
+            count: number;
+        };
+        /** @enum {string} */
+        Feeling: "GREAT" | "OK" | "BAD" | "EXHAUSTED";
+        FeelingsByDayDto: {
+            /** @example 2026-10-03 */
+            date: string;
+            feeling: components["schemas"]["Feeling"];
+            /** @description Events of that day with that feeling. */
+            count: number;
+        };
         ArrowsByDayDto: {
             /** @example 2026-10-03 */
             date: string;
@@ -744,6 +817,14 @@ export interface components {
         JournalStatsDto: {
             /** @description Competitions, oldest first. */
             competitions: components["schemas"]["CompetitionStatDto"][];
+            /** @description Trainings, coachings and competitions with both a score and a discipline, oldest first. */
+            scores: components["schemas"]["ScoreStatDto"][];
+            /** @description Number of events per day and type (days with events only), oldest first. */
+            eventsByDay: components["schemas"]["EventsByDayDto"][];
+            /** @description Physical feeling of the events, counted per day (events with one only), oldest first. */
+            physicalFeelingsByDay: components["schemas"]["FeelingsByDayDto"][];
+            /** @description Mental feeling of the events, counted per day (events with one only), oldest first. */
+            mentalFeelingsByDay: components["schemas"]["FeelingsByDayDto"][];
             /** @description Days with a recorded number of arrows, oldest first. */
             arrowsByDay: components["schemas"]["ArrowsByDayDto"][];
         };
@@ -762,21 +843,17 @@ export interface components {
              */
             date: string;
             /**
-             * @description Local time (HH:mm); omitted / null = all-day.
-             * @example 18:30
+             * Format: uuid
+             * @description Required for a `CUSTOM` event (one of the archer's event types), ignored otherwise.
              */
-            startTime?: string | null;
+            customTypeId?: string;
         };
-        /** @enum {string} */
-        Feeling: "GREAT" | "OK" | "BAD" | "EXHAUSTED";
         SessionDto: {
             /** Format: uuid */
             id: string;
             type: components["schemas"]["SessionType"];
             /** @example 2026-10-03 */
             date: string;
-            /** @example 18:30 */
-            startTime: string | null;
             durationMinutes: number | null;
             location: string | null;
             discipline: components["schemas"]["Discipline"] | null;
@@ -789,6 +866,8 @@ export interface components {
             color: components["schemas"]["EventColor"] | null;
             /** @description `OTHER` events only; null = default pictogram. */
             icon: components["schemas"]["EventIcon"] | null;
+            /** @description `CUSTOM` events only: their type, whose title, colour and pictogram they show. */
+            customType: components["schemas"]["CustomEventTypeDto"] | null;
             /** @description Whether the review of a training, coaching or competition is written: at least one of arrowCount, score, satisfaction, technique, description, physicalFeeling, mentalFeeling, wentWell, toImprove, nextTime is filled. Always true for the other types (nothing to review). Clients fill the review only once the day has come. */
             completed: boolean;
             distanceMeters: number | null;
@@ -808,8 +887,6 @@ export interface components {
             type?: components["schemas"]["SessionType"];
             /** @example 2026-10-03 */
             date?: string;
-            /** @example 18:30 */
-            startTime?: string | null;
             durationMinutes?: number | null;
             location?: string | null;
             discipline?: components["schemas"]["Discipline"] | null;
@@ -834,6 +911,18 @@ export interface components {
             title?: string | null;
             color?: components["schemas"]["EventColor"] | null;
             icon?: components["schemas"]["EventIcon"] | null;
+        };
+        CreateCustomEventTypeDto: {
+            /** @example Kiné */
+            title: string;
+            color: components["schemas"]["EventColor"];
+            icon: components["schemas"]["EventIcon"];
+        };
+        UpdateCustomEventTypeDto: {
+            /** @example Kiné */
+            title?: string;
+            color?: components["schemas"]["EventColor"];
+            icon?: components["schemas"]["EventIcon"];
         };
         PhotoDto: {
             /** Format: uuid */
@@ -1917,6 +2006,139 @@ export interface operations {
             };
             /** @description DAY_FULL: moved to a day that already has 4 events */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    EventTypes_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomEventTypeDto"][];
+                };
+            };
+            /** @description Archers only */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    EventTypes_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateCustomEventTypeDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomEventTypeDto"];
+                };
+            };
+            /** @description Archers only */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description LIMIT_REACHED: the archer already has 4 event types */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    EventTypes_remove: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Archers only */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    EventTypes_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateCustomEventTypeDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomEventTypeDto"];
+                };
+            };
+            /** @description Archers only */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

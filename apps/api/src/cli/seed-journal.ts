@@ -157,7 +157,6 @@ try {
           ...sheet(date, true),
           type: SessionType.COMPETITION,
           date,
-          startTime: '09:00',
           durationMinutes: 240,
         });
         break;
@@ -168,7 +167,6 @@ try {
           ...sheet(date, random.chance(0.5), random.int(8, 20) * 6),
           type: SessionType.TRAINING,
           date,
-          startTime: '18:30',
           durationMinutes: 90,
         });
         break;
@@ -178,7 +176,6 @@ try {
           ...base,
           type: SessionType.STRENGTH,
           date,
-          startTime: '10:00',
           durationMinutes: 45,
         });
         break;
@@ -192,7 +189,6 @@ try {
           ...sheet(date, false),
           type: SessionType.COACHING,
           date,
-          startTime: '18:00',
           durationMinutes: 60,
         });
         break;

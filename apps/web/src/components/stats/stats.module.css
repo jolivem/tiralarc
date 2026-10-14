@@ -35,6 +35,69 @@
   line-height: 1.1;
 }
 
+/* The arrows card's span buttons: all as wide, whatever their label ("Tout" / "90 jours"). */
+.equalSegment {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+/* The events card: one column per type (count, bar, icon, name), bars growing from a baseline. */
+.bars {
+  display: grid;
+  grid-template-columns: repeat(var(--bar-count, 5), minmax(0, 1fr));
+  gap: var(--mantine-spacing-xs);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.barColumn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.barTrack {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  width: 100%;
+  height: 180px;
+  border-bottom: 1px solid var(--viz-grid);
+}
+
+.bar {
+  width: min(48px, 70%);
+  min-height: 2px;
+  border-radius: 4px 4px 0 0;
+
+  /* Pastel bars (feelings): a thin edge, so they stand out on light paper. */
+  &[data-outlined] {
+    box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.18);
+  }
+}
+
+/* A feeling's face under its bar: dark on its pastel disc, as on the event sheet once chosen. */
+.face {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+}
+
+/* Read by screen readers only (a button's full name beside its abbreviation). */
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
 .numeric {
   font-variant-numeric: tabular-nums;
 }

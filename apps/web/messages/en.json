@@ -176,14 +176,16 @@
       "COACHING": "Coaching",
       "COMPETITION": "Competition",
       "STRENGTH": "Strength training",
-      "OTHER": "Other"
+      "OTHER": "Other",
+      "CUSTOM": "Custom"
     },
     "typesShort": {
       "TRAINING": "Training",
       "COACHING": "Coaching",
       "COMPETITION": "Competition",
       "STRENGTH": "Strength",
-      "OTHER": "Other"
+      "OTHER": "Other",
+      "CUSTOM": "Custom"
     },
     "disciplines": {
       "INDOOR": "Indoor",
@@ -226,7 +228,11 @@
     "toImprove": "What to improve",
     "nextTime": "Next — for the next session",
     "save": "Save",
-    "saveAndClose": "Save and close",
+    "close": "Close",
+    "leaveTitle": "Leave without saving?",
+    "leaveBody": "Some changes to this sheet have not been saved. If you leave now, they will be lost.",
+    "stay": "Stay on the sheet",
+    "leaveWithoutSaving": "Leave without saving",
     "saved": "Saved.",
     "unsaved": "Unsaved changes",
     "delete": "Delete",
@@ -234,10 +240,23 @@
     "deleteBody": "The event and its sheet will be permanently deleted.",
     "reviewLocked": "Upcoming event: the review can be filled in from the day of the event.",
     "toComplete": "sheet to complete",
+    "upcoming": "upcoming",
+    "futureDateTitle": "Move the event to a future date?",
+    "futureDateBody": "An upcoming event goes back to “to complete”: its review (arrows, score, self-assessment, description and analyses, feelings, what went well and what to improve, next time) will be cleared when you save. Date, duration, place, discipline, distance and objective are kept.",
+    "futureDateConfirm": "Move and clear the review",
+    "legend": "Legend",
+    "customTypes": {
+      "add": "Add an event type",
+      "newTitle": "New event type",
+      "editTitle": "Edit event type",
+      "edit": "Edit “{title}”",
+      "name": "Title",
+      "deleteBody": "Events already recorded with this type are kept: they become “Other” events with the same title, colour and icon."
+    },
     "strengthComing": "The strength training form is coming soon. You can already put the session in your calendar.",
-    "back": "Journal",
     "allDay": "All day",
     "note": "Free text",
+    "customDescription": "Description",
     "title": "Title",
     "titleHint": "Shown in the calendar, with the colour and the pictogram.",
     "color": "Colour",
@@ -466,12 +485,50 @@
     "date": "Date",
     "arrows": "Arrows",
     "cumulativeArrows": "Cumulative arrows",
+    "events": "Events by type",
+    "eventsTotal": "events over the period, up to today",
+    "noEvents": "No events yet.",
+    "otherEvents": "Other",
+    "feelings": {
+      "physical": {
+        "title": "Physical feelings",
+        "total": "events with a physical feeling over the period, up to today",
+        "none": "No physical feeling noted yet: it is chosen on each session's sheet."
+      },
+      "mental": {
+        "title": "Mental feelings",
+        "total": "events with a mental feeling over the period, up to today",
+        "none": "No mental feeling noted yet: it is chosen on each session's sheet."
+      }
+    },
+    "todayShort": "Today",
+    "range": {
+      "label": "Period shown",
+      "7": "7 days",
+      "30": "30 days",
+      "90": "90 days",
+      "180": "180 days",
+      "all": "All"
+    },
     "arrowsTotal": "arrows recorded over the period, all types of events together",
     "noArrows": "No arrow count entered yet: it is filled in on each session's sheet.",
     "scores": "Scores by discipline",
-    "scoresHint": "Competition scores, one line per discipline practised.",
-    "noScores": "No competition with both a score and a discipline yet.",
-    "today": "Today",
+    "scoresHint": "One line per discipline practised.",
+    "noScores": "No training, coaching or competition with both a score and a discipline yet.",
+    "noScoresOfType": "No score with a discipline for this type of event up to today.",
+    "scoreTypes": {
+      "label": "Events shown",
+      "COMPETITION": "Competitions",
+      "TRAINING": "Trainings",
+      "COACHING": "Coachings",
+      "all": "All",
+      "short": {
+        "COMPETITION": "Comp.",
+        "TRAINING": "Train.",
+        "COACHING": "Coach.",
+        "all": "All"
+      }
+    },
     "period": "Period of the indicators",
     "allTime": "All time",
     "allTimeIntro": "All your events, every season together."

@@ -16,6 +16,24 @@
   }
 }
 
+/* An archer's own type: its card, with an edit button in the corner (not inside the card). */
+.customTypeCell {
+  position: relative;
+  display: grid;
+
+  & > :last-child:not(:first-child) {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+  }
+}
+
+/* "+": defines a new type of event. */
+.addTypeCard {
+  border-style: dashed;
+  color: var(--mantine-color-dimmed);
+}
+
 /*
  * A day's events in the month view (journal-view.tsx, renderEvent): Mantine places the
  * entry over the room under the day's number; it holds 1 to 4 icons, as large as they
@@ -203,13 +221,21 @@
 }
 
 /*
- * Chips spread over lines: each row of chips (23px, Mantine's xs) plus the gap under it is
- * one line, and the padding makes the whole a whole number of lines.
+ * Chips spread over lines (disciplines, quick distances): each chip takes a whole line band
+ * and rests on its ruled line (1px above it, as the band's last pixel is the line), so every
+ * row of chips sits on a line whatever their height. The class is doubled to win over the
+ * Group's own gap, which would push the rows off the ruling.
  */
-.chipLines {
-  column-gap: 6px;
-  row-gap: calc(var(--step, 30px) - 23px);
-  padding-block: 3px 4px;
+.chipLines.chipLines {
+  gap: 0 6px;
+  padding: 0;
+
+  & > * {
+    display: flex;
+    align-items: flex-end;
+    height: var(--step, 30px);
+    padding-bottom: 1px;
+  }
 }
 
 /* Delete / save / save-and-close bar, above the sheet: stays under the header while scrolling. */
@@ -833,6 +859,10 @@
     width: 6px;
     height: 6px;
     border-radius: 50%;
+  }
+
+  & i[data-pending] {
+    opacity: 0.4;
   }
 }
 
