@@ -11,11 +11,12 @@ import {
   Matches,
   MaxLength,
 } from 'class-validator';
-import { AgeCategory, BowType, Discipline } from '../../generated/prisma/client.js';
+import { AgeCategory, BowType, Discipline, Indicator } from '../../generated/prisma/client.js';
 
 const CATEGORIES = Object.values(AgeCategory);
 const BOW_TYPES = Object.values(BowType);
 const DISCIPLINES = Object.values(Discipline);
+const INDICATORS = Object.values(Indicator);
 export const INVITATION_STATUSES = ['PENDING', 'ACCEPTED'] as const;
 export type InvitationStatus = (typeof INVITATION_STATUSES)[number];
 /** Font ids are client-side catalogue keys, like decoration themes. */
@@ -43,6 +44,14 @@ export class ProfileDto {
       "Font of the calendars' weekdays and day numbers: an id each client maps to its own font; null = the client's default.",
   })
   calendarFont!: string | null;
+
+  @ApiProperty({
+    enum: INDICATORS,
+    enumName: 'Indicator',
+    nullable: true,
+    description: 'The indicator shown on the home page; null = none.',
+  })
+  favoriteIndicator!: Indicator | null;
 }
 
 /** PATCH body: every field optional; `null` clears a field. */
@@ -85,6 +94,16 @@ export class UpdateProfileDto {
   @IsOptional()
   @Matches(FONT, { message: 'calendarFont must be a lowercase slug' })
   calendarFont?: string | null;
+
+  @ApiPropertyOptional({
+    enum: INDICATORS,
+    enumName: 'Indicator',
+    nullable: true,
+    description: 'The indicator shown on the home page; null for none.',
+  })
+  @IsOptional()
+  @IsIn(INDICATORS)
+  favoriteIndicator?: Indicator | null;
 }
 
 export class CreateInvitationDto {

@@ -814,6 +814,12 @@ export interface components {
             /** @description Arrows shot that day, all types of events together. */
             arrows: number;
         };
+        DurationsByDayDto: {
+            /** @example 2026-10-03 */
+            date: string;
+            /** @description Minutes spent that day, all types of events together. */
+            minutes: number;
+        };
         JournalStatsDto: {
             /** @description Competitions, oldest first. */
             competitions: components["schemas"]["CompetitionStatDto"][];
@@ -827,6 +833,8 @@ export interface components {
             mentalFeelingsByDay: components["schemas"]["FeelingsByDayDto"][];
             /** @description Days with a recorded number of arrows, oldest first. */
             arrowsByDay: components["schemas"]["ArrowsByDayDto"][];
+            /** @description Days with a recorded duration, oldest first. */
+            durationsByDay: components["schemas"]["DurationsByDayDto"][];
         };
         SessionSuggestionsDto: {
             locations: string[];
@@ -995,6 +1003,11 @@ export interface components {
         AgeCategory: "U11" | "U13" | "U15" | "U18" | "U21" | "S1" | "S2" | "S3";
         /** @enum {string} */
         BowType: "RECURVE" | "COMPOUND" | "BAREBOW" | "LONGBOW" | "HUNTING" | "FREE";
+        /**
+         * @description The indicator shown on the home page; null = none.
+         * @enum {string}
+         */
+        Indicator: "ARROWS" | "DURATIONS" | "SCORES" | "EVENTS" | "COMPETITIONS" | "PHYSICAL_FEELINGS" | "MENTAL_FEELINGS";
         ProfileDto: {
             /** @example 0123456A */
             licenceNumber: string | null;
@@ -1006,6 +1019,8 @@ export interface components {
              * @example dancing-script
              */
             calendarFont: string | null;
+            /** @description The indicator shown on the home page; null = none. */
+            favoriteIndicator: components["schemas"]["Indicator"] | null;
         };
         UpdateProfileDto: {
             licenceNumber?: string | null;
@@ -1018,6 +1033,8 @@ export interface components {
              * @example dancing-script
              */
             calendarFont?: string | null;
+            /** @description The indicator shown on the home page; null for none. */
+            favoriteIndicator?: components["schemas"]["Indicator"] | null;
         };
         /** @enum {string} */
         InvitationStatus: "PENDING" | "ACCEPTED";

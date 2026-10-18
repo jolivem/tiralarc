@@ -16,12 +16,15 @@ export type NotebookPages =
 export function Notebook({
   label,
   plain = false,
+  squared = false,
   ...pages
 }: NotebookPages & {
   /** Accessible name of the whole spread. */
   label?: string;
   /** Unruled paper (the margin line stays), e.g. under a calendar. */
   plain?: boolean;
+  /** Squared paper ("petits carreaux", no margin line), e.g. under charts. */
+  squared?: boolean;
 }) {
   return (
     <div
@@ -29,6 +32,7 @@ export function Notebook({
       role="group"
       aria-label={label}
       data-plain={plain || undefined}
+      data-squared={squared || undefined}
     >
       {pages.right === undefined ? (
         <section className={classes.page}>{pages.children}</section>

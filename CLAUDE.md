@@ -77,12 +77,15 @@ the same API — keep it client-agnostic (no cookies, no web-only assumptions in
   only. `OTHER` ("Divers") is no longer offered but old events keep it; deleting a custom type turns its events
   into `OTHER` events with the same title / colour / icon.
 - Indicators (`/archer/stats`): `GET /journal/sessions/stats?from&to` (both optional = all time) returns raw figures
-  (competitions, `scores` of trainings / coachings / competitions, arrows per day, `eventsByDay` per type,
+  (competitions, `scores` of trainings / coachings / competitions, arrows and minutes per day, `eventsByDay` per type,
   `physicalFeelingsByDay` / `mentalFeelingsByDay`; the events and feelings cards are HTML histograms, `BarColumns`, above the type icons /
-  the faces of `components/journal/feelings.ts`; custom and "Divers" events count as "Autre"); charts stop at today, written "Auj."
+  the faces of `components/journal/feelings.ts`; the events card shows the built-in types only: custom and "Divers" events are left out); charts stop at today, written "Auj."
   on the axis (`withToday`), with a centred choice bar (`ChoiceBar`) on top; the web draws them with
   `@mantine/charts` (`components/stats/`). Chart colours are CSS variables in `stats.module.css` (light + dark sets
   checked for colour-blind separation); a discipline keeps its colour slot (`disciplineColor`).
+  A star on each card (goals aside) picks the favourite indicator (`favoriteIndicator` in the API's archer
+  profile, `components/stats/favorite.tsx`), shown on the right page of the archer home notebook
+  (`lib/stats.ts` loads the figures for both pages).
 - Goals (`apps/api/src/goals/`, card on the Indicators page): type, description, the day it was set (`createdOn`,
   editable) and the day it was reached (`achievedOn`; null = not reached — there is no separate boolean). They belong
   to the archer, not to a journal or period.

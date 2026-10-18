@@ -352,7 +352,7 @@ export class JournalService {
       userId,
       date: { gte: from ? toDbDate(from) : undefined, lte: to ? toDbDate(to) : undefined },
     };
-    const [competitions, scores, arrows, events, physical, mental] = await Promise.all([
+    const [competitions, scores, arrows, durations, events, physical, mental] = await Promise.all([
       this.prisma.journalSession.findMany({
         where: { ...period, type: SessionType.COMPETITION },
         orderBy: [{ date: 'asc' }, { createdAt: 'asc' }],
@@ -379,6 +379,12 @@ export class JournalService {
         by: ['date'],
         where: { ...period, arrowCount: { gt: 0 } },
         _sum: { arrowCount: true },
+        orderBy: { date: 'asc' },
+      }),
+      this.prisma.journalSession.groupBy({
+        by: ['date'],
+        where: { ...period, durationMinutes: { gt: 0 } },
+        _sum: { durationMinutes: true },
         orderBy: { date: 'asc' },
       }),
       this.prisma.journalSession.groupBy({
@@ -409,6 +415,10 @@ export class JournalService {
       arrowsByDay: arrows.map((day) => ({
         date: fromDbDate(day.date),
         arrows: day._sum.arrowCount ?? 0,
+      })),
+      durationsByDay: durations.map((day) => ({
+        date: fromDbDate(day.date),
+        minutes: day._sum.durationMinutes ?? 0,
       })),
       eventsByDay: events.map((day) => ({
         date: fromDbDate(day.date),

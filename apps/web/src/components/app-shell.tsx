@@ -71,8 +71,9 @@ export function TiralarcShell({ user, children }: { user: ShellUser | null; chil
       }
       footer={hasSections ? { height: { base: 64, sm: 0 } } : undefined}
       padding="md"
-      // Archer area: a desk; on phones, the tab bar edged with the colour of the open divider.
-      className={hasSections ? classes.desk : undefined}
+      // Archer area and visitors' home page: a desk; on phones, the archer tab bar edged with
+      // the colour of the open divider.
+      className={hasSections || (!user && pathname === '/') ? classes.desk : undefined}
       style={
         current
           ? ({ ...tabColors(current), '--open-tab': 'var(--tab-filled)' } as CSSProperties)
@@ -104,7 +105,7 @@ export function TiralarcShell({ user, children }: { user: ShellUser | null; chil
             >
               <IconTarget size={26} color="var(--mantine-primary-color-filled)" />
               <Text fw={700} size="lg">
-                Tiralarc
+                MyArcheryDiary
               </Text>
             </Link>
           </Group>

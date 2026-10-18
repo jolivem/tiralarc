@@ -1,14 +1,14 @@
 'use client';
 
-import { Anchor, Group, HoverCard, Stack, Text } from '@mantine/core';
+import { Anchor, Group, HoverCard, Paper, Stack, Text } from '@mantine/core';
 import type { CustomEventType } from '@tiralarc/api-client';
 import { useTranslations } from 'next-intl';
 import { EVENT_ICONS } from './event-display';
 import type { EventIconComponent } from './image-icon';
 import { SESSION_TYPE_ORDER, SESSION_TYPES } from './session-types';
 
-/** "Legend" link: hovering it shows each event type, the archer's own included, with its icon. */
-export function EventLegend({ customTypes }: { customTypes: CustomEventType[] }) {
+/** Each event type, the archer's own included, with its icon in its colour. */
+function useLegendRows(customTypes: CustomEventType[]) {
   const t = useTranslations('journal');
   const rows: { key: string; color: string; icon: EventIconComponent; label: string }[] = [
     ...SESSION_TYPE_ORDER.map((type) => ({
@@ -24,6 +24,13 @@ export function EventLegend({ customTypes }: { customTypes: CustomEventType[] })
       label: custom.title,
     })),
   ];
+  return rows;
+}
+
+/** "Legend" link: hovering it shows each event type, the archer's own included, with its icon. */
+export function EventLegend({ customTypes }: { customTypes: CustomEventType[] }) {
+  const t = useTranslations('journal');
+  const rows = useLegendRows(customTypes);
   return (
     <HoverCard position="bottom-end" shadow="md" withArrow openDelay={100} closeDelay={100}>
       <HoverCard.Target>
@@ -42,5 +49,52 @@ export function EventLegend({ customTypes }: { customTypes: CustomEventType[] })
         </Stack>
       </HoverCard.Dropdown>
     </HoverCard>
+  );
+}
+
+/** A coloured dot as under the days of the season's calendar (MonthsOverview); paler if pending. */
+function Dot({ color, pending = false }: { color: string; pending?: boolean }) {
+  return (
+    <span
+      aria-hidden
+      style={{
+        width: 10,
+        height: 10,
+        flex: 'none',
+        borderRadius: '50%',
+        background: `var(--mantine-color-${color}-filled)`,
+        opacity: pending ? 0.4 : 1,
+      }}
+    />
+  );
+}
+
+/**
+ * The legend of the season's calendar, in a small framed box: each type's dot colour side by
+ * side, then what a paler dot means.
+ */
+export function EventLegendPanel({ customTypes }: { customTypes: CustomEventType[] }) {
+  const t = useTranslations('journal');
+  const rows = useLegendRows(customTypes);
+  return (
+    <Paper withBorder radius="md" px="md" py="xs" w="fit-content" maw="100%" mx="auto">
+      <Group gap="xs" wrap="wrap" justify="center" role="list" aria-label={t('legend')}>
+        <Text size="sm" fw={600} mr="xs">
+          {t('legend')}
+        </Text>
+        {rows.map(({ key, color, label }) => (
+          <Group key={key} gap={6} wrap="nowrap" role="listitem" mr="sm">
+            <Dot color={color} />
+            <Text size="sm">{label}</Text>
+          </Group>
+        ))}
+        <Group gap={6} wrap="nowrap" role="listitem">
+          <Dot color="gray" pending />
+          <Text size="sm" c="dimmed">
+            {t('legendPending')}
+          </Text>
+        </Group>
+      </Group>
+    </Paper>
   );
 }

@@ -88,7 +88,7 @@ export function generateStaticParams() {
 export async function generateMetadata({ params }: LayoutProps<'/[locale]'>): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale: locale as 'fr' | 'en', namespace: 'home' });
-  return { title: 'Tiralarc', description: t('tagline') };
+  return { title: 'MyArcheryDiary', description: t('tagline') };
 }
 
 export default async function LocaleLayout({ children, params }: LayoutProps<'/[locale]'>) {

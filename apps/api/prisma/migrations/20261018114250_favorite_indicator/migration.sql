@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE `archer_profiles` ADD COLUMN `favorite_indicator` ENUM('ARROWS', 'DURATIONS', 'SCORES', 'EVENTS', 'COMPETITIONS', 'PHYSICAL_FEELINGS', 'MENTAL_FEELINGS') NULL;

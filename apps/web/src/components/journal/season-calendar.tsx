@@ -1,12 +1,13 @@
 'use client';
 
-import { Center, Loader, Modal } from '@mantine/core';
+import { Center, Loader, Modal, Stack } from '@mantine/core';
 import { useMediaQuery } from '@mantine/hooks';
-import type { Journal, JournalSessionSummary } from '@tiralarc/api-client';
+import type { CustomEventType, Journal, JournalSessionSummary } from '@tiralarc/api-client';
 import dayjs from 'dayjs';
 import { useTranslations } from 'next-intl';
 import { type ReactNode, useState, useTransition } from 'react';
 import { listSessions } from '@/app/actions/journal';
+import { EventLegendPanel } from './event-legend';
 import { MonthsOverview } from './months-overview';
 import classes from './season-calendar.module.css';
 
@@ -47,11 +48,14 @@ async function eventsOf(startDate: string, endDate: string): Promise<JournalSess
 export function SeasonCalendar({
   journal,
   today,
+  customTypes,
   children,
 }: {
   journal: Pick<Journal, 'title' | 'startDate' | 'endDate'>;
   /** "YYYY-MM-DD", decided by the server so both renders agree. */
   today: string;
+  /** The archer's own event types, for the legend above the months. */
+  customTypes: CustomEventType[];
   /** What opens it: the months shown on the page. */
   children: ReactNode;
 }) {
@@ -102,13 +106,17 @@ export function SeasonCalendar({
             <Loader />
           </Center>
         ) : (
-          <MonthsOverview
-            months={monthsOf(journal.startDate, journal.endDate)}
-            today={today}
-            sessions={sessions}
-            cols={{ base: 1, xs: 2, md: 3, lg: 4 }}
-            linkToJournal
-          />
+          <Stack gap="md">
+            {/* What each event's icon and colour stand for. */}
+            <EventLegendPanel customTypes={customTypes} />
+            <MonthsOverview
+              months={monthsOf(journal.startDate, journal.endDate)}
+              today={today}
+              sessions={sessions}
+              cols={{ base: 1, xs: 2, md: 3, lg: 4 }}
+              linkToJournal
+            />
+          </Stack>
         )}
       </Modal>
     </>

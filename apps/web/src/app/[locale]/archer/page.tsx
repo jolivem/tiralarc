@@ -7,9 +7,13 @@ import { SeasonCalendar } from '@/components/journal/season-calendar';
 import { HandHeading, HandNote, Notebook } from '@/components/notebook/notebook';
 import { SectionCard } from '@/components/section-card';
 import type { Locale } from '@/i18n/routing';
+import { FavoriteIndicatorProvider } from '@/components/stats/favorite';
+import { IndicatorCard } from '@/components/stats/favorite-card';
 import { getAuthedApi } from '@/lib/api';
+import { getArcherProfile } from '@/lib/archer-profile';
 import { getCurrentUser } from '@/lib/current-user';
 import { getJournals, getSelectedJournal } from '@/lib/journals';
+import { getStats } from '@/lib/stats';
 
 type NoteSection = 'journal' | 'sheets' | 'stats' | 'profile';
 /** The sections' sticky notes: two at the bottom of each page. */
@@ -31,11 +35,17 @@ export default async function ArcherHomePage({ params }: PageProps<'/[locale]/ar
   const t = await getTranslations('archer');
   const tJournals = await getTranslations('journals');
   const format = await getFormatter();
-  const [user, journals, selected] = await Promise.all([
+  const [user, journals, selected, profile, { data: customTypes }] = await Promise.all([
     getCurrentUser(),
     getJournals(),
     getSelectedJournal(),
+    getArcherProfile(),
+    // For the legend of the whole season's calendar.
+    (await getAuthedApi()).GET('/api/v1/journal/event-types'),
   ]);
+  // The favourite indicator (starred on the Indicators page), over the selected journal.
+  const favorite = profile?.favoriteIndicator ?? null;
+  const favoriteStats = favorite ? await getStats(selected ?? null) : null;
 
   // The selected journal's events over the months shown: those dated within its period.
   const today = new Date().toISOString().slice(0, 10);
@@ -90,7 +100,7 @@ export default async function ArcherHomePage({ params }: PageProps<'/[locale]/ar
         <div>
           <HandHeading>{t('calendar')}</HandHeading>
           {/* A click opens the whole season. */}
-          <SeasonCalendar journal={selected} today={today}>
+          <SeasonCalendar journal={selected} today={today} customTypes={customTypes ?? []}>
             <MonthsOverview
               months={months}
               today={today}
@@ -109,9 +119,22 @@ export default async function ArcherHomePage({ params }: PageProps<'/[locale]/ar
     </Stack>
   );
 
+  // On the right, under the day: the favourite indicator, its star filled (a click there
+  // takes it off the home page).
   const right = (
     <Stack gap="xl" h="100%">
       <Box visibleFrom="md">{date}</Box>
+      {favorite && favoriteStats && (
+        <FavoriteIndicatorProvider initial={favorite}>
+          <IndicatorCard
+            compact
+            indicator={favorite}
+            stats={favoriteStats.stats}
+            period={favoriteStats.span}
+            today={favoriteStats.today}
+          />
+        </FavoriteIndicatorProvider>
+      )}
       <Box mt="auto">{notes(RIGHT_NOTES, LEFT_NOTES.length)}</Box>
     </Stack>
   );

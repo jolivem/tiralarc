@@ -43,6 +43,7 @@ describe('Profile (e2e)', () => {
       bowType: null,
       disciplines: [],
       calendarFont: null,
+      favoriteIndicator: null,
     });
 
     const saved = await http()
@@ -54,6 +55,7 @@ describe('Profile (e2e)', () => {
         bowType: 'RECURVE',
         disciplines: ['INDOOR', 'BEURSAULT', 'RUN_ARCHERY'],
         calendarFont: 'great-vibes',
+        favoriteIndicator: 'DURATIONS',
       })
       .expect(200);
     expect(saved.body).toEqual({
@@ -62,19 +64,21 @@ describe('Profile (e2e)', () => {
       bowType: 'RECURVE',
       disciplines: ['INDOOR', 'BEURSAULT', 'RUN_ARCHERY'],
       calendarFont: 'great-vibes',
+      favoriteIndicator: 'DURATIONS',
     });
 
     // Partial update; null clears a field.
     const cleared = await http()
       .patch('/api/v1/profile')
       .set(as(archer))
-      .send({ category: null, disciplines: [], calendarFont: null })
+      .send({ category: null, disciplines: [], calendarFont: null, favoriteIndicator: null })
       .expect(200);
     expect(cleared.body).toMatchObject({
       category: null,
       bowType: 'RECURVE',
       disciplines: [],
       calendarFont: null,
+      favoriteIndicator: null,
     });
 
     const bad = await http()
@@ -85,6 +89,7 @@ describe('Profile (e2e)', () => {
         bowType: 'CROSSBOW',
         disciplines: ['INDOOR', 'INDOOR'],
         calendarFont: 'Comic Sans!',
+        favoriteIndicator: 'GOALS',
       })
       .expect(400);
     expect(bad.body.errors.map((e: { field: string }) => e.field).sort()).toEqual([
@@ -92,6 +97,7 @@ describe('Profile (e2e)', () => {
       'calendarFont',
       'category',
       'disciplines',
+      'favoriteIndicator',
     ]);
 
     // Each archer has their own profile.

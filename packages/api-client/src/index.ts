@@ -39,6 +39,7 @@ export type SessionPhoto = Schemas['PhotoDto'];
 export type SessionType = Schemas['SessionDto']['type'];
 export type Discipline = NonNullable<Schemas['SessionDto']['discipline']>;
 export type Feeling = NonNullable<Schemas['SessionDto']['physicalFeeling']>;
+export type Indicator = NonNullable<Schemas['ProfileDto']['favoriteIndicator']>;
 
 /**
  * Stable error codes (apps/api/src/common/errors.ts). Clients translate these;

@@ -4,7 +4,6 @@ import {
   ActionIcon,
   Badge,
   Button,
-  Card,
   Checkbox,
   Group,
   Modal,
@@ -13,7 +12,6 @@ import {
   Stack,
   Text,
   Textarea,
-  Title,
 } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
 import { useMediaQuery } from '@mantine/hooks';
@@ -24,6 +22,7 @@ import { useOptimistic, useState, useTransition } from 'react';
 import { createGoal, deleteGoal, updateGoal } from '@/app/actions/goals';
 import { FormError, useFieldError } from '@/components/form-feedback';
 import type { ActionState } from '@/lib/action-state';
+import { SquaredCard, StatsCardTitle } from './stats-cards';
 import classes from './stats.module.css';
 
 const GOAL_TYPES: GoalType[] = ['SPORT', 'TECHNIQUE', 'PHYSICAL', 'PERSONAL'];
@@ -72,12 +71,10 @@ export function GoalsCard({ goals, today }: { goals: Goal[]; today: string }) {
   };
 
   return (
-    <Card withBorder radius="lg" padding="lg">
+    <SquaredCard>
       <Stack gap="md">
-        <Group justify="space-between" wrap="nowrap">
-          <Title order={2} size="h5" tt="uppercase" c="dimmed" lts={0.5}>
-            {t('title')}
-          </Title>
+        <Group justify="space-between" align="flex-end" wrap="nowrap">
+          <StatsCardTitle>{t('title')}</StatsCardTitle>
           <Button
             variant="light"
             size="xs"
@@ -221,7 +218,7 @@ export function GoalsCard({ goals, today }: { goals: Goal[]; today: string }) {
           </Stack>
         )}
       </Modal>
-    </Card>
+    </SquaredCard>
   );
 }
 

@@ -11,9 +11,9 @@
   --series-5: #e87ba4;
   --series-6: #008300;
   --series-7: #4a3aa7;
-  --viz-grid: #e1e0d9;
+  --viz-grid: #b3b1a8;
   --viz-axis: #898781;
-  --viz-today: #c3c2b7;
+  --viz-today: #9d9b91;
 
   @mixin dark {
     --series-1: #3987e5;
@@ -23,16 +23,172 @@
     --series-5: #d55181;
     --series-6: #008300;
     --series-7: #9085e9;
-    --viz-grid: #3a3a3a;
+    --viz-grid: #5a5a5a;
     --viz-axis: #898781;
-    --viz-today: #5c5c5c;
+    --viz-today: #7a7a7a;
   }
+}
+
+/*
+ * A card on the squared paper (SquaredCard): see-through, edged in black ink, its height
+ * a whole number of squares. Border + padding make one square, so its title (two squares
+ * high, the text set at the bottom) has its baseline on the second line inside.
+ */
+.squaredCard {
+  /* Set on the card's border inline: Mantine's own border colour would win over a class. */
+  --frame-color: #000;
+
+  /* For the favourite star in its corner. */
+  position: relative;
+
+  /* On the dark paper, the page's light ink instead. */
+  @mixin dark {
+    --frame-color: var(--paper-ink);
+  }
+}
+
+/*
+ * The charts themselves (and the competitions' table, `.tableBox`) on white, in the
+ * see-through cards over the squared paper.
+ */
+.tableBox {
+  /* Line + 5px above and below + 1px border: each row is --row high. */
+  --row-line: 18px;
+  --row: 29px;
+
+  /* The header and 10 rows show; the others scroll under the sticky header, never sideways. */
+  max-height: calc(var(--row) * 11);
+  overflow: hidden auto !important;
+
+  & :is(th, td) {
+    line-height: var(--row-line);
+  }
+}
+
+/* A place too long for the card ends in "…" (the full name shows on hover). */
+.clipped {
+  max-width: 0;
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.viz {
+  --chart-bg: #fff;
+
+  @mixin dark {
+    --chart-bg: var(--mantine-color-dark-7);
+  }
+
+  & :global(.mantine-AreaChart-root),
+  & :global(.mantine-LineChart-root),
+  & .bars,
+  & .tableBox {
+    box-sizing: content-box;
+    padding: 8px;
+    border-radius: var(--mantine-radius-lg);
+    background: var(--chart-bg);
+  }
+
+  /* No inner margin above the sticky header, or rows would show through it. */
+  & .tableBox {
+    padding: 0;
+  }
+
+  /*
+   * The header in pastel pink, dark text in both modes. On the cells themselves: Mantine
+   * gives each sticky header cell the page's background, over the row's.
+   */
+  & .tableBox th {
+    background-color: var(--mantine-color-pink-1);
+    color: var(--mantine-color-dark-7);
+  }
+}
+
+/*
+ * The favourite star, centred on the card's top right square (--corner-x / --corner-y, set
+ * by SquaredCard); off the squared paper, near the top right corner.
+ */
+.cornerStar {
+  position: absolute;
+  top: var(--corner-y, 28px);
+  left: var(--corner-x, calc(100% - 28px));
+  translate: -50% -50%;
+  line-height: 0;
+}
+
+/*
+ * A card at half height (the home page's favourite indicator): charts, bars and table half
+ * as high, slightly smaller text. Mantine sets the charts' height and the title's size
+ * inline, hence the !important.
+ */
+.compact {
+  & :global(.mantine-AreaChart-root),
+  & :global(.mantine-LineChart-root) {
+    height: 140px !important;
+  }
+
+  & .barTrack {
+    height: 90px;
+  }
+
+  & .bars {
+    margin-top: var(--mantine-spacing-xs);
+  }
+
+  & .barColumn svg {
+    width: 24px;
+    height: 24px;
+  }
+
+  & .face {
+    width: 30px;
+    height: 30px;
+  }
+
+  & .tableBox {
+    max-height: calc(var(--row) * 6);
+  }
+
+  & .cardTitle {
+    font-size: 1.35rem !important;
+  }
+
+  & .figure {
+    font-size: 1.4rem;
+  }
+}
+
+.cardTitle {
+  display: flex;
+  align-items: flex-end;
+  height: calc(var(--square, 20px) * 2);
+  /* From the bottom of the line box down to the baseline, about a sixth of the size. */
+  translate: 0 0.17em;
 }
 
 .figure {
   font-size: 2rem;
   font-weight: 700;
   line-height: 1.1;
+}
+
+/*
+ * The choice bars, framed in a firm grey, the buttons parted by grey lines too — all of
+ * them, where Mantine hides those beside the selected button.
+ */
+.choiceBar {
+  --choice-line: var(--mantine-color-gray-6);
+
+  border: 2px solid var(--choice-line);
+
+  @mixin dark {
+    --choice-line: var(--mantine-color-dark-2);
+  }
+}
+
+.choiceBar .equalSegment:not(:first-of-type)::before {
+  --separator-color: var(--choice-line) !important;
 }
 
 /* The arrows card's span buttons: all as wide, whatever their label ("Tout" / "90 jours"). */
@@ -46,7 +202,8 @@
   display: grid;
   grid-template-columns: repeat(var(--bar-count, 5), minmax(0, 1fr));
   gap: var(--mantine-spacing-xs);
-  margin: 0;
+  /* Room between the choice bar above and the tallest bar's count. */
+  margin: var(--mantine-spacing-lg) 0 0;
   padding: 0;
   list-style: none;
 }
@@ -68,7 +225,7 @@
 }
 
 .bar {
-  width: min(48px, 70%);
+  width: min(32px, 47%);
   min-height: 2px;
   border-radius: 4px 4px 0 0;
 

@@ -251,20 +251,33 @@ enum BowType {
 
 /// An archer's sport details. Created on first save.
 model ArcherProfile {
-  userId        String       @id @map("user_id") @db.Char(36)
-  licenceNumber String?      @map("licence_number") @db.VarChar(20)
-  category      AgeCategory?
-  bowType       BowType?     @map("bow_type")
+  userId            String       @id @map("user_id") @db.Char(36)
+  licenceNumber     String?      @map("licence_number") @db.VarChar(20)
+  category          AgeCategory?
+  bowType           BowType?     @map("bow_type")
   /// Array of `Discipline` values.
-  disciplines   Json
+  disciplines       Json
   /// Font id of the calendars' days (each client maps it to its own font); null = the client's default.
-  calendarFont  String?      @map("calendar_font") @db.VarChar(30)
-  createdAt     DateTime     @default(now()) @map("created_at") @db.DateTime(3)
-  updatedAt     DateTime     @updatedAt @map("updated_at") @db.DateTime(3)
+  calendarFont      String?      @map("calendar_font") @db.VarChar(30)
+  /// The indicator shown on the home page; null = none.
+  favoriteIndicator Indicator?   @map("favorite_indicator")
+  createdAt         DateTime     @default(now()) @map("created_at") @db.DateTime(3)
+  updatedAt         DateTime     @updatedAt @map("updated_at") @db.DateTime(3)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("archer_profiles")
+}
+
+/// The indicators an archer can pick as favourite (the goals are not one of them).
+enum Indicator {
+  ARROWS
+  DURATIONS
+  SCORES
+  EVENTS
+  COMPETITIONS
+  PHYSICAL_FEELINGS
+  MENTAL_FEELINGS
 }
 
 /// Someone an archer invited by email (e.g. their coach). Accepting gives no access yet.

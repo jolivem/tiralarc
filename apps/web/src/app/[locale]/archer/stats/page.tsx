@@ -2,22 +2,27 @@ import { SimpleGrid, Stack } from '@mantine/core';
 import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/server';
 import { SectionPage } from '@/components/section-page';
 import { ALL_TIME } from '@/components/stats/chart-utils';
+import { FavoriteIndicatorProvider } from '@/components/stats/favorite';
 import { GoalsCard } from '@/components/stats/goals-card';
 import { PeriodSelect } from '@/components/stats/period-select';
 import {
   ArrowsCard,
   CompetitionsCard,
+  DurationsCard,
   EventsCard,
   FeelingsCard,
   ScoresCard,
 } from '@/components/stats/stats-cards';
 import type { Locale } from '@/i18n/routing';
 import { getAuthedApi } from '@/lib/api';
+import { getArcherProfile } from '@/lib/archer-profile';
 import { getJournals, getSelectedJournal } from '@/lib/journals';
+import { getStats } from '@/lib/stats';
 
 /**
  * Indicators over a period chosen on the page (`?period=`): the period of one
- * journal — by default the selected one — or all time.
+ * journal — by default the selected one — or all time. A star on each card (the goals
+ * aside) picks the one shown on the home page.
  */
 export default async function ArcherStatsPage({
   params,
@@ -34,40 +39,12 @@ export default async function ArcherStatsPage({
   const journal =
     period === ALL_TIME ? null : (journals.find((j) => j.id === period) ?? selected ?? null);
 
-  const api = await getAuthedApi();
-  const [{ data: stats }, { data: goals }] = await Promise.all([
-    api.GET('/api/v1/journal/sessions/stats', {
-      params: { query: journal ? { from: journal.startDate, to: journal.endDate } : {} },
-    }),
+  const [{ stats, span, today }, { data: goals }, profile] = await Promise.all([
+    getStats(journal),
     // Goals are the archer's, whatever the period shown.
-    api.GET('/api/v1/goals'),
+    (await getAuthedApi()).GET('/api/v1/goals'),
+    getArcherProfile(),
   ]);
-  const {
-    competitions,
-    scores,
-    arrowsByDay,
-    eventsByDay,
-    physicalFeelingsByDay,
-    mentalFeelingsByDay,
-  } = stats ?? {
-    competitions: [],
-    scores: [],
-    arrowsByDay: [],
-    eventsByDay: [],
-    physicalFeelingsByDay: [],
-    mentalFeelingsByDay: [],
-  };
-
-  // Decided here so the server and the browser draw the same "today" marker.
-  const today = new Date().toISOString().slice(0, 10);
-  // All time: the charts span from the first recorded event to the last one, or to today if
-  // later (so the arrows card's "last n days" end today).
-  const days = [...competitions.map((c) => c.date), ...arrowsByDay.map((d) => d.date)].sort();
-  const last = days.at(-1) ?? today;
-  const span = journal ?? {
-    startDate: days[0] ?? today,
-    endDate: last > today ? last : today,
-  };
   // Noon, so the calendar day is the same in every time zone.
   const day = (date: string) =>
     format.dateTime(new Date(`${date}T12:00:00`), { dateStyle: 'medium' });
@@ -81,30 +58,37 @@ export default async function ArcherStatsPage({
           : t('stats.allTimeIntro')
       }
       actions={<PeriodSelect journals={journals} value={journal?.id ?? ALL_TIME} />}
+      squared
     >
       {/* One wide page, so the charts keep their width. */}
-      <Stack gap="lg">
-        <GoalsCard goals={goals ?? []} today={today} />
-        {/* Side by side on large screens, one above the other below. */}
-        <SimpleGrid cols={{ base: 1, md: 2 }} spacing="lg">
-          <ArrowsCard period={span} arrowsByDay={arrowsByDay} today={today} />
-          <ScoresCard period={span} scores={scores} today={today} />
-          <EventsCard period={span} eventsByDay={eventsByDay} today={today} />
-          <FeelingsCard
-            kind="physical"
-            period={span}
-            feelingsByDay={physicalFeelingsByDay}
-            today={today}
-          />
-          <FeelingsCard
-            kind="mental"
-            period={span}
-            feelingsByDay={mentalFeelingsByDay}
-            today={today}
-          />
-        </SimpleGrid>
-        <CompetitionsCard competitions={competitions} />
-      </Stack>
+      <FavoriteIndicatorProvider initial={profile?.favoriteIndicator ?? null}>
+        <Stack gap="lg">
+          <GoalsCard goals={goals ?? []} today={today} />
+          {/*
+            Side by side on large screens, one above the other below; the two cards of a row
+            as high as each other (the taller one, in whole squares).
+          */}
+          <SimpleGrid cols={{ base: 1, md: 2 }} spacing="lg">
+            <ArrowsCard period={span} arrowsByDay={stats.arrowsByDay} today={today} />
+            <DurationsCard period={span} durationsByDay={stats.durationsByDay} today={today} />
+            <ScoresCard period={span} scores={stats.scores} today={today} />
+            <EventsCard period={span} eventsByDay={stats.eventsByDay} today={today} />
+            <CompetitionsCard competitions={stats.competitions} />
+            <FeelingsCard
+              kind="physical"
+              period={span}
+              feelingsByDay={stats.physicalFeelingsByDay}
+              today={today}
+            />
+            <FeelingsCard
+              kind="mental"
+              period={span}
+              feelingsByDay={stats.mentalFeelingsByDay}
+              today={today}
+            />
+          </SimpleGrid>
+        </Stack>
+      </FavoriteIndicatorProvider>
     </SectionPage>
   );
 }

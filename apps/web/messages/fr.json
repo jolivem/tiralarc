@@ -25,10 +25,43 @@
     "mainNavigation": "Navigation principale"
   },
   "home": {
-    "tagline": "La plateforme des archers et de leurs coachs.",
-    "apiStatus": "API :",
-    "apiUp": "opérationnelle",
-    "apiDown": "indisponible",
+    "tagline": "Le carnet de bord des archers",
+    "welcomeTitle": "Bienvenue !",
+    "welcomeBody": "MyArcheryDiary est votre carnet de tir à l'arc, toujours à portée de main. Comme un vrai carnet posé sur votre bureau, il garde la trace de chaque séance : entraînements, coachings, compétitions et renfo.",
+    "purposeTitle": "À quoi ça sert ?",
+    "purposeBody": "Noter régulièrement ce que l'on fait, c'est mieux comprendre ce qui marche. MyArcheryDiary vous aide à préparer vos séances, à en faire le bilan et à suivre votre progression au fil de la saison.",
+    "faqTitle": "Questions fréquentes",
+    "faq": {
+      "audience": {
+        "question": "À qui s'adresse MyArcheryDiary ?",
+        "answer": "Aux archers de tous niveaux qui veulent garder une trace de leur pratique, et à leurs coachs. Un même compte peut être à la fois archer et coach."
+      },
+      "start": {
+        "question": "Comment commencer ?",
+        "answer": "Créez un compte avec votre email, Google ou Apple, choisissez le profil archer, puis ouvrez votre premier journal. Il ne reste plus qu'à y noter vos séances."
+      },
+      "journal": {
+        "question": "Qu'est-ce qu'un journal ?",
+        "answer": "Une période que vous nommez, le plus souvent une saison. Il rassemble les événements datés de cette période dans un calendrier que vous pouvez décorer et colorier mois par mois."
+      },
+      "events": {
+        "question": "Que puis-je noter ?",
+        "answer": "Entraînements, coachings, compétitions et renforcement musculaire, ainsi que quatre types que vous créez vous-même. Chaque événement a sa fiche : scores, nombre de flèches, ressentis, photos…"
+      },
+      "planning": {
+        "question": "Puis-je préparer mes séances à l'avance ?",
+        "answer": "Oui : pour un jour à venir, notez la durée, le lieu, la discipline, la distance et l'objectif. Le bilan se complète une fois la séance passée."
+      },
+      "progress": {
+        "question": "Où voir ma progression ?",
+        "answer": "La page Indicateurs montre vos scores, votre volume de flèches et vos ressentis physiques et mentaux, à côté des objectifs que vous vous fixez."
+      },
+      "devices": {
+        "question": "Sur quels appareils ?",
+        "answer": "Téléphone, tablette ou ordinateur, depuis votre navigateur, en français ou en anglais."
+      }
+    },
+    "ctaTitle": "Prêt à ouvrir votre carnet ?",
     "login": "Connexion",
     "register": "Créer un compte",
     "profile": "Mon profil"
@@ -245,6 +278,7 @@
     "futureDateBody": "Un événement à venir repasse « à compléter » : son bilan (flèches, score, auto-évaluation, description et analyses, ressentis, points positifs et à améliorer, prochaine fois) sera effacé à l'enregistrement. La date, la durée, le lieu, la discipline, la distance et l'objectif sont conservés.",
     "futureDateConfirm": "Déplacer et effacer le bilan",
     "legend": "Légende",
+    "legendPending": "plus pâle : à venir ou fiche à compléter",
     "customTypes": {
       "add": "Ajouter un type d'événement",
       "newTitle": "Nouveau type d'événement",
@@ -482,22 +516,19 @@
   "stats": {
     "competitions": "Compétitions",
     "noCompetitions": "Aucune compétition sur cette période pour l'instant.",
+    "disciplineShown": "Discipline affichée",
     "date": "Date",
     "arrows": "Flèches",
     "cumulativeArrows": "Flèches cumulées",
     "events": "Répartition des événements",
-    "eventsTotal": "événements sur la période, jusqu'à aujourd'hui",
     "noEvents": "Aucun événement pour l'instant.",
-    "otherEvents": "Autre",
     "feelings": {
       "physical": {
         "title": "Ressentis physiques",
-        "total": "événements avec un ressenti physique sur la période, jusqu'à aujourd'hui",
         "none": "Aucun ressenti physique noté pour l'instant : il se choisit dans la fiche de chaque séance."
       },
       "mental": {
         "title": "Ressentis mentaux",
-        "total": "événements avec un ressenti mental sur la période, jusqu'à aujourd'hui",
         "none": "Aucun ressenti mental noté pour l'instant : il se choisit dans la fiche de chaque séance."
       }
     },
@@ -510,10 +541,19 @@
       "180": "180 jours",
       "all": "Tout"
     },
-    "arrowsTotal": "flèches enregistrées sur la période, tous types d'événements confondus",
+    "arrowsTotal": "flèches",
+    "favorite": {
+      "add": "Afficher sur l'accueil",
+      "remove": "Retirer de l'accueil"
+    },
+    "cumulativeDurations": "Durées cumulées",
+    "noDurations": "Aucune durée saisie pour l'instant : elle se renseigne dans la fiche de chaque événement.",
+    "duration": "Durée",
+    "minutes": "{minutes} min",
+    "hours": "{hours} h",
+    "hoursMinutes": "{hours} h {minutes}",
     "noArrows": "Aucun nombre de flèches saisi pour l'instant : il se renseigne dans la fiche de chaque séance.",
     "scores": "Scores par discipline",
-    "scoresHint": "Une courbe par discipline pratiquée.",
     "noScores": "Aucun entraînement, coaching ou compétition avec un score et une discipline pour l'instant.",
     "noScoresOfType": "Aucun score avec une discipline pour ce type d'événement jusqu'à aujourd'hui.",
     "scoreTypes": {

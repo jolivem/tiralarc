@@ -563,13 +563,20 @@ describe('Journal (e2e)', () => {
       arrowCount: 60,
       score: 540,
       location: 'Gymnase',
+      durationMinutes: 240,
     });
     const first = await add('COMPETITION', '2026-10-03', { discipline: 'INDOOR' });
-    await add('TRAINING', '2026-11-07', { arrowCount: 90, score: 800, physicalFeeling: 'GREAT' });
+    await add('TRAINING', '2026-11-07', {
+      arrowCount: 90,
+      score: 800,
+      physicalFeeling: 'GREAT',
+      durationMinutes: 60,
+    });
     await add('TRAINING', '2026-10-14', {
       arrowCount: 120,
       physicalFeeling: 'BAD',
       mentalFeeling: 'OK',
+      durationMinutes: 90,
     });
     await add('COACHING', '2026-10-20', {}); // no arrows recorded: not a data point
     const coached = await add('COACHING', '2026-10-21', { discipline: 'INDOOR', score: 270 });
@@ -609,6 +616,11 @@ describe('Journal (e2e)', () => {
       arrowsByDay: [
         { date: '2026-10-14', arrows: 120 },
         { date: '2026-11-07', arrows: 150 },
+      ],
+      // Minutes per day, all types of events together.
+      durationsByDay: [
+        { date: '2026-10-14', minutes: 90 },
+        { date: '2026-11-07', minutes: 300 },
       ],
       // Every event, counted per day and type.
       eventsByDay: [

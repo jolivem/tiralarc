@@ -35,6 +35,30 @@
     --paper-line: transparent;
   }
 
+  /*
+   * Squared paper ("petits carreaux"): --square both ways, no margin line. The content
+   * starts on a line (padding in whole squares), so blocks sized in squares keep their tops
+   * on the grid.
+   */
+  &[data-squared] {
+    --square: 20px;
+
+    & .page {
+      padding: calc(var(--square) * 2) var(--square) calc(var(--square) * 2);
+      background-image:
+        repeating-linear-gradient(
+          to bottom,
+          transparent 0 calc(var(--square) - 1px),
+          var(--paper-line) calc(var(--square) - 1px) var(--square)
+        ),
+        repeating-linear-gradient(
+          to right,
+          transparent 0 calc(var(--square) - 1px),
+          var(--paper-line) calc(var(--square) - 1px) var(--square)
+        );
+    }
+  }
+
   /* Two pages side by side (a single wide page keeps one column). */
   &:has(> [data-side]) {
     @media (min-width: $mantine-breakpoint-md) {

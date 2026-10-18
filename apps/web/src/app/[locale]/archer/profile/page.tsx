@@ -15,6 +15,7 @@ const EMPTY_PROFILE = {
   bowType: null,
   disciplines: [],
   calendarFont: null,
+  favoriteIndicator: null,
 };
 
 export default async function ArcherProfilePage({ params }: PageProps<'/[locale]/archer/profile'>) {

@@ -1,37 +1,141 @@
 'use client';
 
 import { AreaChart, ChartTooltip, LineChart } from '@mantine/charts';
-import { Card, Group, SegmentedControl, Stack, Table, Text, Title } from '@mantine/core';
-import { IconDots } from '@tabler/icons-react';
-import type { CompetitionStat, JournalStats, ScoreStat, SessionType } from '@tiralarc/api-client';
+import {
+  Card,
+  Group,
+  SegmentedControl,
+  Stack,
+  Table,
+  Text,
+  Title,
+  UnstyledButton,
+} from '@mantine/core';
+import { IconChevronDown, IconChevronUp, IconSelector } from '@tabler/icons-react';
+import type {
+  CompetitionStat,
+  Discipline,
+  Indicator,
+  JournalStats,
+  ScoreStat,
+} from '@tiralarc/api-client';
 import dayjs from 'dayjs';
-import { useFormatter, useTranslations } from 'next-intl';
-import { type CSSProperties, type ReactNode, useState } from 'react';
+import { useFormatter, useLocale, useTranslations } from 'next-intl';
+import { type CSSProperties, type ReactNode, useLayoutEffect, useRef, useState } from 'react';
 import { AnchorLink } from '@/components/links';
 import { FEELING_INK, FEELINGS } from '@/components/journal/feelings';
-import type { EventIconComponent } from '@/components/journal/image-icon';
 import {
   DISCIPLINE_ORDER,
   SESSION_TYPE_ORDER,
   SESSION_TYPES,
 } from '@/components/journal/session-types';
 import { CHART_CHROME, disciplineColor, monthTicks, type Period, toTime } from './chart-utils';
+import { FavoriteStar } from './favorite';
 import classes from './stats.module.css';
 
 /** Two scored events of a discipline further apart than this are not joined by a line. */
 const MAX_GAP_MS = 60 * 86_400_000;
 const SCORE_STEP = 50;
 
-function StatsCard({ title, children }: { title: string; children: ReactNode }) {
+/**
+ * A card's title, in the calligraphy font the archer chose on the Profile page, written on
+ * a line of the squared paper (see `.cardTitle`).
+ */
+export function StatsCardTitle({ children }: { children: ReactNode }) {
   return (
-    <Card withBorder radius="lg" padding="lg" className={classes.viz}>
+    <Title
+      order={2}
+      className={classes.cardTitle}
+      ff="var(--font-calendar, var(--font-hand)), cursive"
+      fz="1.7rem"
+      fw={400}
+      lh={1}
+    >
+      {children}
+    </Title>
+  );
+}
+
+/**
+ * A see-through card on the notebook's squared paper (`--square`): its height is rounded up
+ * to whole squares, so the cards after it — and their titles — stay on the grid. Measured
+ * from its content (the card itself may be stretched to its row's height), whenever that
+ * content's size changes. Also places its top right square (`--corner-x` / `--corner-y`:
+ * the centre of the last whole square of the second row, inside the frame), for the star.
+ */
+export function SquaredCard({ className, children }: { className?: string; children: ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null);
+
+  useLayoutEffect(() => {
+    const card = ref.current;
+    const content = card?.firstElementChild;
+    if (!card || !content) return;
+    const snap = () => {
+      const style = getComputedStyle(card);
+      const square = parseFloat(style.getPropertyValue('--square'));
+      if (!square) return;
+      const frame = ['paddingTop', 'paddingBottom', 'borderTopWidth', 'borderBottomWidth'] as const;
+      const height =
+        content.getBoundingClientRect().height +
+        frame.reduce((sum, side) => sum + parseFloat(style[side]), 0);
+      card.style.minHeight = `${Math.ceil(height / square - 0.01) * square}px`;
+
+      // The paper's squares start at the page's left edge; the card's top is on a line.
+      const page = card.closest('section');
+      if (!page) return;
+      const box = card.getBoundingClientRect();
+      const left = parseFloat(style.borderLeftWidth);
+      const innerRight =
+        box.right - parseFloat(style.borderRightWidth) - page.getBoundingClientRect().left;
+      const lastColumn = Math.floor(innerRight / square) - 1;
+      const centre = page.getBoundingClientRect().left + (lastColumn + 0.5) * square;
+      // Absolute positions start inside the border.
+      card.style.setProperty('--corner-x', `${centre - box.left - left}px`);
+      card.style.setProperty('--corner-y', `${square * 1.5 - parseFloat(style.borderTopWidth)}px`);
+    };
+    snap();
+    const observer = new ResizeObserver(snap);
+    observer.observe(content);
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <Card
+      ref={ref}
+      withBorder
+      radius="lg"
+      // A thick ink frame; border + padding = one square.
+      p={18}
+      style={{ borderWidth: 2, borderColor: 'var(--frame-color)' }}
+      bg="transparent"
+      className={`${classes.squaredCard} ${className ?? ''}`}
+    >
+      {children}
+    </Card>
+  );
+}
+
+/** An indicator's card: its title, with the star choosing it for the home page on the right. */
+function StatsCard({
+  title,
+  indicator,
+  children,
+}: {
+  title: string;
+  indicator: Indicator;
+  children: ReactNode;
+}) {
+  return (
+    <SquaredCard className={classes.viz}>
       <Stack gap="md">
-        <Title order={2} size="h5" tt="uppercase" c="dimmed" lts={0.5}>
-          {title}
-        </Title>
+        <StatsCardTitle>{title}</StatsCardTitle>
         {children}
       </Stack>
-    </Card>
+      {/* In the centre of the top right square (see SquaredCard). */}
+      <div className={classes.cornerStar}>
+        <FavoriteStar indicator={indicator} />
+      </div>
+    </SquaredCard>
   );
 }
 
@@ -65,7 +169,7 @@ function ChoiceBar<T extends string>({
         size={size}
         w={width}
         maw="100%"
-        classNames={{ control: classes.equalSegment }}
+        classNames={{ root: classes.choiceBar, control: classes.equalSegment }}
         value={value}
         onChange={(v) => onChange(v as T)}
         aria-label={label}
@@ -115,6 +219,13 @@ function useDates() {
       format.dateTime(new Date(typeof time === 'string' ? toTime(time) : time), {
         dateStyle: 'medium',
       }),
+    /** A day in digits, two of each: 28/08/27 in French. */
+    shortDay: (date: string) =>
+      format.dateTime(new Date(toTime(date)), {
+        day: '2-digit',
+        month: '2-digit',
+        year: '2-digit',
+      }),
     /** Axis label of a month: the year is spelled out each January. */
     month: (time: number) =>
       format.dateTime(
@@ -125,63 +236,175 @@ function useDates() {
   };
 }
 
-/** The period's competitions, most recent first; each one opens its sheet. */
+type CompetitionSortKey = 'date' | 'discipline' | 'score' | 'location';
+type SortDirection = 'asc' | 'desc';
+
+/** A column header that sorts the table by its column: ascending first, then reversed. */
+function SortHeader({
+  column,
+  sort,
+  onSort,
+  children,
+}: {
+  column: CompetitionSortKey;
+  sort: { key: CompetitionSortKey; direction: SortDirection };
+  onSort: (column: CompetitionSortKey) => void;
+  children: ReactNode;
+}) {
+  const active = sort.key === column;
+  const Icon = !active ? IconSelector : sort.direction === 'asc' ? IconChevronUp : IconChevronDown;
+  // Scores are right-aligned, like their figures.
+  const right = column === 'score';
+  return (
+    <Table.Th
+      aria-sort={active ? (sort.direction === 'asc' ? 'ascending' : 'descending') : 'none'}
+      visibleFrom={column === 'location' ? 'sm' : undefined}
+      ta={right ? 'right' : undefined}
+    >
+      <UnstyledButton onClick={() => onSort(column)} fz="inherit" fw="inherit" c="inherit">
+        <Group gap={4} wrap="nowrap" justify={right ? 'flex-end' : undefined}>
+          {children}
+          <Icon size={14} stroke={2} aria-hidden />
+        </Group>
+      </UnstyledButton>
+    </Table.Th>
+  );
+}
+
+/**
+ * The period's competitions, most recent first; each one opens its sheet. A click on a
+ * column header sorts by it (dates and scores ascending, disciplines and places A to Z),
+ * a second click reverses; competitions without that value always come last.
+ */
 export function CompetitionsCard({ competitions }: { competitions: CompetitionStat[] }) {
   const t = useTranslations();
-  const { day, number } = useDates();
-  const rows = [...competitions].reverse();
+  const locale = useLocale();
+  const { shortDay, number } = useDates();
+  // The disciplines competed in, in the usual order; one shown, or all.
+  const disciplines = DISCIPLINE_ORDER.filter((d) => competitions.some((c) => c.discipline === d));
+  const [picked, setPicked] = useState<Discipline | 'all'>('all');
+  // A discipline no longer in the list (another period chosen) shows them all.
+  const discipline = picked !== 'all' && disciplines.includes(picked) ? picked : 'all';
+  const [sort, setSort] = useState<{ key: CompetitionSortKey; direction: SortDirection }>({
+    key: 'date',
+    direction: 'desc',
+  });
+  const onSort = (key: CompetitionSortKey) =>
+    setSort((current) =>
+      current.key === key
+        ? { key, direction: current.direction === 'asc' ? 'desc' : 'asc' }
+        : { key, direction: 'asc' },
+    );
+
+  const valueOf = (c: CompetitionStat): string | number | null => {
+    switch (sort.key) {
+      case 'date':
+        return c.date;
+      case 'score':
+        return c.score;
+      case 'discipline':
+        return c.discipline ? t(`journal.disciplines.${c.discipline}`) : null;
+      case 'location':
+        return c.location || null;
+    }
+  };
+  const rows = competitions
+    .filter((c) => discipline === 'all' || c.discipline === discipline)
+    .sort((a, b) => {
+      const [x, y] = [valueOf(a), valueOf(b)];
+      if (x === null || y === null) return x === y ? 0 : x === null ? 1 : -1;
+      const order =
+        typeof x === 'number' && typeof y === 'number'
+          ? x - y
+          : String(x).localeCompare(String(y), locale, { sensitivity: 'base' });
+      return sort.direction === 'asc' ? order : -order;
+    });
 
   return (
-    <StatsCard title={t('stats.competitions')}>
-      {rows.length === 0 ? (
+    <StatsCard title={t('stats.competitions')} indicator="COMPETITIONS">
+      {competitions.length === 0 ? (
         <Empty>{t('stats.noCompetitions')}</Empty>
       ) : (
-        <Table.ScrollContainer minWidth={0} mah={420} type="native">
-          <Table verticalSpacing="xs" stickyHeader>
-            <Table.Thead>
-              <Table.Tr>
-                <Table.Th>{t('stats.date')}</Table.Th>
-                <Table.Th>{t('journal.discipline')}</Table.Th>
-                <Table.Th ta="right">{t('stats.arrows')}</Table.Th>
-                <Table.Th ta="right">{t('journal.score')}</Table.Th>
-                <Table.Th visibleFrom="sm">{t('journal.location')}</Table.Th>
-              </Table.Tr>
-            </Table.Thead>
-            <Table.Tbody>
-              {rows.map((c) => (
-                <Table.Tr key={c.id}>
-                  <Table.Td>
-                    <AnchorLink href={`/archer/journal/${c.id}`} size="sm">
-                      {day(c.date)}
-                    </AnchorLink>
-                  </Table.Td>
-                  <Table.Td>
-                    {c.discipline ? (
-                      <>
-                        <span
-                          className={classes.swatch}
-                          style={{ background: disciplineColor(c.discipline) }}
-                        />
-                        {t(`journal.disciplines.${c.discipline}`)}
-                      </>
-                    ) : (
-                      '—'
-                    )}
-                  </Table.Td>
-                  <Table.Td ta="right" className={classes.numeric}>
-                    {c.arrowCount ?? '—'}
-                  </Table.Td>
-                  <Table.Td ta="right" fw={600} className={classes.numeric}>
-                    {c.score === null ? '—' : number(c.score)}
-                  </Table.Td>
-                  <Table.Td visibleFrom="sm" c="dimmed">
-                    {c.location ?? ''}
-                  </Table.Td>
+        <>
+          {/* A choice only with two disciplines or more. */}
+          {disciplines.length > 1 && (
+            <ChoiceBar
+              value={discipline}
+              onChange={setPicked}
+              label={t('stats.disciplineShown')}
+              data={[
+                { value: 'all' as const, label: t('stats.range.all') },
+                ...disciplines.map((d) => ({ value: d, label: t(`journal.disciplines.${d}`) })),
+              ]}
+              width={72 * (disciplines.length + 1)}
+              size="xs"
+            />
+          )}
+          {/* One line per competition, as wide as the card: a long place is cut short. */}
+          <Table.ScrollContainer minWidth={0} type="native" className={classes.tableBox}>
+            <Table
+              // Compact rows: 5px above and below the text.
+              verticalSpacing={5}
+              fz="xs"
+              stickyHeader
+              borderColor="var(--viz-grid)"
+              style={{ whiteSpace: 'nowrap' }}
+            >
+              {/* Pastel pink (stats.module.css), opaque: rows scroll under it without showing. */}
+              <Table.Thead>
+                <Table.Tr>
+                  <SortHeader column="date" sort={sort} onSort={onSort}>
+                    {t('stats.date')}
+                  </SortHeader>
+                  <SortHeader column="discipline" sort={sort} onSort={onSort}>
+                    {t('journal.discipline')}
+                  </SortHeader>
+                  <SortHeader column="score" sort={sort} onSort={onSort}>
+                    {t('journal.score')}
+                  </SortHeader>
+                  <SortHeader column="location" sort={sort} onSort={onSort}>
+                    {t('journal.location')}
+                  </SortHeader>
                 </Table.Tr>
-              ))}
-            </Table.Tbody>
-          </Table>
-        </Table.ScrollContainer>
+              </Table.Thead>
+              <Table.Tbody>
+                {rows.map((c) => (
+                  <Table.Tr key={c.id}>
+                    <Table.Td>
+                      <AnchorLink href={`/archer/journal/${c.id}`} size="xs">
+                        {shortDay(c.date)}
+                      </AnchorLink>
+                    </Table.Td>
+                    <Table.Td>
+                      {c.discipline ? (
+                        <>
+                          <span
+                            className={classes.swatch}
+                            style={{ background: disciplineColor(c.discipline) }}
+                          />
+                          {t(`journal.disciplines.${c.discipline}`)}
+                        </>
+                      ) : (
+                        '—'
+                      )}
+                    </Table.Td>
+                    <Table.Td ta="right" fw={600} className={classes.numeric}>
+                      {c.score === null ? '—' : number(c.score)}
+                    </Table.Td>
+                    <Table.Td
+                      visibleFrom="sm"
+                      c="dimmed"
+                      className={classes.clipped}
+                      title={c.location ?? undefined}
+                    >
+                      {c.location ?? ''}
+                    </Table.Td>
+                  </Table.Tr>
+                ))}
+              </Table.Tbody>
+            </Table>
+          </Table.ScrollContainer>
+        </>
       )}
     </StatsCard>
   );
@@ -223,8 +446,7 @@ function dayTicks(range: Exclude<ArrowRange, 'all'>, shown: Period): number[] {
 
 /**
  * Running total of arrows over a span chosen in the card (the last 7, 30, 90 days, or the
- * whole period so far), all types of events together; it starts from zero on the span's
- * first day and never goes past today.
+ * whole period so far), all types of events together.
  */
 export function ArrowsCard({
   period,
@@ -237,20 +459,111 @@ export function ArrowsCard({
   today: string;
 }) {
   const t = useTranslations('stats');
+  const { number } = useDates();
+  return (
+    <CumulativeCard
+      title={t('cumulativeArrows')}
+      indicator="ARROWS"
+      empty={t('noArrows')}
+      period={period}
+      today={today}
+      byDay={arrowsByDay.map(({ date, arrows }) => ({ date, amount: arrows }))}
+      seriesLabel={t('arrows')}
+      unit={t('arrowsTotal')}
+      formatter={number}
+      color="var(--series-1)"
+    />
+  );
+}
+
+/**
+ * Running total of the time spent over a span chosen in the card (as for the arrows), all
+ * types of events together: hours and minutes.
+ */
+export function DurationsCard({
+  period,
+  durationsByDay,
+  today,
+}: {
+  /** The season (or all time): "all" spans it up to today. */
+  period: Period;
+  durationsByDay: JournalStats['durationsByDay'];
+  today: string;
+}) {
+  const t = useTranslations('stats');
   const format = useFormatter();
-  const { day, month, number } = useDates();
+  // 45 min, 2 h, 12 h 05.
+  const duration = (minutes: number) => {
+    const hours = Math.floor(minutes / 60);
+    const rest = Math.round(minutes % 60);
+    if (hours === 0) return t('minutes', { minutes: rest });
+    return rest === 0
+      ? t('hours', { hours: format.number(hours) })
+      : t('hoursMinutes', { hours: format.number(hours), minutes: String(rest).padStart(2, '0') });
+  };
+  return (
+    <CumulativeCard
+      title={t('cumulativeDurations')}
+      indicator="DURATIONS"
+      empty={t('noDurations')}
+      period={period}
+      today={today}
+      byDay={durationsByDay.map(({ date, minutes }) => ({ date, amount: minutes }))}
+      seriesLabel={t('duration')}
+      formatter={duration}
+      color="var(--series-3)"
+    />
+  );
+}
+
+/**
+ * A running total over a span chosen in the card (the last 7, 30, 90 days, or the whole
+ * period so far): the total in figures, then its curve, which starts from zero on the
+ * span's first day and never goes past today.
+ */
+function CumulativeCard({
+  title,
+  indicator,
+  empty,
+  period,
+  today,
+  byDay,
+  seriesLabel,
+  unit,
+  formatter,
+  color,
+}: {
+  title: string;
+  indicator: Indicator;
+  /** Shown instead when nothing was recorded. */
+  empty: string;
+  period: Period;
+  today: string;
+  /** Days with something recorded, oldest first. */
+  byDay: { date: string; amount: number }[];
+  seriesLabel: string;
+  /** Written after the total, if the formatter does not say it. */
+  unit?: string;
+  /** Total, axis and tooltip values. */
+  formatter: (value: number) => string;
+  color: string;
+}) {
+  const t = useTranslations('stats');
+  const format = useFormatter();
+  const { day, month } = useDates();
   const [range, setRange] = useState<ArrowRange>('7');
   const shown = rangeWindow(range, period, today);
+  const series = [{ name: 'amount', label: seriesLabel, color }];
 
-  const data = [{ time: toTime(shown.startDate), arrows: 0 }];
-  for (const { date, arrows } of arrowsByDay) {
+  const data = [{ time: toTime(shown.startDate), amount: 0 }];
+  for (const { date, amount } of byDay) {
     if (date < shown.startDate || date > shown.endDate) continue;
-    data.push({ time: toTime(date), arrows: (data.at(-1)?.arrows ?? 0) + arrows });
+    data.push({ time: toTime(date), amount: (data.at(-1)?.amount ?? 0) + amount });
   }
-  const total = data.at(-1)?.arrows ?? 0;
-  // The curve runs to the span's end (today), the last days without arrows included.
+  const total = data.at(-1)?.amount ?? 0;
+  // The curve runs to the span's end (today), the last days without anything included.
   if ((data.at(-1)?.time ?? 0) < toTime(shown.endDate)) {
-    data.push({ time: toTime(shown.endDate), arrows: total });
+    data.push({ time: toTime(shown.endDate), amount: total });
   }
   const dateTicks =
     range === 'all' ? monthTicks(shown.startDate, shown.endDate) : dayTicks(range, shown);
@@ -263,9 +576,9 @@ export function ArrowsCard({
   const { ticks, tickFormatter } = withToday(dateTicks, dateLabel, shown, today, t('todayShort'));
 
   return (
-    <StatsCard title={t('cumulativeArrows')}>
-      {arrowsByDay.length === 0 ? (
-        <Empty>{t('noArrows')}</Empty>
+    <StatsCard title={title} indicator={indicator}>
+      {byDay.length === 0 ? (
+        <Empty>{empty}</Empty>
       ) : (
         <>
           <ChoiceBar
@@ -274,24 +587,27 @@ export function ArrowsCard({
             label={t('range.label')}
             data={RANGES.map((value) => ({ value, label: t(`range.${value}`) }))}
             width={320}
+            size="xs"
           />
-          <div>
-            <Text className={classes.figure}>{number(total)}</Text>
-            <Text size="sm" c="dimmed">
-              {t('arrowsTotal')}
-            </Text>
-          </div>
+          <Group justify="center" align="baseline" gap={6}>
+            <Text className={classes.figure}>{formatter(total)}</Text>
+            {unit && (
+              <Text size="sm" c="dimmed">
+                {unit}
+              </Text>
+            )}
+          </Group>
           <AreaChart
             {...CHART_CHROME}
             data={data}
             dataKey="time"
-            series={[{ name: 'arrows', label: t('arrows'), color: 'var(--series-1)' }]}
+            series={series}
             curveType="linear"
             withGradient={false}
             fillOpacity={0.1}
             withDots={false}
             activeDotProps={{ r: 4, strokeWidth: 2, stroke: 'var(--mantine-color-body)' }}
-            valueFormatter={number}
+            valueFormatter={formatter}
             xAxisProps={{
               type: 'number',
               scale: 'time',
@@ -306,8 +622,8 @@ export function ArrowsCard({
                 <ChartTooltip
                   label={label === undefined ? undefined : day(Number(label))}
                   payload={payload}
-                  series={[{ name: 'arrows', label: t('arrows'), color: 'var(--series-1)' }]}
-                  valueFormatter={number}
+                  series={series}
+                  valueFormatter={formatter}
                 />
               ),
             }}
@@ -385,7 +701,7 @@ export function ScoresCard({
   );
 
   return (
-    <StatsCard title={t('stats.scores')}>
+    <StatsCard title={t('stats.scores')} indicator="SCORES">
       {allScores.length === 0 ? (
         <Empty>{t('stats.noScores')}</Empty>
       ) : (
@@ -404,11 +720,9 @@ export function ScoresCard({
                 </span>
               ),
             }))}
-            width={440}
+            width={320}
+            size="xs"
           />
-          <Text size="sm" c="dimmed">
-            {t('stats.scoresHint')}
-          </Text>
           {scored.length === 0 ? (
             <Empty>{t('stats.noScoresOfType')}</Empty>
           ) : (
@@ -462,27 +776,9 @@ export function ScoresCard({
 }
 
 /**
- * The bars of the events card: the built-in types, then "other" for the rest (the archer's
- * own types, and the older "Divers" events).
- */
-const EVENT_CATEGORIES: {
-  key: SessionType | 'other';
-  types: SessionType[];
-  color: string;
-  icon: EventIconComponent;
-}[] = [
-  ...SESSION_TYPE_ORDER.map((type) => ({
-    key: type,
-    types: [type],
-    color: SESSION_TYPES[type].color,
-    icon: SESSION_TYPES[type].icon,
-  })),
-  { key: 'other', types: ['CUSTOM', 'OTHER'], color: 'gray', icon: IconDots },
-];
-
-/**
- * How the archer's events split between types over a span chosen in the card (the last 7,
- * 30, 90 days, or the whole period so far): one bar per type, above its icon.
+ * How the archer's events split between the built-in types over a span chosen in the card
+ * (the last 7, 30, 90 days, or the whole period so far): one bar per type, above its icon.
+ * Custom and "Divers" events are left out.
  */
 export function EventsCard({
   period,
@@ -495,22 +791,24 @@ export function EventsCard({
   today: string;
 }) {
   const t = useTranslations();
-  const { number } = useDates();
   const [range, setRange] = useState<ShareRange>('30');
   const shown = rangeWindow(range, period, today);
 
   const inSpan = eventsByDay.filter((d) => d.date >= shown.startDate && d.date <= shown.endDate);
-  const bars = EVENT_CATEGORIES.map(({ key, types, color, icon: Icon }) => ({
-    key,
-    label: key === 'other' ? t('stats.otherEvents') : t(`journal.typesShort.${key}`),
-    count: inSpan.filter((d) => types.includes(d.type)).reduce((sum, d) => sum + d.count, 0),
-    color: `var(--mantine-color-${color}-filled)`,
-    icon: <Icon size={36} color={`var(--mantine-color-${color}-filled)`} />,
-  }));
-  const total = bars.reduce((sum, bar) => sum + bar.count, 0);
+  const bars = SESSION_TYPE_ORDER.map((type) => {
+    const { color, icon: Icon } = SESSION_TYPES[type];
+    return {
+      key: type,
+      label: t(`journal.typesShort.${type}`),
+      count: inSpan.filter((d) => d.type === type).reduce((sum, d) => sum + d.count, 0),
+      // The type's colour in pastel; its icon below keeps the full colour.
+      color: `var(--mantine-color-${color}-3)`,
+      icon: <Icon size={36} color={`var(--mantine-color-${color}-filled)`} />,
+    };
+  });
 
   return (
-    <StatsCard title={t('stats.events')}>
+    <StatsCard title={t('stats.events')} indicator="EVENTS">
       {eventsByDay.length === 0 ? (
         <Empty>{t('stats.noEvents')}</Empty>
       ) : (
@@ -524,13 +822,7 @@ export function EventsCard({
             // "180 jours" fits its button in the smaller text.
             size="xs"
           />
-          <div>
-            <Text className={classes.figure}>{number(total)}</Text>
-            <Text size="sm" c="dimmed">
-              {t('stats.eventsTotal')}
-            </Text>
-          </div>
-          <BarColumns bars={bars} />
+          <BarColumns bars={bars} outlined />
         </>
       )}
     </StatsCard>
@@ -591,7 +883,6 @@ export function FeelingsCard({
   today: string;
 }) {
   const t = useTranslations();
-  const { number } = useDates();
   const [range, setRange] = useState<ShareRange>('30');
   const shown = rangeWindow(range, period, today);
 
@@ -608,10 +899,12 @@ export function FeelingsCard({
       </span>
     ),
   }));
-  const total = bars.reduce((sum, bar) => sum + bar.count, 0);
 
   return (
-    <StatsCard title={t(`stats.feelings.${kind}.title`)}>
+    <StatsCard
+      title={t(`stats.feelings.${kind}.title`)}
+      indicator={kind === 'physical' ? 'PHYSICAL_FEELINGS' : 'MENTAL_FEELINGS'}
+    >
       {feelingsByDay.length === 0 ? (
         <Empty>{t(`stats.feelings.${kind}.none`)}</Empty>
       ) : (
@@ -625,12 +918,6 @@ export function FeelingsCard({
             // "180 jours" fits its button in the smaller text.
             size="xs"
           />
-          <div>
-            <Text className={classes.figure}>{number(total)}</Text>
-            <Text size="sm" c="dimmed">
-              {t(`stats.feelings.${kind}.total`)}
-            </Text>
-          </div>
           <BarColumns bars={bars} outlined />
         </>
       )}

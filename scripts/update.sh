@@ -2,20 +2,30 @@
 # Brings a local checkout up to date before working: sources, Docker services,
 # dependencies, Prisma client and both databases (dev + e2e tests).
 #
-#   pnpm update:dev          # update everything
+#   pnpm update:dev          # switch to main and update everything
 #   pnpm update:dev --dev    # ...then start `pnpm dev`
 #   pnpm update:dev --no-pull
+#   pnpm update:dev --stay   # update the current branch instead of main
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
+# Non-interactive shells (e.g. `bash scripts/update.sh` from PowerShell) skip
+# ~/.bashrc, so node / pnpm installed with nvm are not on the PATH yet.
+if ! command -v pnpm >/dev/null 2>&1 && [ -s "${NVM_DIR:-$HOME/.nvm}/nvm.sh" ]; then
+  . "${NVM_DIR:-$HOME/.nvm}/nvm.sh"
+fi
+
+main_branch=main
 pull=true
+stay=false
 start_dev=false
 for arg in "$@"; do
   case "$arg" in
     --no-pull) pull=false ;;
+    --stay) stay=true ;;
     --dev) start_dev=true ;;
-    *) echo "Unknown option: $arg (use --no-pull, --dev)" >&2; exit 2 ;;
+    *) echo "Unknown option: $arg (use --no-pull, --stay, --dev)" >&2; exit 2 ;;
   esac
 done
 
@@ -23,6 +33,14 @@ step() { printf '\n\033[1;34m==> %s\033[0m\n' "$1"; }
 warn() { printf '\033[1;33m!   %s\033[0m\n' "$1"; }
 
 step "Sources"
+current=$(git branch --show-current)
+if ! $stay && [ "$current" != "$main_branch" ]; then
+  if [ -n "$(git status --porcelain)" ]; then
+    warn "On $current with uncommitted changes: staying there (commit or stash, or use --stay)."
+  else
+    git switch "$main_branch"
+  fi
+fi
 if ! $pull; then
   echo "Skipped (--no-pull)."
 elif ! git rev-parse --abbrev-ref '@{u}' >/dev/null 2>&1; then

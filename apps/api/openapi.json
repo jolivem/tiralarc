@@ -2814,6 +2814,23 @@
           "arrows"
         ]
       },
+      "DurationsByDayDto": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "example": "2026-10-03"
+          },
+          "minutes": {
+            "type": "number",
+            "description": "Minutes spent that day, all types of events together."
+          }
+        },
+        "required": [
+          "date",
+          "minutes"
+        ]
+      },
       "JournalStatsDto": {
         "type": "object",
         "properties": {
@@ -2858,6 +2875,13 @@
             "items": {
               "$ref": "#/components/schemas/ArrowsByDayDto"
             }
+          },
+          "durationsByDay": {
+            "description": "Days with a recorded duration, oldest first.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DurationsByDayDto"
+            }
           }
         },
         "required": [
@@ -2866,7 +2890,8 @@
           "eventsByDay",
           "physicalFeelingsByDay",
           "mentalFeelingsByDay",
-          "arrowsByDay"
+          "arrowsByDay",
+          "durationsByDay"
         ]
       },
       "SessionSuggestionsDto": {
@@ -3472,6 +3497,19 @@
           "FREE"
         ]
       },
+      "Indicator": {
+        "type": "string",
+        "enum": [
+          "ARROWS",
+          "DURATIONS",
+          "SCORES",
+          "EVENTS",
+          "COMPETITIONS",
+          "PHYSICAL_FEELINGS",
+          "MENTAL_FEELINGS"
+        ],
+        "description": "The indicator shown on the home page; null = none."
+      },
       "ProfileDto": {
         "type": "object",
         "properties": {
@@ -3507,6 +3545,15 @@
             "nullable": true,
             "example": "dancing-script",
             "description": "Font of the calendars' weekdays and day numbers: an id each client maps to its own font; null = the client's default."
+          },
+          "favoriteIndicator": {
+            "nullable": true,
+            "description": "The indicator shown on the home page; null = none.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Indicator"
+              }
+            ]
           }
         },
         "required": [
@@ -3514,7 +3561,8 @@
           "category",
           "bowType",
           "disciplines",
-          "calendarFont"
+          "calendarFont",
+          "favoriteIndicator"
         ]
       },
       "UpdateProfileDto": {
@@ -3554,6 +3602,15 @@
             "example": "dancing-script",
             "pattern": "^[a-z0-9-]{1,30}$",
             "description": "Font id of the calendars; null goes back to the client's default."
+          },
+          "favoriteIndicator": {
+            "nullable": true,
+            "description": "The indicator shown on the home page; null for none.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Indicator"
+              }
+            ]
           }
         }
       },

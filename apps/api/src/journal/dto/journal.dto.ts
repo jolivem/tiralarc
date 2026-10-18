@@ -376,6 +376,14 @@ export class ArrowsByDayDto {
   arrows!: number;
 }
 
+export class DurationsByDayDto {
+  @ApiProperty({ example: '2026-10-03' })
+  date!: string;
+
+  @ApiProperty({ description: 'Minutes spent that day, all types of events together.' })
+  minutes!: number;
+}
+
 /** What the indicators are drawn from. Running totals and per-discipline series are left to clients. */
 export class JournalStatsDto {
   @ApiProperty({ type: () => [CompetitionStatDto], description: 'Competitions, oldest first.' })
@@ -413,6 +421,12 @@ export class JournalStatsDto {
     description: 'Days with a recorded number of arrows, oldest first.',
   })
   arrowsByDay!: ArrowsByDayDto[];
+
+  @ApiProperty({
+    type: () => [DurationsByDayDto],
+    description: 'Days with a recorded duration, oldest first.',
+  })
+  durationsByDay!: DurationsByDayDto[];
 }
 
 export class StatsQuery {

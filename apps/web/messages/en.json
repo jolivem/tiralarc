@@ -25,10 +25,43 @@
     "mainNavigation": "Main navigation"
   },
   "home": {
-    "tagline": "The platform for archers and their coaches.",
-    "apiStatus": "API:",
-    "apiUp": "up",
-    "apiDown": "unavailable",
+    "tagline": "The archer's logbook",
+    "welcomeTitle": "Welcome!",
+    "welcomeBody": "MyArcheryDiary is your archery notebook, always at hand. Like a real notebook lying on your desk, it keeps track of every session: training, coaching, competitions and strength work.",
+    "purposeTitle": "What is it for?",
+    "purposeBody": "Writing down what you do, regularly, is the best way to understand what works. MyArcheryDiary helps you plan your sessions, review them and follow your progress throughout the season.",
+    "faqTitle": "Frequently asked questions",
+    "faq": {
+      "audience": {
+        "question": "Who is MyArcheryDiary for?",
+        "answer": "Archers of every level who want to keep track of their practice, and their coaches. One account can be both archer and coach."
+      },
+      "start": {
+        "question": "How do I get started?",
+        "answer": "Create an account with your email, Google or Apple, choose the archer profile, then open your first journal. All that's left is to write down your sessions."
+      },
+      "journal": {
+        "question": "What is a journal?",
+        "answer": "A period you name, usually a season. It gathers the events dated within that period in a calendar you can decorate and colour month by month."
+      },
+      "events": {
+        "question": "What can I write down?",
+        "answer": "Training, coaching, competitions and strength work, plus four types of your own. Each event has its sheet: scores, arrow count, feelings, photos…"
+      },
+      "planning": {
+        "question": "Can I plan my sessions ahead?",
+        "answer": "Yes: for a day to come, note the duration, place, discipline, distance and objective. The review is filled in once the session is over."
+      },
+      "progress": {
+        "question": "Where can I see my progress?",
+        "answer": "The Stats page shows your scores, arrow volume and physical and mental feelings, next to the goals you set yourself."
+      },
+      "devices": {
+        "question": "On which devices?",
+        "answer": "Phone, tablet or computer, in your browser, in French or English."
+      }
+    },
+    "ctaTitle": "Ready to open your notebook?",
     "login": "Sign in",
     "register": "Create an account",
     "profile": "My profile"
@@ -245,6 +278,7 @@
     "futureDateBody": "An upcoming event goes back to “to complete”: its review (arrows, score, self-assessment, description and analyses, feelings, what went well and what to improve, next time) will be cleared when you save. Date, duration, place, discipline, distance and objective are kept.",
     "futureDateConfirm": "Move and clear the review",
     "legend": "Legend",
+    "legendPending": "paler: upcoming, or sheet to complete",
     "customTypes": {
       "add": "Add an event type",
       "newTitle": "New event type",
@@ -482,22 +516,19 @@
   "stats": {
     "competitions": "Competitions",
     "noCompetitions": "No competition over this period yet.",
+    "disciplineShown": "Discipline shown",
     "date": "Date",
     "arrows": "Arrows",
     "cumulativeArrows": "Cumulative arrows",
     "events": "Events by type",
-    "eventsTotal": "events over the period, up to today",
     "noEvents": "No events yet.",
-    "otherEvents": "Other",
     "feelings": {
       "physical": {
         "title": "Physical feelings",
-        "total": "events with a physical feeling over the period, up to today",
         "none": "No physical feeling noted yet: it is chosen on each session's sheet."
       },
       "mental": {
         "title": "Mental feelings",
-        "total": "events with a mental feeling over the period, up to today",
         "none": "No mental feeling noted yet: it is chosen on each session's sheet."
       }
     },
@@ -510,10 +541,19 @@
       "180": "180 days",
       "all": "All"
     },
-    "arrowsTotal": "arrows recorded over the period, all types of events together",
+    "arrowsTotal": "arrows",
+    "favorite": {
+      "add": "Show on the home page",
+      "remove": "Remove from the home page"
+    },
+    "cumulativeDurations": "Cumulative time",
+    "noDurations": "No duration entered yet: it is filled in on each event's sheet.",
+    "duration": "Time",
+    "minutes": "{minutes} min",
+    "hours": "{hours} h",
+    "hoursMinutes": "{hours} h {minutes}",
     "noArrows": "No arrow count entered yet: it is filled in on each session's sheet.",
     "scores": "Scores by discipline",
-    "scoresHint": "One line per discipline practised.",
     "noScores": "No training, coaching or competition with both a score and a discipline yet.",
     "noScoresOfType": "No score with a discipline for this type of event up to today.",
     "scoreTypes": {
