@@ -10,5 +10,6 @@ import { JournalService } from './journal.service.js';
 @Module({
   controllers: [JournalsController, JournalController, EventTypesController, PhotosController],
   providers: [JournalService, EventTypesService, PhotosService],
+  exports: [JournalService, EventTypesService, PhotosService],
 })
 export class JournalModule {}

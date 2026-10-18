@@ -88,6 +88,14 @@ export async function resetDatabase(prisma: PrismaService): Promise<void> {
   await prisma.user.deleteMany();
 }
 
+/**
+ * Takes the stored roles (ARCHER) away from an account: every new account is an archer, so this
+ * is how tests get someone who isn't (sign in again for a token without them).
+ */
+export async function dropRoles(prisma: PrismaService, email: string): Promise<void> {
+  await prisma.userRole.deleteMany({ where: { user: { email } } });
+}
+
 /** Extracts the verification token from the last email sent to `to`. */
 export function verificationTokenFor(outbox: OutgoingMail[], to: string): string {
   const mail = outbox.filter((m) => m.to === to).at(-1);

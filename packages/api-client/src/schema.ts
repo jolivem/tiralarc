@@ -169,22 +169,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/users/me/roles": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put: operations["Users_updateMyRoles"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/v1/users": {
         parameters: {
             query?: never;
@@ -316,6 +300,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/journal/sessions/new": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Events the archer's coach planned that the archer hasn't opened yet */
+        get: operations["Journal_newEvents"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/journal/sessions/{id}": {
         parameters: {
             query?: never;
@@ -330,6 +331,23 @@ export interface paths {
         options?: never;
         head?: never;
         patch: operations["Journal_update"];
+        trace?: never;
+    };
+    "/api/v1/journal/sessions/{id}/seen": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Tell that the archer opened the sheet (clients call it when they show it): a coach-planned event is then no longer new */
+        post: operations["Journal_markSeen"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/v1/journal/event-types": {
@@ -475,10 +493,12 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
+        /** Withdraw an invitation; a coach loses their access */
         delete: operations["Profile_removeInvitation"];
         options?: never;
         head?: never;
-        patch?: never;
+        /** Change a coach's access to the journal of the season in progress */
+        patch: operations["Profile_updateInvitation"];
         trace?: never;
     };
     "/api/v1/profile/sites": {
@@ -522,7 +542,160 @@ export interface paths {
         };
         get?: never;
         put?: never;
+        /** Accept an invitation (a coach invitation needs the bearer token of the coach) */
         post: operations["Invitations_accept"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/coach/athletes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The archers who made you their coach, with their current journal */
+        get: operations["Coaching_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/coach/athletes/{archerId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["Coaching_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/coach/athletes/{archerId}/sessions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Events of the current journal between two days (clipped to it) */
+        get: operations["Coaching_sessions"];
+        put?: never;
+        /** Plan a training, coaching, competition or strength session (WRITE access) */
+        post: operations["Coaching_plan"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/coach/athletes/{archerId}/sessions/stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Figures behind the archer's indicators, over the current journal's period */
+        get: operations["Coaching_stats"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/coach/athletes/{archerId}/sessions/suggestions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["Coaching_suggestions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/coach/athletes/{archerId}/sessions/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["Coaching_session"];
+        put?: never;
+        post?: never;
+        /** Delete an event you planned, still to come */
+        delete: operations["Coaching_remove"];
+        options?: never;
+        head?: never;
+        /** Change the planning of an event you planned, still to come */
+        patch: operations["Coaching_update"];
+        trace?: never;
+    };
+    "/api/v1/coach/athletes/{archerId}/sessions/{id}/photos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Photos of an event; the URLs are signed and expire after 10 minutes */
+        get: operations["Coaching_photos"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/coach/athletes/{archerId}/event-types": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The archer's own event types (for the legend) */
+        get: operations["Coaching_eventTypes"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/coach/athletes/{archerId}/goals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["Coaching_goals"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -533,8 +706,6 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
-        /** @enum {string} */
-        SelfAssignableRole: "ARCHER" | "COACH";
         RegisterDto: {
             /**
              * Format: email
@@ -543,7 +714,6 @@ export interface components {
             email: string;
             password: string;
             displayName?: string;
-            roles: components["schemas"]["SelfAssignableRole"][];
             /**
              * @description Language of the emails sent to the user.
              * @enum {string}
@@ -593,8 +763,6 @@ export interface components {
             idToken: string;
             /** @description Nonce passed to the provider when requesting the token; checked if present. */
             nonce?: string;
-            /** @description Roles for a new account. If omitted for a new account, it is created without roles and the client must ask the user (PUT /users/me/roles). Ignored for existing accounts. */
-            roles?: components["schemas"]["SelfAssignableRole"][];
             /** @description Apple only sends the name to the client, on first sign-in: forward it here. */
             displayName?: string;
             /** @enum {string} */
@@ -606,7 +774,7 @@ export interface components {
             refreshToken: string;
         };
         /**
-         * @description Empty for an account created through Google / Apple whose user has not chosen yet.
+         * @description Nobody picks their roles: every account is ARCHER; COACH while an archer's coach invitation the user accepted still exists; ADMIN is granted by an administrator.
          * @enum {string}
          */
         Role: "ADMIN" | "ARCHER" | "COACH";
@@ -621,17 +789,13 @@ export interface components {
             displayName: string | null;
             /** @example fr */
             locale: string;
-            /** @description Empty for an account created through Google / Apple whose user has not chosen yet. */
+            /** @description Nobody picks their roles: every account is ARCHER; COACH while an archer's coach invitation the user accepted still exists; ADMIN is granted by an administrator. */
             roles: components["schemas"]["Role"][];
             /** @description False for accounts created through Google / Apple only. */
             hasPassword: boolean;
             providers: components["schemas"]["AuthProvider"][];
             /** Format: date-time */
             createdAt: string;
-        };
-        UpdateMyRolesDto: {
-            /** @description Replaces the self-assignable roles (ADMIN, if held, is kept). */
-            roles: components["schemas"]["SelfAssignableRole"][];
         };
         /**
          * @description Which band was clicked: one of the theme's artwork bands, or `title` (the month's name in hollow letters, drawn by the client).
@@ -765,6 +929,8 @@ export interface components {
             customType: components["schemas"]["CustomEventTypeDto"] | null;
             /** @description Whether the review of a training, coaching or competition is written: at least one of arrowCount, score, satisfaction, technique, description, physicalFeeling, mentalFeeling, wentWell, toImprove, nextTime is filled. Always true for the other types (nothing to review). Clients fill the review only once the day has come. */
             completed: boolean;
+            /** @description Whether the archer's coach planned the event (see `SessionDto.plannedBy`). Clients mark it until the archer completes it. */
+            plannedByCoach: boolean;
         };
         CompetitionStatDto: {
             /**
@@ -843,6 +1009,38 @@ export interface components {
             wentWell: string[];
             toImprove: string[];
         };
+        PlannerDto: {
+            /** Format: uuid */
+            id: string;
+            /** @description Display name, or email. */
+            name: string;
+        };
+        NewEventDto: {
+            /** Format: uuid */
+            id: string;
+            type: components["schemas"]["SessionType"];
+            /** @example 2026-10-03 */
+            date: string;
+            durationMinutes: number | null;
+            location: string | null;
+            discipline: components["schemas"]["Discipline"] | null;
+            score: number | null;
+            /** @description Analyses, or the text of an `OTHER` event. */
+            description: string | null;
+            /** @description `OTHER` events only. */
+            title: string | null;
+            /** @description `OTHER` events only; null = default colour. */
+            color: components["schemas"]["EventColor"] | null;
+            /** @description `OTHER` events only; null = default pictogram. */
+            icon: components["schemas"]["EventIcon"] | null;
+            /** @description `CUSTOM` events only: their type, whose title, colour and pictogram they show. */
+            customType: components["schemas"]["CustomEventTypeDto"] | null;
+            /** @description Whether the review of a training, coaching or competition is written: at least one of arrowCount, score, satisfaction, technique, description, physicalFeeling, mentalFeeling, wentWell, toImprove, nextTime is filled. Always true for the other types (nothing to review). Clients fill the review only once the day has come. */
+            completed: boolean;
+            /** @description Whether the archer's coach planned the event (see `SessionDto.plannedBy`). Clients mark it until the archer completes it. */
+            plannedByCoach: boolean;
+            plannedBy: components["schemas"]["PlannerDto"];
+        };
         CreateSessionDto: {
             type: components["schemas"]["SessionType"];
             /**
@@ -878,6 +1076,10 @@ export interface components {
             customType: components["schemas"]["CustomEventTypeDto"] | null;
             /** @description Whether the review of a training, coaching or competition is written: at least one of arrowCount, score, satisfaction, technique, description, physicalFeeling, mentalFeeling, wentWell, toImprove, nextTime is filled. Always true for the other types (nothing to review). Clients fill the review only once the day has come. */
             completed: boolean;
+            /** @description Whether the archer's coach planned the event (see `SessionDto.plannedBy`). Clients mark it until the archer completes it. */
+            plannedByCoach: boolean;
+            /** @description The coach who planned the event in the archer's journal; null when the archer created it. That coach may change its planning or delete it while it is still to come. */
+            plannedBy: components["schemas"]["PlannerDto"] | null;
             distanceMeters: number | null;
             arrowCount: number | null;
             objective: string | null;
@@ -1036,7 +1238,15 @@ export interface components {
             /** @description The indicator shown on the home page; null for none. */
             favoriteIndicator?: components["schemas"]["Indicator"] | null;
         };
-        /** @enum {string} */
+        /**
+         * @description Coaches only. What the coach may do in the archer's journal of the season in progress (the one whose period covers today): READ = see all of it, plus the indicators and goals; WRITE = READ, and plan future trainings, coachings, competitions and strength sessions.
+         * @enum {string}
+         */
+        CoachAccess: "READ" | "WRITE";
+        /**
+         * @description A coach has ACCEPTED once linked to an account (and then has access).
+         * @enum {string}
+         */
         InvitationStatus: "PENDING" | "ACCEPTED";
         InvitationDto: {
             /** Format: uuid */
@@ -1045,6 +1255,9 @@ export interface components {
             /** Format: email */
             email: string;
             isCoach: boolean;
+            /** @description Coaches only. What the coach may do in the archer's journal of the season in progress (the one whose period covers today): READ = see all of it, plus the indicators and goals; WRITE = READ, and plan future trainings, coachings, competitions and strength sessions. */
+            coachAccess: components["schemas"]["CoachAccess"] | null;
+            /** @description A coach has ACCEPTED once linked to an account (and then has access). */
             status: components["schemas"]["InvitationStatus"];
             /** Format: date-time */
             createdAt: string;
@@ -1058,10 +1271,24 @@ export interface components {
              */
             email: string;
             /**
-             * @description True when the guest is the archer's coach.
+             * @description True when the guest is the archer's coach: accepting (signed in) gives them `coachAccess`. Otherwise the guest is only invited to discover the site.
              * @default false
              */
             isCoach: boolean;
+            /**
+             * @description What the coach may do in the archer's journal of the season in progress (the one whose period covers today): READ = see all of it, plus the indicators and goals; WRITE = READ, and plan future trainings, coachings, competitions and strength sessions. Ignored unless `isCoach`.
+             * @default READ
+             */
+            coachAccess: components["schemas"]["CoachAccess"];
+            /**
+             * @description Language of the invitation email; the archer's own language when omitted.
+             * @enum {string}
+             */
+            locale?: "fr" | "en";
+        };
+        UpdateInvitationDto: {
+            /** @description What the coach may do in the archer's journal of the season in progress (the one whose period covers today): READ = see all of it, plus the indicators and goals; WRITE = READ, and plan future trainings, coachings, competitions and strength sessions. */
+            coachAccess: components["schemas"]["CoachAccess"];
         };
         SiteDto: {
             /** Format: uuid */
@@ -1086,6 +1313,52 @@ export interface components {
         AcceptedInvitationDto: {
             /** @description Display name (or email) of the archer who sent the invitation. */
             invitedBy: string;
+            /**
+             * Format: uuid
+             * @description Coach invitations: the archer's id (see /coach/athletes/{archerId}); null for a plain guest.
+             */
+            archerId: string | null;
+        };
+        AthleteDto: {
+            /**
+             * Format: uuid
+             * @description The archer's user id.
+             */
+            id: string;
+            /** @description Display name, or email. */
+            name: string;
+            access: components["schemas"]["CoachAccess"];
+            /** @description The archer's journal of the season in progress (its period covers today): the only one the coach sees. Null when there is none. */
+            journal: components["schemas"]["JournalDto"] | null;
+            /** @description The disciplines the archer practises (their profile), offered when planning. */
+            disciplines: components["schemas"]["Discipline"][];
+        };
+        /** @enum {string} */
+        PlannableType: "TRAINING" | "COACHING" | "COMPETITION" | "STRENGTH";
+        PlanSessionDto: {
+            durationMinutes?: number | null;
+            location?: string | null;
+            discipline?: components["schemas"]["Discipline"] | null;
+            distanceMeters?: number | null;
+            objective?: string | null;
+            type: components["schemas"]["PlannableType"];
+            /**
+             * @description A day after today, within the archer's journal of the season in progress.
+             * @example 2026-11-03
+             */
+            date: string;
+        };
+        UpdatePlannedSessionDto: {
+            durationMinutes?: number | null;
+            location?: string | null;
+            discipline?: components["schemas"]["Discipline"] | null;
+            distanceMeters?: number | null;
+            objective?: string | null;
+            /**
+             * @description A day after today, within the archer's journal of the season in progress.
+             * @example 2026-11-04
+             */
+            date?: string;
         };
     };
     responses: never;
@@ -1506,29 +1779,6 @@ export interface operations {
             };
         };
     };
-    Users_updateMyRoles: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpdateMyRolesDto"];
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["UserDto"];
-                };
-            };
-        };
-    };
     Users_list: {
         parameters: {
             query?: never;
@@ -1919,6 +2169,32 @@ export interface operations {
             };
         };
     };
+    Journal_newEvents: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NewEventDto"][];
+                };
+            };
+            /** @description Archers only */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     Journal_get: {
         parameters: {
             query?: never;
@@ -2023,6 +2299,38 @@ export interface operations {
             };
             /** @description DAY_FULL: moved to a day that already has 4 events */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    Journal_markSeen: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Archers only */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -2580,6 +2888,51 @@ export interface operations {
             };
         };
     };
+    Profile_updateInvitation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateInvitationDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvitationDto"];
+                };
+            };
+            /** @description Not a coach */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Archers only */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     Profile_listSites: {
         parameters: {
             query?: never;
@@ -2696,8 +3049,432 @@ export interface operations {
                     "application/json": components["schemas"]["AcceptedInvitationDto"];
                 };
             };
-            /** @description INVALID_INVITATION_TOKEN */
+            /** @description INVALID_INVITATION_TOKEN, CANNOT_INVITE_SELF */
             400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description SIGN_IN_REQUIRED: a coach invitation, no valid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description INVITATION_ALREADY_SENT: already coaching that archer */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    Coaching_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AthleteDto"][];
+                };
+            };
+            /** @description Not one of your archers (or not in their current journal) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    Coaching_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                archerId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AthleteDto"];
+                };
+            };
+            /** @description Not one of your archers (or not in their current journal) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    Coaching_sessions: {
+        parameters: {
+            query: {
+                /** @description First day, inclusive (YYYY-MM-DD). */
+                from: string;
+                /** @description Last day, inclusive (YYYY-MM-DD). At most 366 days after `from`. */
+                to: string;
+            };
+            header?: never;
+            path: {
+                archerId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionSummaryDto"][];
+                };
+            };
+            /** @description Not one of your archers (or not in their current journal) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    Coaching_plan: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                archerId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlanSessionDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionDto"];
+                };
+            };
+            /** @description DATE_NOT_PLANNABLE */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Read-only access */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not one of your archers (or not in their current journal) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description DAY_FULL */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    Coaching_stats: {
+        parameters: {
+            query?: {
+                /** @description First day, inclusive (YYYY-MM-DD). Omitted = from the first event. */
+                from?: string;
+                /** @description Last day, inclusive (YYYY-MM-DD). Omitted = up to the last event. */
+                to?: string;
+            };
+            header?: never;
+            path: {
+                archerId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JournalStatsDto"];
+                };
+            };
+            /** @description Not one of your archers (or not in their current journal) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    Coaching_suggestions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                archerId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionSuggestionsDto"];
+                };
+            };
+            /** @description Not one of your archers (or not in their current journal) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    Coaching_session: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                archerId: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionDto"];
+                };
+            };
+            /** @description Not one of your archers (or not in their current journal) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    Coaching_remove: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                archerId: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Read-only access, or an event you did not plan */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not one of your archers (or not in their current journal) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description DATE_NOT_PLANNABLE: the event is past */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    Coaching_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                archerId: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdatePlannedSessionDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionDto"];
+                };
+            };
+            /** @description DATE_NOT_PLANNABLE */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Read-only access, or an event you did not plan */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not one of your archers (or not in their current journal) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description DATE_NOT_PLANNABLE (the event is past), DAY_FULL */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    Coaching_photos: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                archerId: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PhotoDto"][];
+                };
+            };
+            /** @description Not one of your archers (or not in their current journal) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    Coaching_eventTypes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                archerId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomEventTypeDto"][];
+                };
+            };
+            /** @description Not one of your archers (or not in their current journal) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    Coaching_goals: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                archerId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GoalDto"][];
+                };
+            };
+            /** @description Not one of your archers (or not in their current journal) */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

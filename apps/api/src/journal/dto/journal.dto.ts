@@ -702,10 +702,41 @@ export class SessionSummaryDto {
       'review). Clients fill the review only once the day has come.',
   })
   completed!: boolean;
+
+  @ApiProperty({
+    description:
+      "Whether the archer's coach planned the event (see `SessionDto.plannedBy`). Clients mark " +
+      'it until the archer completes it.',
+  })
+  plannedByCoach!: boolean;
+}
+
+/** The coach who planned an event. */
+export class PlannerDto {
+  @ApiProperty({ format: 'uuid' })
+  id!: string;
+
+  @ApiProperty({ description: 'Display name, or email.' })
+  name!: string;
+}
+
+/** An event the archer's coach planned that the archer hasn't opened yet. */
+export class NewEventDto extends SessionSummaryDto {
+  @ApiProperty({ type: () => PlannerDto })
+  plannedBy!: PlannerDto;
 }
 
 /** Full session sheet. */
 export class SessionDto extends SessionSummaryDto {
+  @ApiProperty({
+    type: () => PlannerDto,
+    nullable: true,
+    description:
+      "The coach who planned the event in the archer's journal; null when the archer created it. " +
+      'That coach may change its planning or delete it while it is still to come.',
+  })
+  plannedBy!: PlannerDto | null;
+
   @ApiProperty({ type: Number, nullable: true })
   distanceMeters!: number | null;
 

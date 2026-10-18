@@ -23,10 +23,26 @@ the same API — keep it client-agnostic (no cookies, no web-only assumptions in
   Server Components / Actions. Next.js 16: middleware is `src/proxy.ts`; read `apps/web/AGENTS.md`.
 - Errors: throw `ApiException(status, ErrorCode.X, detail)`; codes in `apps/api/src/common/errors.ts`
   are public contract (mirrored in `packages/api-client/src/index.ts`) — clients translate them.
-- Roles: `ARCHER`/`COACH` self-assigned, `ADMIN` via `user:make-admin`; guard with `@Roles(...)`.
-  Web: users holding both pick a profile after each sign-in (`/choose-profile`, switchable from the avatar menu);
-  it's a web-only preference (`tl_profile` cookie, `src/lib/current-user-paths.ts`) — the API still grants both
-  roles. Read it with `getActiveProfile()`: the archer area and archer navigation need the ARCHER profile.
+- Roles: nobody picks them (no roles at sign-up, no onboarding, the Account page only shows them). Every account
+  is `ARCHER` (stored at creation); `COACH` is not stored but derived while an accepted coach invitation exists
+  (`rolesOf` in `apps/api/src/users/roles.ts`, used by `/users/me` and the access token); `ADMIN` via
+  `user:make-admin`. Guard with `@Roles(...)`. Web: no profile to pick at sign-in — the journal opened in the
+  header's journal menu (`components/journal-menu.tsx`: own journals, then coached archers') sets the web-only
+  `tl_profile` cookie (`src/lib/current-user-paths.ts`), which only decides where the logo leads (`/archer` or
+  `/coach`). The archer area needs the ARCHER role; the tabs follow the URL (`/archer/…` or `/coach/<archerId>/…`).
+- Coaching (`apps/api/src/coaching/`, routes `/coach/athletes/...`, no `@Roles`: access comes from the link): an
+  archer invites their coach from the Profile page (`isCoach` + `coachAccess` READ / WRITE, changeable via PATCH).
+  The coach accepts while signed in (`SIGN_IN_REQUIRED` otherwise; `POST /invitations/accept` is public but reads
+  an optional bearer token, `OptionalUser`) and is linked (`ProfileInvitation.coachId`). They see only the journal
+  whose period covers today (calendar, sheets, photos, indicators, goals); WRITE also plans TRAINING / COACHING /
+  COMPETITION / STRENGTH events after today (planning fields only, `DATE_NOT_PLANNABLE`), stored with
+  `plannedById`; they may change / delete only the ones they planned, while still to come. Such an event is
+  "new" to the archer until they open its sheet (`seenAt`, set by `POST /journal/sessions/{id}/seen`, called by
+  `SessionForm` once shown — not by the GET), listed on the home page (`GET /journal/sessions/new`,
+  `components/journal/new-events.tsx`); calendars and the sheet's margin show a "Coach" stamp until it is completed. Web: the list of
+  archers is a card of the Account page (`components/coach/athletes-card.tsx`, where the coach profile's logo
+  leads), then `/coach/[archerId]/{journal,journal/[id],stats}` reusing `JournalView` / `SessionForm` (`coach` prop) and
+  read-only `SessionPhotos` / `GoalsCard`. Deleting the invitation ends the access.
 - Web is bilingual (next-intl, `/fr`, `/en`): every user-facing string goes in `apps/web/messages/{fr,en}.json`;
   use `Link`/`redirect` from `@/i18n/navigation`, not `next/link`/`next/navigation`.
 - UI: Mantine 9 (no Tailwind). Responsive via Mantine props (`cols={{ base: 1, sm: 2 }}`, `hiddenFrom`,
@@ -43,7 +59,9 @@ the same API — keep it client-agnostic (no cookies, no web-only assumptions in
   wide page via `children` for content the fold would cut: calendar, charts). Fonts:
   `--font-hand` (Caveat, headings) and `--font-calendar` (the calendars' weekdays and day numbers: one of five
   calligraphy fonts, `src/lib/calendar-fonts.ts`, chosen on the Profile page — `calendarFont` in the API's archer
-  profile — and set on `<html>` by the root layout; `--font-hand-upright`, Patrick Hand, as fallback). The selected
+  profile — and set on `<html>` by the root layout; `--font-hand-upright`, Patrick Hand, as fallback). On the
+  archer home page every title and the date use that font, in bold (`archer/home.module.css` points `--font-hand`
+  to `--font-calendar`). The selected
   journal's title is centred in the header.
 - Journals: a `Journal` is a named period (title + inclusive start / end days), usually one season. There is no
   link to events: a journal's events are the archer's sessions dated within its period. An archer's journals must
@@ -94,7 +112,8 @@ the same API — keep it client-agnostic (no cookies, no web-only assumptions in
   re-encoded with `sharp` (2000 px + thumbnail, metadata dropped) and read back through 10-minute signed URLs.
   Deleting an event or a journal must also remove the files (`PhotosService.removeFiles`).
 - Archer profile (`apps/api/src/profile/`, web `components/profile/`): sport details, favourite websites and people
-  invited by email. Accepting an invitation (public `/invitations/accept`, token consumed on POST) grants no access yet.
+  invited by email. A plain guest's invitation (public `/invitations/accept`, token used on POST) grants no access;
+  a coach's does (see Coaching).
 - `@mantine/schedule` 9.6.3 leaks some props to the DOM from MonthView / YearView: don't pass `mode="static"`,
   and pass `onTimeSlotClick` / `onAllDaySlotClick` only in day / week views (see `components/journal/journal-view.tsx`).
 - Mantine `Slider`: accessible name goes in `thumbLabel`, not `aria-label`.

@@ -4,9 +4,10 @@ import { type ReactNode, useLayoutEffect, useRef } from 'react';
 import classes from './loose-leaf.module.css';
 
 /**
- * A column of blocks on a loose leaf (loose-leaf.tsx) whose tops all fall on the sheet's
- * ruling: each block is pushed down to the next ruled line, so a heading at its top sits
- * on a line. Recomputed whenever the column's size changes (text typed, photos added…).
+ * A column of blocks on a loose leaf (loose-leaf.tsx) or a notebook page (notebook.tsx) whose
+ * tops all fall on the sheet's ruling: each block is pushed down to the next ruled line, so a
+ * heading at its top sits on a line. Recomputed whenever the column's size changes (text
+ * typed, photos added…).
  */
 export function RuledStack({
   leadingLines = 0,

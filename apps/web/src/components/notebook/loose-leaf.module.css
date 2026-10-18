@@ -75,6 +75,22 @@
 }
 
 /*
+ * What is written in the margin (LooseLeaf's `margin`): between the punched holes and the
+ * margin line, near the top of the sheet.
+ */
+.margin {
+  position: absolute;
+  top: calc(var(--step) * 2);
+  left: calc(var(--hole-x) + var(--hole));
+  width: calc(var(--margin) - var(--hole-x) - var(--hole) - 6px);
+  display: flex;
+  /* Centred, but something wider than the margin spills to the right only (over the sheet,
+     not the holes). */
+  justify-content: safe center;
+  pointer-events: none;
+}
+
+/*
  * RuledStack (ruled-stack.tsx): blocks one under the other, each pushed by script onto
  * the first ruled line free after the one above (so 0 to one line apart).
  */

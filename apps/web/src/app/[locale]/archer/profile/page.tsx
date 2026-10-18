@@ -36,6 +36,8 @@ export default async function ArcherProfilePage({ params }: PageProps<'/[locale]
     <SectionPage
       title={t('profile')}
       intro={t('profileIntro')}
+      // Dotted paper, like a bullet journal.
+      dotted
       left={
         <Stack gap="md">
           <InvitationsCard invitations={invitations ?? []} />

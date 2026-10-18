@@ -529,42 +529,6 @@
         ]
       }
     },
-    "/api/v1/users/me/roles": {
-      "put": {
-        "operationId": "Users_updateMyRoles",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateMyRolesDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/UserDto"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "users"
-        ]
-      }
-    },
     "/api/v1/users": {
       "get": {
         "operationId": "Users_list",
@@ -1057,6 +1021,39 @@
         ]
       }
     },
+    "/api/v1/journal/sessions/new": {
+      "get": {
+        "operationId": "Journal_newEvents",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/NewEventDto"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Archers only"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Events the archer's coach planned that the archer hasn't opened yet",
+        "tags": [
+          "journal"
+        ]
+      }
+    },
     "/api/v1/journal/sessions/{id}": {
       "get": {
         "operationId": "Journal_get",
@@ -1177,6 +1174,41 @@
             "bearer": []
           }
         ],
+        "tags": [
+          "journal"
+        ]
+      }
+    },
+    "/api/v1/journal/sessions/{id}/seen": {
+      "post": {
+        "operationId": "Journal_markSeen",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "403": {
+            "description": "Archers only"
+          },
+          "404": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Tell that the archer opened the sheet (clients call it when they show it): a coach-planned event is then no longer new",
         "tags": [
           "journal"
         ]
@@ -1783,6 +1815,59 @@
       }
     },
     "/api/v1/profile/invitations/{id}": {
+      "patch": {
+        "operationId": "Profile_updateInvitation",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateInvitationDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvitationDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Not a coach"
+          },
+          "403": {
+            "description": "Archers only"
+          },
+          "404": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Change a coach's access to the journal of the season in progress",
+        "tags": [
+          "profile"
+        ]
+      },
       "delete": {
         "operationId": "Profile_removeInvitation",
         "parameters": [
@@ -1811,6 +1896,7 @@
             "bearer": []
           }
         ],
+        "summary": "Withdraw an invitation; a coach loses their access",
         "tags": [
           "profile"
         ]
@@ -1948,11 +2034,596 @@
             }
           },
           "400": {
-            "description": "INVALID_INVITATION_TOKEN"
+            "description": "INVALID_INVITATION_TOKEN, CANNOT_INVITE_SELF"
+          },
+          "401": {
+            "description": "SIGN_IN_REQUIRED: a coach invitation, no valid token"
+          },
+          "409": {
+            "description": "INVITATION_ALREADY_SENT: already coaching that archer"
           }
         },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Accept an invitation (a coach invitation needs the bearer token of the coach)",
         "tags": [
           "profile"
+        ]
+      }
+    },
+    "/api/v1/coach/athletes": {
+      "get": {
+        "operationId": "Coaching_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AthleteDto"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not one of your archers (or not in their current journal)"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "The archers who made you their coach, with their current journal",
+        "tags": [
+          "coaching"
+        ]
+      }
+    },
+    "/api/v1/coach/athletes/{archerId}": {
+      "get": {
+        "operationId": "Coaching_get",
+        "parameters": [
+          {
+            "name": "archerId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AthleteDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not one of your archers (or not in their current journal)"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "coaching"
+        ]
+      }
+    },
+    "/api/v1/coach/athletes/{archerId}/sessions": {
+      "get": {
+        "operationId": "Coaching_sessions",
+        "parameters": [
+          {
+            "name": "archerId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "from",
+            "required": true,
+            "in": "query",
+            "description": "First day, inclusive (YYYY-MM-DD).",
+            "schema": {
+              "example": "2026-10-01",
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "required": true,
+            "in": "query",
+            "description": "Last day, inclusive (YYYY-MM-DD). At most 366 days after `from`.",
+            "schema": {
+              "example": "2026-10-31",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SessionSummaryDto"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not one of your archers (or not in their current journal)"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Events of the current journal between two days (clipped to it)",
+        "tags": [
+          "coaching"
+        ]
+      },
+      "post": {
+        "operationId": "Coaching_plan",
+        "parameters": [
+          {
+            "name": "archerId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlanSessionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "DATE_NOT_PLANNABLE"
+          },
+          "403": {
+            "description": "Read-only access"
+          },
+          "404": {
+            "description": "Not one of your archers (or not in their current journal)"
+          },
+          "409": {
+            "description": "DAY_FULL"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Plan a training, coaching, competition or strength session (WRITE access)",
+        "tags": [
+          "coaching"
+        ]
+      }
+    },
+    "/api/v1/coach/athletes/{archerId}/sessions/stats": {
+      "get": {
+        "operationId": "Coaching_stats",
+        "parameters": [
+          {
+            "name": "archerId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "from",
+            "required": false,
+            "in": "query",
+            "description": "First day, inclusive (YYYY-MM-DD). Omitted = from the first event.",
+            "schema": {
+              "example": "2026-09-01",
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "required": false,
+            "in": "query",
+            "description": "Last day, inclusive (YYYY-MM-DD). Omitted = up to the last event.",
+            "schema": {
+              "example": "2027-08-31",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JournalStatsDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not one of your archers (or not in their current journal)"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Figures behind the archer's indicators, over the current journal's period",
+        "tags": [
+          "coaching"
+        ]
+      }
+    },
+    "/api/v1/coach/athletes/{archerId}/sessions/suggestions": {
+      "get": {
+        "operationId": "Coaching_suggestions",
+        "parameters": [
+          {
+            "name": "archerId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionSuggestionsDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not one of your archers (or not in their current journal)"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "coaching"
+        ]
+      }
+    },
+    "/api/v1/coach/athletes/{archerId}/sessions/{id}": {
+      "get": {
+        "operationId": "Coaching_session",
+        "parameters": [
+          {
+            "name": "archerId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not one of your archers (or not in their current journal)"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "coaching"
+        ]
+      },
+      "patch": {
+        "operationId": "Coaching_update",
+        "parameters": [
+          {
+            "name": "archerId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdatePlannedSessionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "DATE_NOT_PLANNABLE"
+          },
+          "403": {
+            "description": "Read-only access, or an event you did not plan"
+          },
+          "404": {
+            "description": "Not one of your archers (or not in their current journal)"
+          },
+          "409": {
+            "description": "DATE_NOT_PLANNABLE (the event is past), DAY_FULL"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Change the planning of an event you planned, still to come",
+        "tags": [
+          "coaching"
+        ]
+      },
+      "delete": {
+        "operationId": "Coaching_remove",
+        "parameters": [
+          {
+            "name": "archerId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "403": {
+            "description": "Read-only access, or an event you did not plan"
+          },
+          "404": {
+            "description": "Not one of your archers (or not in their current journal)"
+          },
+          "409": {
+            "description": "DATE_NOT_PLANNABLE: the event is past"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Delete an event you planned, still to come",
+        "tags": [
+          "coaching"
+        ]
+      }
+    },
+    "/api/v1/coach/athletes/{archerId}/sessions/{id}/photos": {
+      "get": {
+        "operationId": "Coaching_photos",
+        "parameters": [
+          {
+            "name": "archerId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PhotoDto"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not one of your archers (or not in their current journal)"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Photos of an event; the URLs are signed and expire after 10 minutes",
+        "tags": [
+          "coaching"
+        ]
+      }
+    },
+    "/api/v1/coach/athletes/{archerId}/event-types": {
+      "get": {
+        "operationId": "Coaching_eventTypes",
+        "parameters": [
+          {
+            "name": "archerId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CustomEventTypeDto"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not one of your archers (or not in their current journal)"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "The archer's own event types (for the legend)",
+        "tags": [
+          "coaching"
+        ]
+      }
+    },
+    "/api/v1/coach/athletes/{archerId}/goals": {
+      "get": {
+        "operationId": "Coaching_goals",
+        "parameters": [
+          {
+            "name": "archerId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/GoalDto"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not one of your archers (or not in their current journal)"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "coaching"
         ]
       }
     }
@@ -1974,13 +2645,6 @@
       }
     },
     "schemas": {
-      "SelfAssignableRole": {
-        "type": "string",
-        "enum": [
-          "ARCHER",
-          "COACH"
-        ]
-      },
       "RegisterDto": {
         "type": "object",
         "properties": {
@@ -1998,13 +2662,6 @@
             "type": "string",
             "maxLength": 100
           },
-          "roles": {
-            "type": "array",
-            "minItems": 1,
-            "items": {
-              "$ref": "#/components/schemas/SelfAssignableRole"
-            }
-          },
           "locale": {
             "type": "string",
             "enum": [
@@ -2016,8 +2673,7 @@
         },
         "required": [
           "email",
-          "password",
-          "roles"
+          "password"
         ]
       },
       "RegistrationDto": {
@@ -2135,13 +2791,6 @@
             "type": "string",
             "description": "Nonce passed to the provider when requesting the token; checked if present."
           },
-          "roles": {
-            "type": "array",
-            "description": "Roles for a new account. If omitted for a new account, it is created without roles and the client must ask the user (PUT /users/me/roles). Ignored for existing accounts.",
-            "items": {
-              "$ref": "#/components/schemas/SelfAssignableRole"
-            }
-          },
           "displayName": {
             "type": "string",
             "maxLength": 100,
@@ -2182,7 +2831,7 @@
           "ARCHER",
           "COACH"
         ],
-        "description": "Empty for an account created through Google / Apple whose user has not chosen yet."
+        "description": "Nobody picks their roles: every account is ARCHER; COACH while an archer's coach invitation the user accepted still exists; ADMIN is granted by an administrator."
       },
       "AuthProvider": {
         "type": "string",
@@ -2215,7 +2864,7 @@
           },
           "roles": {
             "type": "array",
-            "description": "Empty for an account created through Google / Apple whose user has not chosen yet.",
+            "description": "Nobody picks their roles: every account is ARCHER; COACH while an archer's coach invitation the user accepted still exists; ADMIN is granted by an administrator.",
             "items": {
               "$ref": "#/components/schemas/Role"
             }
@@ -2245,22 +2894,6 @@
           "hasPassword",
           "providers",
           "createdAt"
-        ]
-      },
-      "UpdateMyRolesDto": {
-        "type": "object",
-        "properties": {
-          "roles": {
-            "type": "array",
-            "minItems": 1,
-            "description": "Replaces the self-assignable roles (ADMIN, if held, is kept).",
-            "items": {
-              "$ref": "#/components/schemas/SelfAssignableRole"
-            }
-          }
-        },
-        "required": [
-          "roles"
         ]
       },
       "ThemeBand": {
@@ -2639,6 +3272,10 @@
           "completed": {
             "type": "boolean",
             "description": "Whether the review of a training, coaching or competition is written: at least one of arrowCount, score, satisfaction, technique, description, physicalFeeling, mentalFeeling, wentWell, toImprove, nextTime is filled. Always true for the other types (nothing to review). Clients fill the review only once the day has come."
+          },
+          "plannedByCoach": {
+            "type": "boolean",
+            "description": "Whether the archer's coach planned the event (see `SessionDto.plannedBy`). Clients mark it until the archer completes it."
           }
         },
         "required": [
@@ -2654,7 +3291,8 @@
           "color",
           "icon",
           "customType",
-          "completed"
+          "completed",
+          "plannedByCoach"
         ]
       },
       "CompetitionStatDto": {
@@ -2930,6 +3568,129 @@
           "toImprove"
         ]
       },
+      "PlannerDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "description": "Display name, or email."
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ]
+      },
+      "NewEventDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "type": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SessionType"
+              }
+            ]
+          },
+          "date": {
+            "type": "string",
+            "example": "2026-10-03"
+          },
+          "durationMinutes": {
+            "type": "number",
+            "nullable": true
+          },
+          "location": {
+            "type": "string",
+            "nullable": true
+          },
+          "discipline": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Discipline"
+              }
+            ]
+          },
+          "score": {
+            "type": "number",
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "nullable": true,
+            "description": "Analyses, or the text of an `OTHER` event."
+          },
+          "title": {
+            "type": "string",
+            "nullable": true,
+            "description": "`OTHER` events only."
+          },
+          "color": {
+            "nullable": true,
+            "description": "`OTHER` events only; null = default colour.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/EventColor"
+              }
+            ]
+          },
+          "icon": {
+            "nullable": true,
+            "description": "`OTHER` events only; null = default pictogram.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/EventIcon"
+              }
+            ]
+          },
+          "customType": {
+            "nullable": true,
+            "description": "`CUSTOM` events only: their type, whose title, colour and pictogram they show.",
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CustomEventTypeDto"
+              }
+            ]
+          },
+          "completed": {
+            "type": "boolean",
+            "description": "Whether the review of a training, coaching or competition is written: at least one of arrowCount, score, satisfaction, technique, description, physicalFeeling, mentalFeeling, wentWell, toImprove, nextTime is filled. Always true for the other types (nothing to review). Clients fill the review only once the day has come."
+          },
+          "plannedByCoach": {
+            "type": "boolean",
+            "description": "Whether the archer's coach planned the event (see `SessionDto.plannedBy`). Clients mark it until the archer completes it."
+          },
+          "plannedBy": {
+            "$ref": "#/components/schemas/PlannerDto"
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "date",
+          "durationMinutes",
+          "location",
+          "discipline",
+          "score",
+          "description",
+          "title",
+          "color",
+          "icon",
+          "customType",
+          "completed",
+          "plannedByCoach",
+          "plannedBy"
+        ]
+      },
       "CreateSessionDto": {
         "type": "object",
         "properties": {
@@ -3036,6 +3797,20 @@
             "type": "boolean",
             "description": "Whether the review of a training, coaching or competition is written: at least one of arrowCount, score, satisfaction, technique, description, physicalFeeling, mentalFeeling, wentWell, toImprove, nextTime is filled. Always true for the other types (nothing to review). Clients fill the review only once the day has come."
           },
+          "plannedByCoach": {
+            "type": "boolean",
+            "description": "Whether the archer's coach planned the event (see `SessionDto.plannedBy`). Clients mark it until the archer completes it."
+          },
+          "plannedBy": {
+            "nullable": true,
+            "description": "The coach who planned the event in the archer's journal; null when the archer created it. That coach may change its planning or delete it while it is still to come.",
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PlannerDto"
+              }
+            ]
+          },
           "distanceMeters": {
             "type": "number",
             "nullable": true
@@ -3107,6 +3882,8 @@
           "icon",
           "customType",
           "completed",
+          "plannedByCoach",
+          "plannedBy",
           "distanceMeters",
           "arrowCount",
           "objective",
@@ -3614,12 +4391,21 @@
           }
         }
       },
+      "CoachAccess": {
+        "type": "string",
+        "enum": [
+          "READ",
+          "WRITE"
+        ],
+        "description": "Coaches only. What the coach may do in the archer's journal of the season in progress (the one whose period covers today): READ = see all of it, plus the indicators and goals; WRITE = READ, and plan future trainings, coachings, competitions and strength sessions."
+      },
       "InvitationStatus": {
         "type": "string",
         "enum": [
           "PENDING",
           "ACCEPTED"
-        ]
+        ],
+        "description": "A coach has ACCEPTED once linked to an account (and then has access)."
       },
       "InvitationDto": {
         "type": "object",
@@ -3638,7 +4424,17 @@
           "isCoach": {
             "type": "boolean"
           },
+          "coachAccess": {
+            "nullable": true,
+            "description": "Coaches only. What the coach may do in the archer's journal of the season in progress (the one whose period covers today): READ = see all of it, plus the indicators and goals; WRITE = READ, and plan future trainings, coachings, competitions and strength sessions.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CoachAccess"
+              }
+            ]
+          },
           "status": {
+            "description": "A coach has ACCEPTED once linked to an account (and then has access).",
             "allOf": [
               {
                 "$ref": "#/components/schemas/InvitationStatus"
@@ -3655,6 +4451,7 @@
           "name",
           "email",
           "isCoach",
+          "coachAccess",
           "status",
           "createdAt"
         ]
@@ -3676,12 +4473,45 @@
           "isCoach": {
             "type": "boolean",
             "default": false,
-            "description": "True when the guest is the archer's coach."
+            "description": "True when the guest is the archer's coach: accepting (signed in) gives them `coachAccess`. Otherwise the guest is only invited to discover the site."
+          },
+          "coachAccess": {
+            "default": "READ",
+            "description": "What the coach may do in the archer's journal of the season in progress (the one whose period covers today): READ = see all of it, plus the indicators and goals; WRITE = READ, and plan future trainings, coachings, competitions and strength sessions. Ignored unless `isCoach`.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CoachAccess"
+              }
+            ]
+          },
+          "locale": {
+            "type": "string",
+            "enum": [
+              "fr",
+              "en"
+            ],
+            "description": "Language of the invitation email; the archer's own language when omitted."
           }
         },
         "required": [
           "name",
           "email"
+        ]
+      },
+      "UpdateInvitationDto": {
+        "type": "object",
+        "properties": {
+          "coachAccess": {
+            "description": "What the coach may do in the archer's journal of the season in progress (the one whose period covers today): READ = see all of it, plus the indicators and goals; WRITE = READ, and plan future trainings, coachings, competitions and strength sessions.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CoachAccess"
+              }
+            ]
+          }
+        },
+        "required": [
+          "coachAccess"
         ]
       },
       "SiteDto": {
@@ -3744,11 +4574,163 @@
           "invitedBy": {
             "type": "string",
             "description": "Display name (or email) of the archer who sent the invitation."
+          },
+          "archerId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true,
+            "description": "Coach invitations: the archer's id (see /coach/athletes/{archerId}); null for a plain guest."
           }
         },
         "required": [
-          "invitedBy"
+          "invitedBy",
+          "archerId"
         ]
+      },
+      "AthleteDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The archer's user id."
+          },
+          "name": {
+            "type": "string",
+            "description": "Display name, or email."
+          },
+          "access": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CoachAccess"
+              }
+            ]
+          },
+          "journal": {
+            "nullable": true,
+            "description": "The archer's journal of the season in progress (its period covers today): the only one the coach sees. Null when there is none.",
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/JournalDto"
+              }
+            ]
+          },
+          "disciplines": {
+            "type": "array",
+            "description": "The disciplines the archer practises (their profile), offered when planning.",
+            "items": {
+              "$ref": "#/components/schemas/Discipline"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "access",
+          "journal",
+          "disciplines"
+        ]
+      },
+      "PlannableType": {
+        "type": "string",
+        "enum": [
+          "TRAINING",
+          "COACHING",
+          "COMPETITION",
+          "STRENGTH"
+        ]
+      },
+      "PlanSessionDto": {
+        "type": "object",
+        "properties": {
+          "durationMinutes": {
+            "type": "number",
+            "nullable": true,
+            "minimum": 0,
+            "maximum": 1440
+          },
+          "location": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 200
+          },
+          "discipline": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Discipline"
+              }
+            ]
+          },
+          "distanceMeters": {
+            "type": "number",
+            "nullable": true,
+            "minimum": 0,
+            "maximum": 1000
+          },
+          "objective": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 5000
+          },
+          "type": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PlannableType"
+              }
+            ]
+          },
+          "date": {
+            "type": "string",
+            "example": "2026-11-03",
+            "description": "A day after today, within the archer's journal of the season in progress."
+          }
+        },
+        "required": [
+          "type",
+          "date"
+        ]
+      },
+      "UpdatePlannedSessionDto": {
+        "type": "object",
+        "properties": {
+          "durationMinutes": {
+            "type": "number",
+            "nullable": true,
+            "minimum": 0,
+            "maximum": 1440
+          },
+          "location": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 200
+          },
+          "discipline": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Discipline"
+              }
+            ]
+          },
+          "distanceMeters": {
+            "type": "number",
+            "nullable": true,
+            "minimum": 0,
+            "maximum": 1000
+          },
+          "objective": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 5000
+          },
+          "date": {
+            "type": "string",
+            "example": "2026-11-04",
+            "description": "A day after today, within the archer's journal of the season in progress."
+          }
+        }
       }
     }
   }

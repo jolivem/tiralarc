@@ -20,3 +20,9 @@ export const CurrentUser = createParamDecorator(
     return request.user;
   },
 );
+
+/** On a @Public() route: the caller if they sent a valid access token, otherwise null. */
+export const OptionalUser = createParamDecorator(
+  (_data: unknown, ctx: ExecutionContext): AuthenticatedUser | null =>
+    ctx.switchToHttp().getRequest<AuthenticatedRequest>().user ?? null,
+);

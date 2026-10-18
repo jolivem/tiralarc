@@ -1,5 +1,5 @@
 import request from 'supertest';
-import { createTestApp, fakeIdToken, type TestContext } from './helpers.js';
+import { createTestApp, dropRoles, fakeIdToken, type TestContext } from './helpers.js';
 
 describe('Journal (e2e)', () => {
   let ctx: TestContext;
@@ -11,11 +11,11 @@ describe('Journal (e2e)', () => {
 
   const http = () => request(ctx.app.getHttpServer());
   const as = (token: string) => ({ Authorization: `Bearer ${token}` });
-  const signUp = async (sub: string, roles: string[]) =>
+  const signUp = async (sub: string) =>
     (
       await http()
         .post('/api/v1/auth/google')
-        .send({ idToken: fakeIdToken(sub, `${sub}@gmail.com`), roles })
+        .send({ idToken: fakeIdToken(sub, `${sub}@gmail.com`) })
         .expect(200)
     ).body.accessToken as string;
   const createJournal = async (token: string, title = 'Saison 2026-2027') =>
@@ -29,9 +29,12 @@ describe('Journal (e2e)', () => {
 
   beforeAll(async () => {
     ctx = await createTestApp();
-    archer = await signUp('j-archer', ['ARCHER']);
-    otherArcher = await signUp('j-other', ['ARCHER']);
-    coach = await signUp('j-coach', ['COACH']);
+    archer = await signUp('j-archer');
+    otherArcher = await signUp('j-other');
+    // Not an archer (every new account is one: its role is taken away).
+    await signUp('j-coach');
+    await dropRoles(ctx.prisma, 'j-coach@gmail.com');
+    coach = await signUp('j-coach');
     journalId = await createJournal(archer);
   });
 
@@ -221,7 +224,7 @@ describe('Journal (e2e)', () => {
   });
 
   it('treats a journal as a period: its events are those dated within it', async () => {
-    const token = await signUp('j-seasons', ['ARCHER']);
+    const token = await signUp('j-seasons');
     expect((await http().get('/api/v1/journals').set(as(token)).expect(200)).body).toEqual([]);
 
     const previous = await http()
@@ -281,7 +284,7 @@ describe('Journal (e2e)', () => {
       .expect(409);
     expect(duplicate.body.code).toBe('JOURNAL_OVERLAP');
     // Someone else's journals don't count.
-    const someoneElse = await signUp('j-seasons-2', ['ARCHER']);
+    const someoneElse = await signUp('j-seasons-2');
     await http()
       .post('/api/v1/journals')
       .set(as(someoneElse))
@@ -544,7 +547,7 @@ describe('Journal (e2e)', () => {
   });
 
   it('summarises a period, or all time, for the indicators', async () => {
-    const token = await signUp('j-stats', ['ARCHER']);
+    const token = await signUp('j-stats');
     const add = async (type: string, date: string, data: object) => {
       const { body } = await http()
         .post('/api/v1/journal/sessions')

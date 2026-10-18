@@ -1,0 +1,15 @@
+/*
+ * The archer's home page (page.tsx): every title, and the date, in the calligraphy font chosen
+ * on the Profile page (`--font-calendar`, set on <html>), in bold. The notebook's headings, the
+ * date, the sticky notes and the season's name are written with `--font-hand`: here it is the
+ * chosen font.
+ */
+.home {
+  --font-hand: var(--font-calendar);
+  /* The favourite indicator's title (stats-cards.tsx, StatsCardTitle). */
+  --card-title-weight: 700;
+
+  & :is(h1, h2, h3) {
+    font-weight: 700;
+  }
+}

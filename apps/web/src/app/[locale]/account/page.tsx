@@ -4,7 +4,6 @@ import {
   Card,
   Container,
   Group,
-  SimpleGrid,
   Stack,
   Table,
   TableTbody,
@@ -15,14 +14,14 @@ import {
   Title,
 } from '@mantine/core';
 import { IconX } from '@tabler/icons-react';
-import type { SelfAssignableRole } from '@tiralarc/api-client';
 import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/server';
-import { RolesForm } from '@/components/auth-forms';
+import { AthletesCard } from '@/components/coach/athletes-card';
 import { JournalsCard } from '@/components/journal/journals-card';
 import { ActionIconLink } from '@/components/links';
 import { redirect } from '@/i18n/navigation';
 import type { Locale } from '@/i18n/routing';
-import { getActiveProfile, getCurrentUser } from '@/lib/current-user';
+import { getAthletes } from '@/lib/coaching';
+import { getCurrentUser } from '@/lib/current-user';
 import { getJournals, getSelectedJournal } from '@/lib/journals';
 
 const PROVIDER_LABELS = { GOOGLE: 'Google', APPLE: 'Apple' } as const;
@@ -43,11 +42,13 @@ export default async function AccountPage({ params }: PageProps<'/[locale]/accou
     });
   }
 
-  // Journals are an archer's: coaches (and archers signed in as coach) don't see the card.
-  const isArcher = (await getActiveProfile()) === 'ARCHER';
-  const [journals, selected] = isArcher
-    ? await Promise.all([getJournals(), getSelectedJournal()])
-    : [[], null];
+  // Journals are an archer's: coaches who are not archers don't see the card.
+  const isArcher = user.roles.includes('ARCHER');
+  const [journals, selected, athletes] = await Promise.all([
+    isArcher ? getJournals() : [],
+    isArcher ? getSelectedJournal() : null,
+    user.roles.includes('COACH') ? getAthletes() : null,
+  ]);
 
   const name = user.displayName ?? user.email;
   const methods = [
@@ -81,56 +82,46 @@ export default async function AccountPage({ params }: PageProps<'/[locale]/accou
           )}
         </Group>
 
-        {/* One column on phones, two from tablets (sm) up. */}
-        <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="lg">
-          <Card withBorder radius="lg" padding="lg">
-            <Table variant="vertical" layout="fixed" withRowBorders={false}>
-              <TableTbody>
-                <TableTr>
-                  <TableTh w={130}>{t('account.email')}</TableTh>
-                  <TableTd style={{ overflowWrap: 'anywhere' }}>{user.email}</TableTd>
-                </TableTr>
-                <TableTr>
-                  <TableTh>{t('account.roles')}</TableTh>
-                  <TableTd>
-                    <Group gap={6}>
-                      {user.roles.length === 0 && <Text c="dimmed">—</Text>}
-                      {user.roles.map((role) => (
-                        <Badge key={role} color={ROLE_COLORS[role]} variant="light">
-                          {t(`roles.${role}`)}
-                        </Badge>
-                      ))}
-                    </Group>
-                  </TableTd>
-                </TableTr>
-                <TableTr>
-                  <TableTh>{t('account.signInMethods')}</TableTh>
-                  <TableTd>{methods.join(', ')}</TableTd>
-                </TableTr>
-                <TableTr>
-                  <TableTh>{t('account.memberSince')}</TableTh>
-                  <TableTd>
-                    {format.dateTime(new Date(user.createdAt), { dateStyle: 'long' })}
-                  </TableTd>
-                </TableTr>
-              </TableTbody>
-            </Table>
-          </Card>
-
-          <Card withBorder radius="lg" padding="lg">
-            <Stack gap="md">
-              <Title order={2} size="h4">
-                {t('account.editRoles')}
-              </Title>
-              <RolesForm
-                initialRoles={user.roles.filter((r): r is SelfAssignableRole => r !== 'ADMIN')}
-                submitLabel={t('account.save')}
-              />
-            </Stack>
-          </Card>
-        </SimpleGrid>
+        <Card withBorder radius="lg" padding="lg">
+          <Table variant="vertical" layout="fixed" withRowBorders={false}>
+            <TableTbody>
+              <TableTr>
+                <TableTh w={130}>{t('account.email')}</TableTh>
+                <TableTd style={{ overflowWrap: 'anywhere' }}>{user.email}</TableTd>
+              </TableTr>
+              <TableTr>
+                <TableTh>{t('account.roles')}</TableTh>
+                <TableTd>
+                  {/* Shown only: every account is an archer, a coach while an archer invites them. */}
+                  <Group gap={6}>
+                    {user.roles.map((role) => (
+                      <Badge key={role} color={ROLE_COLORS[role]} variant="light">
+                        {t(`roles.${role}`)}
+                      </Badge>
+                    ))}
+                  </Group>
+                  <Text size="xs" c="dimmed" mt={6}>
+                    {t('account.rolesHint')}
+                  </Text>
+                </TableTd>
+              </TableTr>
+              <TableTr>
+                <TableTh>{t('account.signInMethods')}</TableTh>
+                <TableTd>{methods.join(', ')}</TableTd>
+              </TableTr>
+              <TableTr>
+                <TableTh>{t('account.memberSince')}</TableTh>
+                <TableTd>
+                  {format.dateTime(new Date(user.createdAt), { dateStyle: 'long' })}
+                </TableTd>
+              </TableTr>
+            </TableTbody>
+          </Table>
+        </Card>
 
         {isArcher && <JournalsCard journals={journals} selectedId={selected?.id ?? null} />}
+        {/* Coaches only: the archers who invited them, and their journals. */}
+        {athletes && <AthletesCard athletes={athletes} />}
       </Stack>
     </Container>
   );

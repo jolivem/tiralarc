@@ -33,14 +33,20 @@ export class MailService {
   }
 
   /** Invitation from an archer to a guest, written in the archer's language. */
-  async sendInvitation(to: string, locale: string, inviter: string, token: string): Promise<void> {
+  async sendInvitation(
+    to: string,
+    locale: string,
+    inviter: string,
+    token: string,
+    isCoach = false,
+  ): Promise<void> {
     const lang: MailLocale = locale === 'en' ? 'en' : 'fr';
     const link = new URL(
       `/${lang}/invitations/accept`,
       this.config.get('WEB_URL', { infer: true }),
     );
     link.searchParams.set('token', token);
-    await this.send({ to, ...invitationEmail(lang, inviter, link.toString()) });
+    await this.send({ to, ...invitationEmail(lang, inviter, link.toString(), isCoach) });
   }
 
   /** Overridden in tests to capture outgoing mail. */

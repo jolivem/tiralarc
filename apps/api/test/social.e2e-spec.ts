@@ -16,52 +16,46 @@ describe('Auth — Google / Apple (e2e)', () => {
   const me = (accessToken: string) =>
     http().get('/api/v1/users/me').set('Authorization', `Bearer ${accessToken}`).expect(200);
 
-  it('signs up with Google, with roles chosen upfront', async () => {
+  it('signs up with Google as an archer', async () => {
     const res = await http()
       .post('/api/v1/auth/google')
-      .send({ idToken: fakeIdToken('g-1', 'ann@gmail.com', true, 'Ann'), roles: ['COACH'] })
+      .send({ idToken: fakeIdToken('g-1', 'ann@gmail.com', true, 'Ann') })
       .expect(200);
     const profile = await me(res.body.accessToken);
     expect(profile.body).toMatchObject({
       email: 'ann@gmail.com',
       displayName: 'Ann',
       emailVerified: true,
-      roles: ['COACH'],
+      roles: ['ARCHER'],
       hasPassword: false,
       providers: ['GOOGLE'],
     });
 
-    // Signing in again finds the same account, roles in the request are ignored.
+    // Signing in again finds the same account.
     const again = await http()
       .post('/api/v1/auth/google')
-      .send({ idToken: fakeIdToken('g-1', 'ann@gmail.com'), roles: ['ARCHER'] })
+      .send({ idToken: fakeIdToken('g-1', 'ann@gmail.com') })
       .expect(200);
-    expect((await me(again.body.accessToken)).body).toMatchObject({
-      id: profile.body.id,
-      roles: ['COACH'],
-    });
+    expect((await me(again.body.accessToken)).body).toMatchObject({ id: profile.body.id });
   });
 
-  it('signs up with Apple without roles, then picks them', async () => {
+  it('signs up with Apple as an archer; roles cannot be picked', async () => {
     const res = await http()
       .post('/api/v1/auth/apple')
       .send({ idToken: fakeIdToken('a-1', 'x1@privaterelay.appleid.com'), displayName: 'Bob' })
       .expect(200);
     const token = res.body.accessToken as string;
-    expect((await me(token)).body).toMatchObject({ roles: [], displayName: 'Bob' });
+    expect((await me(token)).body).toMatchObject({ roles: ['ARCHER'], displayName: 'Bob' });
 
-    const updated = await http()
-      .put('/api/v1/users/me/roles')
-      .set('Authorization', `Bearer ${token}`)
-      .send({ roles: ['ARCHER'] })
-      .expect(200);
-    expect(updated.body.roles).toEqual(['ARCHER']);
-
+    await http()
+      .post('/api/v1/auth/apple')
+      .send({ idToken: fakeIdToken('a-2', 'x2@privaterelay.appleid.com'), roles: ['COACH'] })
+      .expect(400);
     await http()
       .put('/api/v1/users/me/roles')
       .set('Authorization', `Bearer ${token}`)
-      .send({ roles: ['ADMIN'] })
-      .expect(400);
+      .send({ roles: ['COACH'] })
+      .expect(404);
   });
 
   it('links to an existing verified account with the same email', async () => {

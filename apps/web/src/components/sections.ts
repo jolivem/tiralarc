@@ -6,7 +6,8 @@ export type SectionKey = 'home' | 'journal' | 'sheets' | 'stats' | 'profile';
 export interface ArcherSection {
   /** Message key under `archer`. */
   key: SectionKey;
-  href: '/archer' | '/archer/journal' | '/archer/sheets' | '/archer/stats' | '/archer/profile';
+  /** '/archer/…', or '/coach/<archerId>/…' for a coach in one of their archers' journals. */
+  href: string;
   /** Mantine palette colour: the divider tab in the menu, the sticky note on the home page. */
   color: string;
   /** Pastel open tab: a light shade with dark text, instead of the full colour with white text. */
@@ -23,6 +24,21 @@ export const ARCHER_SECTIONS: readonly ArcherSection[] = [
   { key: 'profile', href: '/archer/profile', color: 'pink', icon: IconId },
 ];
 
+/**
+ * What a coach sees of one of their archers (the journal of the season in progress and the
+ * indicators), with the colours of the archer's own sections.
+ */
+export function coachSections(archerId: string): ArcherSection[] {
+  return ARCHER_SECTIONS.filter(({ key }) => key === 'journal' || key === 'stats').map(
+    (section) => ({ ...section, href: section.href.replace('/archer', `/coach/${archerId}`) }),
+  );
+}
+
+/** "/coach/<archerId>/…" → the archer's id; undefined elsewhere. */
+export function coachedArcherOf(pathname: string): string | undefined {
+  return /^\/coach\/([0-9a-f-]{36})(?:\/|$)/.exec(pathname)?.[1];
+}
+
 /** A section's divider tab colours: tinted when closed, `--tab-filled` / `--tab-on-filled` open. */
 export function tabColors({ color, pastel }: ArcherSection): CSSProperties {
   return {
@@ -36,8 +52,11 @@ export function tabColors({ color, pastel }: ArcherSection): CSSProperties {
 }
 
 /** The section a path belongs to (the home page only matches exactly). */
-export function sectionOf(pathname: string): ArcherSection | undefined {
-  return ARCHER_SECTIONS.find(({ href }) =>
+export function sectionOf(
+  pathname: string,
+  sections: readonly ArcherSection[] = ARCHER_SECTIONS,
+): ArcherSection | undefined {
+  return sections.find(({ href }) =>
     href === '/archer' ? pathname === href : pathname === href || pathname.startsWith(`${href}/`),
   );
 }

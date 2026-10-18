@@ -32,6 +32,7 @@ import {
   CreateSessionDto,
   JournalStatsDto,
   ListSessionsQuery,
+  NewEventDto,
   SessionDto,
   SessionSuggestionsDto,
   SessionSummaryDto,
@@ -78,6 +79,16 @@ export class JournalController {
     return this.journal.suggestions(user.id);
   }
 
+  /** Declared before ':id' so "new" isn't parsed as an id. */
+  @Get('new')
+  @ApiOperation({
+    summary: "Events the archer's coach planned that the archer hasn't opened yet",
+  })
+  @ApiOkResponse({ type: NewEventDto, isArray: true })
+  newEvents(@CurrentUser() user: AuthenticatedUser): Promise<NewEventDto[]> {
+    return this.journal.newEvents(user.id);
+  }
+
   @Post()
   @ApiCreatedResponse({ type: SessionDto })
   @ApiConflictResponse({ description: 'DAY_FULL: that day already has 4 events' })
@@ -108,6 +119,21 @@ export class JournalController {
     @Body() dto: UpdateSessionDto,
   ): Promise<SessionDto> {
     return this.journal.update(user.id, id, dto);
+  }
+
+  @Post(':id/seen')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({
+    summary:
+      'Tell that the archer opened the sheet (clients call it when they show it): a coach-planned event is then no longer new',
+  })
+  @ApiNoContentResponse()
+  @ApiNotFoundResponse()
+  markSeen(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id', new ParseUUIDPipe()) id: string,
+  ): Promise<void> {
+    return this.journal.markSeen(user.id, id);
   }
 
   @Delete(':id')

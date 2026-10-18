@@ -59,6 +59,39 @@
     }
   }
 
+  /*
+   * Dotted paper, like a bullet journal: a tight grid of dots (half a --line apart) instead of
+   * the ruled lines, right of the margin line only (the margin stays blank). Every other row
+   * falls where a line would, so content kept on the ruling (RuledStack) still sits on dots.
+   */
+  &[data-dotted] {
+    --paper-dot: rgb(90 110 140 / 0.45);
+    --dot-step: calc(var(--line) / 2);
+
+    @mixin dark {
+      --paper-dot: rgb(255 255 255 / 0.22);
+    }
+
+    & .page {
+      background-image:
+        /* Blank paper over the margin, then the margin line, over the dots. */
+        linear-gradient(
+          to right,
+          var(--paper) calc(var(--margin) - 1px),
+          var(--paper-margin) calc(var(--margin) - 1px) calc(var(--margin) + 1px),
+          transparent calc(var(--margin) + 1px)
+        ),
+        radial-gradient(circle, var(--paper-dot) 1.1px, transparent 1.6px);
+      background-size:
+        auto,
+        var(--dot-step) var(--dot-step);
+      /* Dots on the lines' places (a tile's centre sits half a step from its edges). */
+      background-position:
+        0 0,
+        calc(var(--margin) + var(--dot-step) / 2) calc(var(--dot-step) / 2);
+    }
+  }
+
   /* Two pages side by side (a single wide page keeps one column). */
   &:has(> [data-side]) {
     @media (min-width: $mantine-breakpoint-md) {
@@ -69,6 +102,9 @@
 }
 
 .page {
+  /* The ruling step, as RuledStack (ruled-stack.tsx) reads it. */
+  --step: var(--line);
+
   position: relative;
   min-width: 0;
   padding: var(--line) var(--mantine-spacing-lg) calc(var(--line) * 1.5)

@@ -17,15 +17,19 @@ const NO_STATS: JournalStats = {
  * The indicators' figures over a journal's period, or all time (`null`), with the span the
  * charts cover and today (decided here, so the server and the browser draw the same
  * "today" marker). Used by the Indicators page and the favourite indicator on the home page.
+ * With `archerId`, the figures of one of the user's archers (as their coach).
  */
 export async function getStats(
   journal: Journal | null,
+  archerId?: string,
 ): Promise<{ stats: JournalStats; span: Period; today: string }> {
-  const { data } = await (
-    await getAuthedApi()
-  ).GET('/api/v1/journal/sessions/stats', {
-    params: { query: journal ? { from: journal.startDate, to: journal.endDate } : {} },
-  });
+  const api = await getAuthedApi();
+  const query = journal ? { from: journal.startDate, to: journal.endDate } : {};
+  const { data } = archerId
+    ? await api.GET('/api/v1/coach/athletes/{archerId}/sessions/stats', {
+        params: { path: { archerId }, query },
+      })
+    : await api.GET('/api/v1/journal/sessions/stats', { params: { query } });
   const stats = data ?? NO_STATS;
   const today = new Date().toISOString().slice(0, 10);
   // All time: the charts span from the first recorded event to the last one, or to today if

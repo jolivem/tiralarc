@@ -11,10 +11,16 @@ import {
 } from '@mantine/core';
 import { Schedule, type ScheduleEventData } from '@mantine/schedule';
 import { IconPalette, IconPlus } from '@tabler/icons-react';
-import type { CustomEventType, Journal, JournalSessionSummary } from '@tiralarc/api-client';
+import type {
+  CoachAccess,
+  CustomEventType,
+  Journal,
+  JournalSessionSummary,
+} from '@tiralarc/api-client';
 import dayjs from 'dayjs';
 import { useFormatter, useLocale, useTranslations } from 'next-intl';
 import { type CSSProperties, useEffect, useState, useTransition } from 'react';
+import { listAthleteSessions } from '@/app/actions/coaching';
 import { listSessions } from '@/app/actions/journal';
 import { useRouter } from '@/i18n/navigation';
 import { CalendarFrame } from './calendar-frame';
@@ -89,24 +95,37 @@ function toDayEvents(
   }));
 }
 
+/** A coach in one of their archers' journals. */
+export interface CoachView {
+  archerId: string;
+  access: CoachAccess;
+}
+
 /**
  * One journal: "New event" button + month calendar + quick-add dialog. Opens on
  * `month` ("YYYY-MM") when given — today within it, otherwise its 1st.
+ * With `coach`, the archer's journal as their coach sees it: no decorating; with WRITE
+ * access, events can be planned after today.
  */
 export function JournalView({
   journal,
   customTypes,
   month: initialMonth,
+  coach,
 }: {
   journal: Journal;
   /** The archer's own event types (new-event dialog, legend). */
   customTypes: CustomEventType[];
   month?: string;
+  coach?: CoachView;
 }) {
   const t = useTranslations();
   const locale = useLocale();
   const format = useFormatter();
   const router = useRouter();
+  const base = coach ? `/coach/${coach.archerId}` : '/archer';
+  const canPlan = !coach || coach.access === 'WRITE';
+  const archerId = coach?.archerId;
   // A past or future season opens on its closest day rather than on an empty month.
   const [date, setDate] = useState(() => {
     const day = initialMonth && !today().startsWith(initialMonth) ? `${initialMonth}-01` : today();
@@ -163,8 +182,21 @@ export function JournalView({
   // Reloaded when a custom type changes too: its events carry its title, colour and pictogram.
   const typesKey = JSON.stringify(customTypes);
   useEffect(() => {
-    startLoading(async () => setSessions(from && to ? await listSessions(from, to) : []));
-  }, [from, to, typesKey]);
+    startLoading(async () => {
+      if (!from || !to) return setSessions([]);
+      setSessions(
+        archerId ? await listAthleteSessions(archerId, from, to) : await listSessions(from, to),
+      );
+    });
+  }, [from, to, typesKey, archerId]);
+
+  /** A coach plans days after today only. */
+  const plannable = (day: string) => canPlan && (!coach || day > todayDate);
+  const openNewSession = (day: string) => {
+    if (!canPlan) return;
+    const tomorrow = dayjs(todayDate).add(1, 'day').format('YYYY-MM-DD');
+    setNewSession({ date: plannable(day) ? day : tomorrow });
+  };
 
   /**
    * An "other" event is its title (or its text), a custom one its type's title; a session is its
@@ -195,29 +227,32 @@ export function JournalView({
         </Button>
         <Group gap="xs">
           <EventLegend customTypes={customTypes} />
-          <Tooltip label={t('journals.theme')}>
-            <ActionIcon
-              variant="default"
-              size="lg"
-              aria-label={t('journals.theme')}
-              onClick={() => setPickingTheme(true)}
-            >
-              <IconPalette size={18} />
-            </ActionIcon>
-          </Tooltip>
-          <Tooltip label={t('journal.newSession')}>
-            <ActionIcon
-              size="lg"
-              aria-label={t('journal.newSession')}
-              // The day picked in the calendar when there is one (phones select a day by tapping it),
-              // otherwise the calendar's own day: today, or a day of the month navigated to.
-              onClick={() =>
-                setNewSession({ date: pickedDay?.startsWith(month) ? pickedDay : date })
-              }
-            >
-              <IconPlus size={18} />
-            </ActionIcon>
-          </Tooltip>
+          {/* The decoration is the archer's own. */}
+          {!coach && (
+            <Tooltip label={t('journals.theme')}>
+              <ActionIcon
+                variant="default"
+                size="lg"
+                aria-label={t('journals.theme')}
+                onClick={() => setPickingTheme(true)}
+              >
+                <IconPalette size={18} />
+              </ActionIcon>
+            </Tooltip>
+          )}
+          {canPlan && (
+            <Tooltip label={t(coach ? 'coach.planSession' : 'journal.newSession')}>
+              <ActionIcon
+                size="lg"
+                aria-label={t(coach ? 'coach.planSession' : 'journal.newSession')}
+                // The day picked in the calendar when there is one (phones select a day by tapping
+                // it), otherwise the calendar's own day: today, or a day of the month navigated to.
+                onClick={() => openNewSession(pickedDay?.startsWith(month) ? pickedDay : date)}
+              >
+                <IconPlus size={18} />
+              </ActionIcon>
+            </Tooltip>
+          )}
         </Group>
       </Group>
       <Box pos="relative" className={classes.calendarWidth}>
@@ -284,8 +319,14 @@ export function JournalView({
                         const { color, icon: Icon } = eventDisplay(session);
                         // Greyed until its review is written, or (no review) until its day.
                         const pending = pendingReason(session, todayDate);
-                        const label = pending
-                          ? `${labelOf(session)} (${t(`journal.${pending}`)})`
+                        // Planned by the coach: stamped until the archer completes it.
+                        const stamped = session.plannedByCoach && pending !== null;
+                        const notes = [
+                          ...(pending ? [t(`journal.${pending}`)] : []),
+                          ...(stamped ? [t('journal.plannedByCoach')] : []),
+                        ];
+                        const label = notes.length
+                          ? `${labelOf(session)} (${notes.join(', ')})`
                           : labelOf(session);
                         return (
                           <div key={session.id} className={classes.dotCell}>
@@ -300,7 +341,7 @@ export function JournalView({
                               aria-label={label}
                               onClick={(e) => {
                                 e.stopPropagation();
-                                router.push(`/archer/journal/${session.id}`);
+                                router.push(`${base}/journal/${session.id}`);
                               }}
                             >
                               <Icon
@@ -308,6 +349,11 @@ export function JournalView({
                                 color="var(--dot-color)"
                                 className={pending ? classes.pendingIcon : undefined}
                               />
+                              {stamped && (
+                                <span className={classes.coachStamp} aria-hidden>
+                                  {t('journal.coachStamp')}
+                                </span>
+                              )}
                             </UnstyledButton>
                           </div>
                         );
@@ -318,23 +364,31 @@ export function JournalView({
               }}
               events={events}
               // Not mode="static": @mantine/schedule 9.6.3 then leaks `withEventResize` to the DOM.
-              onEventClick={(event) => router.push(`/archer/journal/${event.id}`)}
-              onDayClick={(day) => setNewSession({ date: dayjs(day).format('YYYY-MM-DD') })}
+              onEventClick={(event) => router.push(`${base}/journal/${event.id}`)}
+              onDayClick={(day) => {
+                const clicked = dayjs(day).format('YYYY-MM-DD');
+                if (plannable(clicked)) setNewSession({ date: clicked });
+              }}
               renderEventBody={(event) => {
                 const session = (event.payload as EventPayload | undefined)?.session;
                 const Icon = session ? eventDisplay(session).icon : null;
+                const pending = session ? pendingReason(session, todayDate) : null;
                 return (
                   <span className={classes.eventBody}>
                     {Icon && (
                       <Icon
                         size={14}
                         style={{ flexShrink: 0 }}
-                        className={
-                          session && pendingReason(session, todayDate)
-                            ? classes.pendingIcon
-                            : undefined
-                        }
+                        className={pending ? classes.pendingIcon : undefined}
                       />
+                    )}
+                    {session?.plannedByCoach && pending && (
+                      <span
+                        className={classes.coachStampInline}
+                        title={t('journal.plannedByCoach')}
+                      >
+                        {t('journal.coachStamp')}
+                      </span>
                     )}
                     {event.title}
                   </span>
@@ -372,21 +426,24 @@ export function JournalView({
             />
           </div>
         </CalendarFrame>
-        <MonthThemeModal
-          journal={journal}
-          month={month}
-          opened={pickingTheme}
-          onClose={() => setPickingTheme(false)}
-          titleColor={titleColor}
-          // Once the name is drawn (its font loaded).
-          onTitleColorChange={lettering ? colorTitle : undefined}
-          onStartColoring={isColoring ? undefined : () => setColoringOn(true)}
-        />
+        {!coach && (
+          <MonthThemeModal
+            journal={journal}
+            month={month}
+            opened={pickingTheme}
+            onClose={() => setPickingTheme(false)}
+            titleColor={titleColor}
+            // Once the name is drawn (its font loaded).
+            onTitleColorChange={lettering ? colorTitle : undefined}
+            onStartColoring={isColoring ? undefined : () => setColoringOn(true)}
+          />
+        )}
         <NewSessionModal
           journal={journal}
           customTypes={customTypes}
           defaults={newSession}
           onClose={() => setNewSession(null)}
+          coachOf={archerId}
         />
       </Box>
     </div>

@@ -1,5 +1,5 @@
 import request from 'supertest';
-import { createTestApp, fakeIdToken, type TestContext } from './helpers.js';
+import { createTestApp, dropRoles, fakeIdToken, type TestContext } from './helpers.js';
 
 describe('Profile (e2e)', () => {
   let ctx: TestContext;
@@ -9,11 +9,11 @@ describe('Profile (e2e)', () => {
 
   const http = () => request(ctx.app.getHttpServer());
   const as = (token: string) => ({ Authorization: `Bearer ${token}` });
-  const signUp = async (sub: string, roles: string[]) =>
+  const signUp = async (sub: string) =>
     (
       await http()
         .post('/api/v1/auth/google')
-        .send({ idToken: fakeIdToken(sub, `${sub}@gmail.com`, true, 'Léa Archère'), roles })
+        .send({ idToken: fakeIdToken(sub, `${sub}@gmail.com`, true, 'Léa Archère') })
         .expect(200)
     ).body.accessToken as string;
   /** Token of the last invitation emailed to `to`. */
@@ -26,9 +26,12 @@ describe('Profile (e2e)', () => {
 
   beforeAll(async () => {
     ctx = await createTestApp();
-    archer = await signUp('p-archer', ['ARCHER']);
-    otherArcher = await signUp('p-other', ['ARCHER']);
-    coach = await signUp('p-coach', ['COACH']);
+    archer = await signUp('p-archer');
+    otherArcher = await signUp('p-other');
+    // Not an archer (every new account is one: its role is taken away).
+    await signUp('p-coach');
+    await dropRoles(ctx.prisma, 'p-coach@gmail.com');
+    coach = await signUp('p-coach');
   });
 
   afterAll(async () => {
@@ -122,10 +125,11 @@ describe('Profile (e2e)', () => {
       name: 'Camille Martin',
       email: 'camille@example.com',
       isCoach: true,
+      coachAccess: 'READ',
       status: 'PENDING',
     });
     const mail = ctx.outbox.find((m) => m.to === 'camille@example.com');
-    expect(mail?.subject).toBe('Léa Archère vous invite sur Tiralarc');
+    expect(mail?.subject).toBe('Léa Archère vous invite comme coach sur Tiralarc');
 
     const again = await http()
       .post('/api/v1/profile/invitations')
@@ -133,23 +137,89 @@ describe('Profile (e2e)', () => {
       .send({ name: 'Camille', email: 'camille@example.com' })
       .expect(409);
     expect(again.body.code).toBe('INVITATION_ALREADY_SENT');
-    const self = await http()
+    const myself = await http()
       .post('/api/v1/profile/invitations')
       .set(as(archer))
       .send({ name: 'Moi', email: 'p-archer@gmail.com' })
       .expect(400);
-    expect(self.body.code).toBe('CANNOT_INVITE_SELF');
+    expect(myself.body.code).toBe('CANNOT_INVITE_SELF');
     await http()
       .post('/api/v1/profile/invitations')
       .set(as(archer))
       .send({ name: ' ', email: 'pas-un-email' })
       .expect(400);
 
-    // The guest accepts without an account; a second click is harmless.
+    // A plain guest accepts without an account; a second click is harmless.
+    const guest = await http()
+      .post('/api/v1/profile/invitations')
+      .set(as(archer))
+      .send({
+        name: 'Dominique',
+        email: 'dominique@example.com',
+        coachAccess: 'WRITE',
+        // The email in the guest's language, not the archer's (French).
+        locale: 'en',
+      })
+      .expect(201);
+    expect(guest.body).toMatchObject({ isCoach: false, coachAccess: null });
+    const guestMail = ctx.outbox.find((m) => m.to === 'dominique@example.com');
+    expect(guestMail?.subject).toBe('Léa Archère invites you to Tiralarc');
+    expect(guestMail?.text).toContain('/en/invitations/accept?token=');
+    await http()
+      .post('/api/v1/profile/invitations')
+      .set(as(archer))
+      .send({ name: 'X', email: 'x@example.com', locale: 'de' })
+      .expect(400);
+    const guestToken = invitationToken('dominique@example.com');
+    const accepted = await http()
+      .post('/api/v1/invitations/accept')
+      .send({ token: guestToken })
+      .expect(200);
+    expect(accepted.body).toEqual({ invitedBy: 'Léa Archère', archerId: null });
+    await http().post('/api/v1/invitations/accept').send({ token: guestToken }).expect(200);
+    await http()
+      .patch(`/api/v1/profile/invitations/${guest.body.id}`)
+      .set(as(archer))
+      .send({ coachAccess: 'WRITE' })
+      .expect(400);
+    await http().delete(`/api/v1/profile/invitations/${guest.body.id}`).set(as(archer)).expect(204);
+
+    // A coach must be signed in (that account becomes the coach), and not be the archer.
     const token = invitationToken('camille@example.com');
-    const accepted = await http().post('/api/v1/invitations/accept').send({ token }).expect(200);
-    expect(accepted.body).toEqual({ invitedBy: 'Léa Archère' });
-    await http().post('/api/v1/invitations/accept').send({ token }).expect(200);
+    const anonymous = await http().post('/api/v1/invitations/accept').send({ token }).expect(401);
+    expect(anonymous.body.code).toBe('SIGN_IN_REQUIRED');
+    const self = await http()
+      .post('/api/v1/invitations/accept')
+      .set(as(archer))
+      .send({ token })
+      .expect(400);
+    expect(self.body.code).toBe('CANNOT_INVITE_SELF');
+    const coached = await http()
+      .post('/api/v1/invitations/accept')
+      .set(as(coach))
+      .send({ token })
+      .expect(200);
+    expect(coached.body).toEqual({ invitedBy: 'Léa Archère', archerId: expect.any(String) });
+    await http().post('/api/v1/invitations/accept').set(as(coach)).send({ token }).expect(200);
+    // Used: nobody else can take it.
+    await http()
+      .post('/api/v1/invitations/accept')
+      .set(as(otherArcher))
+      .send({ token })
+      .expect(400);
+
+    // The archer changes the coach's access.
+    const writable = await http()
+      .patch(`/api/v1/profile/invitations/${invited.body.id}`)
+      .set(as(archer))
+      .send({ coachAccess: 'WRITE' })
+      .expect(200);
+    expect(writable.body.coachAccess).toBe('WRITE');
+    await http()
+      .patch(`/api/v1/profile/invitations/${invited.body.id}`)
+      .set(as(otherArcher))
+      .send({ coachAccess: 'READ' })
+      .expect(404);
     const invalid = await http()
       .post('/api/v1/invitations/accept')
       .send({ token: 'nope' })
@@ -173,7 +243,7 @@ describe('Profile (e2e)', () => {
       .delete(`/api/v1/profile/invitations/${invited.body.id}`)
       .set(as(archer))
       .expect(204);
-    await http().post('/api/v1/invitations/accept').send({ token }).expect(400);
+    await http().post('/api/v1/invitations/accept').set(as(coach)).send({ token }).expect(400);
   });
 
   it('manages favourite websites', async () => {

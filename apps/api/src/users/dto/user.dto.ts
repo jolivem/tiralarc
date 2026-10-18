@@ -1,6 +1,4 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { ArrayMaxSize, ArrayMinSize, ArrayUnique, IsArray, IsIn } from 'class-validator';
-import { SELF_ASSIGNABLE_ROLES, type SelfAssignableRole } from '../../auth/dto/auth.dto.js';
 import { AuthProvider, Role } from '../../generated/prisma/client.js';
 
 export class UserDto {
@@ -24,7 +22,8 @@ export class UserDto {
     enumName: 'Role',
     isArray: true,
     description:
-      'Empty for an account created through Google / Apple whose user has not chosen yet.',
+      "Nobody picks their roles: every account is ARCHER; COACH while an archer's coach " +
+      'invitation the user accepted still exists; ADMIN is granted by an administrator.',
   })
   roles!: Role[];
 
@@ -36,20 +35,4 @@ export class UserDto {
 
   @ApiProperty({ format: 'date-time' })
   createdAt!: Date;
-}
-
-export class UpdateMyRolesDto {
-  @ApiProperty({
-    enum: SELF_ASSIGNABLE_ROLES,
-    enumName: 'SelfAssignableRole',
-    isArray: true,
-    minItems: 1,
-    description: 'Replaces the self-assignable roles (ADMIN, if held, is kept).',
-  })
-  @IsArray()
-  @ArrayMinSize(1)
-  @ArrayUnique()
-  @ArrayMaxSize(SELF_ASSIGNABLE_ROLES.length)
-  @IsIn(SELF_ASSIGNABLE_ROLES, { each: true })
-  roles!: SelfAssignableRole[];
 }

@@ -43,17 +43,22 @@ const STACKED_BEHIND = 2;
  * The top polaroid opens a viewer to go through them and delete one. Saved right away,
  * independently of the sheet's "Save" button. An event still to come takes no photos yet
  * (greyed; the ones it may already have can still be viewed and deleted).
+ * `readOnly` (the archer's coach): the photos can only be viewed.
  */
 export function SessionPhotos({
   sessionId,
   photos,
+  readOnly = false,
 }: {
   sessionId: string;
   photos: SessionPhoto[];
+  readOnly?: boolean;
 }) {
   const t = useTranslations('journal');
   const router = useRouter();
   const locked = use(SheetLockedContext);
+  /** No photo can be added: still to come, or not the archer. */
+  const closed = locked || readOnly;
   const [state, setState] = useState<ActionState>({});
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
   const [uploading, startUploading] = useTransition();
@@ -133,9 +138,14 @@ export function SessionPhotos({
               <img src={first.thumbnailUrl} alt="" className={classes.polaroidPhoto} />
               <span className={classes.polaroidCaption}>{caption}</span>
             </UnstyledButton>
-          ) : locked ? (
-            // Empty and still to come: the greyed polaroid alone.
-            <div className={classes.polaroid} data-top data-empty title={t('photos.locked')}>
+          ) : closed ? (
+            // Empty and still to come (or the coach's view): the greyed polaroid alone.
+            <div
+              className={classes.polaroid}
+              data-top
+              data-empty
+              title={readOnly ? undefined : t('photos.locked')}
+            >
               <span className={classes.polaroidPhoto}>
                 <IconPhoto size={48} stroke={1.2} />
               </span>
@@ -190,32 +200,36 @@ export function SessionPhotos({
             </>
           )}
           {/* Adding photos: an icon at the stack's top right. */}
-          <FileButton onChange={upload} accept={ACCEPT} multiple resetRef={resetFiles}>
-            {(props) => (
-              <Tooltip label={t('photos.add')}>
-                <ActionIcon
-                  {...props}
-                  variant="light"
-                  size="lg"
-                  className={classes.addPhotos}
-                  aria-label={t('photos.add')}
-                  loading={uploading}
-                  disabled={locked || remaining <= 0}
-                >
-                  <IconPhotoPlus size={20} />
-                </ActionIcon>
-              </Tooltip>
-            )}
-          </FileButton>
+          {!readOnly && (
+            <FileButton onChange={upload} accept={ACCEPT} multiple resetRef={resetFiles}>
+              {(props) => (
+                <Tooltip label={t('photos.add')}>
+                  <ActionIcon
+                    {...props}
+                    variant="light"
+                    size="lg"
+                    className={classes.addPhotos}
+                    aria-label={t('photos.add')}
+                    loading={uploading}
+                    disabled={locked || remaining <= 0}
+                  >
+                    <IconPhotoPlus size={20} />
+                  </ActionIcon>
+                </Tooltip>
+              )}
+            </FileButton>
+          )}
         </div>
 
         <FormError state={state} />
         {/* The hint's sentences on their own lines (line breaks in the message). */}
-        <Text size="xs" c="dimmed" ta="center" role="status" style={{ whiteSpace: 'pre-line' }}>
-          {progress
-            ? t('photos.uploading', { done: progress.done + 1, total: progress.total })
-            : t(locked ? 'photos.locked' : 'photos.hint')}
-        </Text>
+        {!readOnly && (
+          <Text size="xs" c="dimmed" ta="center" role="status" style={{ whiteSpace: 'pre-line' }}>
+            {progress
+              ? t('photos.uploading', { done: progress.done + 1, total: progress.total })
+              : t(locked ? 'photos.locked' : 'photos.hint')}
+          </Text>
+        )}
       </Stack>
 
       <Modal opened={opened !== null} onClose={closePhoto} size="xl" centered padding="sm">
@@ -281,7 +295,7 @@ export function SessionPhotos({
                   </Button>
                 </Group>
               </Group>
-            ) : (
+            ) : readOnly ? null : (
               <Group justify="flex-end">
                 <Button
                   variant="subtle"

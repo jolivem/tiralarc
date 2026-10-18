@@ -1,28 +1,14 @@
 'use server';
 
-import type { SelfAssignableRole, TokenPair } from '@tiralarc/api-client';
+import type { TokenPair } from '@tiralarc/api-client';
 import { cookies } from 'next/headers';
 import { getLocale } from 'next-intl/server';
 import { type ActionState, send } from '@/lib/action-state';
-import { api, clientHeaders, getAuthedApi } from '@/lib/api';
-import {
-  hasBothProfiles,
-  homePathFor,
-  PROFILE_COOKIE,
-  type Profile,
-} from '@/lib/current-user-paths';
+import { api, clientHeaders } from '@/lib/api';
+import { homePathFor, PROFILE_COOKIE } from '@/lib/current-user-paths';
 import { JOURNAL_COOKIE } from '@/lib/journals';
 import { clearSession, REFRESH_COOKIE, writeSession } from '@/lib/session';
 import { redirect } from '@/i18n/navigation';
-
-const SELF_ASSIGNABLE: readonly string[] = ['ARCHER', 'COACH'] satisfies SelfAssignableRole[];
-
-function rolesFrom(formData: FormData): SelfAssignableRole[] {
-  return formData
-    .getAll('roles')
-    .map(String)
-    .filter((role): role is SelfAssignableRole => SELF_ASSIGNABLE.includes(role));
-}
 
 /** Only allow same-site, locale-less paths ("/archer/journal") as post-login targets. */
 function safeNext(value: unknown): string | undefined {
@@ -32,15 +18,15 @@ function safeNext(value: unknown): string | undefined {
 }
 
 /**
- * Stores the session, then sends users without a role (new Google / Apple
- * accounts) to onboarding, archers who also coach to the profile choice, and
- * everyone else to where they were going.
+ * Stores the session, then goes where the user was going (their home by default).
+ * Nobody picks a role or a profile: every account is an archer's, and the journal
+ * opened in the header's menu decides the profile.
  */
 async function completeSignIn(tokens: TokenPair, next?: string): Promise<never> {
   const cookieStore = await cookies();
   writeSession(cookieStore, tokens);
-  // A new session starts from the archer's default journal, not the last one selected,
-  // and asks again for the profile.
+  // A new session starts from the archer's default journal, not the last one selected
+  // (archers first: an archer who also coaches lands on their own journal).
   cookieStore.delete(JOURNAL_COOKIE);
   cookieStore.delete(PROFILE_COOKIE);
   const locale = await getLocale();
@@ -49,39 +35,7 @@ async function completeSignIn(tokens: TokenPair, next?: string): Promise<never> 
       headers: { Authorization: `Bearer ${tokens.accessToken}` },
     }),
   );
-  if (me.ok && me.data.roles.length === 0) {
-    return redirect({
-      href: { pathname: '/onboarding', query: next ? { next } : {} },
-      locale,
-    });
-  }
-  if (me.ok && hasBothProfiles(me.data.roles)) {
-    return redirect({
-      href: { pathname: '/choose-profile', query: next ? { next } : {} },
-      locale,
-    });
-  }
   return redirect({ href: next ?? homePathFor(me.ok ? me.data.roles : []), locale });
-}
-
-/** Signs in with one of the user's profiles (archer or coach), then goes on. */
-export async function chooseProfile(profile: Profile, next?: string): Promise<void> {
-  const me = await send((await getAuthedApi()).GET('/api/v1/users/me'));
-  const locale = await getLocale();
-  if (!me.ok) return redirect({ href: '/login', locale });
-  if (!me.data.roles.includes(profile)) {
-    return redirect({ href: homePathFor(me.data.roles), locale });
-  }
-  (await cookies()).set(PROFILE_COOKIE, profile, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    path: '/',
-  });
-  // A coach going to an archer page would be sent away: go home instead.
-  const target = safeNext(next);
-  const fits = target && (profile === 'ARCHER' || !target.startsWith('/archer'));
-  return redirect({ href: fits ? target : homePathFor(me.data.roles, profile), locale });
 }
 
 export async function login(_prev: ActionState, formData: FormData): Promise<ActionState> {
@@ -96,8 +50,6 @@ export async function login(_prev: ActionState, formData: FormData): Promise<Act
 }
 
 export async function register(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  const roles = rolesFrom(formData);
-  if (roles.length === 0) return { fieldErrors: { roles: ['arrayMinSize'] } };
   // The form checks it too; this covers a submission made before the page's script ran.
   if (formData.get('password') !== formData.get('passwordConfirm')) {
     return { fieldErrors: { passwordConfirm: ['passwordMismatch'] } };
@@ -111,7 +63,6 @@ export async function register(_prev: ActionState, formData: FormData): Promise<
         email: String(formData.get('email')),
         password: String(formData.get('password')),
         displayName: displayName || undefined,
-        roles,
         locale,
       },
       headers: await clientHeaders(),
@@ -152,8 +103,6 @@ export interface SocialSignInInput {
   provider: 'google' | 'apple';
   idToken: string;
   nonce?: string;
-  /** Set on the sign-up page; omitted on the sign-in page. */
-  roles?: SelfAssignableRole[];
   /** Apple only sends the user's name to the client, on first sign-in. */
   displayName?: string;
   next?: string;
@@ -163,7 +112,6 @@ export async function socialSignIn(input: SocialSignInInput): Promise<ActionStat
   const body = {
     idToken: input.idToken,
     nonce: input.nonce,
-    roles: input.roles?.filter((role) => SELF_ASSIGNABLE.includes(role)),
     displayName: input.displayName?.slice(0, 100) || undefined,
     locale: await getLocale(),
   };
@@ -175,24 +123,6 @@ export async function socialSignIn(input: SocialSignInInput): Promise<ActionStat
   );
   if (!result.ok) return result.state;
   return completeSignIn(result.data, safeNext(input.next));
-}
-
-export async function updateRoles(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  const roles = rolesFrom(formData);
-  if (roles.length === 0) return { fieldErrors: { roles: ['arrayMinSize'] } };
-
-  const authed = await getAuthedApi();
-  const result = await send(authed.PUT('/api/v1/users/me/roles', { body: { roles } }));
-  if (!result.ok) return result.state;
-
-  const next = formData.get('next');
-  if (typeof next === 'string') {
-    return redirect({
-      href: safeNext(next) ?? homePathFor(result.data.roles),
-      locale: await getLocale(),
-    });
-  }
-  return { notice: 'saved' };
 }
 
 export async function logout(): Promise<void> {

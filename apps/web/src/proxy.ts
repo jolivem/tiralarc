@@ -8,7 +8,7 @@ const api = createApiClient({ baseUrl: process.env.API_URL ?? 'http://localhost:
 const handleI18nRouting = createIntlMiddleware(routing);
 
 /** Locale-less routes that require a signed-in user. */
-const PROTECTED_PREFIXES = ['/account', '/archer', '/onboarding', '/choose-profile'];
+const PROTECTED_PREFIXES = ['/account', '/archer', '/coach'];
 
 /**
  * Refresh tokens are single-use: concurrent requests (parallel navigations,

@@ -21,11 +21,13 @@ import {
   ApiOkResponse,
   ApiOperation,
   ApiTags,
+  ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import {
   type AuthenticatedUser,
   CurrentUser,
+  OptionalUser,
 } from '../common/decorators/current-user.decorator.js';
 import { Public } from '../common/decorators/public.decorator.js';
 import { Roles } from '../common/decorators/roles.decorator.js';
@@ -38,6 +40,7 @@ import {
   InvitationDto,
   ProfileDto,
   SiteDto,
+  UpdateInvitationDto,
   UpdateProfileDto,
 } from './dto/profile.dto.js';
 import { ProfileService } from './profile.service.js';
@@ -84,8 +87,22 @@ export class ProfileController {
     return this.profile.invite(user.id, dto);
   }
 
+  @Patch('invitations/:id')
+  @ApiOperation({ summary: "Change a coach's access to the journal of the season in progress" })
+  @ApiOkResponse({ type: InvitationDto })
+  @ApiBadRequestResponse({ description: 'Not a coach' })
+  @ApiNotFoundResponse()
+  updateInvitation(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() dto: UpdateInvitationDto,
+  ): Promise<InvitationDto> {
+    return this.profile.updateInvitation(user.id, id, dto);
+  }
+
   @Delete('invitations/:id')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Withdraw an invitation; a coach loses their access' })
   @ApiNoContentResponse()
   @ApiNotFoundResponse()
   removeInvitation(
@@ -120,7 +137,10 @@ export class ProfileController {
   }
 }
 
-/** The guest's side of an invitation: no account needed, the emailed token is the proof. */
+/**
+ * The guest's side of an invitation: the emailed token is the proof. A plain guest needs no
+ * account; a coach sends their access token, and that account becomes the coach.
+ */
 @ApiTags('profile')
 @Public()
 @Throttle({ default: { limit: 10, ttl: 60_000 } })
@@ -130,9 +150,18 @@ export class InvitationsController {
 
   @Post('accept')
   @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Accept an invitation (a coach invitation needs the bearer token of the coach)',
+  })
   @ApiOkResponse({ type: AcceptedInvitationDto })
-  @ApiBadRequestResponse({ description: 'INVALID_INVITATION_TOKEN' })
-  accept(@Body() dto: AcceptInvitationDto): Promise<AcceptedInvitationDto> {
-    return this.profile.acceptInvitation(dto.token);
+  @ApiBadRequestResponse({ description: 'INVALID_INVITATION_TOKEN, CANNOT_INVITE_SELF' })
+  @ApiUnauthorizedResponse({ description: 'SIGN_IN_REQUIRED: a coach invitation, no valid token' })
+  @ApiConflictResponse({ description: 'INVITATION_ALREADY_SENT: already coaching that archer' })
+  accept(
+    @Body() dto: AcceptInvitationDto,
+    @OptionalUser() user: AuthenticatedUser | null,
+  ): Promise<AcceptedInvitationDto> {
+    return this.profile.acceptInvitation(dto.token, user);
   }
 }

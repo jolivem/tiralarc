@@ -46,7 +46,8 @@ export function MonthsOverview({
       (SESSION_TYPES[session.type].form === 'note' && session.title) ||
       session.customType?.title ||
       t(`typesShort.${session.type}`);
-    const pending = pendingReason(session, today);
+    // Only a past event still to complete says so: anything to come is obviously not done yet.
+    const pending = session.date > today ? null : pendingReason(session, today);
     return pending ? `${name} (${t(pending)})` : name;
   };
   // Monday first; 2024-01-01 was a Monday.

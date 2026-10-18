@@ -20,6 +20,22 @@
   pointer-events: none;
 }
 
+/* With journals to switch between, the title opens the journal menu (journal-menu.tsx). */
+.journalTitle[data-menu] {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 10px;
+  border-radius: var(--mantine-radius-md);
+  pointer-events: auto;
+  /* UnstyledButton resets the font: the handwriting set above wins. */
+  font-family: var(--font-hand), 'Segoe Print', cursive;
+
+  @mixin hover {
+    background-color: light-dark(var(--mantine-color-gray-1), var(--mantine-color-dark-5));
+  }
+}
+
 /* Archer area: the pages lie on a desk (the divider tabs are in components/binder). */
 .desk {
   --desk: #ece4d6;

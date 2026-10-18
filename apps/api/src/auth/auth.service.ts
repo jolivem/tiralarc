@@ -6,9 +6,10 @@ import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { ApiException, ErrorCode } from '../common/errors.js';
 import { DEFAULT_LOCALE } from '../common/locales.js';
 import type { Env } from '../config/env.js';
-import { type AuthProvider, Prisma, type Role } from '../generated/prisma/client.js';
+import { type AuthProvider, Prisma, Role } from '../generated/prisma/client.js';
 import { MailService } from '../mail/mail.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { ROLES_INCLUDE, rolesOf } from '../users/roles.js';
 import type {
   LoginDto,
   RegisterDto,
@@ -29,9 +30,11 @@ export interface ClientInfo {
   userAgent?: string;
 }
 
-type UserWithRoles = Prisma.UserGetPayload<{ include: { roles: true } }>;
+const withRoles = ROLES_INCLUDE;
+type UserWithRoles = Prisma.UserGetPayload<{ include: typeof withRoles }>;
 
-const withRoles = { roles: true } as const;
+/** Every account is an archer (COACH comes from an accepted coach invitation, ADMIN from the CLI). */
+const NEW_ACCOUNT_ROLES = { create: [{ role: Role.ARCHER }] };
 
 @Injectable()
 export class AuthService {
@@ -62,7 +65,7 @@ export class AuthService {
           passwordHash,
           displayName: dto.displayName?.trim() || null,
           locale: dto.locale ?? DEFAULT_LOCALE,
-          roles: { create: dto.roles.map((role) => ({ role })) },
+          roles: NEW_ACCOUNT_ROLES,
         },
         include: withRoles,
       });
@@ -198,7 +201,7 @@ export class AuthService {
           emailVerifiedAt: identity.emailVerified ? new Date() : null,
           displayName: dto.displayName?.trim() || identity.name || null,
           locale: dto.locale ?? DEFAULT_LOCALE,
-          roles: { create: (dto.roles ?? []).map((role) => ({ role })) },
+          roles: NEW_ACCOUNT_ROLES,
           identities: { create: { provider, subject: identity.subject, email: identity.email } },
         },
         include: withRoles,
@@ -299,18 +302,14 @@ export class AuthService {
   }
 
   private async issueTokens(
-    user: { id: string; email: string; roles: { role: Role }[] },
+    user: UserWithRoles,
     familyId: string,
     client: ClientInfo,
   ): Promise<TokenPairDto> {
     const accessTtl = this.config.get('JWT_ACCESS_TTL', { infer: true });
     const refreshTtl = this.config.get('JWT_REFRESH_TTL', { infer: true });
 
-    const payload: AccessTokenPayload = {
-      sub: user.id,
-      email: user.email,
-      roles: user.roles.map(({ role }) => role),
-    };
+    const payload: AccessTokenPayload = { sub: user.id, email: user.email, roles: rolesOf(user) };
     const accessToken = await this.jwt.signAsync(payload, { expiresIn: accessTtl });
     const refreshToken = randomBytes(32).toString('base64url');
 

@@ -11,9 +11,21 @@ import {
   Matches,
   MaxLength,
 } from 'class-validator';
-import { AgeCategory, BowType, Discipline, Indicator } from '../../generated/prisma/client.js';
+import { SUPPORTED_LOCALES } from '../../common/locales.js';
+import {
+  AgeCategory,
+  BowType,
+  CoachAccess,
+  Discipline,
+  Indicator,
+} from '../../generated/prisma/client.js';
 
 const CATEGORIES = Object.values(AgeCategory);
+export const COACH_ACCESSES = Object.values(CoachAccess);
+const COACH_ACCESS_DESCRIPTION =
+  "What the coach may do in the archer's journal of the season in progress (the one whose " +
+  'period covers today): READ = see all of it, plus the indicators and goals; WRITE = READ, and ' +
+  'plan future trainings, coachings, competitions and strength sessions.';
 const BOW_TYPES = Object.values(BowType);
 const DISCIPLINES = Object.values(Discipline);
 const INDICATORS = Object.values(Indicator);
@@ -120,11 +132,42 @@ export class CreateInvitationDto {
 
   @ApiPropertyOptional({
     default: false,
-    description: "True when the guest is the archer's coach.",
+    description:
+      "True when the guest is the archer's coach: accepting (signed in) gives them `coachAccess`. " +
+      'Otherwise the guest is only invited to discover the site.',
   })
   @IsOptional()
   @IsBoolean()
   isCoach?: boolean;
+
+  @ApiPropertyOptional({
+    enum: COACH_ACCESSES,
+    enumName: 'CoachAccess',
+    default: CoachAccess.READ,
+    description: `${COACH_ACCESS_DESCRIPTION} Ignored unless \`isCoach\`.`,
+  })
+  @IsOptional()
+  @IsIn(COACH_ACCESSES)
+  coachAccess?: CoachAccess;
+
+  @ApiPropertyOptional({
+    enum: SUPPORTED_LOCALES,
+    description: "Language of the invitation email; the archer's own language when omitted.",
+  })
+  @IsOptional()
+  @IsIn(SUPPORTED_LOCALES)
+  locale?: string;
+}
+
+/** PATCH body of a coach's invitation. */
+export class UpdateInvitationDto {
+  @ApiProperty({
+    enum: COACH_ACCESSES,
+    enumName: 'CoachAccess',
+    description: COACH_ACCESS_DESCRIPTION,
+  })
+  @IsIn(COACH_ACCESSES)
+  coachAccess!: CoachAccess;
 }
 
 /** Someone the archer invited. */
@@ -141,7 +184,19 @@ export class InvitationDto {
   @ApiProperty()
   isCoach!: boolean;
 
-  @ApiProperty({ enum: INVITATION_STATUSES, enumName: 'InvitationStatus' })
+  @ApiProperty({
+    enum: COACH_ACCESSES,
+    enumName: 'CoachAccess',
+    nullable: true,
+    description: `Coaches only. ${COACH_ACCESS_DESCRIPTION}`,
+  })
+  coachAccess!: CoachAccess | null;
+
+  @ApiProperty({
+    enum: INVITATION_STATUSES,
+    enumName: 'InvitationStatus',
+    description: 'A coach has ACCEPTED once linked to an account (and then has access).',
+  })
   status!: InvitationStatus;
 
   @ApiProperty({ format: 'date-time' })
@@ -158,6 +213,15 @@ export class AcceptInvitationDto {
 export class AcceptedInvitationDto {
   @ApiProperty({ description: 'Display name (or email) of the archer who sent the invitation.' })
   invitedBy!: string;
+
+  @ApiProperty({
+    type: String,
+    format: 'uuid',
+    nullable: true,
+    description:
+      "Coach invitations: the archer's id (see /coach/athletes/{archerId}); null for a plain guest.",
+  })
+  archerId!: string | null;
 }
 
 export class CreateSiteDto {

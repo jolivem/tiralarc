@@ -16,6 +16,8 @@ erDiagram
     users ||--o{ email_verification_tokens : "confirme son email"
     users ||--o| archer_profiles : "a un profil"
     users ||--o{ profile_invitations : "invite"
+    users |o--o{ profile_invitations : "coache (coach_id)"
+    users |o--o{ journal_sessions : "planifie (planned_by_id)"
     users ||--o{ favorite_sites : "garde"
     users ||--o{ journals : "tient"
     users ||--o{ goals : "se fixe"
@@ -72,6 +74,8 @@ erDiagram
         varchar name
         varchar email "unique par archer"
         boolean is_coach
+        enum coach_access "READ, WRITE (coachs)"
+        char36 coach_id FK "compte du coach, une fois accepté"
         char64 token_hash UK
         datetime accepted_at "nul = en attente"
     }
@@ -112,6 +116,7 @@ erDiagram
         varchar title "événement Divers"
         varchar color "événement Divers"
         varchar icon "événement Divers"
+        char36 planned_by_id FK "coach qui l'a planifié"
     }
     goals {
         char36 id PK
@@ -137,21 +142,21 @@ Les colonnes `created_at` et `updated_at`, présentes sur presque toutes les tab
 
 ### Comptes et connexion
 
-| Table                       | Rôle                                                                                                    |
-| --------------------------- | ------------------------------------------------------------------------------------------------------- |
-| `users`                     | Le compte : email, mot de passe haché (absent pour un compte Google / Apple seul), nom affiché, langue. |
-| `user_roles`                | Les rôles d'un compte, cumulables : `ADMIN`, `ARCHER`, `COACH`.                                         |
-| `user_identities`           | Les comptes externes liés (Google, Apple).                                                              |
-| `refresh_tokens`            | Une ligne par jeton de session émis ; la rotation permet de détecter un jeton volé.                     |
-| `email_verification_tokens` | Les liens de confirmation d'adresse email.                                                              |
+| Table                       | Rôle                                                                                                                                                                                |
+| --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `users`                     | Le compte : email, mot de passe haché (absent pour un compte Google / Apple seul), nom affiché, langue.                                                                             |
+| `user_roles`                | Les rôles enregistrés : `ARCHER` (tout compte, dès sa création) et `ADMIN`. `COACH` n'est pas stocké : un compte est coach tant qu'une invitation de coach qu'il a acceptée existe. |
+| `user_identities`           | Les comptes externes liés (Google, Apple).                                                                                                                                          |
+| `refresh_tokens`            | Une ligne par jeton de session émis ; la rotation permet de détecter un jeton volé.                                                                                                 |
+| `email_verification_tokens` | Les liens de confirmation d'adresse email.                                                                                                                                          |
 
 ### Profil de l'archer
 
-| Table                 | Rôle                                                                                                            |
-| --------------------- | --------------------------------------------------------------------------------------------------------------- |
-| `archer_profiles`     | Les informations sportives : licence, catégorie, arme, disciplines pratiquées. Créée au premier enregistrement. |
-| `profile_invitations` | Les personnes invitées par email ; `accepted_at` passe de nul à une date quand l'invité accepte.                |
-| `favorite_sites`      | Les sites web préférés.                                                                                         |
+| Table                 | Rôle                                                                                                                                                                                                                                                                         |
+| --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `archer_profiles`     | Les informations sportives : licence, catégorie, arme, disciplines pratiquées. Créée au premier enregistrement.                                                                                                                                                              |
+| `profile_invitations` | Les personnes invitées par email ; `accepted_at` passe de nul à une date quand l'invité accepte. Un coach (`is_coach`) accepte connecté : son compte (`coach_id`) accède alors au journal de la saison en cours, en lecture ou en lecture et planification (`coach_access`). |
+| `favorite_sites`      | Les sites web préférés.                                                                                                                                                                                                                                                      |
 
 ### Journal
 

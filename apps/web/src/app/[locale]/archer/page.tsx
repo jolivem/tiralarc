@@ -3,6 +3,7 @@ import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/serve
 import binder from '@/components/binder/binder.module.css';
 import { FirstJournalPrompt } from '@/components/journal/journal-modal';
 import { MonthsOverview } from '@/components/journal/months-overview';
+import { NewEvents } from '@/components/journal/new-events';
 import { SeasonCalendar } from '@/components/journal/season-calendar';
 import { HandHeading, HandNote, Notebook } from '@/components/notebook/notebook';
 import { SectionCard } from '@/components/section-card';
@@ -14,6 +15,7 @@ import { getArcherProfile } from '@/lib/archer-profile';
 import { getCurrentUser } from '@/lib/current-user';
 import { getJournals, getSelectedJournal } from '@/lib/journals';
 import { getStats } from '@/lib/stats';
+import home from './home.module.css';
 
 type NoteSection = 'journal' | 'sheets' | 'stats' | 'profile';
 /** The sections' sticky notes: two at the bottom of each page. */
@@ -35,14 +37,30 @@ export default async function ArcherHomePage({ params }: PageProps<'/[locale]/ar
   const t = await getTranslations('archer');
   const tJournals = await getTranslations('journals');
   const format = await getFormatter();
-  const [user, journals, selected, profile, { data: customTypes }] = await Promise.all([
+  const api = await getAuthedApi();
+  const [
+    user,
+    journals,
+    selected,
+    profile,
+    { data: customTypes },
+    { data: newEvents },
+    { data: invitations },
+  ] = await Promise.all([
     getCurrentUser(),
     getJournals(),
     getSelectedJournal(),
     getArcherProfile(),
     // For the legend of the whole season's calendar.
-    (await getAuthedApi()).GET('/api/v1/journal/event-types'),
+    api.GET('/api/v1/journal/event-types'),
+    // Planned by the coach, not opened yet.
+    api.GET('/api/v1/journal/sessions/new'),
+    // Whether a coach (who accepted, with planning access) can propose events.
+    api.GET('/api/v1/profile/invitations'),
   ]);
+  const hasPlanningCoach = (invitations ?? []).some(
+    (i) => i.isCoach && i.status === 'ACCEPTED' && i.coachAccess === 'WRITE',
+  );
   // The favourite indicator (starred on the Indicators page), over the selected journal.
   const favorite = profile?.favoriteIndicator ?? null;
   const favoriteStats = favorite ? await getStats(selected ?? null) : null;
@@ -112,6 +130,7 @@ export default async function ArcherHomePage({ params }: PageProps<'/[locale]/ar
       ) : (
         <Text c="dimmed">{tJournals('noneBody')}</Text>
       )}
+      <NewEvents events={newEvents ?? []} hasPlanningCoach={hasPlanningCoach} />
       <Box mt="auto">
         <HandHeading>{t('sections')}</HandHeading>
         {notes(LEFT_NOTES, 0)}
@@ -143,13 +162,14 @@ export default async function ArcherHomePage({ params }: PageProps<'/[locale]/ar
   // notebook, and the divider tabs start level with the notebook.
   return (
     <>
-      <div className={binder.header}>
+      {/* Titles and date in the archer's calligraphy font, in bold (home.module.css). */}
+      <div className={`${binder.header} ${home.home}`}>
         <HandHeading order={1}>
           {t('homeTitle', { name: user?.displayName ?? user?.email ?? '' })}
         </HandHeading>
         <Text c="dimmed">{t('homeIntro')}</Text>
       </div>
-      <Notebook left={left} right={right} label={t('home')} />
+      <Notebook left={left} right={right} label={t('home')} className={home.home} />
       {journals.length === 0 && <FirstJournalPrompt />}
     </>
   );

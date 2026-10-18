@@ -48,7 +48,8 @@ export function StatsCardTitle({ children }: { children: ReactNode }) {
       className={classes.cardTitle}
       ff="var(--font-calendar, var(--font-hand)), cursive"
       fz="1.7rem"
-      fw={400}
+      // Bold on the home page, which sets the variable (archer/home.module.css).
+      fw="var(--card-title-weight, 400)"
       lh={1}
     >
       {children}

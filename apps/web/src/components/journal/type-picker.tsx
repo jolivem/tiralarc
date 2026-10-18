@@ -22,6 +22,7 @@ export interface TypeChoice {
 /**
  * Big buttons (2 per row on phones, 4 from tablets) to pick the event type: the built-in
  * ones, the archer's own (each with a pencil to change it), then "+" to define another.
+ * Without `customTypes` (a coach planning), the built-in ones only.
  */
 export function TypePicker({
   value,
@@ -32,9 +33,9 @@ export function TypePicker({
 }: {
   value: TypeChoice | null;
   onChange: (choice: TypeChoice) => void;
-  customTypes: CustomEventType[];
-  onAdd: () => void;
-  onEdit: (type: CustomEventType) => void;
+  customTypes?: CustomEventType[];
+  onAdd?: () => void;
+  onEdit?: (type: CustomEventType) => void;
 }) {
   const t = useTranslations('journal');
   const card = (
@@ -71,7 +72,7 @@ export function TypePicker({
         const { color, icon } = SESSION_TYPES[type];
         return card(type, { type }, color, t(`typesShort.${type}`), icon);
       })}
-      {customTypes.map((custom) => (
+      {customTypes?.map((custom) => (
         <div key={custom.id} className={classes.customTypeCell}>
           {card(
             custom.id,
@@ -86,13 +87,13 @@ export function TypePicker({
             size="sm"
             aria-label={t('customTypes.edit', { title: custom.title })}
             title={t('customTypes.edit', { title: custom.title })}
-            onClick={() => onEdit(custom)}
+            onClick={() => onEdit?.(custom)}
           >
             <IconPencil size={14} />
           </ActionIcon>
         </div>
       ))}
-      {customTypes.length < MAX_CUSTOM_TYPES && (
+      {customTypes && customTypes.length < MAX_CUSTOM_TYPES && (
         <UnstyledButton
           className={`${classes.typeCard} ${classes.addTypeCard}`}
           onClick={onAdd}

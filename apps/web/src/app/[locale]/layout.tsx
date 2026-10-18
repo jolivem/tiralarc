@@ -26,8 +26,9 @@ import { Providers } from '@/components/providers';
 import { routing } from '@/i18n/routing';
 import { getArcherProfile } from '@/lib/archer-profile';
 import { calendarFont, calendarFontFamily } from '@/lib/calendar-fonts';
+import { getAthletes } from '@/lib/coaching';
 import { getActiveProfile, getCurrentUser } from '@/lib/current-user';
-import { getSelectedJournal } from '@/lib/journals';
+import { getJournals, getSelectedJournal } from '@/lib/journals';
 
 const geistSans = Geist({ variable: '--font-geist-sans', subsets: ['latin'] });
 const geistMono = Geist_Mono({ variable: '--font-geist-mono', subsets: ['latin'] });
@@ -98,12 +99,15 @@ export default async function LocaleLayout({ children, params }: LayoutProps<'/[
 
   // Drives the navigation only; pages and the archer layout enforce access themselves.
   const [user, profile] = await Promise.all([getCurrentUser(), getActiveProfile()]);
-  // The journal the archer works in, named in the middle of the header; and the font of
-  // their calendars, on <html> so dialogs (portals) get it too.
-  const [journal, archerProfile] =
-    profile === 'ARCHER'
-      ? await Promise.all([getSelectedJournal(), getArcherProfile()])
-      : [null, null];
+  // The journals named in the middle of the header (the archer's own, the ones of the archers
+  // they coach), and the font of their calendars, on <html> so dialogs (portals) get it too.
+  const isArcher = user?.roles.includes('ARCHER') ?? false;
+  const [ownJournals, selected, athletes, archerProfile] = await Promise.all([
+    isArcher ? getJournals() : [],
+    isArcher ? getSelectedJournal() : null,
+    user?.roles.includes('COACH') ? getAthletes() : [],
+    isArcher ? getArcherProfile() : null,
+  ]);
   const fontStyle = {
     '--font-calendar': calendarFontFamily(calendarFont(archerProfile?.calendarFont)),
   } as CSSProperties;
@@ -112,7 +116,15 @@ export default async function LocaleLayout({ children, params }: LayoutProps<'/[
     email: user.email,
     roles: user.roles,
     profile,
-    journalTitle: journal?.title ?? null,
+    journals: {
+      own: ownJournals.map(({ id, title }) => ({ id, title })),
+      athletes: athletes.map(({ id, name, journal }) => ({
+        id,
+        name,
+        journalTitle: journal?.title ?? null,
+      })),
+      selectedId: selected?.id ?? null,
+    },
   };
 
   return (

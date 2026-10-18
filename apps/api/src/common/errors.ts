@@ -28,6 +28,10 @@ export const ErrorCode = {
   MONTH_HAS_NO_THEME: 'MONTH_HAS_NO_THEME',
   FILE_TOO_LARGE: 'FILE_TOO_LARGE',
   DAY_FULL: 'DAY_FULL',
+  /** A coach invitation is accepted by a signed-in account (it becomes the coach). */
+  SIGN_IN_REQUIRED: 'SIGN_IN_REQUIRED',
+  /** A coach plans only days after today, within the archer's journal of the season in progress. */
+  DATE_NOT_PLANNABLE: 'DATE_NOT_PLANNABLE',
 } as const;
 
 export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];

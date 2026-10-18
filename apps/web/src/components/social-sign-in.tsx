@@ -1,8 +1,7 @@
 'use client';
 
-import { Alert, Button, Divider, Stack } from '@mantine/core';
+import { Button, Divider, Stack } from '@mantine/core';
 import { IconBrandApple } from '@tabler/icons-react';
-import type { SelfAssignableRole } from '@tiralarc/api-client';
 import { useLocale, useTranslations } from 'next-intl';
 import { useEffect, useEffectEvent, useRef, useState, useTransition } from 'react';
 import { socialSignIn, type SocialSignInInput } from '@/app/actions/auth';
@@ -20,18 +19,13 @@ export const isSocialSignInEnabled = Boolean(
 
 type TokenPayload = Pick<SocialSignInInput, 'idToken' | 'nonce' | 'displayName'>;
 
-interface SocialSignInProps {
-  /** Sign-up page: roles picked in the form, required for new accounts. */
-  roles?: SelfAssignableRole[];
-  next?: string;
-}
-
 /**
  * Google / Apple buttons. The provider returns an ID token in the browser; the
- * Server Action forwards it to the API, which verifies it and opens a session.
- * Buttons only render when the corresponding client ID is configured.
+ * Server Action forwards it to the API, which verifies it and opens a session
+ * (a new account is an archer's). Buttons only render when the corresponding client ID
+ * is configured.
  */
-export function SocialSignIn({ roles, next }: SocialSignInProps) {
+export function SocialSignIn({ next }: { next?: string }) {
   const t = useTranslations();
   const [state, setState] = useState<ActionState>({});
   const [pending, startTransition] = useTransition();
@@ -39,13 +33,9 @@ export function SocialSignIn({ roles, next }: SocialSignInProps) {
   if (!isSocialSignInEnabled) return null;
 
   const submit = (provider: SocialSignInInput['provider'], payload: TokenPayload) => {
-    if (roles && roles.length === 0) {
-      setState({ fieldErrors: { roles: ['arrayMinSize'] } });
-      return;
-    }
     setState({});
     startTransition(async () => {
-      setState(await socialSignIn({ provider, ...payload, roles, next }));
+      setState(await socialSignIn({ provider, ...payload, next }));
     });
   };
 
@@ -63,11 +53,6 @@ export function SocialSignIn({ roles, next }: SocialSignInProps) {
           label={t('social.apple')}
           onToken={(p) => submit('apple', p)}
         />
-      )}
-      {state.fieldErrors?.roles && (
-        <Alert color="red" variant="light" w="100%">
-          {t('register.rolesRequired')}
-        </Alert>
       )}
       <FormError state={state} />
     </Stack>

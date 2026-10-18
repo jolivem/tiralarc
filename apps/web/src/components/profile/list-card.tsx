@@ -1,13 +1,16 @@
 'use client';
 
 import { ActionIcon, Button, Card, Group, Modal, Stack, Text, Title } from '@mantine/core';
-import { IconTrash } from '@tabler/icons-react';
+import { IconAlertCircle, IconCheck, IconTrash } from '@tabler/icons-react';
 import { useTranslations } from 'next-intl';
 import { type ReactNode, useState, useTransition } from 'react';
 import { FormError } from '@/components/form-feedback';
 import type { ActionState } from '@/lib/action-state';
 
-/** Profile block: title, optional action on the right, then content. */
+/**
+ * Profile block: title, optional action on the right, then content. The title is written in
+ * the calligraphy font the archer chooses on this page (`--font-calendar`), in bold.
+ */
 export function ProfileCard({
   title,
   action,
@@ -21,7 +24,13 @@ export function ProfileCard({
     <Card withBorder radius="lg" padding="lg">
       <Stack gap="md">
         <Group justify="space-between" wrap="nowrap" mih={36}>
-          <Title order={2} size="h5" tt="uppercase" c="dimmed" lts={0.5}>
+          <Title
+            order={2}
+            ff="var(--font-calendar, var(--font-hand)), 'Segoe Print', cursive"
+            fz="1.7rem"
+            fw={700}
+            lh={1.1}
+          >
             {title}
           </Title>
           {action}
@@ -29,6 +38,50 @@ export function ProfileCard({
         {children}
       </Stack>
     </Card>
+  );
+}
+
+/**
+ * A profile form's last row: the "Save" button on the right (enabled once something changed),
+ * the outcome of the last save written on its left — the confirmation, or the error — on the
+ * same row and at most two small lines, so the card keeps its height (the full text in the
+ * tooltip).
+ */
+export function SaveBar({
+  state,
+  savedLabel,
+  label,
+  disabled,
+  loading,
+}: {
+  /** The last save's outcome: `notice: 'saved'` or an error `code`. */
+  state: ActionState;
+  /** The confirmation shown after a save. */
+  savedLabel: string;
+  label: string;
+  disabled: boolean;
+  loading: boolean;
+}) {
+  const tErrors = useTranslations('errors');
+  const outcome = state.code
+    ? { color: 'red', icon: IconAlertCircle, text: tErrors(state.code), role: 'alert' }
+    : state.notice === 'saved'
+      ? { color: 'teal', icon: IconCheck, text: savedLabel, role: 'status' }
+      : null;
+  return (
+    <Group justify="flex-end" gap="sm" wrap="nowrap">
+      {outcome && (
+        <Group gap={4} wrap="nowrap" c={outcome.color} role={outcome.role} style={{ minWidth: 0 }}>
+          <outcome.icon size={16} style={{ flexShrink: 0 }} />
+          <Text size="xs" c={outcome.color} lineClamp={2} title={outcome.text}>
+            {outcome.text}
+          </Text>
+        </Group>
+      )}
+      <Button type="submit" disabled={disabled} loading={loading} style={{ flexShrink: 0 }}>
+        {label}
+      </Button>
+    </Group>
   );
 }
 

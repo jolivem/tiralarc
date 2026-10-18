@@ -16,7 +16,7 @@ describe('Event photos (e2e)', () => {
     (
       await http()
         .post('/api/v1/auth/google')
-        .send({ idToken: fakeIdToken(sub, `${sub}@gmail.com`), roles: ['ARCHER'] })
+        .send({ idToken: fakeIdToken(sub, `${sub}@gmail.com`) })
         .expect(200)
     ).body.accessToken as string;
   const createSession = async (type = 'COMPETITION') =>

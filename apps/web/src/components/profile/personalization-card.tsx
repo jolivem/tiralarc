@@ -1,10 +1,9 @@
 'use client';
 
-import { Button, Group, Select, Stack } from '@mantine/core';
+import { Select, Stack } from '@mantine/core';
 import { useTranslations } from 'next-intl';
 import { useState, useTransition } from 'react';
 import { saveProfile } from '@/app/actions/profile';
-import { FormError, SuccessNotice } from '@/components/form-feedback';
 import type { ActionState } from '@/lib/action-state';
 import {
   CALENDAR_FONT_IDS,
@@ -12,7 +11,7 @@ import {
   calendarFont,
   calendarFontFamily,
 } from '@/lib/calendar-fonts';
-import { ProfileCard } from './list-card';
+import { ProfileCard, SaveBar } from './list-card';
 import classes from './profile.module.css';
 
 /** How the archer's notebook looks: for now, the calendars' font. */
@@ -20,6 +19,8 @@ export function PersonalizationCard({ font }: { font: string | null }) {
   const t = useTranslations('profile.personalization');
   const tFonts = useTranslations('profile.calendarFonts');
   const [value, setValue] = useState<CalendarFontId>(calendarFont(font));
+  /** The font as last saved: "Save" only once another one is picked. */
+  const [saved, setSaved] = useState<CalendarFontId>(value);
   const [state, setState] = useState<ActionState>({});
   const [pending, startTransition] = useTransition();
 
@@ -28,7 +29,13 @@ export function PersonalizationCard({ font }: { font: string | null }) {
       <form
         onSubmit={(e) => {
           e.preventDefault();
-          startTransition(async () => setState(await saveProfile({ calendarFont: value })));
+          if (value === saved) return;
+          const chosen = value;
+          startTransition(async () => {
+            const result = await saveProfile({ calendarFont: chosen });
+            setState(result);
+            if (!result.code) setSaved(chosen);
+          });
         }}
       >
         <Stack gap="md">
@@ -53,13 +60,13 @@ export function PersonalizationCard({ font }: { font: string | null }) {
             styles={{ input: { fontFamily: calendarFontFamily(value) } }}
             maw={360}
           />
-          <FormError state={state} />
-          {state.notice === 'saved' && <SuccessNotice>{t('saved')}</SuccessNotice>}
-          <Group justify="flex-end">
-            <Button type="submit" loading={pending}>
-              {t('save')}
-            </Button>
-          </Group>
+          <SaveBar
+            state={state}
+            savedLabel={t('saved')}
+            label={t('save')}
+            disabled={value === saved}
+            loading={pending}
+          />
         </Stack>
       </form>
     </ProfileCard>

@@ -1,5 +1,5 @@
 import request from 'supertest';
-import { createTestApp, fakeIdToken, type TestContext } from './helpers.js';
+import { createTestApp, dropRoles, fakeIdToken, type TestContext } from './helpers.js';
 
 describe('Goals (e2e)', () => {
   let ctx: TestContext;
@@ -9,19 +9,22 @@ describe('Goals (e2e)', () => {
 
   const http = () => request(ctx.app.getHttpServer());
   const as = (token: string) => ({ Authorization: `Bearer ${token}` });
-  const signUp = async (sub: string, roles: string[]) =>
+  const signUp = async (sub: string) =>
     (
       await http()
         .post('/api/v1/auth/google')
-        .send({ idToken: fakeIdToken(sub, `${sub}@gmail.com`), roles })
+        .send({ idToken: fakeIdToken(sub, `${sub}@gmail.com`) })
         .expect(200)
     ).body.accessToken as string;
 
   beforeAll(async () => {
     ctx = await createTestApp();
-    archer = await signUp('g-archer', ['ARCHER']);
-    otherArcher = await signUp('g-other', ['ARCHER']);
-    coach = await signUp('g-coach', ['COACH']);
+    archer = await signUp('g-archer');
+    otherArcher = await signUp('g-other');
+    // Not an archer (every new account is one: its role is taken away).
+    await signUp('g-coach');
+    await dropRoles(ctx.prisma, 'g-coach@gmail.com');
+    coach = await signUp('g-coach');
   });
 
   afterAll(async () => {

@@ -27,10 +27,11 @@ describe('Auth — email + password (e2e)', () => {
       .expect(400)
       .expect('Content-Type', /application\/problem\+json/);
     expect(res.body.code).toBe('VALIDATION_FAILED');
+    // Nobody picks their roles.
     expect(res.body.errors).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ field: 'email', constraints: ['isEmail'] }),
-        expect.objectContaining({ field: 'roles', constraints: ['isIn'] }),
+        expect.objectContaining({ field: 'roles', constraints: ['whitelistValidation'] }),
       ]),
     );
   });
@@ -38,7 +39,7 @@ describe('Auth — email + password (e2e)', () => {
   it('register → login refused until verified → verify → me → refresh → logout', async () => {
     const registered = await http()
       .post('/api/v1/auth/register')
-      .send({ ...credentials, displayName: 'Jane', roles: ['ARCHER', 'COACH'], locale: 'en' })
+      .send({ ...credentials, displayName: 'Jane', locale: 'en' })
       .expect(201);
     expect(registered.body).toEqual({ email: 'jane@example.com', verificationRequired: true });
 
@@ -47,9 +48,7 @@ describe('Auth — email + password (e2e)', () => {
     expect(mail.subject).toBe('Confirm your email address');
     expect(mail.text).toContain('http://localhost:3000/en/verify-email?token=');
 
-    const dup = await http()
-      .post('/api/v1/auth/register')
-      .send({ ...credentials, roles: ['ARCHER'] });
+    const dup = await http().post('/api/v1/auth/register').send(credentials);
     expect(dup.status).toBe(409);
     expect(dup.body.code).toBe('EMAIL_TAKEN');
 
@@ -82,7 +81,7 @@ describe('Auth — email + password (e2e)', () => {
       displayName: 'Jane',
       emailVerified: true,
       locale: 'en',
-      roles: ['ARCHER', 'COACH'],
+      roles: ['ARCHER'],
       hasPassword: true,
       providers: [],
     });

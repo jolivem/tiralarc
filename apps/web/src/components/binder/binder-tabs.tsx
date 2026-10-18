@@ -2,21 +2,23 @@
 
 import { useTranslations } from 'next-intl';
 import { Link, usePathname } from '@/i18n/navigation';
-import { ARCHER_SECTIONS, sectionOf, tabColors } from '../sections';
+import { ARCHER_SECTIONS, coachSections, sectionOf, tabColors } from '../sections';
 import classes from './binder.module.css';
 
 /**
  * Binder divider tabs, from tablets up: long narrow tabs with vertical labels, stuck to
  * the left edge of the page content (archer/layout.tsx). The open one sticks out further.
+ * With `archerId`, the tabs of a coach in that archer's journal (coach/[archerId]/layout.tsx).
  */
-export function BinderTabs() {
+export function BinderTabs({ archerId }: { archerId?: string }) {
   const t = useTranslations();
   const pathname = usePathname();
-  const current = sectionOf(pathname);
+  const sections = archerId ? coachSections(archerId) : ARCHER_SECTIONS;
+  const current = sectionOf(pathname, sections);
 
   return (
     <nav className={classes.tabs} aria-label={t('nav.archerSection')}>
-      {ARCHER_SECTIONS.map((section) => {
+      {sections.map((section) => {
         const { key, href, icon: Icon } = section;
         const active = current?.href === href;
         return (

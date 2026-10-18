@@ -8,12 +8,12 @@ export type Schemas = components['schemas'];
 export type User = Schemas['UserDto'];
 export type TokenPair = Schemas['TokenPairDto'];
 export type Role = Schemas['UserDto']['roles'][number];
-export type SelfAssignableRole = Schemas['RegisterDto']['roles'][number];
 export type Journal = Schemas['JournalDto'];
 export type JournalCreate = Schemas['CreateJournalDto'];
 export type JournalUpdate = Schemas['UpdateJournalDto'];
 export type JournalSession = Schemas['SessionDto'];
 export type JournalSessionSummary = Schemas['SessionSummaryDto'];
+export type NewEvent = Schemas['NewEventDto'];
 export type JournalSessionUpdate = Schemas['UpdateSessionDto'];
 export type JournalSuggestions = Schemas['SessionSuggestionsDto'];
 export type ArcherProfile = Schemas['ProfileDto'];
@@ -22,6 +22,11 @@ export type AgeCategory = NonNullable<Schemas['ProfileDto']['category']>;
 export type BowType = NonNullable<Schemas['ProfileDto']['bowType']>;
 export type Invitation = Schemas['InvitationDto'];
 export type InvitationCreate = Schemas['CreateInvitationDto'];
+export type CoachAccess = NonNullable<Schemas['InvitationDto']['coachAccess']>;
+export type Athlete = Schemas['AthleteDto'];
+export type PlannableType = Schemas['PlanSessionDto']['type'];
+export type PlanSession = Schemas['PlanSessionDto'];
+export type PlannedSessionUpdate = Schemas['UpdatePlannedSessionDto'];
 export type FavoriteSite = Schemas['SiteDto'];
 export type FavoriteSiteCreate = Schemas['CreateSiteDto'];
 export type EventColor = NonNullable<Schemas['SessionDto']['color']>;
@@ -67,7 +72,9 @@ export type ErrorCode =
   | 'INVALID_IMAGE'
   | 'MONTH_HAS_NO_THEME'
   | 'FILE_TOO_LARGE'
-  | 'DAY_FULL';
+  | 'DAY_FULL'
+  | 'SIGN_IN_REQUIRED'
+  | 'DATE_NOT_PLANNABLE';
 
 /** RFC 9457 error body returned by every failing API call. */
 export interface ProblemDetails {

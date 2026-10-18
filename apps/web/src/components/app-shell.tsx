@@ -17,7 +17,6 @@ import {
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import {
-  IconArrowsExchange,
   IconHome,
   IconLogin,
   IconLogout,
@@ -32,21 +31,23 @@ import { useTranslations } from 'next-intl';
 import type { CSSProperties, ReactNode } from 'react';
 import { logout } from '@/app/actions/auth';
 import { Link, usePathname } from '@/i18n/navigation';
-import { hasBothProfiles, homePathFor, type Profile } from '@/lib/current-user-paths';
+import { homePathFor, type Profile } from '@/lib/current-user-paths';
+import { type JournalChoices, JournalMenu } from './journal-menu';
 import { LanguageSwitcher } from './language-switcher';
-import { ARCHER_SECTIONS, sectionOf, tabColors } from './sections';
+import { ARCHER_SECTIONS, coachedArcherOf, coachSections, sectionOf, tabColors } from './sections';
 import classes from './app-shell.module.css';
 
 type ShellUser = Pick<User, 'displayName' | 'email' | 'roles'> & {
   profile: Profile | null;
-  /** The selected journal (archer profile), shown in the middle of the header. */
-  journalTitle: string | null;
+  /** The journals named in the middle of the header (and the menu to switch between them). */
+  journals: JournalChoices;
 };
 
 /**
  * Responsive frame.
  * - Archer profile: tabs along the bottom on phones; from tablets up (≥ sm, 768px) the
  *   divider tabs are stuck to the pages instead (archer/layout.tsx). None on the account page.
+ *   A coach in one of their archers' journals gets that archer's tabs (coach/[archerId]).
  * - Anonymous visitors: links in the header from tablets up, burger menu on phones.
  * - Signed-in users: avatar menu (account, sign out) in the header.
  */
@@ -55,11 +56,16 @@ export function TiralarcShell({ user, children }: { user: ShellUser | null; chil
   const pathname = usePathname();
   const [opened, { toggle, close }] = useDisclosure();
 
-  // The account page shows on its own, closed with its cross: no archer menu there.
-  const onAccountPage = pathname === '/account' || pathname.startsWith('/account/');
-  const sections = user?.profile === 'ARCHER' && !onAccountPage ? ARCHER_SECTIONS : [];
+  // The tabs of the journal shown: the archer's own (archer area) or a coached archer's.
+  const inArcherArea = pathname === '/archer' || pathname.startsWith('/archer/');
+  const coachedId = user ? coachedArcherOf(pathname) : undefined;
+  const sections = coachedId
+    ? coachSections(coachedId)
+    : inArcherArea && user?.roles.includes('ARCHER')
+      ? ARCHER_SECTIONS
+      : [];
   const hasSections = sections.length > 0;
-  const current = hasSections ? sectionOf(pathname) : undefined;
+  const current = hasSections ? sectionOf(pathname, sections) : undefined;
 
   return (
     <AppShell
@@ -81,11 +87,13 @@ export function TiralarcShell({ user, children }: { user: ShellUser | null; chil
       }
     >
       <AppShell.Header>
-        {user?.journalTitle && (
+        {user && (
           // Centred on the whole bar; from tablets up (no room between logo and buttons on phones).
-          <Text className={classes.journalTitle} visibleFrom="sm" truncate>
-            {user.journalTitle}
-          </Text>
+          <JournalMenu
+            choices={user.journals}
+            // The coach's pages show an archer's journal (or none, on their list of archers).
+            showOwn={!pathname.startsWith('/coach')}
+          />
         )}
         <Group h="100%" px="md" justify="space-between" wrap="nowrap">
           <Group gap="xs" wrap="nowrap">
@@ -219,15 +227,6 @@ function UserMenu({ user }: { user: ShellUser }) {
         <Menu.Item component={Link} href="/account" leftSection={<IconUserCircle size={16} />}>
           {t('account')}
         </Menu.Item>
-        {hasBothProfiles(user.roles) && (
-          <Menu.Item
-            component={Link}
-            href="/choose-profile"
-            leftSection={<IconArrowsExchange size={16} />}
-          >
-            {t('switchProfile')}
-          </Menu.Item>
-        )}
         <form action={logout}>
           <Menu.Item
             component="button"

@@ -41,16 +41,21 @@ model User {
   journals                Journal[]
   archerProfile           ArcherProfile?
   profileInvitations      ProfileInvitation[]
+  /// The invitations this user accepted as someone's coach.
+  coachedArchers          ProfileInvitation[] @relation("CoachedArchers")
   favoriteSites           FavoriteSite[]
   sessionPhotos           SessionPhoto[]
   goals                   Goal[]
   journalSessions         JournalSession[]
+  /// Events this user planned in their archers' journals, as their coach.
+  plannedSessions         JournalSession[]    @relation("PlannedSessions")
   customEventTypes        CustomEventType[]
 
   @@map("users")
 }
 
-/// Roles are cumulative: a coach can also be an archer.
+/// Stored roles: ARCHER (every account, given at sign-up) and ADMIN (`user:make-admin`). COACH is
+/// not stored: a user is a coach while a coach invitation they accepted exists (`rolesOf`).
 model UserRole {
   userId    String   @map("user_id") @db.Char(36)
   role      Role
@@ -197,15 +202,22 @@ model JournalSession {
   icon            String?     @db.VarChar(20)
   /// `CUSTOM` events only: their type (title, colour and pictogram come from it).
   customTypeId    String?     @map("custom_type_id") @db.Char(36)
-  createdAt       DateTime    @default(now()) @map("created_at") @db.DateTime(3)
+  /// The coach who planned the event (null = the archer). They may change or delete it while it
+  /// is still to come; the archer always can.
+  plannedById     String?     @map("planned_by_id") @db.Char(36)
+  /// When the archer first opened the sheet of an event their coach planned; null = new to them.
+  seenAt          DateTime?   @map("seen_at") @db.DateTime(3)
+  createdAt      DateTime    @default(now()) @map("created_at") @db.DateTime(3)
   updatedAt       DateTime    @updatedAt @map("updated_at") @db.DateTime(3)
 
   user       User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   customType CustomEventType? @relation(fields: [customTypeId], references: [id], onDelete: SetNull)
+  plannedBy  User?            @relation("PlannedSessions", fields: [plannedById], references: [id], onDelete: SetNull)
   photos     SessionPhoto[]
 
   @@index([userId, date])
   @@index([customTypeId])
+  @@index([plannedById])
   @@map("journal_sessions")
 }
 
@@ -280,22 +292,39 @@ enum Indicator {
   MENTAL_FEELINGS
 }
 
-/// Someone an archer invited by email (e.g. their coach). Accepting gives no access yet.
-model ProfileInvitation {
-  id         String    @id @default(uuid()) @db.Char(36)
-  userId     String    @map("user_id") @db.Char(36)
-  name       String    @db.VarChar(100)
-  email      String    @db.VarChar(255)
-  isCoach    Boolean   @default(false) @map("is_coach")
-  /// Hash of the token emailed to the guest.
-  tokenHash  String    @unique @map("token_hash") @db.Char(64)
-  /// Null while the invitation is pending.
-  acceptedAt DateTime? @map("accepted_at") @db.DateTime(3)
-  createdAt  DateTime  @default(now()) @map("created_at") @db.DateTime(3)
+/// What an archer's coach may do in the journal of the season in progress.
+enum CoachAccess {
+  /// See everything in it (calendar, sheets, photos), plus the indicators and goals.
+  READ
+  /// READ, and plan future trainings, coachings, competitions and strength sessions.
+  WRITE
+}
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+/// Someone an archer invited by email. A plain guest is only invited to discover the site; a
+/// coach (`isCoach`) who accepts while signed in is linked (`coachId`) and gets `coachAccess` to
+/// the archer's journal of the season in progress (the one whose period covers today).
+model ProfileInvitation {
+  id          String       @id @default(uuid()) @db.Char(36)
+  userId      String       @map("user_id") @db.Char(36)
+  name        String       @db.VarChar(100)
+  email       String       @db.VarChar(255)
+  isCoach     Boolean      @default(false) @map("is_coach")
+  /// Coaches only.
+  coachAccess CoachAccess? @map("coach_access")
+  /// The account that accepted a coach invitation (whatever its email: the link is the proof).
+  coachId     String?      @map("coach_id") @db.Char(36)
+  /// Hash of the token emailed to the guest.
+  tokenHash   String       @unique @map("token_hash") @db.Char(64)
+  /// Null while the invitation is pending.
+  acceptedAt  DateTime?    @map("accepted_at") @db.DateTime(3)
+  createdAt   DateTime     @default(now()) @map("created_at") @db.DateTime(3)
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  coach User? @relation("CoachedArchers", fields: [coachId], references: [id], onDelete: Cascade)
 
   @@unique([userId, email])
+  @@unique([userId, coachId])
+  @@index([coachId])
   @@map("profile_invitations")
 }
 

@@ -19,10 +19,16 @@
     "menu": "Menu",
     "toggleColorScheme": "Toggle light / dark theme",
     "account": "My account",
-    "switchProfile": "Switch profile",
     "userMenu": "User menu",
     "archerSection": "Archer area",
-    "mainNavigation": "Main navigation"
+    "mainNavigation": "Main navigation",
+    "journalMenu": {
+      "label": "Choose the journal shown",
+      "choose": "Choose a journal",
+      "own": "My journals",
+      "athletes": "My archers",
+      "athleteJournal": "{title} — {name}"
+    }
   },
   "home": {
     "tagline": "The archer's logbook",
@@ -34,11 +40,11 @@
     "faq": {
       "audience": {
         "question": "Who is MyArcheryDiary for?",
-        "answer": "Archers of every level who want to keep track of their practice, and their coaches. One account can be both archer and coach."
+        "answer": "Archers of every level who want to keep track of their practice, and their coaches: an archer invites their coach, who then follows their journal of the current season."
       },
       "start": {
         "question": "How do I get started?",
-        "answer": "Create an account with your email, Google or Apple, choose the archer profile, then open your first journal. All that's left is to write down your sessions."
+        "answer": "Create an account with your email, Google or Apple, then open your first journal. All that is left is to write down your sessions."
       },
       "journal": {
         "question": "What is a journal?",
@@ -64,19 +70,22 @@
     "ctaTitle": "Ready to open your notebook?",
     "login": "Sign in",
     "register": "Create an account",
-    "profile": "My profile"
+    "profile": "My profile",
+    "invitation": {
+      "accepted": {
+        "title": "Invitation accepted, welcome!",
+        "body": "Find out below what MyArcheryDiary is for and browse the frequently asked questions. To open your own journal, all that is left is to create your account."
+      },
+      "coach": {
+        "title": "Welcome!",
+        "body": "Find out below what MyArcheryDiary is for, then create your account. Once signed in, open the emailed invitation link again to become the coach."
+      }
+    }
   },
   "roles": {
     "ADMIN": "Administrator",
     "ARCHER": "Archer",
-    "COACH": "Coach",
-    "ARCHER_description": "I practise archery",
-    "COACH_description": "I coach archers"
-  },
-  "chooseProfile": {
-    "title": "Which profile do you sign in with?",
-    "body": "You are both an archer and a coach. Choose the profile for this session: you can switch from your account menu.",
-    "as": "Sign in as {profile}"
+    "COACH": "Coach"
   },
   "login": {
     "title": "Sign in",
@@ -87,16 +96,13 @@
   },
   "register": {
     "title": "Create an account",
-    "rolesLabel": "You are…",
-    "rolesHint": "You can tick both.",
     "displayName": "Display name",
     "passwordHint": "Password (8 characters min.)",
     "passwordConfirm": "Confirm password",
     "submit": "Create my account",
     "socialHint": "Or sign up with:",
     "haveAccount": "Already registered?",
-    "signIn": "Sign in",
-    "rolesRequired": "Choose at least one profile: archer or coach."
+    "signIn": "Sign in"
   },
   "social": {
     "apple": "Continue with Apple"
@@ -114,11 +120,6 @@
     "body": "Click the button to activate your account.",
     "submit": "Confirm my email",
     "missingToken": "This link is incomplete. Please use the link from the email."
-  },
-  "onboarding": {
-    "title": "Welcome!",
-    "body": "One last step: tell us who you are.",
-    "submit": "Continue"
   },
   "errors": {
     "VALIDATION_FAILED": "Some fields are invalid.",
@@ -143,7 +144,9 @@
     "FILE_TOO_LARGE": "This photo is larger than 10 MB.",
     "MONTH_HAS_NO_THEME": "Choose a decoration for this month first.",
     "DAY_FULL": "This day already has 4 events, the maximum.",
-    "JOURNAL_OVERLAP": "This period overlaps another of your journals. Two journals cannot cover the same date."
+    "JOURNAL_OVERLAP": "This period overlaps another of your journals. Two journals cannot cover the same date.",
+    "SIGN_IN_REQUIRED": "Sign in to accept this coach invitation.",
+    "DATE_NOT_PLANNABLE": "A coach only plans days to come, within the archer's journal of the current season."
   },
   "validation": {
     "isEmail": "Invalid email address.",
@@ -162,9 +165,7 @@
     "signInMethods": "Sign-in",
     "methodPassword": "password",
     "memberSince": "Member since",
-    "editRoles": "Edit my profiles",
-    "save": "Save",
-    "saved": "Profiles saved."
+    "rolesHint": "Everyone is an archer. The Coach profile is added when an archer invites you as their coach, for as long as the invitation stands."
   },
   "archer": {
     "home": "Home",
@@ -337,6 +338,14 @@
       "position": "{n} / {total}",
       "delete": "Delete photo",
       "deleteBody": "The photo will be permanently deleted."
+    },
+    "plannedBy": "Planned by {name}",
+    "readOnly": "Read only",
+    "coachStamp": "Coach",
+    "plannedByCoach": "planned by the coach",
+    "newEvents": {
+      "title": "Proposed events",
+      "empty": "No new proposed event."
     }
   },
   "journals": {
@@ -424,11 +433,10 @@
       "title": "Invited people",
       "empty": "You haven't invited anyone yet.",
       "add": "Invite someone",
-      "addHint": "The person receives an invitation email. For now, accepting gives them no access to your data.",
+      "addHint": "They receive an invitation email. A coach signs in (or creates an account) to accept it, and then sees your journal of the current season.",
       "name": "Name",
       "namePlaceholder": "E.g. Camille Martin",
       "email": "Email",
-      "isCoach": "This is my coach",
       "coach": "Coach",
       "submit": "Send invitation",
       "status": {
@@ -437,7 +445,29 @@
       },
       "removeLabel": "Remove {name}",
       "removeTitle": "Remove this person?",
-      "removeBody": "{name} will be removed from your invited people and their invitation will no longer be valid."
+      "removeBody": "{name} will be removed from your guests and their invitation will no longer be valid. A coach loses access to your journal.",
+      "kind": "You are inviting…",
+      "kindGuest": "Someone, to discover the site",
+      "kindCoach": "My coach, to follow my journal",
+      "access": "Access to the journal",
+      "accessHint": "Only your journal of the current season (the one covering today's date). You can change it at any time.",
+      "accessLabel": {
+        "READ": "Read",
+        "WRITE": "Read and plan"
+      },
+      "accessDescription": {
+        "READ": "They see the whole journal: calendar, sheets, photos, indicators and goals.",
+        "WRITE": "They can also plan trainings, coachings, competitions and strength sessions to come (date, duration, place, discipline, distance, objective)."
+      },
+      "accessShort": {
+        "READ": "Read",
+        "WRITE": "Read and plan"
+      },
+      "language": "Language of the invitation",
+      "languages": {
+        "fr": "Français",
+        "en": "English"
+      }
     },
     "sites": {
       "title": "Favourite websites",
@@ -506,10 +536,15 @@
     "delete": "Delete",
     "accept": {
       "title": "Tiralarc invitation",
-      "body": "An archer added you to their invited people on Tiralarc.",
+      "body": "An archer invites you to Tiralarc: to discover the site, or as their coach, to follow their journal of the current season.",
       "submit": "Accept the invitation",
       "done": "Invitation from {name} accepted. Thank you!",
-      "missingToken": "This link is incomplete. Use the link you received by email."
+      "missingToken": "This link is incomplete. Use the link you received by email.",
+      "doneCoach": "You are now {name}'s coach. Their journal is in the journal menu, at the top of the page.",
+      "openJournal": "Open their journal",
+      "signInRequired": "This is a coach invitation: sign in to accept it. No account yet? Create one, then open the emailed link again.",
+      "signIn": "Sign in",
+      "register": "Create an account"
     }
   },
   "stats": {
@@ -533,11 +568,11 @@
     },
     "todayShort": "Today",
     "range": {
-      "label": "Period shown",
       "7": "7 days",
       "30": "30 days",
       "90": "90 days",
       "180": "180 days",
+      "label": "Period shown",
       "all": "All"
     },
     "arrowsTotal": "arrows",
@@ -592,8 +627,6 @@
     "createdOn": "Date set",
     "achieved": "Goal reached",
     "achievedOn": "Reached on",
-    "dateSet": "Set on {set}",
-    "datesReached": "Set on {set} · reached on {reached}",
     "markReached": "Mark as reached: {goal}",
     "markOpen": "Mark as not reached: {goal}",
     "editLabel": "Edit goal: {goal}",
@@ -603,6 +636,28 @@
     "create": "Create goal",
     "save": "Save",
     "cancel": "Cancel",
-    "delete": "Delete"
+    "delete": "Delete",
+    "emptyType": "No goal yet.",
+    "dateReached": "Reached on {reached}"
+  },
+  "coach": {
+    "title": "My archers",
+    "intro": "The archers who invited you as their coach. You follow their journal of the current season.",
+    "emptyBody": "No archers yet. An archer invites you as their coach from their Profile page; accept the emailed invitation while signed in.",
+    "access": {
+      "READ": "Read",
+      "WRITE": "Planning"
+    },
+    "journalPeriod": "{title}, {start} to {end}",
+    "noJournal": "No current journal",
+    "noJournalBody": "{name} has no journal covering today's date: there is nothing to show yet.",
+    "openJournal": "Journal",
+    "openStats": "Indicators",
+    "planSession": "Plan an event",
+    "planSessionHint": "Choose the type and the day (to come); then fill in the preparation: duration, place, discipline, distance and objective.",
+    "accessHint": {
+      "READ": "Read only",
+      "WRITE": "You can plan the days to come"
+    }
   }
 }

@@ -4,20 +4,22 @@ import {
   ActionIcon,
   Badge,
   Button,
-  Checkbox,
   Group,
   Modal,
+  Radio,
+  SegmentedControl,
   Stack,
   Text,
   TextInput,
 } from '@mantine/core';
 import { useMediaQuery } from '@mantine/hooks';
 import { IconUserPlus } from '@tabler/icons-react';
-import type { Invitation } from '@tiralarc/api-client';
-import { useTranslations } from 'next-intl';
+import type { CoachAccess, Invitation, InvitationCreate } from '@tiralarc/api-client';
+import { useLocale, useTranslations } from 'next-intl';
 import { useState, useTransition } from 'react';
-import { invitePerson, removeInvitation } from '@/app/actions/profile';
+import { invitePerson, removeInvitation, setCoachAccess } from '@/app/actions/profile';
 import { FormError, useFieldError } from '@/components/form-feedback';
+import { routing } from '@/i18n/routing';
 import type { ActionState } from '@/lib/action-state';
 import { ListRow, ProfileCard, ProfileList } from './list-card';
 
@@ -67,6 +69,7 @@ export function InvitationsCard({ invitations }: { invitations: Invitation[] }) 
             <Text size="sm" c="dimmed" truncate>
               {guest.email}
             </Text>
+            {guest.coachAccess && <AccessSelect id={guest.id} access={guest.coachAccess} />}
           </ListRow>
         ))}
       </ProfileList>
@@ -85,12 +88,43 @@ export function InvitationsCard({ invitations }: { invitations: Invitation[] }) 
   );
 }
 
+/** A coach's access to the journal of the season in progress, changed at once. */
+function AccessSelect({ id, access }: { id: string; access: CoachAccess }) {
+  const t = useTranslations('profile.guests');
+  const [state, setState] = useState<ActionState>({});
+  const [pending, startTransition] = useTransition();
+  return (
+    <Stack gap={4} mt={6}>
+      <SegmentedControl
+        size="xs"
+        value={access}
+        disabled={pending}
+        aria-label={t('access')}
+        onChange={(value) =>
+          startTransition(async () => setState(await setCoachAccess(id, value as CoachAccess)))
+        }
+        data={COACH_ACCESSES.map((value) => ({ value, label: t(`accessShort.${value}`) }))}
+      />
+      <FormError state={state} />
+    </Stack>
+  );
+}
+
+const COACH_ACCESSES: CoachAccess[] = ['READ', 'WRITE'];
+
+/** The languages an invitation email can be written in. */
+type EmailLocale = NonNullable<InvitationCreate['locale']>;
+
 function InviteForm({ onDone }: { onDone: () => void }) {
   const t = useTranslations('profile');
   const fieldError = useFieldError();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [isCoach, setIsCoach] = useState(false);
+  const [coachAccess, setCoachAccessValue] = useState<CoachAccess>('READ');
+  // The email's language: the page's by default.
+  const pageLocale = useLocale() as EmailLocale;
+  const [locale, setLocale] = useState<EmailLocale>(pageLocale);
   const [state, setState] = useState<ActionState>({});
   const [pending, startTransition] = useTransition();
 
@@ -101,7 +135,14 @@ function InviteForm({ onDone }: { onDone: () => void }) {
         e.preventDefault();
         if (!valid) return;
         startTransition(async () => {
-          const result = await invitePerson({ name: name.trim(), email: email.trim(), isCoach });
+          const result = await invitePerson({
+            name: name.trim(),
+            email: email.trim(),
+            isCoach,
+            // Ignored by the API for a plain guest.
+            coachAccess,
+            locale,
+          });
           if (result.code) setState(result);
           else onDone();
         });
@@ -130,11 +171,50 @@ function InviteForm({ onDone }: { onDone: () => void }) {
           error={fieldError(state, 'email')}
           required
         />
-        <Checkbox
-          label={t('guests.isCoach')}
-          checked={isCoach}
-          onChange={(e) => setIsCoach(e.currentTarget.checked)}
-        />
+        <Stack gap={4}>
+          <Text size="sm" fw={500} id="invitation-language">
+            {t('guests.language')}
+          </Text>
+          <SegmentedControl
+            aria-labelledby="invitation-language"
+            value={locale}
+            onChange={(value) => setLocale(value as EmailLocale)}
+            data={routing.locales.map((value) => ({
+              value,
+              label: t(`guests.languages.${value}`),
+            }))}
+            style={{ alignSelf: 'flex-start' }}
+          />
+        </Stack>
+        <Radio.Group
+          label={t('guests.kind')}
+          value={isCoach ? 'coach' : 'guest'}
+          onChange={(value) => setIsCoach(value === 'coach')}
+        >
+          <Stack gap="xs" mt="xs">
+            <Radio value="guest" label={t('guests.kindGuest')} />
+            <Radio value="coach" label={t('guests.kindCoach')} />
+          </Stack>
+        </Radio.Group>
+        {isCoach && (
+          <Radio.Group
+            label={t('guests.access')}
+            description={t('guests.accessHint')}
+            value={coachAccess}
+            onChange={(value) => setCoachAccessValue(value as CoachAccess)}
+          >
+            <Stack gap="xs" mt="xs">
+              {COACH_ACCESSES.map((value) => (
+                <Radio
+                  key={value}
+                  value={value}
+                  label={t(`guests.accessLabel.${value}`)}
+                  description={t(`guests.accessDescription.${value}`)}
+                />
+              ))}
+            </Stack>
+          </Radio.Group>
+        )}
         <FormError state={state} />
         <Group justify="flex-end" gap="sm">
           <Button variant="default" onClick={onDone}>

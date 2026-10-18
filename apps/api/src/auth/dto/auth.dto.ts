@@ -1,22 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import {
-  ArrayMaxSize,
-  ArrayMinSize,
-  ArrayUnique,
-  IsArray,
-  IsEmail,
-  IsIn,
-  IsOptional,
-  IsString,
-  MaxLength,
-  MinLength,
-} from 'class-validator';
+import { IsEmail, IsIn, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
 import { SUPPORTED_LOCALES } from '../../common/locales.js';
-import { Role } from '../../generated/prisma/client.js';
-
-/** Roles a user may give themselves. ADMIN is granted by an administrator only. */
-export const SELF_ASSIGNABLE_ROLES = [Role.ARCHER, Role.COACH] as const;
-export type SelfAssignableRole = (typeof SELF_ASSIGNABLE_ROLES)[number];
 
 const deviceNameProperty = {
   description:
@@ -60,19 +44,6 @@ export class RegisterDto {
   @IsString()
   @MaxLength(100)
   displayName?: string;
-
-  @ApiProperty({
-    enum: SELF_ASSIGNABLE_ROLES,
-    enumName: 'SelfAssignableRole',
-    isArray: true,
-    minItems: 1,
-  })
-  @IsArray()
-  @ArrayMinSize(1)
-  @ArrayUnique()
-  @ArrayMaxSize(SELF_ASSIGNABLE_ROLES.length)
-  @IsIn(SELF_ASSIGNABLE_ROLES, { each: true })
-  roles!: SelfAssignableRole[];
 
   @ApiPropertyOptional({
     enum: SUPPORTED_LOCALES,
@@ -129,21 +100,6 @@ export class SocialSignInDto {
   @IsString()
   @MaxLength(255)
   nonce?: string;
-
-  @ApiPropertyOptional({
-    enum: SELF_ASSIGNABLE_ROLES,
-    enumName: 'SelfAssignableRole',
-    isArray: true,
-    description:
-      'Roles for a new account. If omitted for a new account, it is created without roles and ' +
-      'the client must ask the user (PUT /users/me/roles). Ignored for existing accounts.',
-  })
-  @IsOptional()
-  @IsArray()
-  @ArrayUnique()
-  @ArrayMaxSize(SELF_ASSIGNABLE_ROLES.length)
-  @IsIn(SELF_ASSIGNABLE_ROLES, { each: true })
-  roles?: SelfAssignableRole[];
 
   @ApiPropertyOptional({
     maxLength: 100,

@@ -5,5 +5,6 @@ import { ProfileService } from './profile.service.js';
 @Module({
   controllers: [ProfileController, InvitationsController],
   providers: [ProfileService],
+  exports: [ProfileService],
 })
 export class ProfileModule {}

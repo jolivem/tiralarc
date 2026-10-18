@@ -1,5 +1,5 @@
-import { Box, Container, Stack, Text } from '@mantine/core';
-import { IconLogin, IconUserPlus } from '@tabler/icons-react';
+import { Alert, Box, Container, Stack, Text } from '@mantine/core';
+import { IconLogin, IconMailOpened, IconUserPlus } from '@tabler/icons-react';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { ButtonLink } from '@/components/links';
 import { HandHeading } from '@/components/notebook/notebook';
@@ -12,17 +12,37 @@ import classes from './home.module.css';
 /** FAQ entries, in order: message keys under `home.faq`. */
 const FAQ = ['audience', 'start', 'journal', 'events', 'planning', 'progress', 'devices'] as const;
 
-export default async function HomePage({ params }: PageProps<'/[locale]'>) {
+/** `?invitation=`: the visitor comes from an invitation email (see accept-invitation-form.tsx). */
+const INVITATIONS = ['accepted', 'coach'] as const;
+
+export default async function HomePage({ params, searchParams }: PageProps<'/[locale]'>) {
   const { locale } = await params;
   setRequestLocale(locale as Locale);
   const user = await getCurrentUser();
   if (user) return redirect({ href: homePathFor(user.roles), locale: locale as Locale });
   const t = await getTranslations('home');
+  const { invitation: requested } = await searchParams;
+  const invitation = INVITATIONS.find((kind) => kind === requested);
 
   // On the desk: the welcome, the closed notebook, then the FAQ on a sheet torn out of a spiral notebook.
   return (
     <Container size="md" px={0}>
       <Stack gap={48}>
+        {invitation && (
+          // A guest who accepted an invitation (or a coach without an account yet): what the
+          // site is for is below, then the button to create their account.
+          <Alert
+            variant="light"
+            color="teal"
+            radius="lg"
+            maw={680}
+            mx="auto"
+            icon={<IconMailOpened size={20} />}
+            title={t(`invitation.${invitation}.title`)}
+          >
+            {t(`invitation.${invitation}.body`)}
+          </Alert>
+        )}
         <Box maw={680} mx="auto" ta="center">
           <HandHeading order={2}>{t('welcomeTitle')}</HandHeading>
           <Text size="lg">{t('welcomeBody')}</Text>

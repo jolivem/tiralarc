@@ -1,8 +1,10 @@
 import { createHash, randomBytes } from 'node:crypto';
 import { HttpStatus, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { ApiException, ErrorCode } from '../common/errors.js';
+import type { AuthenticatedUser } from '../common/decorators/current-user.decorator.js';
 import {
   type ArcherProfile,
+  CoachAccess,
   Discipline,
   type FavoriteSite,
   type ProfileInvitation,
@@ -16,6 +18,7 @@ import type {
   InvitationDto,
   ProfileDto,
   SiteDto,
+  UpdateInvitationDto,
   UpdateProfileDto,
 } from './dto/profile.dto.js';
 
@@ -45,6 +48,7 @@ function toInvitationDto(i: ProfileInvitation): InvitationDto {
     name: i.name,
     email: i.email,
     isCoach: i.isCoach,
+    coachAccess: i.isCoach ? (i.coachAccess ?? CoachAccess.READ) : null,
     status: i.acceptedAt ? 'ACCEPTED' : 'PENDING',
     createdAt: i.createdAt,
   };
@@ -125,21 +129,24 @@ export class ProfileService {
     if (existing.length >= MAX_INVITATIONS) throw limitReached('invitations', MAX_INVITATIONS);
 
     const token = randomBytes(32).toString('base64url');
+    const isCoach = dto.isCoach ?? false;
     const invitation = await this.prisma.profileInvitation.create({
       data: {
         userId,
         name: dto.name.trim(),
         email,
-        isCoach: dto.isCoach ?? false,
+        isCoach,
+        coachAccess: isCoach ? (dto.coachAccess ?? CoachAccess.READ) : null,
         tokenHash: hashToken(token),
       },
     });
     try {
       await this.mail.sendInvitation(
         email,
-        inviter.locale,
+        dto.locale ?? inviter.locale,
         inviter.displayName ?? inviter.email,
         token,
+        isCoach,
       );
     } catch (error) {
       // The guest stays listed as pending; the archer can remove and invite them again.
@@ -148,31 +155,99 @@ export class ProfileService {
     return toInvitationDto(invitation);
   }
 
+  /** Changes what a coach may do in the journal (takes effect at once). */
+  async updateInvitation(
+    userId: string,
+    id: string,
+    dto: UpdateInvitationDto,
+  ): Promise<InvitationDto> {
+    const invitation = await this.prisma.profileInvitation.findFirst({ where: { id, userId } });
+    if (!invitation) throw new NotFoundException('Invitation not found');
+    if (!invitation.isCoach) {
+      throw new ApiException(
+        HttpStatus.BAD_REQUEST,
+        ErrorCode.VALIDATION_FAILED,
+        'Only a coach has an access to the journal',
+      );
+    }
+    const updated = await this.prisma.profileInvitation.update({
+      where: { id },
+      data: { coachAccess: dto.coachAccess },
+    });
+    return toInvitationDto(updated);
+  }
+
+  /** Removing a coach's invitation takes their access away. */
   async removeInvitation(userId: string, id: string): Promise<void> {
     const { count } = await this.prisma.profileInvitation.deleteMany({ where: { id, userId } });
     if (count === 0) throw new NotFoundException('Invitation not found');
   }
 
-  /** Called by the guest, with the token of the emailed link. Accepting twice is harmless. */
-  async acceptInvitation(token: string): Promise<AcceptedInvitationDto> {
+  /**
+   * Called by the guest, with the token of the emailed link. A plain guest needs no account; a
+   * coach must be signed in: that account becomes the archer's coach (hence holds COACH).
+   * Accepting twice is harmless.
+   */
+  async acceptInvitation(
+    token: string,
+    caller: AuthenticatedUser | null,
+  ): Promise<AcceptedInvitationDto> {
     const invitation = await this.prisma.profileInvitation.findUnique({
       where: { tokenHash: hashToken(token) },
       include: { user: { select: { displayName: true, email: true } } },
     });
-    if (!invitation) {
+    const invalid = new ApiException(
+      HttpStatus.BAD_REQUEST,
+      ErrorCode.INVALID_INVITATION_TOKEN,
+      'Invalid or withdrawn invitation',
+    );
+    if (!invitation) throw invalid;
+    const invitedBy = invitation.user.displayName ?? invitation.user.email;
+
+    if (!invitation.isCoach) {
+      if (!invitation.acceptedAt) {
+        await this.prisma.profileInvitation.update({
+          where: { id: invitation.id },
+          data: { acceptedAt: new Date() },
+        });
+      }
+      return { invitedBy, archerId: null };
+    }
+
+    if (!caller) {
       throw new ApiException(
-        HttpStatus.BAD_REQUEST,
-        ErrorCode.INVALID_INVITATION_TOKEN,
-        'Invalid or withdrawn invitation',
+        HttpStatus.UNAUTHORIZED,
+        ErrorCode.SIGN_IN_REQUIRED,
+        'Sign in (or create an account) to accept a coach invitation',
       );
     }
-    if (!invitation.acceptedAt) {
+    if (caller.id === invitation.userId) {
+      throw new ApiException(
+        HttpStatus.BAD_REQUEST,
+        ErrorCode.CANNOT_INVITE_SELF,
+        'You cannot be your own coach',
+      );
+    }
+    // Already used by another account.
+    if (invitation.coachId && invitation.coachId !== caller.id) throw invalid;
+    if (!invitation.coachId) {
+      const already = await this.prisma.profileInvitation.findFirst({
+        where: { userId: invitation.userId, coachId: caller.id },
+      });
+      if (already) {
+        throw new ApiException(
+          HttpStatus.CONFLICT,
+          ErrorCode.INVITATION_ALREADY_SENT,
+          'You already coach this archer',
+        );
+      }
+      // The link makes the user a coach (see `rolesOf`).
       await this.prisma.profileInvitation.update({
         where: { id: invitation.id },
-        data: { acceptedAt: new Date() },
+        data: { coachId: caller.id, acceptedAt: new Date() },
       });
     }
-    return { invitedBy: invitation.user.displayName ?? invitation.user.email };
+    return { invitedBy, archerId: invitation.userId };
   }
 
   // ------------------------------------------------------------------ sites

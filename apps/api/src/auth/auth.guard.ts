@@ -29,10 +29,21 @@ export class AuthGuard implements CanActivate {
       context.getHandler(),
       context.getClass(),
     ]);
-    if (isPublic) return true;
-
     const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
     const [scheme, token] = request.headers.authorization?.split(' ') ?? [];
+    if (isPublic) {
+      // Signed-in callers of a public route are still known to it (see `OptionalUser`).
+      if (scheme === 'Bearer' && token) {
+        try {
+          const payload = await this.auth.verifyAccessToken(token);
+          request.user = { id: payload.sub, email: payload.email, roles: payload.roles ?? [] };
+        } catch {
+          // An expired token on a public route counts as no token.
+        }
+      }
+      return true;
+    }
+
     if (scheme !== 'Bearer' || !token) {
       throw new UnauthorizedException('Missing bearer token');
     }

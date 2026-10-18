@@ -10,3 +10,19 @@
   font-size: 1rem;
   opacity: 0.7;
 }
+
+/*
+ * The Configuration card's fields (configuration-card.tsx): one per row, its name on the left
+ * (a column as wide as the longest name), the field filling the rest.
+ */
+.fieldRows {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  align-items: center;
+  gap: var(--mantine-spacing-sm) var(--mantine-spacing-md);
+}
+
+.fieldName {
+  font-size: var(--mantine-font-size-sm);
+  font-weight: 500;
+}

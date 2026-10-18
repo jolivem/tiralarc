@@ -2,6 +2,7 @@ import { HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
 import { ApiException, ErrorCode } from '../common/errors.js';
 import {
   type CustomEventType,
+  type Discipline,
   type Journal,
   type JournalSession,
   SessionType,
@@ -19,6 +20,7 @@ import {
   MONTH,
   type MonthThemeDto,
   MAX_LIST_ITEMS,
+  type NewEventDto,
   type SessionDto,
   type SessionSuggestionsDto,
   type SessionSummaryDto,
@@ -168,9 +170,28 @@ export function toCustomTypeDto(type: CustomEventType): CustomEventTypeDto {
   };
 }
 
-/** A session as read back: with its custom type (`CUSTOM` events), which the DTOs embed. */
-type SessionRow = JournalSession & { customType: CustomEventType | null };
-const WITH_TYPE = { customType: true } as const;
+/**
+ * A session as read back: with its custom type (`CUSTOM` events) and the coach who planned it,
+ * which the DTOs embed.
+ */
+type SessionRow = JournalSession & {
+  customType: CustomEventType | null;
+  plannedBy: { id: string; displayName: string | null; email: string } | null;
+};
+const WITH_TYPE = {
+  customType: true,
+  plannedBy: { select: { id: true, displayName: true, email: true } },
+} as const;
+
+/** What a coach fills in when planning an event (the fields of a sheet still to come). */
+export interface PlannedFields {
+  date: string;
+  durationMinutes?: number | null;
+  location?: string | null;
+  discipline?: Discipline | null;
+  distanceMeters?: number | null;
+  objective?: string | null;
+}
 
 function toSummary(s: SessionRow): SessionSummaryDto {
   return {
@@ -187,6 +208,7 @@ function toSummary(s: SessionRow): SessionSummaryDto {
     icon: s.icon as EventIcon | null,
     customType: s.customType ? toCustomTypeDto(s.customType) : null,
     completed: isCompleted(s),
+    plannedByCoach: s.plannedById !== null,
   };
 }
 
@@ -203,6 +225,9 @@ function toDto(s: SessionRow): SessionDto {
     wentWell: asList(s.wentWell),
     toImprove: asList(s.toImprove),
     nextTime: s.nextTime,
+    plannedBy: s.plannedBy
+      ? { id: s.plannedBy.id, name: s.plannedBy.displayName ?? s.plannedBy.email }
+      : null,
     updatedAt: s.updatedAt,
   };
 }
@@ -472,8 +497,75 @@ export class JournalService {
     return toDto(session);
   }
 
+  /**
+   * An event a coach plans in the archer's journal (`plannedById`): its type, day and planning
+   * fields. The caller checks the coach's access and the day.
+   */
+  async plan(
+    userId: string,
+    plannedById: string,
+    type: SessionType,
+    fields: PlannedFields,
+  ): Promise<SessionDto> {
+    const date = toDbDate(fields.date);
+    await this.assertDayHasRoom(userId, date);
+    const session = await this.prisma.journalSession.create({
+      data: {
+        userId,
+        plannedById,
+        type,
+        date,
+        durationMinutes: fields.durationMinutes,
+        location: fields.location?.trim() || null,
+        discipline: fields.discipline,
+        distanceMeters: fields.distanceMeters,
+        objective: fields.objective,
+        wentWell: [],
+        toImprove: [],
+      },
+      include: WITH_TYPE,
+    });
+    return toDto(session);
+  }
+
+  /** The journal whose period covers `day` (YYYY-MM-DD), if any: journals never overlap. */
+  async journalOn(userId: string, day: string): Promise<JournalDto | null> {
+    const date = toDbDate(day);
+    const journal = await this.prisma.journal.findFirst({
+      where: { userId, startDate: { lte: date }, endDate: { gte: date } },
+    });
+    return journal && this.toJournalDto(journal);
+  }
+
   async get(userId: string, id: string): Promise<SessionDto> {
     return toDto(await this.findOwned(userId, id));
+  }
+
+  /** The events the archer's coach planned that the archer hasn't opened yet, by date. */
+  async newEvents(userId: string): Promise<NewEventDto[]> {
+    const sessions = await this.prisma.journalSession.findMany({
+      where: { userId, plannedById: { not: null }, seenAt: null },
+      orderBy: [{ date: 'asc' }, { createdAt: 'asc' }],
+      include: WITH_TYPE,
+    });
+    return sessions.flatMap((s) =>
+      s.plannedBy
+        ? [
+            Object.assign(toSummary(s), {
+              plannedBy: { id: s.plannedBy.id, name: s.plannedBy.displayName ?? s.plannedBy.email },
+            }),
+          ]
+        : [],
+    );
+  }
+
+  /** The archer opened the event's sheet: it is no longer new to them. Idempotent. */
+  async markSeen(userId: string, id: string): Promise<void> {
+    await this.findOwned(userId, id);
+    await this.prisma.journalSession.updateMany({
+      where: { id, seenAt: null },
+      data: { seenAt: new Date() },
+    });
   }
 
   async update(userId: string, id: string, dto: UpdateSessionDto): Promise<SessionDto> {

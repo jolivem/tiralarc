@@ -1,14 +1,12 @@
 'use client';
 
 import { Anchor, Button, PasswordInput, Stack, Text, TextInput } from '@mantine/core';
-import type { SelfAssignableRole } from '@tiralarc/api-client';
 import { useTranslations } from 'next-intl';
 import { useActionState, useState } from 'react';
-import { login, register, resendVerification, updateRoles, verifyEmail } from '@/app/actions/auth';
+import { login, register, resendVerification, verifyEmail } from '@/app/actions/auth';
 import { Link } from '@/i18n/navigation';
 import type { ActionState } from '@/lib/action-state';
 import { FormError, SuccessNotice, useFieldError } from './form-feedback';
-import { RolePicker } from './role-picker';
 import { SocialSignIn } from './social-sign-in';
 
 const initial: ActionState = {};
@@ -64,7 +62,6 @@ export function RegisterForm() {
   const fieldError = useFieldError();
   const tValidation = useTranslations('validation');
   const [state, action, pending] = useActionState(register, initial);
-  const [roles, setRoles] = useState<SelfAssignableRole[]>([]);
   // Controlled: React resets uncontrolled fields after each submission, which
   // would wipe what the user typed when the server rejects the form.
   const [values, setValues] = useState({
@@ -97,15 +94,6 @@ export function RegisterForm() {
         }}
       >
         <Stack gap="md">
-          <div>
-            <Text fw={500} size="sm">
-              {t('register.rolesLabel')}
-            </Text>
-            <Text size="xs" c="dimmed" mb="xs">
-              {t('register.rolesHint')}
-            </Text>
-            <RolePicker value={roles} onChange={setRoles} error={fieldError(state, 'roles')} />
-          </div>
           <TextInput
             {...bind('displayName')}
             label={t('register.displayName')}
@@ -144,7 +132,7 @@ export function RegisterForm() {
           </Button>
         </Stack>
       </form>
-      <SocialSignIn roles={roles} />
+      <SocialSignIn />
       <Text size="sm" ta="center" c="dimmed">
         {t('register.haveAccount')}{' '}
         <Anchor component={Link} href="/login">
@@ -185,36 +173,6 @@ export function VerifyEmailForm({ token }: { token: string }) {
           {t('verifyEmail.submit')}
         </Button>
         <FormError state={state} />
-      </Stack>
-    </form>
-  );
-}
-
-/** Role selection, for onboarding (`next` set: redirects) or the profile page (shows a notice). */
-export function RolesForm({
-  initialRoles,
-  submitLabel,
-  next,
-}: {
-  initialRoles: SelfAssignableRole[];
-  submitLabel: string;
-  next?: string;
-}) {
-  const t = useTranslations();
-  const fieldError = useFieldError();
-  const [state, action, pending] = useActionState(updateRoles, initial);
-  const [roles, setRoles] = useState(initialRoles);
-
-  return (
-    <form action={action}>
-      <Stack gap="md">
-        {next !== undefined && <input type="hidden" name="next" value={next} />}
-        <RolePicker value={roles} onChange={setRoles} error={fieldError(state, 'roles')} />
-        <FormError state={state} />
-        {state.notice === 'saved' && <SuccessNotice>{t('account.saved')}</SuccessNotice>}
-        <Button type="submit" loading={pending}>
-          {submitLabel}
-        </Button>
       </Stack>
     </form>
   );

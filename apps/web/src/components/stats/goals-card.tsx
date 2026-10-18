@@ -2,23 +2,32 @@
 
 import {
   ActionIcon,
-  Badge,
   Button,
   Checkbox,
   Group,
   Modal,
   Progress,
   Select,
+  SimpleGrid,
   Stack,
   Text,
   Textarea,
 } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
 import { useMediaQuery } from '@mantine/hooks';
-import { IconCalendar, IconPencil, IconPlus, IconTrash } from '@tabler/icons-react';
+import {
+  IconBarbell,
+  IconBow,
+  IconCalendar,
+  IconPencil,
+  IconPlant2,
+  IconPlus,
+  IconTargetArrow,
+  IconTrash,
+} from '@tabler/icons-react';
 import type { Goal, GoalType } from '@tiralarc/api-client';
 import { useFormatter, useTranslations } from 'next-intl';
-import { useOptimistic, useState, useTransition } from 'react';
+import { type CSSProperties, useOptimistic, useState, useTransition } from 'react';
 import { createGoal, deleteGoal, updateGoal } from '@/app/actions/goals';
 import { FormError, useFieldError } from '@/components/form-feedback';
 import type { ActionState } from '@/lib/action-state';
@@ -26,6 +35,13 @@ import { SquaredCard, StatsCardTitle } from './stats-cards';
 import classes from './stats.module.css';
 
 const GOAL_TYPES: GoalType[] = ['SPORT', 'TECHNIQUE', 'PHYSICAL', 'PERSONAL'];
+/** Each category's stamp (top right of its box). */
+const TYPE_ICONS: Record<GoalType, typeof IconPlus> = {
+  SPORT: IconTargetArrow,
+  TECHNIQUE: IconBow,
+  PHYSICAL: IconBarbell,
+  PERSONAL: IconPlant2,
+};
 const TYPE_COLORS: Record<GoalType, string> = {
   SPORT: 'orange',
   TECHNIQUE: 'blue',
@@ -36,8 +52,17 @@ const TYPE_COLORS: Record<GoalType, string> = {
 /**
  * The archer's goals: how many are reached, then the list — ticking a goal
  * marks it reached today; the pencil edits everything, dates included.
+ * `readOnly`: the archer's coach sees them, without changing anything.
  */
-export function GoalsCard({ goals, today }: { goals: Goal[]; today: string }) {
+export function GoalsCard({
+  goals,
+  today,
+  readOnly = false,
+}: {
+  goals: Goal[];
+  today: string;
+  readOnly?: boolean;
+}) {
   const t = useTranslations('goals');
   const format = useFormatter();
   const isPhone = useMediaQuery('(max-width: 48em)');
@@ -73,16 +98,36 @@ export function GoalsCard({ goals, today }: { goals: Goal[]; today: string }) {
   return (
     <SquaredCard>
       <Stack gap="md">
-        <Group justify="space-between" align="flex-end" wrap="nowrap">
+        {/* The title, the progress over all goals in the middle, the "+" on the right. */}
+        <Group justify="space-between" align="center" gap="md">
           <StatsCardTitle>{t('title')}</StatsCardTitle>
-          <Button
-            variant="light"
-            size="xs"
-            leftSection={<IconPlus size={16} />}
-            onClick={() => setEditing('new')}
-          >
-            {t('add')}
-          </Button>
+          {shown.length > 0 && (
+            <Stack gap={4} align="center" className={classes.goalsProgress}>
+              <Group gap={6} align="baseline" justify="center" wrap="nowrap">
+                <Text className={classes.figure}>
+                  {reached} / {shown.length}
+                </Text>
+                <Text size="sm" c="dimmed">
+                  {t('reached', { count: shown.length })}
+                </Text>
+              </Group>
+              <Progress
+                w="100%"
+                value={(reached / shown.length) * 100}
+                aria-label={t('progress', { reached, total: shown.length })}
+              />
+            </Stack>
+          )}
+          {!readOnly && (
+            <Button
+              variant="light"
+              size="xs"
+              leftSection={<IconPlus size={16} />}
+              onClick={() => setEditing('new')}
+            >
+              {t('add')}
+            </Button>
+          )}
         </Group>
 
         {shown.length === 0 ? (
@@ -90,82 +135,121 @@ export function GoalsCard({ goals, today }: { goals: Goal[]; today: string }) {
             {t('empty')}
           </Text>
         ) : (
-          <>
-            <div>
-              <Text className={classes.figure}>
-                {reached} / {shown.length}
-              </Text>
-              <Text size="sm" c="dimmed" mb={6}>
-                {t('reached', { count: shown.length })}
-              </Text>
-              <Progress
-                value={(reached / shown.length) * 100}
-                aria-label={t('progress', { reached, total: shown.length })}
-              />
-            </div>
-            <Stack gap={4} component="ul" m={0} p={0} style={{ listStyle: 'none' }}>
-              {shown.map((goal) => (
-                <Group
-                  key={goal.id}
-                  component="li"
-                  gap="sm"
-                  wrap="nowrap"
-                  align="flex-start"
-                  py={6}
+          // One box per category, each with its own goals.
+          <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
+            {GOAL_TYPES.map((type) => {
+              const goals = shown.filter((goal) => goal.type === type);
+              const TypeIcon = TYPE_ICONS[type];
+              return (
+                <section
+                  key={type}
+                  className={classes.goalGroup}
+                  style={
+                    {
+                      '--goal-color': `var(--mantine-color-${TYPE_COLORS[type]}-6)`,
+                    } as CSSProperties
+                  }
                 >
-                  <Checkbox
-                    mt={2}
-                    checked={goal.achieved}
-                    onChange={() => toggle(goal)}
-                    aria-label={t(goal.achieved ? 'markOpen' : 'markReached', {
-                      goal: goal.description,
-                    })}
-                  />
-                  <div style={{ flex: 1, minWidth: 0 }}>
+                  {/* The category's stamp, inked in the top right corner. */}
+                  <span className={classes.goalStamp} aria-hidden>
+                    <TypeIcon size={22} stroke={1.8} />
+                  </span>
+                  {/* The name on the left, the count on the right, just left of the stamp. */}
+                  <Group
+                    justify="space-between"
+                    gap="xs"
+                    align="baseline"
+                    wrap="nowrap"
+                    mb={4}
+                    pr={48}
+                  >
+                    {/* In the calligraphy font chosen on the Profile page, like the card's title. */}
                     <Text
-                      size="sm"
-                      td={goal.achieved ? 'line-through' : undefined}
-                      c={goal.achieved ? 'dimmed' : undefined}
-                      style={{ overflowWrap: 'anywhere' }}
+                      component="h3"
+                      ff="var(--font-calendar, var(--font-hand)), 'Segoe Print', cursive"
+                      fz="1.4rem"
+                      fw={700}
+                      lh={1.2}
+                      c={TYPE_COLORS[type]}
+                      m={0}
                     >
-                      {goal.description}
+                      {t(`types.${type}`)}
                     </Text>
-                    <Group gap="xs" mt={2}>
-                      <Badge variant="light" size="sm" color={TYPE_COLORS[goal.type]}>
-                        {t(`types.${goal.type}`)}
-                      </Badge>
+                    {goals.length > 0 && (
                       <Text size="xs" c="dimmed">
-                        {goal.achievedOn
-                          ? t('datesReached', {
-                              set: day(goal.createdOn),
-                              reached: day(goal.achievedOn),
-                            })
-                          : t('dateSet', { set: day(goal.createdOn) })}
+                        {goals.filter((goal) => goal.achieved).length} / {goals.length}
                       </Text>
-                    </Group>
-                  </div>
-                  <Group gap={0} wrap="nowrap">
-                    <ActionIcon
-                      variant="subtle"
-                      color="gray"
-                      aria-label={t('editLabel', { goal: goal.description })}
-                      onClick={() => setEditing(goal)}
-                    >
-                      <IconPencil size={18} />
-                    </ActionIcon>
-                    <ActionIcon
-                      variant="subtle"
-                      color="red"
-                      aria-label={t('deleteLabel', { goal: goal.description })}
-                      onClick={() => setToDelete(goal)}
-                    >
-                      <IconTrash size={18} />
-                    </ActionIcon>
+                    )}
                   </Group>
-                </Group>
-              ))}
-            </Stack>
-          </>
+                  {goals.length === 0 ? (
+                    <Text size="sm" c="dimmed" fs="italic">
+                      {t('emptyType')}
+                    </Text>
+                  ) : (
+                    <Stack gap={0} component="ul" m={0} p={0} style={{ listStyle: 'none' }}>
+                      {goals.map((goal) => (
+                        <Group
+                          key={goal.id}
+                          component="li"
+                          gap="sm"
+                          wrap="nowrap"
+                          align="flex-start"
+                          py={6}
+                        >
+                          <Checkbox
+                            mt={2}
+                            color={TYPE_COLORS[type]}
+                            checked={goal.achieved}
+                            onChange={() => !readOnly && toggle(goal)}
+                            readOnly={readOnly}
+                            aria-label={t(goal.achieved ? 'markOpen' : 'markReached', {
+                              goal: goal.description,
+                            })}
+                          />
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <Text
+                              size="sm"
+                              td={goal.achieved ? 'line-through' : undefined}
+                              c={goal.achieved ? 'dimmed' : undefined}
+                              style={{ overflowWrap: 'anywhere' }}
+                            >
+                              {goal.description}
+                            </Text>
+                            {/* The day it was reached (not the day it was set). */}
+                            {goal.achievedOn && (
+                              <Text size="xs" c="dimmed" mt={2}>
+                                {t('dateReached', { reached: day(goal.achievedOn) })}
+                              </Text>
+                            )}
+                          </div>
+                          {!readOnly && (
+                            <Group gap={0} wrap="nowrap">
+                              <ActionIcon
+                                variant="subtle"
+                                color="gray"
+                                aria-label={t('editLabel', { goal: goal.description })}
+                                onClick={() => setEditing(goal)}
+                              >
+                                <IconPencil size={18} />
+                              </ActionIcon>
+                              <ActionIcon
+                                variant="subtle"
+                                color="red"
+                                aria-label={t('deleteLabel', { goal: goal.description })}
+                                onClick={() => setToDelete(goal)}
+                              >
+                                <IconTrash size={18} />
+                              </ActionIcon>
+                            </Group>
+                          )}
+                        </Group>
+                      ))}
+                    </Stack>
+                  )}
+                </section>
+              );
+            })}
+          </SimpleGrid>
         )}
         {toDelete === null && <FormError state={state} />}
       </Stack>

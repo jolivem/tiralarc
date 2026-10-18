@@ -37,8 +37,9 @@ import type {
   SessionType,
 } from '@tiralarc/api-client';
 import { useFormatter, useTranslations } from 'next-intl';
-import { createContext, type ReactNode, useId, useState, useTransition } from 'react';
-import { deleteSession, saveSession } from '@/app/actions/journal';
+import { createContext, type ReactNode, useEffect, useId, useState, useTransition } from 'react';
+import { deletePlannedSession, savePlannedSession } from '@/app/actions/coaching';
+import { deleteSession, markSessionSeen, saveSession } from '@/app/actions/journal';
 import { FormError } from '@/components/form-feedback';
 import { LooseLeaf } from '@/components/notebook/loose-leaf';
 import { RuledStack } from '@/components/notebook/ruled-stack';
@@ -47,7 +48,7 @@ import type { ActionState } from '@/lib/action-state';
 import { ColorPicker, IconPicker } from './event-display';
 import { FEELING_INK, FEELINGS } from './feelings';
 import classes from './journal.module.css';
-import { today } from './new-session-modal';
+import { today, tomorrow } from './new-session-modal';
 import { DISCIPLINE_ORDER, SESSION_TYPES } from './session-types';
 
 const DEFAULT_NOTE_COLOR = 'gray';
@@ -145,17 +146,39 @@ export const SheetLockedContext = createContext(false);
 const toNumber = (value: string | number) => (typeof value === 'number' ? value : null);
 const toText = (value: string) => (value.trim() === '' ? null : value);
 
+/** What a coach may change on an event they planned. */
+const planningOf = ({
+  date,
+  durationMinutes,
+  location,
+  discipline,
+  distanceMeters,
+  objective,
+}: Values) => ({ date, durationMinutes, location, discipline, distanceMeters, objective });
+
+/** A coach looking at one of their archers' events. */
+export interface CoachSheet {
+  archerId: string;
+  /** An event they planned, still to come, with WRITE access: its planning can change. */
+  canEdit: boolean;
+  /** The journal's last day: the latest a planned event can move to. */
+  lastDay: string;
+}
+
 /**
  * Session sheet, mirroring the archer's paper sheet. Events are a day's entry: no time
  * field. Fields are controlled
  * (React resets uncontrolled ones after a server action) and saved with an
  * explicit button. Repetitive fields offer what the archer already typed.
+ * With `coach`, the archer's sheet as their coach sees it: read-only, or only its planning
+ * (see `CoachSheet.canEdit`).
  */
 export function SessionForm({
   session,
   suggestions,
   disciplines,
   title,
+  coach,
   children,
 }: {
   session: JournalSession;
@@ -164,11 +187,19 @@ export function SessionForm({
   disciplines: Discipline[];
   /** Top left of the sheet: the event's type and icon (its day, top right, follows the form). */
   title: ReactNode;
+  coach?: CoachSheet;
   /** Shown right of the Informations box (the event's photos); below it on small screens. */
   children?: ReactNode;
 }) {
   const t = useTranslations('journal');
   const router = useRouter();
+  /** A coach who may not change this event: every field shows, none changes. */
+  const readOnly = coach !== undefined && !coach.canEdit;
+  // The archer now has an event their coach planned in front of them: no longer new (home page).
+  const unseenByArcher = !coach && session.plannedBy !== null;
+  useEffect(() => {
+    if (unseenByArcher) void markSessionSeen(session.id);
+  }, [unseenByArcher, session.id]);
   /** Ties the Informations box's names to their fields. */
   const fieldId = useId();
   const [values, setValues] = useState(() => initialValues(session));
@@ -184,6 +215,7 @@ export function SessionForm({
 
   const dirty = JSON.stringify(values) !== saved;
   const set = <K extends keyof Values>(key: K, value: Values[K]) => {
+    if (readOnly) return;
     setState({});
     setValues((v) => ({ ...v, [key]: value }));
   };
@@ -196,7 +228,9 @@ export function SessionForm({
   const save = () =>
     startSaving(async () => {
       const snapshot = values;
-      const result = await saveSession(session.id, snapshot);
+      const result = coach
+        ? await savePlannedSession(coach.archerId, session.id, planningOf(snapshot))
+        : await saveSession(session.id, snapshot);
       setState(result);
       if (!result.code) setSaved(JSON.stringify(snapshot));
     });
@@ -204,7 +238,8 @@ export function SessionForm({
   /** Back to the month of the event as saved (unsaved changes are dropped: asked first). */
   const leave = () => {
     const { date } = JSON.parse(saved) as Values;
-    router.push({ pathname: '/archer/journal', query: { month: date.slice(0, 7) } });
+    const journalPath = coach ? `/coach/${coach.archerId}/journal` : '/archer/journal';
+    router.push({ pathname: journalPath, query: { month: date.slice(0, 7) } });
   };
   const close = () => (dirty ? setConfirmLeave(true) : leave());
 
@@ -245,31 +280,69 @@ export function SessionForm({
     </Group>
   );
 
+  /*
+    Planned by the coach: stamped in the margin until the archer completes it once it has
+    taken place (as saved; like the calendar's stamp) — a type without review, until its day.
+  */
+  const savedValues = JSON.parse(saved) as Values;
+  const stamped =
+    session.plannedBy !== null && (hasSheet ? !hasReview(savedValues) : savedValues.date > today());
+  const stamp = stamped && (
+    <span
+      className={classes.sheetStamp}
+      title={t('plannedBy', { name: session.plannedBy?.name ?? '' })}
+    >
+      {t('coachStamp')}
+    </span>
+  );
+
+  const plannedBy = session.plannedBy && (
+    <Text size="sm" c="dimmed">
+      {t('plannedBy', { name: session.plannedBy.name })}
+    </Text>
+  );
+
   // Above the sheet, following the scroll: delete on the left; save, then close on the right.
+  // A coach who only reads it gets the close button alone.
   const actionBar = (
     <Paper withBorder shadow="md" p="sm" radius="md" className={classes.actionBar}>
       {/* Wraps on narrow screens. */}
       <Group justify="space-between" gap="sm">
-        <Button
-          variant="subtle"
-          color="red"
-          leftSection={<IconTrash size={18} />}
-          onClick={() => setConfirmDelete(true)}
-        >
-          {t('delete')}
-        </Button>
+        {readOnly ? (
+          (plannedBy ?? (
+            <Text size="sm" c="dimmed">
+              {t('readOnly')}
+            </Text>
+          ))
+        ) : (
+          <Group gap="sm">
+            <Button
+              variant="subtle"
+              color="red"
+              leftSection={<IconTrash size={18} />}
+              onClick={() => setConfirmDelete(true)}
+            >
+              {t('delete')}
+            </Button>
+            {plannedBy}
+          </Group>
+        )}
         <Group gap="sm" wrap="nowrap">
-          <Text size="sm" c={dirty ? 'orange' : 'teal'} visibleFrom="sm">
-            {dirty ? t('unsaved') : state.notice === 'saved' ? t('saved') : ''}
-          </Text>
-          <Button
-            leftSection={<IconDeviceFloppy size={18} />}
-            onClick={save}
-            loading={saving}
-            disabled={!dirty}
-          >
-            {t('save')}
-          </Button>
+          {!readOnly && (
+            <>
+              <Text size="sm" c={dirty ? 'orange' : 'teal'} visibleFrom="sm">
+                {dirty ? t('unsaved') : state.notice === 'saved' ? t('saved') : ''}
+              </Text>
+              <Button
+                leftSection={<IconDeviceFloppy size={18} />}
+                onClick={save}
+                loading={saving}
+                disabled={!dirty}
+              >
+                {t('save')}
+              </Button>
+            </>
+          )}
           <CloseButton size="lg" aria-label={t('close')} title={t('close')} onClick={close} />
         </Group>
       </Group>
@@ -285,7 +358,7 @@ export function SessionForm({
   return (
     <Stack gap="sm">
       {actionBar}
-      <LooseLeaf>
+      <LooseLeaf margin={stamp}>
         {header}
         {/* A blank line between the title and the first box. */}
         <RuledStack leadingLines={1}>
@@ -312,6 +385,10 @@ export function SessionForm({
                     onChange={(date) => date && changeDate(date)}
                     valueFormat="ddd D MMM YYYY"
                     leftSection={<IconCalendar size={16} />}
+                    readOnly={readOnly}
+                    // A coach moves what they planned to another day still to come.
+                    minDate={coach ? tomorrow() : undefined}
+                    maxDate={coach?.lastDay}
                   />
                 </FieldRow>
                 {(form === 'sheet' || form === 'none') && (
@@ -322,6 +399,7 @@ export function SessionForm({
                       maw={NUMBER_WIDTH}
                       value={values.durationMinutes ?? ''}
                       onChange={(v) => set('durationMinutes', toNumber(v))}
+                      readOnly={readOnly}
                       min={0}
                       max={1440}
                       step={15}
@@ -338,7 +416,8 @@ export function SessionForm({
                         placeholder={t('locationPlaceholder')}
                         value={values.location ?? ''}
                         onChange={(v) => set('location', toText(v))}
-                        data={suggestions.locations}
+                        readOnly={readOnly}
+                        data={readOnly ? [] : suggestions.locations}
                         leftSection={<IconMapPin size={16} />}
                         limit={8}
                       />
@@ -396,6 +475,7 @@ export function SessionForm({
                         maw={NUMBER_WIDTH}
                         value={values.distanceMeters ?? ''}
                         onChange={(v) => set('distanceMeters', toNumber(v))}
+                        readOnly={readOnly}
                         min={0}
                         max={1000}
                         allowDecimal={false}
@@ -409,6 +489,7 @@ export function SessionForm({
                         maw={NUMBER_WIDTH}
                         value={values.arrowCount ?? ''}
                         onChange={(v) => set('arrowCount', toNumber(v))}
+                        readOnly={readOnly}
                         min={0}
                         max={2000}
                         step={6}
@@ -423,6 +504,7 @@ export function SessionForm({
                         maw={NUMBER_WIDTH}
                         value={values.score ?? ''}
                         onChange={(v) => set('score', toNumber(v))}
+                        readOnly={readOnly}
                         min={0}
                         max={2000}
                         allowDecimal={false}
@@ -445,6 +527,7 @@ export function SessionForm({
                       size="xs"
                       value={values.title ?? ''}
                       onChange={(e) => set('title', toText(e.currentTarget.value))}
+                      readOnly={readOnly}
                       maxLength={100}
                     />
                   </FieldRow>
@@ -454,7 +537,7 @@ export function SessionForm({
               {hasSheet ? null : form === 'note' || form === 'text' ? (
                 <Stack gap="md" mt="md">
                   {/* A custom event looks like its type (set where the type is defined). */}
-                  {form === 'note' && (
+                  {form === 'note' && !readOnly && (
                     <>
                       <ColorPicker
                         value={values.color ?? DEFAULT_NOTE_COLOR}
@@ -479,6 +562,7 @@ export function SessionForm({
                     }
                     value={values.description ?? ''}
                     onChange={(e) => set('description', toText(e.currentTarget.value))}
+                    readOnly={readOnly}
                     autosize
                     minRows={4}
                     maxLength={5000}
@@ -501,6 +585,7 @@ export function SessionForm({
                   aria-label={t('objective')}
                   value={values.objective ?? ''}
                   onChange={(e) => set('objective', toText(e.currentTarget.value))}
+                  readOnly={readOnly}
                   autosize
                   minRows={2}
                   maxLength={5000}
@@ -539,6 +624,7 @@ export function SessionForm({
                   aria-label={t('description')}
                   value={values.description ?? ''}
                   onChange={(e) => set('description', toText(e.currentTarget.value))}
+                  readOnly={readOnly}
                   autosize
                   minRows={6}
                   maxLength={5000}
@@ -588,8 +674,11 @@ export function SessionForm({
                         aria-label={`${t(list)} ${index + 1}`}
                         value={line}
                         onChange={(v) => setLine(list, index, v)}
+                        readOnly={readOnly}
                         // Previously typed lines, minus those already used on this sheet.
-                        data={suggestions[list].filter((s) => !values[list].includes(s))}
+                        data={
+                          readOnly ? [] : suggestions[list].filter((s) => !values[list].includes(s))
+                        }
                         limit={8}
                         maxLength={200}
                         leftSection={
@@ -612,6 +701,7 @@ export function SessionForm({
                   aria-label={t('nextTime')}
                   value={values.nextTime ?? ''}
                   onChange={(e) => set('nextTime', toText(e.currentTarget.value))}
+                  readOnly={readOnly}
                   autosize
                   minRows={3}
                   maxLength={5000}
@@ -639,7 +729,11 @@ export function SessionForm({
               loading={deleting}
               onClick={() =>
                 startDeleting(async () => {
-                  setState(await deleteSession(session.id));
+                  setState(
+                    coach
+                      ? await deletePlannedSession(coach.archerId, session.id)
+                      : await deleteSession(session.id),
+                  );
                   setConfirmDelete(false);
                 })
               }

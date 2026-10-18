@@ -152,6 +152,13 @@ export async function deleteEventType(id: string): Promise<ActionState> {
   return {};
 }
 
+/** The archer has the event's sheet in front of them: a coach-planned event is no longer new. */
+export async function markSessionSeen(id: string): Promise<void> {
+  await send(
+    (await getAuthedApi()).POST('/api/v1/journal/sessions/{id}/seen', { params: { path: { id } } }),
+  );
+}
+
 export async function saveSession(id: string, values: JournalSessionUpdate): Promise<ActionState> {
   const result = await send(
     (await getAuthedApi()).PATCH('/api/v1/journal/sessions/{id}', {

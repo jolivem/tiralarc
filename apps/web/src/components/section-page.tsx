@@ -16,6 +16,7 @@ export function SectionPage({
   badge,
   plain,
   squared,
+  dotted,
   ...pages
 }: NotebookPages & {
   title: string;
@@ -26,6 +27,8 @@ export function SectionPage({
   plain?: boolean;
   /** Squared notebook paper ("petits carreaux"). */
   squared?: boolean;
+  /** Dotted notebook paper (bullet journal). */
+  dotted?: boolean;
 }) {
   return (
     <>
@@ -47,7 +50,7 @@ export function SectionPage({
         </Stack>
         {actions}
       </Group>
-      <Notebook label={title} plain={plain} squared={squared} {...pages} />
+      <Notebook label={title} plain={plain} squared={squared} dotted={dotted} {...pages} />
     </>
   );
 }

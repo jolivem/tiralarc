@@ -17,6 +17,8 @@ export function Notebook({
   label,
   plain = false,
   squared = false,
+  dotted = false,
+  className,
   ...pages
 }: NotebookPages & {
   /** Accessible name of the whole spread. */
@@ -25,23 +27,31 @@ export function Notebook({
   plain?: boolean;
   /** Squared paper ("petits carreaux", no margin line), e.g. under charts. */
   squared?: boolean;
+  /** Dotted paper, like a bullet journal (the margin line stays), e.g. the Profile page. */
+  dotted?: boolean;
+  /** Extra class on the cover, e.g. the home page's fonts. */
+  className?: string;
 }) {
   return (
     <div
-      className={classes.notebook}
+      className={className ? `${classes.notebook} ${className}` : classes.notebook}
       role="group"
       aria-label={label}
       data-plain={plain || undefined}
       data-squared={squared || undefined}
+      data-dotted={dotted || undefined}
     >
       {pages.right === undefined ? (
-        <section className={classes.page}>{pages.children}</section>
+        <section className={classes.page} data-leaf>
+          {pages.children}
+        </section>
       ) : (
         <>
-          <section className={classes.page} data-side="left">
+          {/* `data-leaf`: a RuledStack in a page keeps its blocks on the page's lines. */}
+          <section className={classes.page} data-side="left" data-leaf>
             {pages.left}
           </section>
-          <section className={classes.page} data-side="right">
+          <section className={classes.page} data-side="right" data-leaf>
             {pages.right}
           </section>
         </>
