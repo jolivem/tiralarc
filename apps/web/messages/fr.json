@@ -278,7 +278,6 @@
     "futureDateBody": "Un événement à venir repasse « à compléter » : son bilan (flèches, score, auto-évaluation, description et analyses, ressentis, points positifs et à améliorer, prochaine fois) sera effacé à l'enregistrement. La date, la durée, le lieu, la discipline, la distance et l'objectif sont conservés.",
     "futureDateConfirm": "Déplacer et effacer le bilan",
     "legend": "Légende",
-    "legendPending": "plus pâle : à venir ou fiche à compléter",
     "customTypes": {
       "add": "Ajouter un type d'événement",
       "newTitle": "Nouveau type d'événement",

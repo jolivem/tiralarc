@@ -52,8 +52,8 @@ export function EventLegend({ customTypes }: { customTypes: CustomEventType[] })
   );
 }
 
-/** A coloured dot as under the days of the season's calendar (MonthsOverview); paler if pending. */
-function Dot({ color, pending = false }: { color: string; pending?: boolean }) {
+/** A coloured dot as under the days of the season's calendar (MonthsOverview). */
+function Dot({ color }: { color: string }) {
   return (
     <span
       aria-hidden
@@ -63,16 +63,12 @@ function Dot({ color, pending = false }: { color: string; pending?: boolean }) {
         flex: 'none',
         borderRadius: '50%',
         background: `var(--mantine-color-${color}-filled)`,
-        opacity: pending ? 0.4 : 1,
       }}
     />
   );
 }
 
-/**
- * The legend of the season's calendar, in a small framed box: each type's dot colour side by
- * side, then what a paler dot means.
- */
+/** The legend of the season's calendar, in a small framed box: each type's dot colour side by side. */
 export function EventLegendPanel({ customTypes }: { customTypes: CustomEventType[] }) {
   const t = useTranslations('journal');
   const rows = useLegendRows(customTypes);
@@ -88,12 +84,6 @@ export function EventLegendPanel({ customTypes }: { customTypes: CustomEventType
             <Text size="sm">{label}</Text>
           </Group>
         ))}
-        <Group gap={6} wrap="nowrap" role="listitem">
-          <Dot color="gray" pending />
-          <Text size="sm" c="dimmed">
-            {t('legendPending')}
-          </Text>
-        </Group>
       </Group>
     </Paper>
   );

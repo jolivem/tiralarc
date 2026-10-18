@@ -278,7 +278,6 @@
     "futureDateBody": "An upcoming event goes back to “to complete”: its review (arrows, score, self-assessment, description and analyses, feelings, what went well and what to improve, next time) will be cleared when you save. Date, duration, place, discipline, distance and objective are kept.",
     "futureDateConfirm": "Move and clear the review",
     "legend": "Legend",
-    "legendPending": "paler: upcoming, or sheet to complete",
     "customTypes": {
       "add": "Add an event type",
       "newTitle": "New event type",
