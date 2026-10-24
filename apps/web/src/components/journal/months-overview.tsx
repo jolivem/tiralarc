@@ -1,10 +1,12 @@
 'use client';
 
 import { SimpleGrid, type SimpleGridProps, Text } from '@mantine/core';
-import type { JournalSessionSummary } from '@tiralarc/api-client';
+import type { Competition, JournalSessionSummary } from '@tiralarc/api-client';
 import dayjs from 'dayjs';
 import { useFormatter, useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
+import { RuledLine } from '@/components/notebook/on-ruling';
+import { competitionDays } from './competition-list';
 import { eventDisplay, pendingReason } from './event-display';
 import classes from './journal.module.css';
 import { SESSION_TYPES } from './session-types';
@@ -21,14 +23,20 @@ export function MonthsOverview({
   months,
   today,
   sessions,
+  competitions = [],
   cols = 1,
   linkToJournal = false,
+  ruled = false,
 }: {
+  /** The months' names on the notebook page's lines (home page). */
+  ruled?: boolean;
   /** Months to show, "YYYY-MM", in order. */
   months: string[];
   /** "YYYY-MM-DD", decided by the server so both renders agree. */
   today: string;
   sessions: JournalSessionSummary[];
+  /** FFTA competitions: their days are outlined (postponed and cancelled ones left out). */
+  competitions?: Competition[];
   /** Months per row. */
   cols?: SimpleGridProps['cols'];
   linkToJournal?: boolean;
@@ -40,6 +48,14 @@ export function MonthsOverview({
   const byDay = new Map<string, JournalSessionSummary[]>();
   for (const session of sessions) {
     byDay.set(session.date, [...(byDay.get(session.date) ?? []), session]);
+  }
+  const competitionsByDay = new Map<string, string[]>();
+  for (const competition of competitions) {
+    // Postponed and cancelled ones are only listed below the months.
+    if (competition.status !== 'SCHEDULED') continue;
+    for (const day of competitionDays(competition)) {
+      competitionsByDay.set(day, [...(competitionsByDay.get(day) ?? []), competition.title]);
+    }
   }
   const label = (session: JournalSessionSummary) => {
     const name =
@@ -64,9 +80,16 @@ export function MonthsOverview({
         const name = format.dateTime(first.hour(12).toDate(), { month: 'long', year: 'numeric' });
         const content = (
           <>
-            <Text ta="center" mb={6} tt="capitalize" className={classes.monthName}>
-              {name}
-            </Text>
+            {ruled ? (
+              // On the notebook page's lines, the line under the heading.
+              <RuledLine className={`${classes.monthName} ${classes.ruledMonthName}`}>
+                {name}
+              </RuledLine>
+            ) : (
+              <Text ta="center" mb={6} tt="capitalize" className={classes.monthName}>
+                {name}
+              </Text>
+            )}
             <div className={classes.miniMonth}>
               {weekdays.map((day, i) => (
                 <Text key={i} size="xs" c="dimmed" ta="center" aria-hidden>
@@ -79,12 +102,17 @@ export function MonthsOverview({
               {Array.from({ length: first.daysInMonth() }, (_, i) => {
                 const date = first.date(i + 1).format('YYYY-MM-DD');
                 const events = byDay.get(date) ?? [];
-                const names = events.map(label).join(', ');
+                const held = competitionsByDay.get(date);
+                const names = [
+                  ...events.map(label),
+                  ...(held ? [tArcher('competitions.dayMark', { names: held.join(', ') })] : []),
+                ].join(', ');
                 return (
                   <div
                     key={date}
                     className={classes.miniDay}
                     data-today={date === today || undefined}
+                    data-competition={held ? true : undefined}
                     title={names || undefined}
                   >
                     <span>{i + 1}</span>

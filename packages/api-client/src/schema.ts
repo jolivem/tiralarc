@@ -435,23 +435,47 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/goals": {
+    "/api/v1/competitions": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get: operations["Goals_list"];
+        /**
+         * Upcoming FFTA competitions of the archer's department, in their disciplines (profile)
+         * @description Read from the FFTA website and kept for a few hours. With `paraCompetitions` in the profile, the para-archery indoor and outdoor competitions are included.
+         */
+        get: operations["Competitions_list"];
         put?: never;
-        post: operations["Goals_create"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/v1/goals/{id}": {
+    "/api/v1/competitions/{id}/results": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * An FFTA competition's results, once its organiser published them
+         * @description For an event added from the FFTA calendar (`fftaCompetitionId`). Read from the competition's page on the FFTA website.
+         */
+        get: operations["Competitions_results"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/competitions/{id}/dismissal": {
         parameters: {
             query?: never;
             header?: never;
@@ -459,12 +483,54 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        put?: never;
+        /**
+         * The archer will not take part: out of their competitions to plan
+         * @description The calendars still show it (`dismissed` in the list). Idempotent.
+         */
+        put: operations["Competitions_dismiss"];
         post?: never;
-        delete: operations["Goals_remove"];
+        /** Back among the competitions to plan. Idempotent. */
+        delete: operations["Competitions_undismiss"];
         options?: never;
         head?: never;
-        patch: operations["Goals_update"];
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/competitions/departments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The departments an archer can pick in their profile */
+        get: operations["Competitions_departments"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/rankings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The archer's places in the FFTA national rankings
+         * @description The rankings of their category and bow (profile), in their disciplines, that list their licence number; read from the FFTA website and kept a few hours.
+         */
+        get: operations["Rankings_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/v1/profile": {
@@ -565,6 +631,38 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/api/v1/goals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["Goals_list"];
+        put?: never;
+        post: operations["Goals_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/goals/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["Goals_remove"];
+        options?: never;
+        head?: never;
+        patch: operations["Goals_update"];
         trace?: never;
     };
     "/api/v1/coach/athletes": {
@@ -678,6 +776,23 @@ export interface paths {
         };
         /** Photos of an event; the URLs are signed and expire after 10 minutes */
         get: operations["Coaching_photos"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/coach/athletes/{archerId}/competitions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Upcoming FFTA competitions of the archer's department and disciplines, within the current journal (WRITE access adds them with POST .../sessions and `fftaCompetitionId`) */
+        get: operations["Coaching_competitions"];
         put?: never;
         post?: never;
         delete?: never;
@@ -926,7 +1041,7 @@ export interface components {
         /** @enum {string} */
         SessionType: "TRAINING" | "COACHING" | "COMPETITION" | "STRENGTH" | "OTHER" | "CUSTOM";
         /** @enum {string} */
-        Discipline: "INDOOR" | "TAE_NATIONAL" | "TAE_INTERNATIONAL" | "THREE_D" | "FIELD" | "BEURSAULT" | "RUN_ARCHERY";
+        Discipline: "INDOOR" | "TAE_NATIONAL" | "TAE_INTERNATIONAL" | "THREE_D" | "FIELD" | "BEURSAULT" | "RUN_ARCHERY" | "NATURE";
         /**
          * @description `OTHER` events only; null = default colour.
          * @enum {string}
@@ -973,6 +1088,11 @@ export interface components {
             completed: boolean;
             /** @description Whether the archer's coach planned the event (see `SessionDto.plannedBy`). Clients mark it until the archer completes it. */
             plannedByCoach: boolean;
+            /**
+             * @description The FFTA competition it was added from (`CompetitionDto.id`), if any.
+             * @example 26349
+             */
+            fftaCompetitionId: string | null;
         };
         CompetitionStatDto: {
             /**
@@ -1083,6 +1203,11 @@ export interface components {
             completed: boolean;
             /** @description Whether the archer's coach planned the event (see `SessionDto.plannedBy`). Clients mark it until the archer completes it. */
             plannedByCoach: boolean;
+            /**
+             * @description The FFTA competition it was added from (`CompetitionDto.id`), if any.
+             * @example 26349
+             */
+            fftaCompetitionId: string | null;
             plannedBy: components["schemas"]["PlannerDto"];
         };
         CreateSessionDto: {
@@ -1097,6 +1222,14 @@ export interface components {
              * @description Required for a `CUSTOM` event (one of the archer's event types), ignored otherwise.
              */
             customTypeId?: string;
+            /** @description Prefilled place (e.g. a competition added from the FFTA calendar). */
+            location?: string | null;
+            discipline?: components["schemas"]["Discipline"] | null;
+            /**
+             * @description A `COMPETITION` added from the FFTA calendar: that competition's id (`CompetitionDto.id`). At most 2 events of one competition per day (`LIMIT_REACHED`). Ignored for other types.
+             * @example 26349
+             */
+            fftaCompetitionId?: string;
         };
         SessionDto: {
             /** Format: uuid */
@@ -1124,6 +1257,11 @@ export interface components {
             completed: boolean;
             /** @description Whether the archer's coach planned the event (see `SessionDto.plannedBy`). Clients mark it until the archer completes it. */
             plannedByCoach: boolean;
+            /**
+             * @description The FFTA competition it was added from (`CompetitionDto.id`), if any.
+             * @example 26349
+             */
+            fftaCompetitionId: string | null;
             /** @description The coach who planned the event in the archer's journal; null when the archer created it. That coach may change its planning or delete it while it is still to come. */
             plannedBy: components["schemas"]["PlannerDto"] | null;
             distanceMeters: number | null;
@@ -1206,45 +1344,130 @@ export interface components {
              */
             file: string;
         };
+        DepartmentDto: {
+            /**
+             * @description INSEE code: "01"…"95", "2A", "2B", "971"…
+             * @example 78
+             */
+            code: string;
+            /** @example Yvelines */
+            name: string;
+        };
         /** @enum {string} */
-        GoalType: "SPORT" | "TECHNIQUE" | "PHYSICAL" | "PERSONAL";
-        GoalDto: {
-            /** Format: uuid */
+        CompetitionStatus: "SCHEDULED" | "POSTPONED" | "CANCELLED";
+        CompetitionDto: {
+            /**
+             * @description The FFTA's id of the competition.
+             * @example 26349
+             */
             id: string;
-            type: components["schemas"]["GoalType"];
-            description: string;
+            /** @example TIR À 18M à VILLEPREUX */
+            title: string;
             /**
-             * @description Day the goal was set.
-             * @example 2026-10-10
+             * @description First day (YYYY-MM-DD).
+             * @example 2026-10-31
              */
-            createdOn: string;
-            /** @description True once the goal has a day it was reached. */
-            achieved: boolean;
-            /** @example 2027-02-06 */
-            achievedOn: string | null;
+            startDate: string;
+            /**
+             * @description Last day, inclusive (YYYY-MM-DD).
+             * @example 2026-11-01
+             */
+            endDate: string;
+            /** @example VILLEPREUX */
+            city: string | null;
+            /** @example CIE D'ARC DE VILLEPREUX */
+            organizer: string | null;
+            /** @description The archer's discipline it belongs to: outdoor target archery is TAE_NATIONAL unless the archer practises only TAE_INTERNATIONAL. */
+            discipline: components["schemas"]["Discipline"];
+            /** @description A para-archery competition. */
+            para: boolean;
+            /** @description Teams only: no individual ranking. */
+            teamOnly: boolean;
+            status: components["schemas"]["CompetitionStatus"];
+            /**
+             * Format: uri
+             * @description Its page on the FFTA website.
+             */
+            url: string;
+            /** @description The archer said they will not take part (PUT .../dismissal): left out of the competitions to plan; the calendars still show it. */
+            dismissed: boolean;
+            /**
+             * Format: uri
+             * @description The organiser's invitation ("mandat", PDF), once published.
+             */
+            mandateUrl: string | null;
         };
-        CreateGoalDto: {
-            type: components["schemas"]["GoalType"];
-            /** @example Passer les 550 points en salle */
-            description: string;
-            /**
-             * @description Day the goal was set (YYYY-MM-DD). Defaults to today.
-             * @example 2026-10-10
-             */
-            createdOn?: string;
-            /**
-             * @description Day the goal was reached (YYYY-MM-DD); omitted / null = not reached yet.
-             * @example 2027-02-06
-             */
-            achievedOn?: string | null;
+        CompetitionListDto: {
+            /** @description The archer's department (profile); null = none chosen, hence no competitions. */
+            department: components["schemas"]["DepartmentDto"] | null;
+            /** @description The department's competitions in the archer's disciplines (profile) that have not ended yet and touch the requested days, by first day. */
+            competitions: components["schemas"]["CompetitionDto"][];
+            /** @description False when the FFTA website could not be read for some of the disciplines: the list may miss competitions (try again later). */
+            complete: boolean;
         };
-        UpdateGoalDto: {
-            type?: components["schemas"]["GoalType"];
-            description?: string;
-            /** @example 2026-10-10 */
-            createdOn?: string;
-            /** @example 2027-02-06 */
-            achievedOn?: string | null;
+        CompetitionResultsDto: {
+            /**
+             * Format: uri
+             * @description The results published by the organiser on the FFTA website (PDF); null until they are (or when the FFTA website could not be read).
+             * @example https://extranet.ffta.fr/pdfresultats/2026/T_0878139_20260607_76816.pdf
+             */
+            url: string | null;
+        };
+        /**
+         * @description Profile fields to fill in first: licence number, category, bow.
+         * @enum {string}
+         */
+        RankingField: "licenceNumber" | "category" | "bowType";
+        RankingDto: {
+            /**
+             * @description The FFTA season it ranks: the current one, or the one before.
+             * @example 2027
+             */
+            season: string;
+            /** @description The archer's discipline it ranks: outdoor target archery is the archer's TAE discipline (when they practise both, TAE_INTERNATIONAL for its distances: 70 m, or 50 m on an 80 cm face for a compound). */
+            discipline: components["schemas"]["Discipline"];
+            /** @example Senior 2 Femme Arc Classique 2027 */
+            name: string;
+            /**
+             * @description Outdoor target archery: each distance has its ranking.
+             * @example 70m - 122cm
+             */
+            distance: string | null;
+            /** @example 12 */
+            rank: number;
+            /**
+             * @description Archers in the ranking.
+             * @example 427
+             */
+            total: number;
+            /** @example 536.5 */
+            average: number | null;
+            /**
+             * @description The best scores counted, best first as the FFTA lists them.
+             * @example [
+             *       545,
+             *       528
+             *     ]
+             */
+            scores: number[];
+            /**
+             * Format: uri
+             * @description The ranking on the FFTA website.
+             */
+            url: string;
+        };
+        RankingListDto: {
+            /**
+             * @description The current FFTA season (null when not read).
+             * @example 2027
+             */
+            season: string | null;
+            /** @description Profile fields to fill in first: licence number, category, bow. */
+            missing: components["schemas"]["RankingField"][];
+            /** @description The rankings of the archer's category and bow, in their disciplines, that list their licence (scratch rankings left out): the current season first, then the one before (also searched one category younger). */
+            rankings: components["schemas"]["RankingDto"][];
+            /** @description False when the FFTA website could not be read in full: try again later. */
+            complete: boolean;
         };
         /** @enum {string} */
         AgeCategory: "U11" | "U13" | "U15" | "U18" | "U21" | "S1" | "S2" | "S3";
@@ -1268,6 +1491,13 @@ export interface components {
             calendarFont: string | null;
             /** @description The indicator shown on the home page; null = none. */
             favoriteIndicator: components["schemas"]["Indicator"] | null;
+            /**
+             * @description Department code (see GET /competitions/departments) whose FFTA competitions the calendars show; null = none.
+             * @example 78
+             */
+            department: string | null;
+            /** @description Also show the para-archery competitions (indoor and outdoor target archery). */
+            paraCompetitions: boolean;
         };
         UpdateProfileDto: {
             licenceNumber?: string | null;
@@ -1282,6 +1512,12 @@ export interface components {
             calendarFont?: string | null;
             /** @description The indicator shown on the home page; null for none. */
             favoriteIndicator?: components["schemas"]["Indicator"] | null;
+            /**
+             * @description Department code (see GET /competitions/departments); null for none.
+             * @example 78
+             */
+            department?: string | null;
+            paraCompetitions?: boolean;
         };
         /**
          * @description Coaches only. What the coach may do in the archer's journal of the season in progress (the one whose period covers today): READ = see all of it, plus the indicators and goals; WRITE = READ, and plan future trainings, coachings, competitions and strength sessions.
@@ -1364,6 +1600,46 @@ export interface components {
              */
             archerId: string | null;
         };
+        /** @enum {string} */
+        GoalType: "SPORT" | "TECHNIQUE" | "PHYSICAL" | "PERSONAL";
+        GoalDto: {
+            /** Format: uuid */
+            id: string;
+            type: components["schemas"]["GoalType"];
+            description: string;
+            /**
+             * @description Day the goal was set.
+             * @example 2026-10-10
+             */
+            createdOn: string;
+            /** @description True once the goal has a day it was reached. */
+            achieved: boolean;
+            /** @example 2027-02-06 */
+            achievedOn: string | null;
+        };
+        CreateGoalDto: {
+            type: components["schemas"]["GoalType"];
+            /** @example Passer les 550 points en salle */
+            description: string;
+            /**
+             * @description Day the goal was set (YYYY-MM-DD). Defaults to today.
+             * @example 2026-10-10
+             */
+            createdOn?: string;
+            /**
+             * @description Day the goal was reached (YYYY-MM-DD); omitted / null = not reached yet.
+             * @example 2027-02-06
+             */
+            achievedOn?: string | null;
+        };
+        UpdateGoalDto: {
+            type?: components["schemas"]["GoalType"];
+            description?: string;
+            /** @example 2026-10-10 */
+            createdOn?: string;
+            /** @example 2027-02-06 */
+            achievedOn?: string | null;
+        };
         AthleteDto: {
             /**
              * Format: uuid
@@ -1392,6 +1668,11 @@ export interface components {
              * @example 2026-11-03
              */
             date: string;
+            /**
+             * @description A `COMPETITION` added from the FFTA calendar (GET .../competitions): that competition's id. At most 2 events of one competition per day (`LIMIT_REACHED`). Ignored for other types.
+             * @example 26349
+             */
+            fftaCompetitionId?: string;
         };
         UpdatePlannedSessionDto: {
             durationMinutes?: number | null;
@@ -2688,9 +2969,14 @@ export interface operations {
             };
         };
     };
-    Goals_list: {
+    Competitions_list: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description First day, inclusive (YYYY-MM-DD). Omitted = today. */
+                from?: string;
+                /** @description Last day, inclusive (YYYY-MM-DD). Omitted = a year from today, which is also as far as the calendar is read. */
+                to?: string;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -2702,7 +2988,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GoalDto"][];
+                    "application/json": components["schemas"]["CompetitionListDto"];
                 };
             };
             /** @description Archers only */
@@ -2714,25 +3000,23 @@ export interface operations {
             };
         };
     };
-    Goals_create: {
+    Competitions_results: {
         parameters: {
             query?: never;
             header?: never;
-            path?: never;
+            path: {
+                id: string;
+            };
             cookie?: never;
         };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreateGoalDto"];
-            };
-        };
+        requestBody?: never;
         responses: {
-            201: {
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GoalDto"];
+                    "application/json": components["schemas"]["CompetitionResultsDto"];
                 };
             };
             /** @description Archers only */
@@ -2742,8 +3026,8 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description LIMIT_REACHED */
-            409: {
+            /** @description Not an FFTA competition id */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -2751,7 +3035,7 @@ export interface operations {
             };
         };
     };
-    Goals_remove: {
+    Competitions_dismiss: {
         parameters: {
             query?: never;
             header?: never;
@@ -2775,6 +3059,7 @@ export interface operations {
                 };
                 content?: never;
             };
+            /** @description Not an FFTA competition id */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -2783,7 +3068,7 @@ export interface operations {
             };
         };
     };
-    Goals_update: {
+    Competitions_undismiss: {
         parameters: {
             query?: never;
             header?: never;
@@ -2792,18 +3077,45 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpdateGoalDto"];
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Archers only */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not an FFTA competition id */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
+    };
+    Competitions_departments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GoalDto"];
+                    "application/json": components["schemas"]["DepartmentDto"][];
                 };
             };
             /** @description Archers only */
@@ -2813,7 +3125,27 @@ export interface operations {
                 };
                 content?: never;
             };
-            404: {
+        };
+    };
+    Rankings_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RankingListDto"];
+                };
+            };
+            /** @description Archers only */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -3163,6 +3495,139 @@ export interface operations {
             };
         };
     };
+    Goals_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GoalDto"][];
+                };
+            };
+            /** @description Archers only */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    Goals_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateGoalDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GoalDto"];
+                };
+            };
+            /** @description Archers only */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description LIMIT_REACHED */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    Goals_remove: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Archers only */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    Goals_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateGoalDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GoalDto"];
+                };
+            };
+            /** @description Archers only */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     Coaching_list: {
         parameters: {
             query?: never;
@@ -3294,7 +3759,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description DAY_FULL */
+            /** @description DAY_FULL, LIMIT_REACHED (an FFTA competition twice that day) */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -3506,6 +3971,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PhotoDto"][];
+                };
+            };
+            /** @description Not one of your archers (or not in their current journal) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    Coaching_competitions: {
+        parameters: {
+            query?: {
+                /** @description First day, inclusive (YYYY-MM-DD). Omitted = today. */
+                from?: string;
+                /** @description Last day, inclusive (YYYY-MM-DD). Omitted = a year from today, which is also as far as the calendar is read. */
+                to?: string;
+            };
+            header?: never;
+            path: {
+                archerId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CompetitionListDto"];
                 };
             };
             /** @description Not one of your archers (or not in their current journal) */

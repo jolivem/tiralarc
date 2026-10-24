@@ -13,6 +13,7 @@ import { Schedule, type ScheduleEventData } from '@mantine/schedule';
 import { IconPalette, IconPlus } from '@tabler/icons-react';
 import type {
   CoachAccess,
+  Competition,
   CustomEventType,
   Journal,
   JournalSessionSummary,
@@ -20,10 +21,20 @@ import type {
 import dayjs from 'dayjs';
 import { useFormatter, useLocale, useTranslations } from 'next-intl';
 import { type CSSProperties, useEffect, useState, useTransition } from 'react';
-import { listAthleteSessions } from '@/app/actions/coaching';
-import { listSessions } from '@/app/actions/journal';
+import {
+  addCompetitionToAthleteJournal,
+  listAthleteCompetitions,
+  listAthleteSessions,
+} from '@/app/actions/coaching';
+import { listCompetitions, listSessions } from '@/app/actions/journal';
 import { useRouter } from '@/i18n/navigation';
 import { CalendarFrame } from './calendar-frame';
+import {
+  type CompetitionAdding,
+  competitionDays,
+  CompetitionsModal,
+  ownJournal,
+} from './competition-list';
 import { ColoringToolbar, DEFAULT_COLOR } from './coloring-toolbar';
 import { MonthThemeModal, monthTheme } from './month-theme-modal';
 import { eventDisplay, pendingReason } from './event-display';
@@ -62,7 +73,8 @@ const addMonth = (date: string, offset: number) =>
 
 const capitalize = (text: string) => text.charAt(0).toLocaleUpperCase() + text.slice(1);
 
-type EventPayload = { session: JournalSessionSummary };
+/** A phone-view entry: one of the journal's events, or an FFTA competition. */
+type EventPayload = { session?: JournalSessionSummary; competition?: Competition };
 
 /** Calendar entries: an event is a day's entry (no time), shown as an all-day event. */
 function toEvent(session: JournalSessionSummary, title: string): ScheduleEventData<EventPayload> {
@@ -76,24 +88,44 @@ function toEvent(session: JournalSessionSummary, title: string): ScheduleEventDa
   };
 }
 
-type DayPayload = { sessions: JournalSessionSummary[] };
+/** An FFTA competition in the phone view: all its days. */
+function toCompetitionEvent(competition: Competition): ScheduleEventData<EventPayload> {
+  return {
+    id: `ffta-${competition.id}`,
+    title: competition.title,
+    start: `${competition.startDate} 00:00:00`,
+    end: dayjs(competition.endDate).add(1, 'day').format('YYYY-MM-DD 00:00:00'),
+    color: 'yellow',
+    payload: { competition },
+  };
+}
 
-/** One all-day entry per day with events (in the order they were entered), for the month view. */
+type DayPayload = { day: string; sessions: JournalSessionSummary[]; competitions: Competition[] };
+
+/**
+ * One all-day entry per day with events (in the order they were entered) or FFTA competitions,
+ * for the month view.
+ */
 function toDayEvents(
   sessions: JournalSessionSummary[],
+  competitionsByDay: Map<string, Competition[]>,
   labelOf: (session: JournalSessionSummary) => string,
 ): ScheduleEventData<DayPayload>[] {
   const byDay = new Map<string, JournalSessionSummary[]>();
   for (const session of sessions)
     byDay.set(session.date, [...(byDay.get(session.date) ?? []), session]);
-  return [...byDay].map(([day, list]) => ({
-    id: `day-${day}`,
-    title: list.map(labelOf).join(', '),
-    start: `${day} 00:00:00`,
-    end: dayjs(day).add(1, 'day').format('YYYY-MM-DD 00:00:00'),
-    color: 'gray',
-    payload: { sessions: list },
-  }));
+  for (const day of competitionsByDay.keys()) if (!byDay.has(day)) byDay.set(day, []);
+  return [...byDay].map(([day, list]) => {
+    const competitions = competitionsByDay.get(day) ?? [];
+    return {
+      id: `day-${day}`,
+      title: [...list.map(labelOf), ...competitions.map((c) => c.title)].join(', '),
+      start: `${day} 00:00:00`,
+      end: dayjs(day).add(1, 'day').format('YYYY-MM-DD 00:00:00'),
+      color: 'gray',
+      payload: { day, sessions: list, competitions },
+    };
+  });
 }
 
 /** A coach in one of their archers' journals. */
@@ -112,12 +144,15 @@ export function JournalView({
   journal,
   customTypes,
   month: initialMonth,
+  competitionDay: initialCompetitionDay,
   coach,
 }: {
   journal: Journal;
   /** The archer's own event types (new-event dialog, legend). */
   customTypes: CustomEventType[];
   month?: string;
+  /** "YYYY-MM-DD": open that day's FFTA competitions dialog (in `month`). */
+  competitionDay?: string;
   coach?: CoachView;
 }) {
   const t = useTranslations();
@@ -182,6 +217,8 @@ export function JournalView({
   const to = range?.to;
   // Reloaded when a custom type changes too: its events carry its title, colour and pictogram.
   const typesKey = JSON.stringify(customTypes);
+  /** Bumped when a competition was added: the month's events are read again. */
+  const [reloads, setReloads] = useState(0);
   useEffect(() => {
     startLoading(async () => {
       if (!from || !to) return setSessions([]);
@@ -189,7 +226,62 @@ export function JournalView({
         archerId ? await listAthleteSessions(archerId, from, to) : await listSessions(from, to),
       );
     });
-  }, [from, to, typesKey, archerId]);
+  }, [from, to, typesKey, archerId, reloads]);
+
+  // The FFTA competitions of the archer's department still to come in the month (the archer's
+  // profile decides which), for the archer and for their coach.
+  const [loadedCompetitions, setLoadedCompetitions] = useState<{
+    range: string;
+    list: Competition[];
+  } | null>(null);
+  // Opened on a day's competitions when asked (it shows once they are loaded).
+  const [competitionDay, setCompetitionDay] = useState<string | null>(
+    initialCompetitionDay ?? null,
+  );
+  const competitionsFrom = from && from < todayDate ? todayDate : from;
+  const competitionRange =
+    competitionsFrom && to && competitionsFrom <= to ? `${competitionsFrom}:${to}` : null;
+  useEffect(() => {
+    if (!competitionRange) return;
+    const [rangeFrom, rangeTo] = competitionRange.split(':') as [string, string];
+    let current = true;
+    (archerId
+      ? listAthleteCompetitions(archerId, rangeFrom, rangeTo)
+      : listCompetitions(rangeFrom, rangeTo)
+    ).then((list) => {
+      if (current)
+        setLoadedCompetitions({ range: competitionRange, list: list?.competitions ?? [] });
+    });
+    return () => {
+      current = false;
+    };
+  }, [competitionRange, archerId]);
+  // Who adds them: the archer from today on; their coach, with write access, from tomorrow on,
+  // as planned events (which carry the coach's stamp).
+  const tomorrowDate = dayjs(todayDate).add(1, 'day').format('YYYY-MM-DD');
+  const competitionAdding: CompetitionAdding = archerId
+    ? {
+        add: canPlan
+          ? (competition, day) => addCompetitionToAthleteJournal(archerId, competition, day)
+          : null,
+        firstDay: tomorrowDate,
+        sheetBase: base,
+      }
+    : ownJournal(todayDate);
+  // The displayed month's only; postponed and cancelled ones are only listed below the season
+  // calendar.
+  const shownCompetitions =
+    loadedCompetitions && loadedCompetitions.range === competitionRange
+      ? loadedCompetitions.list.filter((c) => c.status === 'SCHEDULED')
+      : [];
+  const competitionsByDay = new Map<string, Competition[]>();
+  for (const competition of shownCompetitions) {
+    for (const day of competitionDays(competition)) {
+      if (day.startsWith(month)) {
+        competitionsByDay.set(day, [...(competitionsByDay.get(day) ?? []), competition]);
+      }
+    }
+  }
 
   /** A coach plans days after today only. */
   const plannable = (day: string) => canPlan && (!coach || day > todayDate);
@@ -213,11 +305,17 @@ export function JournalView({
     return parts.join(' · ');
   };
   // The phone view lists events one by one; the large month view shows one entry per day.
-  const events = sessions.map((session) => toEvent(session, labelOf(session)));
+  const events = [
+    ...sessions.map((session) => toEvent(session, labelOf(session))),
+    ...shownCompetitions.map(toCompetitionEvent),
+  ];
   // For the month view only: Schedule spreads `monthViewProps` after its own props, so these
   // replace its events there. (Its types leave `events` out of monthViewProps, hence the
   // separate object, spread in.)
-  const perDay = { events: toDayEvents(sessions, labelOf), maxEventsPerDay: 1 };
+  const perDay = {
+    events: toDayEvents(sessions, competitionsByDay, labelOf),
+    maxEventsPerDay: 1,
+  };
   // The loaded events are the displayed month's (within the journal).
   const monthArrows = sessions.reduce((sum, session) => sum + (session.arrowCount ?? 0), 0);
 
@@ -321,9 +419,28 @@ export function JournalView({
                 // its list of names: it gets the events one by one.)
                 ...perDay,
                 renderEvent: (event, props) => {
-                  const day = (event.payload as DayPayload | undefined)?.sessions ?? [];
+                  const payload = event.payload as DayPayload | undefined;
+                  const day = payload?.sessions ?? [];
+                  const held = payload?.competitions ?? [];
+                  const heldLabel = t('archer.competitions.dayMark', {
+                    names: held.map((c) => c.title).join(', '),
+                  });
                   return (
                     <div className={classes.dayDots} style={props.style} data-count={day.length}>
+                      {held.length > 0 && payload && (
+                        // A ticket in the cell's corner: the day's FFTA competitions.
+                        <UnstyledButton
+                          className={classes.competitionTicket}
+                          title={heldLabel}
+                          aria-label={heldLabel}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setCompetitionDay(payload.day);
+                          }}
+                        >
+                          {t('archer.competitions.ticket')}
+                        </UnstyledButton>
+                      )}
                       {day.map((session) => {
                         const { color, icon: Icon } = eventDisplay(session);
                         // Greyed until its review is written, or (no review) until its day.
@@ -373,7 +490,16 @@ export function JournalView({
               }}
               events={events}
               // Not mode="static": @mantine/schedule 9.6.3 then leaks `withEventResize` to the DOM.
-              onEventClick={(event) => router.push(`${base}/journal/${event.id}`)}
+              onEventClick={(event) => {
+                const competition = (event.payload as EventPayload | undefined)?.competition;
+                if (!competition) return router.push(`${base}/journal/${event.id}`);
+                // The day tapped on the phone, when it is one of the competition's.
+                const tapped =
+                  pickedDay &&
+                  pickedDay >= competition.startDate &&
+                  pickedDay <= competition.endDate;
+                setCompetitionDay(tapped ? pickedDay : competition.startDate);
+              }}
               onDayClick={(day) => {
                 const clicked = dayjs(day).format('YYYY-MM-DD');
                 if (plannable(clicked)) setNewSession({ date: clicked });
@@ -382,6 +508,16 @@ export function JournalView({
                 const session = (event.payload as EventPayload | undefined)?.session;
                 const Icon = session ? eventDisplay(session).icon : null;
                 const pending = session ? pendingReason(session, todayDate) : null;
+                if (!session) {
+                  return (
+                    <span className={classes.eventBody}>
+                      <span className={classes.competitionTicketInline}>
+                        {t('archer.competitions.ticket')}
+                      </span>
+                      {event.title}
+                    </span>
+                  );
+                }
                 return (
                   <span className={classes.eventBody}>
                     {Icon && (
@@ -453,6 +589,14 @@ export function JournalView({
           defaults={newSession}
           onClose={() => setNewSession(null)}
           coachOf={archerId}
+        />
+        <CompetitionsModal
+          day={competitionDay}
+          competitions={shownCompetitions}
+          sessions={sessions}
+          adding={competitionAdding}
+          onClose={() => setCompetitionDay(null)}
+          onAdded={() => setReloads((n) => n + 1)}
         />
       </Box>
     </div>

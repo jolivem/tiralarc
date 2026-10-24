@@ -146,7 +146,8 @@
     "DAY_FULL": "This day already has 4 events, the maximum.",
     "JOURNAL_OVERLAP": "This period overlaps another of your journals. Two journals cannot cover the same date.",
     "SIGN_IN_REQUIRED": "Sign in to accept this coach invitation.",
-    "DATE_NOT_PLANNABLE": "A coach only plans days to come, within the archer's journal of the current season."
+    "DATE_NOT_PLANNABLE": "A coach only plans days to come, within the archer's journal of the current season.",
+    "DATE_LOCKED": "This competition comes from the FFTA calendar: its date can't be changed."
   },
   "validation": {
     "isEmail": "Invalid email address.",
@@ -174,7 +175,6 @@
     "stats": "Stats",
     "profile": "Profile",
     "homeTitle": "Hello {name}",
-    "homeIntro": "Your archer area: sessions, sheets and progress in one place.",
     "calendar": "Year calendar",
     "openSeason": "Show the calendar of the whole season",
     "openMonth": "Open {month} in the journal",
@@ -187,7 +187,61 @@
     "comingSoon": "Coming soon",
     "newSession": "New event",
     "open": "Open",
-    "openJournal": "Open journal"
+    "openJournal": "Open journal",
+    "competitions": {
+      "title": "Upcoming competitions · {department}",
+      "noDepartment": "Choose your department on the Profile page to see the upcoming FFTA competitions in your disciplines here.",
+      "setUp": "Go to the profile",
+      "empty": "No upcoming competition this season in your disciplines (Profile page).",
+      "incomplete": "The FFTA calendar could not be read in full: the list may be incomplete, try again later.",
+      "source": "From the FFTA calendar.",
+      "dayMark": "Competitions: {names}",
+      "dayTitle": "FFTA competitions on {date}",
+      "toPlan": "Competitions to plan",
+      "dismiss": "I won't take part in “{title}”",
+      "dismissTitle": "Not taking part in this competition?",
+      "dismissBody": "“{title}” will leave your competitions to plan. It stays in the monthly and yearly calendars.",
+      "dismissCancel": "Cancel",
+      "dismissConfirm": "Remove from the list",
+      "toPlanLoading": "Loading the competitions",
+      "toPlanNone": "No FFTA competition with a published invitation to plan in the coming months (department and disciplines of the Profile page).",
+      "ticket": "FFTA",
+      "fftaPage": "FFTA page",
+      "mandate": "Invitation",
+      "para": "Para",
+      "teamOnly": "Teams",
+      "status": {
+        "SCHEDULED": "Scheduled",
+        "POSTPONED": "Postponed",
+        "CANCELLED": "Cancelled"
+      },
+      "add": "Add to my journal",
+      "addOn": "Add on {date}",
+      "addAgain": "Add again",
+      "addAgainOn": "Add again on {date}",
+      "inJournal": "In the journal",
+      "inJournalMany": "In the journal ({count})",
+      "openSheet": "Open the sheet"
+    },
+    "rankings": {
+      "title": "National ranking",
+      "season": "{season} season",
+      "loading": "Loading the ranking",
+      "unavailable": "The FFTA ranking could not be read: try again later.",
+      "missing": "To find you in the FFTA ranking, fill in your {fields}.",
+      "fields": {
+        "licenceNumber": "licence number",
+        "category": "category",
+        "bowType": "bow"
+      },
+      "setUp": "Go to the profile",
+      "none": "Not ranked yet this season in your category and bow.",
+      "incomplete": "Ranking only partly read: try again later.",
+      "place": "#{rank} of {total}",
+      "average": "Average {average}",
+      "scores": "Scores: {scores}",
+      "open": "See the ranking"
+    }
   },
   "schedule": {
     "day": "Day",
@@ -228,7 +282,8 @@
       "THREE_D": "3D",
       "FIELD": "Field",
       "BEURSAULT": "Beursault",
-      "RUN_ARCHERY": "Run Archery"
+      "RUN_ARCHERY": "Run Archery",
+      "NATURE": "Nature"
     },
     "feelings": {
       "GREAT": "YEAH!",
@@ -240,6 +295,10 @@
     "newSessionHint": "Pick the type and date: the details to fill in come next.",
     "type": "Event type",
     "date": "Date",
+    "dateFromFfta": "Competition of the FFTA calendar: its date can't be changed.",
+    "results": "Results",
+    "resultsHint": "The results published on the FFTA website (PDF)",
+    "resultsPending": "Results not published on the FFTA website yet",
     "create": "Create event",
     "cancel": "Cancel",
     "info": "Details",
@@ -533,11 +592,14 @@
       "HUNTING": "Hunting bow",
       "FREE": "Freestyle bow"
     },
-    "options": {
-      "title": "Options",
-      "soon": "Coming soon",
-      "departmental": "Show departmental-level competitions",
-      "regional": "Show regional-level competitions"
+    "competitions": {
+      "title": "Competitions",
+      "hint": "The upcoming competitions of the FFTA calendar in your department and your disciplines show in the yearly calendar.",
+      "department": "Department",
+      "noDepartment": "None (don't show competitions)",
+      "para": "Include para-archery competitions (indoor and outdoor)",
+      "save": "Save",
+      "saved": "Preferences saved."
     },
     "cancel": "Cancel",
     "remove": "Remove",

@@ -65,7 +65,26 @@ export const SESSION_TYPE_ORDER: SessionType[] = [
   'STRENGTH',
 ];
 
-/** Display order of the disciplines (session sheet, archer profile). */
+/**
+ * Each discipline's colour (Mantine palette), shown pastel (`variant="light"`): the event
+ * sheet's discipline chips, the national rankings and the FFTA competitions' labels. Distinct
+ * hues, so the labels tell the disciplines apart at a glance.
+ */
+export const DISCIPLINE_COLORS: Record<Discipline, string> = {
+  INDOOR: 'blue',
+  TAE_NATIONAL: 'green',
+  TAE_INTERNATIONAL: 'grape',
+  BEURSAULT: 'yellow',
+  THREE_D: 'orange',
+  FIELD: 'lime',
+  RUN_ARCHERY: 'pink',
+  NATURE: 'cyan',
+};
+
+/**
+ * Display order of the disciplines (session sheet, archer profile). A discipline's place is also
+ * its chart colour (`disciplineColor`): add new ones at the end.
+ */
 export const DISCIPLINE_ORDER: Discipline[] = [
   'INDOOR',
   'TAE_NATIONAL',
@@ -74,4 +93,5 @@ export const DISCIPLINE_ORDER: Discipline[] = [
   'THREE_D',
   'FIELD',
   'RUN_ARCHERY',
+  'NATURE',
 ];

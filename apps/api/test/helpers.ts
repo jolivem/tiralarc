@@ -4,6 +4,9 @@ import type { App } from 'supertest/types.js';
 import { AppModule } from '../src/app.module.js';
 import { type ExternalIdentity, IdTokenVerifier } from '../src/auth/id-token-verifier.service.js';
 import { ApiException, ErrorCode } from '../src/common/errors.js';
+import type { FftaCompetition, FftaCompetitionDetails } from '../src/competitions/ffta-parser.js';
+import { FftaClient, type FftaSearch } from '../src/competitions/ffta.client.js';
+import type { FftaRankingInfo, FftaRankingRow } from '../src/competitions/ffta-rankings.js';
 import { AuthProvider } from '../src/generated/prisma/client.js';
 import { MailService, type OutgoingMail } from '../src/mail/mail.service.js';
 import { PrismaService } from '../src/prisma/prisma.service.js';
@@ -51,6 +54,43 @@ class FakeStorage {
   }
 }
 
+/** Stand-in for the FFTA website: answers each search from `results`, by "<dep ids>:<discipline>". */
+export class FakeFfta {
+  readonly results = new Map<string, FftaCompetition[]>();
+  readonly searches: FftaSearch[] = [];
+  /** Searches that fail (the site unreachable), same keys. */
+  readonly failing = new Set<string>();
+  /** The place on each competition's page, by id (none: the page can't be read). */
+  readonly places = new Map<string, string | null>();
+  /** National rankings: the season, each discipline code's list, archers' rows by "<id>:<licence>". */
+  rankingSeasonValue: string | null = '2027';
+  readonly rankingLists = new Map<string, FftaRankingInfo[]>();
+  readonly rankingRows = new Map<string, FftaRankingRow>();
+  readonly rankingReads: string[] = [];
+  async rankingSeason(): Promise<string | null> {
+    return this.rankingSeasonValue;
+  }
+  async rankingList(season: string, discipline: string): Promise<FftaRankingInfo[]> {
+    return this.rankingLists.get(`${season}:${discipline}`) ?? [];
+  }
+  async rankingRow(id: string, licence: string): Promise<FftaRankingRow | null> {
+    this.rankingReads.push(id);
+    return this.rankingRows.get(`${id}:${licence}`) ?? null;
+  }
+  /** The results each competition's page links to, by id. */
+  readonly resultUrls = new Map<string, string>();
+  async details(id: string): Promise<FftaCompetitionDetails> {
+    if (!this.places.has(id)) throw new Error('HTTP 403');
+    return { place: this.places.get(id)!, resultsUrl: this.resultUrls.get(id) ?? null };
+  }
+  async search(search: FftaSearch): Promise<FftaCompetition[]> {
+    this.searches.push(search);
+    const key = `${search.departmentIds.join(',')}:${search.discipline}`;
+    if (this.failing.has(key)) throw new Error('HTTP 403');
+    return this.results.get(key) ?? [];
+  }
+}
+
 export interface TestContext {
   app: INestApplication<App>;
   prisma: PrismaService;
@@ -58,6 +98,7 @@ export interface TestContext {
   outbox: OutgoingMail[];
   /** Every file "stored" by the app, by key. */
   files: Map<string, Buffer>;
+  ffta: FakeFfta;
 }
 
 export async function createTestApp(): Promise<TestContext> {
@@ -67,6 +108,8 @@ export async function createTestApp(): Promise<TestContext> {
     .useClass(FakeIdTokenVerifier)
     .overrideProvider(StorageService)
     .useClass(FakeStorage)
+    .overrideProvider(FftaClient)
+    .useClass(FakeFfta)
     .compile();
 
   const app = moduleRef.createNestApplication<INestApplication<App>>();
@@ -80,7 +123,7 @@ export async function createTestApp(): Promise<TestContext> {
   const prisma = app.get(PrismaService);
   await resetDatabase(prisma);
   const { files } = app.get<FakeStorage>(StorageService);
-  return { app, prisma, outbox, files };
+  return { app, prisma, outbox, files, ffta: app.get<FakeFfta>(FftaClient) };
 }
 
 export async function resetDatabase(prisma: PrismaService): Promise<void> {

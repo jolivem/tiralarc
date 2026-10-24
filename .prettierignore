@@ -3,3 +3,5 @@ apps/api/openapi.json
 packages/api-client/src/schema.ts
 apps/api/src/generated/
 apps/api/prisma/migrations/
+# Saved pages of other websites, kept as they were (trimmed).
+apps/api/src/competitions/fixtures/

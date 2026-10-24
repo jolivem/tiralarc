@@ -1,7 +1,13 @@
 'use client';
 
 import { Checkbox, Select, SimpleGrid, Stack, Text, TextInput } from '@mantine/core';
-import type { AgeCategory, ArcherProfile, BowType, Discipline } from '@tiralarc/api-client';
+import type {
+  AgeCategory,
+  ArcherProfile,
+  BowType,
+  Department,
+  Discipline,
+} from '@tiralarc/api-client';
 import { useTranslations } from 'next-intl';
 import { useId, useState, useTransition } from 'react';
 import { saveProfile } from '@/app/actions/profile';
@@ -114,22 +120,75 @@ export function ConfigurationCard({ profile }: { profile: ArcherProfile }) {
   );
 }
 
-/** Display options — not wired yet: shown so archers see what is coming. */
-export function OptionsCard() {
-  const t = useTranslations('profile.options');
+/** Which FFTA competitions the yearly calendar shows: the department's, para ones or not. */
+export function CompetitionsCard({
+  profile,
+  departments,
+}: {
+  profile: Pick<ArcherProfile, 'department' | 'paraCompetitions'>;
+  departments: Department[];
+}) {
+  const t = useTranslations('profile.competitions');
+  const fieldId = useId();
+  const [values, setValues] = useState({
+    department: profile.department,
+    paraCompetitions: profile.paraCompetitions,
+  });
+  const [saved, setSaved] = useState(() => JSON.stringify(values));
+  const dirty = JSON.stringify(values) !== saved;
+  const [state, setState] = useState<ActionState>({});
+  const [pending, startTransition] = useTransition();
+  const set = <K extends keyof typeof values>(key: K, value: (typeof values)[K]) => {
+    setValues((v) => ({ ...v, [key]: value }));
+    setState({});
+  };
+
   return (
-    <ProfileCard
-      title={t('title')}
-      action={
-        <Text size="sm" c="dimmed">
-          {t('soon')}
-        </Text>
-      }
-    >
-      <Stack gap="sm">
-        <Checkbox label={t('departmental')} disabled />
-        <Checkbox label={t('regional')} disabled />
-      </Stack>
+    <ProfileCard title={t('title')}>
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (!dirty) return;
+          const snapshot = values;
+          startTransition(async () => {
+            const result = await saveProfile(snapshot);
+            setState(result);
+            if (!result.code) setSaved(JSON.stringify(snapshot));
+          });
+        }}
+      >
+        <Stack gap="md">
+          <Text size="sm" c="dimmed">
+            {t('hint')}
+          </Text>
+          <div className={classes.fieldRows}>
+            <label htmlFor={`${fieldId}-department`} className={classes.fieldName}>
+              {t('department')}
+            </label>
+            <Select
+              id={`${fieldId}-department`}
+              placeholder={t('noDepartment')}
+              data={departments.map((d) => ({ value: d.code, label: `${d.code} - ${d.name}` }))}
+              value={values.department}
+              onChange={(v) => set('department', v)}
+              searchable
+              clearable
+            />
+          </div>
+          <Checkbox
+            label={t('para')}
+            checked={values.paraCompetitions}
+            onChange={(e) => set('paraCompetitions', e.currentTarget.checked)}
+          />
+          <SaveBar
+            state={state}
+            savedLabel={t('saved')}
+            label={t('save')}
+            disabled={!dirty}
+            loading={pending}
+          />
+        </Stack>
+      </form>
     </ProfileCard>
   );
 }

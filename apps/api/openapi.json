@@ -1580,20 +1580,39 @@
         ]
       }
     },
-    "/api/v1/goals": {
+    "/api/v1/competitions": {
       "get": {
-        "operationId": "Goals_list",
-        "parameters": [],
+        "description": "Read from the FFTA website and kept for a few hours. With `paraCompetitions` in the profile, the para-archery indoor and outdoor competitions are included.",
+        "operationId": "Competitions_list",
+        "parameters": [
+          {
+            "name": "from",
+            "required": false,
+            "in": "query",
+            "description": "First day, inclusive (YYYY-MM-DD). Omitted = today.",
+            "schema": {
+              "example": "2026-09-01",
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "required": false,
+            "in": "query",
+            "description": "Last day, inclusive (YYYY-MM-DD). Omitted = a year from today, which is also as far as the calendar is read.",
+            "schema": {
+              "example": "2027-08-31",
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/GoalDto"
-                  }
+                  "$ref": "#/components/schemas/CompetitionListDto"
                 }
               }
             }
@@ -1607,54 +1626,16 @@
             "bearer": []
           }
         ],
+        "summary": "Upcoming FFTA competitions of the archer's department, in their disciplines (profile)",
         "tags": [
-          "goals"
-        ]
-      },
-      "post": {
-        "operationId": "Goals_create",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateGoalDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/GoalDto"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Archers only"
-          },
-          "409": {
-            "description": "LIMIT_REACHED"
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "goals"
+          "competitions"
         ]
       }
     },
-    "/api/v1/goals/{id}": {
-      "patch": {
-        "operationId": "Goals_update",
+    "/api/v1/competitions/{id}/results": {
+      "get": {
+        "description": "For an event added from the FFTA calendar (`fftaCompetitionId`). Read from the competition's page on the FFTA website.",
+        "operationId": "Competitions_results",
         "parameters": [
           {
             "name": "id",
@@ -1665,23 +1646,13 @@
             }
           }
         ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateGoalDto"
-              }
-            }
-          }
-        },
         "responses": {
           "200": {
             "description": "",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/GoalDto"
+                  "$ref": "#/components/schemas/CompetitionResultsDto"
                 }
               }
             }
@@ -1690,7 +1661,7 @@
             "description": "Archers only"
           },
           "404": {
-            "description": ""
+            "description": "Not an FFTA competition id"
           }
         },
         "security": [
@@ -1698,12 +1669,16 @@
             "bearer": []
           }
         ],
+        "summary": "An FFTA competition's results, once its organiser published them",
         "tags": [
-          "goals"
+          "competitions"
         ]
-      },
-      "delete": {
-        "operationId": "Goals_remove",
+      }
+    },
+    "/api/v1/competitions/{id}/dismissal": {
+      "put": {
+        "description": "The calendars still show it (`dismissed` in the list). Idempotent.",
+        "operationId": "Competitions_dismiss",
         "parameters": [
           {
             "name": "id",
@@ -1722,7 +1697,7 @@
             "description": "Archers only"
           },
           "404": {
-            "description": ""
+            "description": "Not an FFTA competition id"
           }
         },
         "security": [
@@ -1730,8 +1705,106 @@
             "bearer": []
           }
         ],
+        "summary": "The archer will not take part: out of their competitions to plan",
         "tags": [
-          "goals"
+          "competitions"
+        ]
+      },
+      "delete": {
+        "operationId": "Competitions_undismiss",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "403": {
+            "description": "Archers only"
+          },
+          "404": {
+            "description": "Not an FFTA competition id"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Back among the competitions to plan. Idempotent.",
+        "tags": [
+          "competitions"
+        ]
+      }
+    },
+    "/api/v1/competitions/departments": {
+      "get": {
+        "operationId": "Competitions_departments",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DepartmentDto"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Archers only"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "The departments an archer can pick in their profile",
+        "tags": [
+          "competitions"
+        ]
+      }
+    },
+    "/api/v1/rankings": {
+      "get": {
+        "description": "The rankings of their category and bow (profile), in their disciplines, that list their licence number; read from the FFTA website and kept a few hours.",
+        "operationId": "Rankings_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RankingListDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Archers only"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "The archer's places in the FFTA national rankings",
+        "tags": [
+          "competitions"
         ]
       }
     },
@@ -2117,6 +2190,161 @@
         ]
       }
     },
+    "/api/v1/goals": {
+      "get": {
+        "operationId": "Goals_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/GoalDto"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Archers only"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "goals"
+        ]
+      },
+      "post": {
+        "operationId": "Goals_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateGoalDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GoalDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Archers only"
+          },
+          "409": {
+            "description": "LIMIT_REACHED"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "goals"
+        ]
+      }
+    },
+    "/api/v1/goals/{id}": {
+      "patch": {
+        "operationId": "Goals_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateGoalDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GoalDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Archers only"
+          },
+          "404": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "goals"
+        ]
+      },
+      "delete": {
+        "operationId": "Goals_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "403": {
+            "description": "Archers only"
+          },
+          "404": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "goals"
+        ]
+      }
+    },
     "/api/v1/coach/athletes": {
       "get": {
         "operationId": "Coaching_list",
@@ -2292,7 +2520,7 @@
             "description": "Not one of your archers (or not in their current journal)"
           },
           "409": {
-            "description": "DAY_FULL"
+            "description": "DAY_FULL, LIMIT_REACHED (an FFTA competition twice that day)"
           }
         },
         "security": [
@@ -2602,6 +2830,65 @@
           }
         ],
         "summary": "Photos of an event; the URLs are signed and expire after 10 minutes",
+        "tags": [
+          "coaching"
+        ]
+      }
+    },
+    "/api/v1/coach/athletes/{archerId}/competitions": {
+      "get": {
+        "operationId": "Coaching_competitions",
+        "parameters": [
+          {
+            "name": "archerId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "from",
+            "required": false,
+            "in": "query",
+            "description": "First day, inclusive (YYYY-MM-DD). Omitted = today.",
+            "schema": {
+              "example": "2026-09-01",
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "required": false,
+            "in": "query",
+            "description": "Last day, inclusive (YYYY-MM-DD). Omitted = a year from today, which is also as far as the calendar is read.",
+            "schema": {
+              "example": "2027-08-31",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompetitionListDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not one of your archers (or not in their current journal)"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Upcoming FFTA competitions of the archer's department and disciplines, within the current journal (WRITE access adds them with POST .../sessions and `fftaCompetitionId`)",
         "tags": [
           "coaching"
         ]
@@ -3246,7 +3533,8 @@
           "THREE_D",
           "FIELD",
           "BEURSAULT",
-          "RUN_ARCHERY"
+          "RUN_ARCHERY",
+          "NATURE"
         ]
       },
       "EventColor": {
@@ -3409,6 +3697,12 @@
           "plannedByCoach": {
             "type": "boolean",
             "description": "Whether the archer's coach planned the event (see `SessionDto.plannedBy`). Clients mark it until the archer completes it."
+          },
+          "fftaCompetitionId": {
+            "type": "string",
+            "nullable": true,
+            "example": "26349",
+            "description": "The FFTA competition it was added from (`CompetitionDto.id`), if any."
           }
         },
         "required": [
@@ -3426,7 +3720,8 @@
           "icon",
           "customType",
           "completed",
-          "plannedByCoach"
+          "plannedByCoach",
+          "fftaCompetitionId"
         ]
       },
       "CompetitionStatDto": {
@@ -3808,6 +4103,12 @@
             "type": "boolean",
             "description": "Whether the archer's coach planned the event (see `SessionDto.plannedBy`). Clients mark it until the archer completes it."
           },
+          "fftaCompetitionId": {
+            "type": "string",
+            "nullable": true,
+            "example": "26349",
+            "description": "The FFTA competition it was added from (`CompetitionDto.id`), if any."
+          },
           "plannedBy": {
             "$ref": "#/components/schemas/PlannerDto"
           }
@@ -3828,6 +4129,7 @@
           "customType",
           "completed",
           "plannedByCoach",
+          "fftaCompetitionId",
           "plannedBy"
         ]
       },
@@ -3850,6 +4152,25 @@
             "type": "string",
             "format": "uuid",
             "description": "Required for a `CUSTOM` event (one of the archer's event types), ignored otherwise."
+          },
+          "location": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 200,
+            "description": "Prefilled place (e.g. a competition added from the FFTA calendar)."
+          },
+          "discipline": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Discipline"
+              }
+            ]
+          },
+          "fftaCompetitionId": {
+            "type": "string",
+            "example": "26349",
+            "description": "A `COMPETITION` added from the FFTA calendar: that competition's id (`CompetitionDto.id`). At most 2 events of one competition per day (`LIMIT_REACHED`). Ignored for other types."
           }
         },
         "required": [
@@ -3946,6 +4267,12 @@
             "type": "boolean",
             "description": "Whether the archer's coach planned the event (see `SessionDto.plannedBy`). Clients mark it until the archer completes it."
           },
+          "fftaCompetitionId": {
+            "type": "string",
+            "nullable": true,
+            "example": "26349",
+            "description": "The FFTA competition it was added from (`CompetitionDto.id`), if any."
+          },
           "plannedBy": {
             "nullable": true,
             "description": "The coach who planned the event in the archer's journal; null when the archer created it. That coach may change its planning or delete it while it is still to come.",
@@ -4025,6 +4352,7 @@
           "customType",
           "completed",
           "plannedByCoach",
+          "fftaCompetitionId",
           "plannedBy",
           "distanceMeters",
           "objective",
@@ -4282,114 +4610,277 @@
           "file"
         ]
       },
-      "GoalType": {
-        "type": "string",
-        "enum": [
-          "SPORT",
-          "TECHNIQUE",
-          "PHYSICAL",
-          "PERSONAL"
+      "DepartmentDto": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "example": "78",
+            "description": "INSEE code: \"01\"…\"95\", \"2A\", \"2B\", \"971\"…"
+          },
+          "name": {
+            "type": "string",
+            "example": "Yvelines"
+          }
+        },
+        "required": [
+          "code",
+          "name"
         ]
       },
-      "GoalDto": {
+      "CompetitionStatus": {
+        "type": "string",
+        "enum": [
+          "SCHEDULED",
+          "POSTPONED",
+          "CANCELLED"
+        ]
+      },
+      "CompetitionDto": {
         "type": "object",
         "properties": {
           "id": {
             "type": "string",
-            "format": "uuid"
+            "example": "26349",
+            "description": "The FFTA's id of the competition."
           },
-          "type": {
+          "title": {
+            "type": "string",
+            "example": "TIR À 18M à VILLEPREUX"
+          },
+          "startDate": {
+            "type": "string",
+            "example": "2026-10-31",
+            "description": "First day (YYYY-MM-DD)."
+          },
+          "endDate": {
+            "type": "string",
+            "example": "2026-11-01",
+            "description": "Last day, inclusive (YYYY-MM-DD)."
+          },
+          "city": {
+            "type": "string",
+            "nullable": true,
+            "example": "VILLEPREUX"
+          },
+          "organizer": {
+            "type": "string",
+            "nullable": true,
+            "example": "CIE D'ARC DE VILLEPREUX"
+          },
+          "discipline": {
+            "description": "The archer's discipline it belongs to: outdoor target archery is TAE_NATIONAL unless the archer practises only TAE_INTERNATIONAL.",
             "allOf": [
               {
-                "$ref": "#/components/schemas/GoalType"
+                "$ref": "#/components/schemas/Discipline"
               }
             ]
           },
-          "description": {
-            "type": "string"
-          },
-          "createdOn": {
-            "type": "string",
-            "example": "2026-10-10",
-            "description": "Day the goal was set."
-          },
-          "achieved": {
+          "para": {
             "type": "boolean",
-            "description": "True once the goal has a day it was reached."
+            "description": "A para-archery competition."
           },
-          "achievedOn": {
+          "teamOnly": {
+            "type": "boolean",
+            "description": "Teams only: no individual ranking."
+          },
+          "status": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CompetitionStatus"
+              }
+            ]
+          },
+          "url": {
             "type": "string",
+            "format": "uri",
+            "description": "Its page on the FFTA website."
+          },
+          "dismissed": {
+            "type": "boolean",
+            "description": "The archer said they will not take part (PUT .../dismissal): left out of the competitions to plan; the calendars still show it."
+          },
+          "mandateUrl": {
+            "type": "string",
+            "format": "uri",
             "nullable": true,
-            "example": "2027-02-06"
+            "description": "The organiser's invitation (\"mandat\", PDF), once published."
           }
         },
         "required": [
           "id",
-          "type",
-          "description",
-          "createdOn",
-          "achieved",
-          "achievedOn"
+          "title",
+          "startDate",
+          "endDate",
+          "city",
+          "organizer",
+          "discipline",
+          "para",
+          "teamOnly",
+          "status",
+          "url",
+          "dismissed",
+          "mandateUrl"
         ]
       },
-      "CreateGoalDto": {
+      "CompetitionListDto": {
         "type": "object",
         "properties": {
-          "type": {
+          "department": {
+            "nullable": true,
+            "description": "The archer's department (profile); null = none chosen, hence no competitions.",
+            "type": "object",
             "allOf": [
               {
-                "$ref": "#/components/schemas/GoalType"
+                "$ref": "#/components/schemas/DepartmentDto"
               }
             ]
           },
-          "description": {
-            "type": "string",
-            "example": "Passer les 550 points en salle",
-            "minLength": 1,
-            "maxLength": 500
+          "competitions": {
+            "description": "The department's competitions in the archer's disciplines (profile) that have not ended yet and touch the requested days, by first day.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CompetitionDto"
+            }
           },
-          "createdOn": {
-            "type": "string",
-            "example": "2026-10-10",
-            "description": "Day the goal was set (YYYY-MM-DD). Defaults to today."
-          },
-          "achievedOn": {
-            "type": "string",
-            "nullable": true,
-            "example": "2027-02-06",
-            "description": "Day the goal was reached (YYYY-MM-DD); omitted / null = not reached yet."
+          "complete": {
+            "type": "boolean",
+            "description": "False when the FFTA website could not be read for some of the disciplines: the list may miss competitions (try again later)."
           }
         },
         "required": [
-          "type",
-          "description"
+          "department",
+          "competitions",
+          "complete"
         ]
       },
-      "UpdateGoalDto": {
+      "CompetitionResultsDto": {
         "type": "object",
         "properties": {
-          "type": {
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "nullable": true,
+            "example": "https://extranet.ffta.fr/pdfresultats/2026/T_0878139_20260607_76816.pdf",
+            "description": "The results published by the organiser on the FFTA website (PDF); null until they are (or when the FFTA website could not be read)."
+          }
+        },
+        "required": [
+          "url"
+        ]
+      },
+      "RankingField": {
+        "type": "string",
+        "enum": [
+          "licenceNumber",
+          "category",
+          "bowType"
+        ],
+        "description": "Profile fields to fill in first: licence number, category, bow."
+      },
+      "RankingDto": {
+        "type": "object",
+        "properties": {
+          "season": {
+            "type": "string",
+            "example": "2027",
+            "description": "The FFTA season it ranks: the current one, or the one before."
+          },
+          "discipline": {
+            "description": "The archer's discipline it ranks: outdoor target archery is the archer's TAE discipline (when they practise both, TAE_INTERNATIONAL for its distances: 70 m, or 50 m on an 80 cm face for a compound).",
             "allOf": [
               {
-                "$ref": "#/components/schemas/GoalType"
+                "$ref": "#/components/schemas/Discipline"
               }
             ]
           },
-          "description": {
+          "name": {
             "type": "string",
-            "minLength": 1,
-            "maxLength": 500
+            "example": "Senior 2 Femme Arc Classique 2027"
           },
-          "createdOn": {
-            "type": "string",
-            "example": "2026-10-10"
-          },
-          "achievedOn": {
+          "distance": {
             "type": "string",
             "nullable": true,
-            "example": "2027-02-06"
+            "example": "70m - 122cm",
+            "description": "Outdoor target archery: each distance has its ranking."
+          },
+          "rank": {
+            "type": "number",
+            "example": 12
+          },
+          "total": {
+            "type": "number",
+            "example": 427,
+            "description": "Archers in the ranking."
+          },
+          "average": {
+            "type": "number",
+            "nullable": true,
+            "example": 536.5
+          },
+          "scores": {
+            "example": [
+              545,
+              528
+            ],
+            "description": "The best scores counted, best first as the FFTA lists them.",
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "description": "The ranking on the FFTA website."
           }
-        }
+        },
+        "required": [
+          "season",
+          "discipline",
+          "name",
+          "distance",
+          "rank",
+          "total",
+          "average",
+          "scores",
+          "url"
+        ]
+      },
+      "RankingListDto": {
+        "type": "object",
+        "properties": {
+          "season": {
+            "type": "string",
+            "nullable": true,
+            "example": "2027",
+            "description": "The current FFTA season (null when not read)."
+          },
+          "missing": {
+            "type": "array",
+            "description": "Profile fields to fill in first: licence number, category, bow.",
+            "items": {
+              "$ref": "#/components/schemas/RankingField"
+            }
+          },
+          "rankings": {
+            "description": "The rankings of the archer's category and bow, in their disciplines, that list their licence (scratch rankings left out): the current season first, then the one before (also searched one category younger).",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RankingDto"
+            }
+          },
+          "complete": {
+            "type": "boolean",
+            "description": "False when the FFTA website could not be read in full: try again later."
+          }
+        },
+        "required": [
+          "season",
+          "missing",
+          "rankings",
+          "complete"
+        ]
       },
       "AgeCategory": {
         "type": "string",
@@ -4472,6 +4963,16 @@
                 "$ref": "#/components/schemas/Indicator"
               }
             ]
+          },
+          "department": {
+            "type": "string",
+            "nullable": true,
+            "example": "78",
+            "description": "Department code (see GET /competitions/departments) whose FFTA competitions the calendars show; null = none."
+          },
+          "paraCompetitions": {
+            "type": "boolean",
+            "description": "Also show the para-archery competitions (indoor and outdoor target archery)."
           }
         },
         "required": [
@@ -4480,7 +4981,9 @@
           "bowType",
           "disciplines",
           "calendarFont",
-          "favoriteIndicator"
+          "favoriteIndicator",
+          "department",
+          "paraCompetitions"
         ]
       },
       "UpdateProfileDto": {
@@ -4529,6 +5032,15 @@
                 "$ref": "#/components/schemas/Indicator"
               }
             ]
+          },
+          "department": {
+            "type": "string",
+            "nullable": true,
+            "example": "78",
+            "description": "Department code (see GET /competitions/departments); null for none."
+          },
+          "paraCompetitions": {
+            "type": "boolean"
           }
         }
       },
@@ -4728,6 +5240,115 @@
           "archerId"
         ]
       },
+      "GoalType": {
+        "type": "string",
+        "enum": [
+          "SPORT",
+          "TECHNIQUE",
+          "PHYSICAL",
+          "PERSONAL"
+        ]
+      },
+      "GoalDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "type": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/GoalType"
+              }
+            ]
+          },
+          "description": {
+            "type": "string"
+          },
+          "createdOn": {
+            "type": "string",
+            "example": "2026-10-10",
+            "description": "Day the goal was set."
+          },
+          "achieved": {
+            "type": "boolean",
+            "description": "True once the goal has a day it was reached."
+          },
+          "achievedOn": {
+            "type": "string",
+            "nullable": true,
+            "example": "2027-02-06"
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "description",
+          "createdOn",
+          "achieved",
+          "achievedOn"
+        ]
+      },
+      "CreateGoalDto": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/GoalType"
+              }
+            ]
+          },
+          "description": {
+            "type": "string",
+            "example": "Passer les 550 points en salle",
+            "minLength": 1,
+            "maxLength": 500
+          },
+          "createdOn": {
+            "type": "string",
+            "example": "2026-10-10",
+            "description": "Day the goal was set (YYYY-MM-DD). Defaults to today."
+          },
+          "achievedOn": {
+            "type": "string",
+            "nullable": true,
+            "example": "2027-02-06",
+            "description": "Day the goal was reached (YYYY-MM-DD); omitted / null = not reached yet."
+          }
+        },
+        "required": [
+          "type",
+          "description"
+        ]
+      },
+      "UpdateGoalDto": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/GoalType"
+              }
+            ]
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          },
+          "createdOn": {
+            "type": "string",
+            "example": "2026-10-10"
+          },
+          "achievedOn": {
+            "type": "string",
+            "nullable": true,
+            "example": "2027-02-06"
+          }
+        }
+      },
       "AthleteDto": {
         "type": "object",
         "properties": {
@@ -4826,6 +5447,11 @@
             "type": "string",
             "example": "2026-11-03",
             "description": "A day after today, within the archer's journal of the season in progress."
+          },
+          "fftaCompetitionId": {
+            "type": "string",
+            "example": "26349",
+            "description": "A `COMPETITION` added from the FFTA calendar (GET .../competitions): that competition's id. At most 2 events of one competition per day (`LIMIT_REACHED`). Ignored for other types."
           }
         },
         "required": [

@@ -27,6 +27,7 @@ import {
   IconDeviceFloppy,
   IconMapPin,
   IconTrash,
+  IconTrophy,
 } from '@tabler/icons-react';
 import type {
   Discipline,
@@ -36,10 +37,15 @@ import type {
   JournalSuggestions,
   SessionType,
 } from '@tiralarc/api-client';
-import { useFormatter, useTranslations } from 'next-intl';
+import { useTranslations } from 'next-intl';
 import { createContext, type ReactNode, useEffect, useId, useState, useTransition } from 'react';
 import { deletePlannedSession, savePlannedSession } from '@/app/actions/coaching';
-import { deleteSession, markSessionSeen, saveSession } from '@/app/actions/journal';
+import {
+  competitionResults,
+  deleteSession,
+  markSessionSeen,
+  saveSession,
+} from '@/app/actions/journal';
 import { FormError } from '@/components/form-feedback';
 import { LooseLeaf } from '@/components/notebook/loose-leaf';
 import { RuledStack } from '@/components/notebook/ruled-stack';
@@ -49,7 +55,7 @@ import { ColorPicker, IconPicker } from './event-display';
 import { FEELING_INK, FEELINGS } from './feelings';
 import classes from './journal.module.css';
 import { today, tomorrow } from './new-session-modal';
-import { DISCIPLINE_ORDER, SESSION_TYPES } from './session-types';
+import { DISCIPLINE_COLORS, DISCIPLINE_ORDER, SESSION_TYPES } from './session-types';
 
 const DEFAULT_NOTE_COLOR = 'gray';
 /** The distances offered as one-tap chips (others are typed in the field). */
@@ -211,7 +217,6 @@ export function SessionForm({
   const [confirmLeave, setConfirmLeave] = useState(false);
   /** A future day picked for an event with a review, waiting for the archer's go-ahead. */
   const [futureDate, setFutureDate] = useState<string | null>(null);
-  const format = useFormatter();
 
   const dirty = JSON.stringify(values) !== saved;
   const set = <K extends keyof Values>(key: K, value: Values[K]) => {
@@ -267,20 +272,6 @@ export function SessionForm({
   };
 
   /*
-    The type and its icon on the left; the day, underlined, in the top right corner;
-    both written on the second of the sheet's first two lines (a wrapped date: on the
-    next two). Noon, so the calendar day is the same in every time zone.
-  */
-  const header = (
-    <Group justify="space-between" align="flex-start" className={classes.sheetHeader}>
-      {title}
-      <time dateTime={values.date} className={classes.sheetDate}>
-        {format.dateTime(new Date(`${values.date}T12:00:00`), { dateStyle: 'full' })}
-      </time>
-    </Group>
-  );
-
-  /*
     Planned by the coach: stamped in the margin until the archer completes it once it has
     taken place (as saved; like the calendar's stamp) — a type without review, until its day.
   */
@@ -294,6 +285,49 @@ export function SessionForm({
     >
       {t('coachStamp')}
     </span>
+  );
+
+  // An FFTA competition that has taken place (as saved): its results, once the organiser
+  // published them on the FFTA website.
+  const fftaId = session.fftaCompetitionId;
+  const showsResults = fftaId !== null && savedValues.date < today();
+  const [resultsUrl, setResultsUrl] = useState<string | null>(null);
+  useEffect(() => {
+    if (!showsResults || !fftaId) return;
+    let current = true;
+    competitionResults(fftaId).then((url) => {
+      if (current) setResultsUrl(url);
+    });
+    return () => {
+      current = false;
+    };
+  }, [showsResults, fftaId]);
+
+  /*
+    The type and its icon on the left, written on the second of the sheet's first two lines
+    (the date is in the Informations box); an FFTA competition's results on the right, centred
+    above the photos (the same two columns as the boxes below).
+  */
+  const header = (
+    <div className={classes.sheetHeader} data-photos={children ? true : undefined}>
+      {title}
+      {showsResults && (
+        <Button
+          component="a"
+          href={resultsUrl ?? undefined}
+          target="_blank"
+          rel="noopener noreferrer"
+          size="md"
+          variant="light"
+          leftSection={<IconTrophy size={20} />}
+          disabled={!resultsUrl}
+          title={resultsUrl ? t('resultsHint') : t('resultsPending')}
+          className={classes.sheetResults}
+        >
+          {t('results')}
+        </Button>
+      )}
+    </div>
   );
 
   const plannedBy = session.plannedBy && (
@@ -385,7 +419,9 @@ export function SessionForm({
                     onChange={(date) => date && changeDate(date)}
                     valueFormat="ddd D MMM YYYY"
                     leftSection={<IconCalendar size={16} />}
-                    readOnly={readOnly}
+                    // An FFTA competition keeps its competition's day (DATE_LOCKED).
+                    readOnly={readOnly || session.fftaCompetitionId !== null}
+                    title={session.fftaCompetitionId ? t('dateFromFfta') : undefined}
                     // A coach moves what they planned to another day still to come.
                     minDate={coach ? tomorrow() : undefined}
                     maxDate={coach?.lastDay}
@@ -440,6 +476,9 @@ export function SessionForm({
                               key={d}
                               value={d}
                               size="xs"
+                              // The discipline's own pastel (as on the national rankings).
+                              color={DISCIPLINE_COLORS[d]}
+                              variant="light"
                               onClick={() => d === values.discipline && set('discipline', null)}
                             >
                               {t(`disciplines.${d}`)}
@@ -729,10 +768,12 @@ export function SessionForm({
               loading={deleting}
               onClick={() =>
                 startDeleting(async () => {
+                  // Back to the month of the event as saved, like closing the sheet.
+                  const month = (JSON.parse(saved) as Values).date.slice(0, 7);
                   setState(
                     coach
-                      ? await deletePlannedSession(coach.archerId, session.id)
-                      : await deleteSession(session.id),
+                      ? await deletePlannedSession(coach.archerId, session.id, month)
+                      : await deleteSession(session.id, month),
                   );
                   setConfirmDelete(false);
                 })

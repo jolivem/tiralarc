@@ -1,7 +1,7 @@
 import { Group } from '@mantine/core';
 import type { NewEvent } from '@tiralarc/api-client';
 import { getFormatter, getTranslations } from 'next-intl/server';
-import { HandHeading } from '@/components/notebook/notebook';
+import { RuledHeading } from '@/components/notebook/on-ruling';
 import { RuledStack } from '@/components/notebook/ruled-stack';
 import { Link } from '@/i18n/navigation';
 import { EventIcon } from './event-display';
@@ -28,7 +28,7 @@ export async function NewEvents({
     <section>
       <RuledStack>
         <Group gap="sm" align="center" wrap="nowrap">
-          <HandHeading>{t('newEvents.title')}</HandHeading>
+          <RuledHeading>{t('newEvents.title')}</RuledHeading>
           <span className={classes.coachStampTitle}>{t('coachStamp')}</span>
         </Group>
         {events.length === 0 ? (

@@ -6,10 +6,15 @@ import { MonthsOverview } from '@/components/journal/months-overview';
 import { NewEvents } from '@/components/journal/new-events';
 import { SeasonCalendar } from '@/components/journal/season-calendar';
 import { HandHeading, HandNote, Notebook } from '@/components/notebook/notebook';
+import { RuledHeading } from '@/components/notebook/on-ruling';
+import { AlignedSpacer, AlignedTop, PageAlignment } from '@/components/notebook/page-alignment';
 import { SectionCard } from '@/components/section-card';
 import type { Locale } from '@/i18n/routing';
 import { FavoriteIndicatorProvider } from '@/components/stats/favorite';
 import { IndicatorCard } from '@/components/stats/favorite-card';
+import { RankingsCard } from '@/components/stats/rankings-card';
+import { RuledCardTitles } from '@/components/stats/stats-cards';
+import { CompetitionsToPlan } from '@/components/journal/competition-list';
 import { getAuthedApi } from '@/lib/api';
 import { getArcherProfile } from '@/lib/archer-profile';
 import { getCurrentUser } from '@/lib/current-user';
@@ -111,49 +116,68 @@ export default async function ArcherHomePage({ params }: PageProps<'/[locale]/ar
   // An open notebook: on the left, this month and the next side by side; on the right,
   // the day. The sections, stuck in as notes, line up at the bottom of both pages, two
   // per page.
+  // No gap between the blocks: each title sits on the first free line after what comes before.
   const left = (
-    <Stack gap="lg" h="100%">
+    <Stack gap={0} h="100%">
       <Box hiddenFrom="md">{date}</Box>
-      {selected ? (
-        <div>
-          <HandHeading>{t('calendar')}</HandHeading>
-          {/* A click opens the whole season. */}
-          <SeasonCalendar journal={selected} today={today} customTypes={customTypes ?? []}>
-            <MonthsOverview
-              months={months}
-              today={today}
-              sessions={sessions ?? []}
-              cols={{ base: 1, xs: 2 }}
-            />
-          </SeasonCalendar>
-        </div>
-      ) : (
-        <Text c="dimmed">{tJournals('noneBody')}</Text>
-      )}
+      {/*
+        The top left blank, as tall as the right page's top (no gap after it, as there): the
+        calendar's heading falls on the national ranking's line.
+      */}
+      <div>
+        <AlignedSpacer />
+        {selected ? (
+          <>
+            <RuledHeading raised>{t('calendar')}</RuledHeading>
+            {/* A click opens the whole season. */}
+            <SeasonCalendar journal={selected} today={today} customTypes={customTypes ?? []}>
+              <MonthsOverview
+                months={months}
+                today={today}
+                sessions={sessions ?? []}
+                cols={{ base: 1, xs: 2 }}
+                ruled
+              />
+            </SeasonCalendar>
+          </>
+        ) : (
+          <Text c="dimmed">{tJournals('noneBody')}</Text>
+        )}
+      </div>
       <NewEvents events={newEvents ?? []} hasPlanningCoach={hasPlanningCoach} />
       <Box mt="auto">
-        <HandHeading>{t('sections')}</HandHeading>
+        <RuledHeading>{t('sections')}</RuledHeading>
         {notes(LEFT_NOTES, 0)}
       </Box>
     </Stack>
   );
 
   // On the right, under the day: the favourite indicator, its star filled (a click there
-  // takes it off the home page).
+  // takes it off the home page), the archer's FFTA national rankings, then the FFTA
+  // competitions still to plan.
   const right = (
-    <Stack gap="xl" h="100%">
-      <Box visibleFrom="md">{date}</Box>
-      {favorite && favoriteStats && (
-        <FavoriteIndicatorProvider initial={favorite}>
-          <IndicatorCard
-            compact
-            indicator={favorite}
-            stats={favoriteStats.stats}
-            period={favoriteStats.span}
-            today={favoriteStats.today}
-          />
-        </FavoriteIndicatorProvider>
-      )}
+    <Stack gap={0} h="100%">
+      {/* The national ranking's heading right under the day (or the favourite indicator). */}
+      <div>
+        <AlignedTop>
+          <Box visibleFrom="md">{date}</Box>
+          {favorite && favoriteStats && (
+            <RuledCardTitles value>
+              <FavoriteIndicatorProvider initial={favorite}>
+                <IndicatorCard
+                  compact
+                  indicator={favorite}
+                  stats={favoriteStats.stats}
+                  period={favoriteStats.span}
+                  today={favoriteStats.today}
+                />
+              </FavoriteIndicatorProvider>
+            </RuledCardTitles>
+          )}
+        </AlignedTop>
+        <RankingsCard />
+      </div>
+      <CompetitionsToPlan today={today} />
       <Box mt="auto">{notes(RIGHT_NOTES, LEFT_NOTES.length)}</Box>
     </Stack>
   );
@@ -167,9 +191,10 @@ export default async function ArcherHomePage({ params }: PageProps<'/[locale]/ar
         <HandHeading order={1}>
           {t('homeTitle', { name: user?.displayName ?? user?.email ?? '' })}
         </HandHeading>
-        <Text c="dimmed">{t('homeIntro')}</Text>
       </div>
-      <Notebook left={left} right={right} label={t('home')} className={home.home} />
+      <PageAlignment>
+        <Notebook left={left} right={right} label={t('home')} className={home.home} />
+      </PageAlignment>
       {journals.length === 0 && <FirstJournalPrompt />}
     </>
   );

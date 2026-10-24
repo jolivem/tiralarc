@@ -5,6 +5,7 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { LoggerModule } from 'nestjs-pino';
 import { AuthModule } from './auth/auth.module.js';
 import { CoachingModule } from './coaching/coaching.module.js';
+import { CompetitionsModule } from './competitions/competitions.module.js';
 import { type Env, validateEnv } from './config/env.js';
 import { GoalsModule } from './goals/goals.module.js';
 import { HealthModule } from './health/health.module.js';
@@ -49,6 +50,7 @@ import { UsersModule } from './users/users.module.js';
     GoalsModule,
     ProfileModule,
     CoachingModule,
+    CompetitionsModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })

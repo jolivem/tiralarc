@@ -250,6 +250,65 @@ describe('Coaching (e2e)', () => {
     await http().get(`/api/v1/journal/sessions/${planned.body.id}`).set(as(archer)).expect(404);
   });
 
+  it("shows the archer's FFTA competitions, which a coach with write access adds", async () => {
+    // The archer's department and disciplines decide (Essonne, 91, is "dep[]=92" on the site).
+    await http()
+      .patch('/api/v1/profile')
+      .set(as(archer))
+      .send({ department: '91', disciplines: ['NATURE'] })
+      .expect(200);
+    const competition = {
+      id: '27001',
+      title: 'TIR NATURE à DRAVEIL',
+      startDate: day(10),
+      endDate: day(11),
+      city: 'DRAVEIL',
+      organizer: 'ARCHERS DE DRAVEIL',
+      teamOnly: false,
+      status: 'SCHEDULED' as const,
+      mandateUrl: null,
+    };
+    // Beyond the season in progress (it ends at day 200): left out.
+    ctx.ffta.results.set('92:109', [
+      competition,
+      { ...competition, id: '27002', startDate: day(250), endDate: day(250) },
+    ]);
+
+    await setAccess('READ');
+    const { body } = await http().get(`${base()}/competitions`).set(as(coach)).expect(200);
+    expect(body).toMatchObject({ department: { code: '91' }, complete: true });
+    expect(body.competitions).toEqual([
+      expect.objectContaining({
+        id: '27001',
+        discipline: 'NATURE',
+        url: 'https://www.ffta.fr/epreuve/27001',
+      }),
+    ]);
+    await http().get(`${base()}/competitions`).set(as(otherCoach)).expect(404);
+
+    const plan = () =>
+      http()
+        .post(`${base()}/sessions`)
+        .set(as(coach))
+        .send({
+          type: 'COMPETITION',
+          date: day(10),
+          location: competition.title,
+          discipline: 'NATURE',
+          fftaCompetitionId: '27001',
+        });
+    await plan().expect(403);
+    await setAccess('WRITE');
+    const planned = await plan().expect(201);
+    expect(planned.body).toMatchObject({
+      fftaCompetitionId: '27001',
+      plannedByCoach: true,
+      plannedBy: expect.objectContaining({ name: 'Camille Coach' }),
+    });
+    await plan().expect(201);
+    expect((await plan().expect(409)).body.code).toBe('LIMIT_REACHED');
+  });
+
   it('ends with the invitation', async () => {
     await http().delete(`/api/v1/profile/invitations/${invitationId}`).set(as(archer)).expect(204);
     await http().get(base()).set(as(coach)).expect(404);

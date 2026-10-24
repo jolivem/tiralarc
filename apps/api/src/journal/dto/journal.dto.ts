@@ -515,6 +515,32 @@ export class CreateSessionDto {
   @IsOptional()
   @IsUUID()
   customTypeId?: string;
+
+  @ApiPropertyOptional({
+    type: String,
+    nullable: true,
+    maxLength: 200,
+    description: 'Prefilled place (e.g. a competition added from the FFTA calendar).',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  location?: string | null;
+
+  @ApiPropertyOptional({ enum: DISCIPLINES, enumName: 'Discipline', nullable: true })
+  @IsOptional()
+  @IsIn(DISCIPLINES)
+  discipline?: Discipline | null;
+
+  @ApiPropertyOptional({
+    example: '26349',
+    description:
+      "A `COMPETITION` added from the FFTA calendar: that competition's id (`CompetitionDto.id`). " +
+      'At most 2 events of one competition per day (`LIMIT_REACHED`). Ignored for other types.',
+  })
+  @IsOptional()
+  @Matches(/^\d{1,20}$/, { message: 'fftaCompetitionId must be a number' })
+  fftaCompetitionId?: string;
 }
 
 /** PATCH body: every field optional; `null` clears a field. */
@@ -751,6 +777,14 @@ export class SessionSummaryDto {
       'it until the archer completes it.',
   })
   plannedByCoach!: boolean;
+
+  @ApiProperty({
+    type: String,
+    nullable: true,
+    example: '26349',
+    description: 'The FFTA competition it was added from (`CompetitionDto.id`), if any.',
+  })
+  fftaCompetitionId!: string | null;
 }
 
 /** The coach who planned an event. */

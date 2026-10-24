@@ -1,6 +1,8 @@
 'use server';
 
 import type {
+  Competition,
+  CompetitionList,
   JournalSessionSummary,
   PlannableType,
   PlannedSessionUpdate,
@@ -57,6 +59,47 @@ export async function listAthleteSessions(
   return result.ok ? result.data : [];
 }
 
+/**
+ * The FFTA competitions the archer sees (their department and disciplines) between two days,
+ * within their journal of the season in progress; null when they could not be loaded.
+ */
+export async function listAthleteCompetitions(
+  archerId: string,
+  from: string,
+  to: string,
+): Promise<CompetitionList | null> {
+  const result = await send(
+    (await getAuthedApi()).GET('/api/v1/coach/athletes/{archerId}/competitions', {
+      params: { path: { archerId }, query: { from, to } },
+    }),
+  );
+  return result.ok ? result.data : null;
+}
+
+/**
+ * Plans one day of an FFTA competition in the archer's journal (WRITE access, a day after
+ * today), like the archer's own "Add to my journal": the event carries the coach's stamp.
+ */
+export async function addCompetitionToAthleteJournal(
+  archerId: string,
+  competition: Pick<Competition, 'id' | 'title' | 'discipline'>,
+  date: string,
+): Promise<ActionState & { id?: string }> {
+  const result = await send(
+    (await getAuthedApi()).POST('/api/v1/coach/athletes/{archerId}/sessions', {
+      params: { path: { archerId } },
+      body: {
+        type: 'COMPETITION',
+        date,
+        location: competition.title.slice(0, 200),
+        discipline: competition.discipline,
+        fftaCompetitionId: competition.id,
+      },
+    }),
+  );
+  return result.ok ? { id: result.data.id } : result.state;
+}
+
 /** Plans an event (type + day), then opens its sheet for the rest of the planning. */
 export async function planSession(
   archerId: string,
@@ -89,12 +132,20 @@ export async function savePlannedSession(
   return result.ok ? { notice: 'saved' } : result.state;
 }
 
-export async function deletePlannedSession(archerId: string, id: string): Promise<ActionState> {
+/** Then back to the archer's journal, on `month` ("YYYY-MM": the event's) when given. */
+export async function deletePlannedSession(
+  archerId: string,
+  id: string,
+  month?: string,
+): Promise<ActionState> {
   const result = await send(
     (await getAuthedApi()).DELETE('/api/v1/coach/athletes/{archerId}/sessions/{id}', {
       params: { path: { archerId, id } },
     }),
   );
   if (!result.ok) return result.state;
-  return redirect({ href: `/coach/${archerId}/journal`, locale: await getLocale() });
+  return redirect({
+    href: { pathname: `/coach/${archerId}/journal`, query: month ? { month } : {} },
+    locale: await getLocale(),
+  });
 }

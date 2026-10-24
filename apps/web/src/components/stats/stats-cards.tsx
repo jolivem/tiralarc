@@ -21,7 +21,16 @@ import type {
 } from '@tiralarc/api-client';
 import dayjs from 'dayjs';
 import { useFormatter, useLocale, useTranslations } from 'next-intl';
-import { type CSSProperties, type ReactNode, useLayoutEffect, useRef, useState } from 'react';
+import {
+  createContext,
+  type CSSProperties,
+  type ReactNode,
+  use,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react';
+import { OnRuling } from '@/components/notebook/on-ruling';
 import { AnchorLink } from '@/components/links';
 import { FEELING_INK, FEELINGS } from '@/components/journal/feelings';
 import {
@@ -37,11 +46,30 @@ import classes from './stats.module.css';
 const MAX_GAP_MS = 60 * 86_400_000;
 const SCORE_STEP = 50;
 
+/** Cards on a ruled page (the home notebook) write their titles on its lines. */
+export const RuledCardTitles = createContext(false);
+
 /**
  * A card's title, in the calligraphy font the archer chose on the Profile page, written on
- * a line of the squared paper (see `.cardTitle`).
+ * a line of the squared paper (see `.cardTitle`) — or of a ruled page (`RuledCardTitles`).
  */
 export function StatsCardTitle({ children }: { children: ReactNode }) {
+  // On the home notebook's ruled page: on its lines, like the page's other titles.
+  if (use(RuledCardTitles)) {
+    return (
+      <OnRuling
+        as="h2"
+        lines={2}
+        style={{
+          fontFamily: 'var(--font-calendar, var(--font-hand)), cursive',
+          fontSize: '1.7rem',
+          fontWeight: 'var(--card-title-weight, 400)' as CSSProperties['fontWeight'],
+        }}
+      >
+        {children}
+      </OnRuling>
+    );
+  }
   return (
     <Title
       order={2}

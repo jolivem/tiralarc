@@ -146,7 +146,8 @@
     "DAY_FULL": "Ce jour a déjà 4 événements, le maximum.",
     "JOURNAL_OVERLAP": "Cette période chevauche un autre de vos journaux. Deux journaux ne peuvent pas couvrir la même date.",
     "SIGN_IN_REQUIRED": "Connectez-vous pour accepter cette invitation de coach.",
-    "DATE_NOT_PLANNABLE": "Un coach planifie uniquement des jours à venir, dans le journal de la saison en cours de l'archer."
+    "DATE_NOT_PLANNABLE": "Un coach planifie uniquement des jours à venir, dans le journal de la saison en cours de l'archer.",
+    "DATE_LOCKED": "Cette compétition vient du calendrier de la FFTA : sa date ne se modifie pas."
   },
   "validation": {
     "isEmail": "Adresse email invalide.",
@@ -174,7 +175,6 @@
     "stats": "Indicateurs",
     "profile": "Profil",
     "homeTitle": "Bonjour {name}",
-    "homeIntro": "Votre espace archer : vos séances, vos fiches et votre progression au même endroit.",
     "calendar": "Calendrier Annuel",
     "openSeason": "Afficher le calendrier de toute la saison",
     "openMonth": "Ouvrir {month} dans le journal",
@@ -187,7 +187,61 @@
     "comingSoon": "Bientôt disponible",
     "newSession": "Nouvel événement",
     "open": "Ouvrir",
-    "openJournal": "Ouvrir le journal"
+    "openJournal": "Ouvrir le journal",
+    "competitions": {
+      "title": "Concours à venir · {department}",
+      "noDepartment": "Choisissez votre département sur la page Profil pour voir ici les concours FFTA à venir dans vos disciplines.",
+      "setUp": "Aller au profil",
+      "empty": "Aucun concours à venir cette saison dans vos disciplines (page Profil).",
+      "incomplete": "Le calendrier de la FFTA n'a pas pu être lu en entier : la liste est peut-être incomplète, réessayez plus tard.",
+      "source": "D'après le calendrier de la FFTA.",
+      "dayMark": "Concours : {names}",
+      "dayTitle": "Concours FFTA du {date}",
+      "toPlan": "Compétitions à planifier",
+      "dismiss": "Je ne participerai pas à « {title} »",
+      "dismissTitle": "Ne pas participer à cette compétition ?",
+      "dismissBody": "« {title} » sera retirée de vos compétitions à planifier. Elle reste affichée dans les calendriers mensuel et annuel.",
+      "dismissCancel": "Annuler",
+      "dismissConfirm": "Retirer de la liste",
+      "toPlanLoading": "Chargement des compétitions",
+      "toPlanNone": "Aucune compétition FFTA avec mandat publié à planifier dans les mois qui viennent (département et disciplines de la page Profil).",
+      "ticket": "FFTA",
+      "fftaPage": "Fiche FFTA",
+      "mandate": "Mandat",
+      "para": "Para",
+      "teamOnly": "Équipes",
+      "status": {
+        "SCHEDULED": "Prévu",
+        "POSTPONED": "Reporté",
+        "CANCELLED": "Annulé"
+      },
+      "add": "Ajouter à mon journal",
+      "addOn": "Ajouter le {date}",
+      "addAgain": "Ajouter encore",
+      "addAgainOn": "Ajouter encore le {date}",
+      "inJournal": "Dans le journal",
+      "inJournalMany": "Dans le journal ({count})",
+      "openSheet": "Ouvrir la fiche"
+    },
+    "rankings": {
+      "title": "Classement national",
+      "season": "Saison {season}",
+      "loading": "Chargement du classement",
+      "unavailable": "Le classement de la FFTA n'a pas pu être lu : réessayez plus tard.",
+      "missing": "Pour vous retrouver dans le classement de la FFTA, renseignez : {fields}.",
+      "fields": {
+        "licenceNumber": "n° de licence",
+        "category": "catégorie",
+        "bowType": "arme"
+      },
+      "setUp": "Aller au profil",
+      "none": "Pas encore classé cette saison dans votre catégorie et votre arme.",
+      "incomplete": "Classement lu en partie seulement : réessayez plus tard.",
+      "place": "{rank, select, 1 {1er} other {{rank}e}} sur {total}",
+      "average": "Moyenne {average}",
+      "scores": "Scores : {scores}",
+      "open": "Voir le classement"
+    }
   },
   "schedule": {
     "day": "Jour",
@@ -228,7 +282,8 @@
       "THREE_D": "3D",
       "FIELD": "Campagne",
       "BEURSAULT": "Beursault",
-      "RUN_ARCHERY": "Run Archery"
+      "RUN_ARCHERY": "Run Archery",
+      "NATURE": "Nature"
     },
     "feelings": {
       "GREAT": "YEAH !",
@@ -240,6 +295,10 @@
     "newSessionHint": "Choisissez le type et la date : les informations à saisir s'afficheront ensuite.",
     "type": "Type d'événement",
     "date": "Date",
+    "dateFromFfta": "Compétition du calendrier de la FFTA : sa date ne se modifie pas.",
+    "results": "Résultats",
+    "resultsHint": "Les résultats publiés sur le site de la FFTA (PDF)",
+    "resultsPending": "Résultats pas encore publiés sur le site de la FFTA",
     "create": "Créer l'événement",
     "cancel": "Annuler",
     "info": "Informations",
@@ -533,11 +592,14 @@
       "HUNTING": "Arc chasse",
       "FREE": "Arc libre"
     },
-    "options": {
-      "title": "Options",
-      "soon": "Bientôt disponible",
-      "departmental": "Afficher les compétitions niveau départemental",
-      "regional": "Afficher les compétitions niveau régional"
+    "competitions": {
+      "title": "Compétitions",
+      "hint": "Les concours à venir du calendrier de la FFTA dans votre département et vos disciplines pratiquées s'affichent dans le calendrier annuel.",
+      "department": "Département",
+      "noDepartment": "Aucun (ne pas afficher les concours)",
+      "para": "Inclure les concours de para-tir à l'arc (salle et extérieur)",
+      "save": "Enregistrer",
+      "saved": "Préférences enregistrées."
     },
     "cancel": "Annuler",
     "remove": "Retirer",

@@ -11,6 +11,8 @@
   --series-5: #e87ba4;
   --series-6: #008300;
   --series-7: #4a3aa7;
+  /* Nature: brown here, teal in dark mode (a dark-mode brown is too close to slot 4's ochre). */
+  --series-8: #9a5b2a;
   --viz-grid: #b3b1a8;
   --viz-axis: #898781;
   --viz-today: #9d9b91;
@@ -23,6 +25,7 @@
     --series-5: #d55181;
     --series-6: #008300;
     --series-7: #9085e9;
+    --series-8: #1aa3b3;
     --viz-grid: #5a5a5a;
     --viz-axis: #898781;
     --viz-today: #7a7a7a;
@@ -306,4 +309,24 @@
   height: 10px;
   margin-right: 6px;
   border-radius: 50%;
+}
+
+/*
+ * One national ranking on the home notebook (rankings-card.tsx): the discipline on the left,
+ * the place beside it, the ranking's name and the scores under the place.
+ */
+.ranking {
+  display: grid;
+  grid-template-columns: 6.5rem minmax(0, 1fr);
+  column-gap: var(--mantine-spacing-sm);
+  align-items: baseline;
+}
+
+.rankingDiscipline {
+  justify-self: start;
+}
+
+.rankingName,
+.rankingScores {
+  grid-column: 2;
 }

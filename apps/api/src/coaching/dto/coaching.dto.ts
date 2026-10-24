@@ -90,6 +90,16 @@ export class PlanSessionDto extends PlanningFields {
   })
   @Matches(DATE, { message: 'date must be YYYY-MM-DD' })
   date!: string;
+
+  @ApiPropertyOptional({
+    example: '26349',
+    description:
+      "A `COMPETITION` added from the FFTA calendar (GET .../competitions): that competition's " +
+      'id. At most 2 events of one competition per day (`LIMIT_REACHED`). Ignored for other types.',
+  })
+  @IsOptional()
+  @Matches(/^\d{1,20}$/, { message: 'fftaCompetitionId must be a number' })
+  fftaCompetitionId?: string;
 }
 
 /** PATCH body: every field optional; `null` clears a field. */

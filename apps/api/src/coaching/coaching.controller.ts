@@ -27,6 +27,7 @@ import {
   type AuthenticatedUser,
   CurrentUser,
 } from '../common/decorators/current-user.decorator.js';
+import { CompetitionListDto, ListCompetitionsQuery } from '../competitions/dto/competition.dto.js';
 import { GoalDto } from '../goals/dto/goal.dto.js';
 import {
   CustomEventTypeDto,
@@ -111,7 +112,9 @@ export class CoachingController {
   @ApiCreatedResponse({ type: SessionDto })
   @ApiBadRequestResponse({ description: 'DATE_NOT_PLANNABLE' })
   @ApiForbiddenResponse({ description: 'Read-only access' })
-  @ApiConflictResponse({ description: 'DAY_FULL' })
+  @ApiConflictResponse({
+    description: 'DAY_FULL, LIMIT_REACHED (an FFTA competition twice that day)',
+  })
   plan(
     @CurrentUser() user: AuthenticatedUser,
     @Param(ARCHER_ID, new ParseUUIDPipe()) archerId: string,
@@ -168,6 +171,21 @@ export class CoachingController {
     @Param('id', new ParseUUIDPipe()) id: string,
   ): Promise<PhotoDto[]> {
     return this.coaching.sessionPhotos(user.id, archerId, id);
+  }
+
+  @Get(':archerId/competitions')
+  @ApiOperation({
+    summary:
+      "Upcoming FFTA competitions of the archer's department and disciplines, within the " +
+      'current journal (WRITE access adds them with POST .../sessions and `fftaCompetitionId`)',
+  })
+  @ApiOkResponse({ type: CompetitionListDto })
+  competitions(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param(ARCHER_ID, new ParseUUIDPipe()) archerId: string,
+    @Query() query: ListCompetitionsQuery,
+  ): Promise<CompetitionListDto> {
+    return this.coaching.competitionList(user.id, archerId, query.from, query.to);
   }
 
   @Get(':archerId/event-types')

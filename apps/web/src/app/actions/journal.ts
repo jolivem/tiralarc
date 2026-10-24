@@ -1,6 +1,8 @@
 'use server';
 
 import type {
+  Competition,
+  CompetitionList,
   CustomEventTypeInput,
   JournalCreate,
   JournalSessionSummary,
@@ -127,6 +129,66 @@ export async function listSessions(from: string, to: string): Promise<JournalSes
   return result.ok ? result.data : [];
 }
 
+/**
+ * The FFTA competitions of the archer's department and disciplines between two days
+ * (inclusive); null when they could not be loaded.
+ */
+export async function listCompetitions(from: string, to: string): Promise<CompetitionList | null> {
+  const result = await send(
+    (await getAuthedApi()).GET('/api/v1/competitions', { params: { query: { from, to } } }),
+  );
+  return result.ok ? result.data : null;
+}
+
+/**
+ * Puts one day of an FFTA competition in the journal: a competition event whose place is the
+ * competition's name, linked to it (twice a day at most: LIMIT_REACHED). Its id comes back, to
+ * open its sheet.
+ */
+export async function addCompetitionToJournal(
+  competition: Pick<Competition, 'id' | 'title' | 'discipline'>,
+  date: string,
+): Promise<ActionState & { id?: string }> {
+  const result = await send(
+    (await getAuthedApi()).POST('/api/v1/journal/sessions', {
+      body: {
+        type: 'COMPETITION',
+        date,
+        location: competition.title.slice(0, 200),
+        discipline: competition.discipline,
+        fftaCompetitionId: competition.id,
+      },
+    }),
+  );
+  return result.ok ? { id: result.data.id } : result.state;
+}
+
+/**
+ * The archer will not take part in an FFTA competition: out of the home page's competitions to
+ * plan (the calendars keep it).
+ */
+export async function dismissCompetition(fftaCompetitionId: string): Promise<ActionState> {
+  const result = await send(
+    (await getAuthedApi()).PUT('/api/v1/competitions/{id}/dismissal', {
+      params: { path: { id: fftaCompetitionId } },
+    }),
+  );
+  return result.ok ? {} : result.state;
+}
+
+/**
+ * The results of an FFTA competition (a PDF on the FFTA website), for an event added from it;
+ * null until the organiser published them.
+ */
+export async function competitionResults(fftaCompetitionId: string): Promise<string | null> {
+  const result = await send(
+    (await getAuthedApi()).GET('/api/v1/competitions/{id}/results', {
+      params: { path: { id: fftaCompetitionId } },
+    }),
+  );
+  return result.ok ? result.data.url : null;
+}
+
 /** Step 1 of the two-step entry: type + date, then open the event's form. */
 export async function createSession(input: {
   type: SessionType;
@@ -214,10 +276,14 @@ export async function deletePhoto(sessionId: string, id: string): Promise<Action
   return {};
 }
 
-export async function deleteSession(id: string): Promise<ActionState> {
+/** Then back to the journal, on `month` ("YYYY-MM": the event's) when given. */
+export async function deleteSession(id: string, month?: string): Promise<ActionState> {
   const result = await send(
     (await getAuthedApi()).DELETE('/api/v1/journal/sessions/{id}', { params: { path: { id } } }),
   );
   if (!result.ok) return result.state;
-  return redirect({ href: '/archer/journal', locale: await getLocale() });
+  return redirect({
+    href: { pathname: '/archer/journal', query: month ? { month } : {} },
+    locale: await getLocale(),
+  });
 }

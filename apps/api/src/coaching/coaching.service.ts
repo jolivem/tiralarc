@@ -1,5 +1,7 @@
 import { ForbiddenException, HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
 import { ApiException, ErrorCode } from '../common/errors.js';
+import { CompetitionsService } from '../competitions/competitions.service.js';
+import type { CompetitionListDto } from '../competitions/dto/competition.dto.js';
 import { CoachAccess, type ProfileInvitation } from '../generated/prisma/client.js';
 import type { GoalDto } from '../goals/dto/goal.dto.js';
 import { GoalsService } from '../goals/goals.service.js';
@@ -50,6 +52,7 @@ export class CoachingService {
     private readonly photos: PhotosService,
     private readonly goals: GoalsService,
     private readonly profile: ProfileService,
+    private readonly competitions: CompetitionsService,
   ) {}
 
   /** The archers the user coaches, by name. */
@@ -88,6 +91,23 @@ export class CoachingService {
     const journal = await this.currentJournal(coachId, archerId);
     const range = journal && clip(journal, from ?? journal.startDate, to ?? journal.endDate);
     return range ? this.journal.stats(archerId, range.from, range.to) : NO_STATS;
+  }
+
+  /**
+   * The FFTA competitions the archer sees (their department and disciplines), within the
+   * current journal's period: what the coach may add to it.
+   */
+  async competitionList(
+    coachId: string,
+    archerId: string,
+    from?: string,
+    to?: string,
+  ): Promise<CompetitionListDto> {
+    const journal = await this.currentJournal(coachId, archerId);
+    const range = journal && clip(journal, from ?? today(), to ?? journal.endDate);
+    const list = await this.competitions.list(archerId, range?.from, range?.to);
+    if (!range) list.competitions = [];
+    return list;
   }
 
   async suggestions(coachId: string, archerId: string): Promise<SessionSuggestionsDto> {

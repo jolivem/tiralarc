@@ -1,5 +1,6 @@
 import { HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
 import { ApiException, ErrorCode } from '../common/errors.js';
+import { CompetitionsService } from '../competitions/competitions.service.js';
 import {
   type CustomEventType,
   type Discipline,
@@ -35,6 +36,16 @@ import { PhotosService } from './photos.service.js';
 const MAX_RANGE_DAYS = 366;
 /** Events on one day of the calendar (the calendar shows one badge each). */
 export const MAX_EVENTS_PER_DAY = 4;
+/** Events added from one FFTA competition on one day (e.g. two shoots of the same event). */
+export const MAX_PER_COMPETITION_DAY = 2;
+/** The indoor distance, in metres. */
+const INDOOR_DISTANCE = 18;
+
+/** An indoor competition added from the FFTA calendar is shot at 18 m (the archer may change it). */
+const defaultDistance = (
+  fftaCompetitionId: string | null,
+  discipline: Discipline | null | undefined,
+): number | null => (fftaCompetitionId && discipline === 'INDOOR' ? INDOOR_DISTANCE : null);
 /** Sessions scanned for suggestions, and suggestions returned per field. */
 const SUGGESTION_SOURCE_SESSIONS = 300;
 const MAX_SUGGESTIONS = 15;
@@ -206,6 +217,8 @@ export interface PlannedFields {
   discipline?: Discipline | null;
   distanceMeters?: number | null;
   objective?: string | null;
+  /** A competition added from the FFTA calendar (see `CreateSessionDto.fftaCompetitionId`). */
+  fftaCompetitionId?: string;
 }
 
 function toSummary(s: SessionRow): SessionSummaryDto {
@@ -225,6 +238,7 @@ function toSummary(s: SessionRow): SessionSummaryDto {
     customType: s.customType ? toCustomTypeDto(s.customType) : null,
     completed: isCompleted(s),
     plannedByCoach: s.plannedById !== null,
+    fftaCompetitionId: s.fftaCompetitionId,
   };
 }
 
@@ -256,6 +270,7 @@ function toDto(s: SessionRow): SessionDto {
 export class JournalService {
   constructor(
     private readonly prisma: PrismaService,
+    private readonly competitions: CompetitionsService,
     private readonly photos: PhotosService,
   ) {}
 
@@ -515,13 +530,24 @@ export class JournalService {
   async create(userId: string, dto: CreateSessionDto): Promise<SessionDto> {
     const custom = dto.type === SessionType.CUSTOM;
     if (custom) await this.assertOwnedType(userId, dto.customTypeId);
-    await this.assertDayHasRoom(userId, toDbDate(dto.date));
+    const date = toDbDate(dto.date);
+    await this.assertDayHasRoom(userId, date);
+    const fftaCompetitionId = await this.competitionToAdd(
+      userId,
+      date,
+      dto.type,
+      dto.fftaCompetitionId,
+    );
     const session = await this.prisma.journalSession.create({
       data: {
         userId,
         type: dto.type,
         customTypeId: custom ? dto.customTypeId : null,
-        date: toDbDate(dto.date),
+        date,
+        fftaCompetitionId,
+        location: await this.placeOf(fftaCompetitionId, dto.location),
+        discipline: dto.discipline ?? null,
+        distanceMeters: defaultDistance(fftaCompetitionId, dto.discipline),
         wentWell: [],
         toImprove: [],
       },
@@ -542,16 +568,24 @@ export class JournalService {
   ): Promise<SessionDto> {
     const date = toDbDate(fields.date);
     await this.assertDayHasRoom(userId, date);
+    const fftaCompetitionId = await this.competitionToAdd(
+      userId,
+      date,
+      type,
+      fields.fftaCompetitionId,
+    );
     const session = await this.prisma.journalSession.create({
       data: {
         userId,
         plannedById,
         type,
         date,
+        fftaCompetitionId,
         durationMinutes: fields.durationMinutes,
-        location: fields.location?.trim() || null,
+        location: await this.placeOf(fftaCompetitionId, fields.location),
         discipline: fields.discipline,
-        distanceMeters: fields.distanceMeters,
+        distanceMeters:
+          fields.distanceMeters ?? defaultDistance(fftaCompetitionId, fields.discipline),
         objective: fields.objective,
         wentWell: [],
         toImprove: [],
@@ -612,8 +646,17 @@ export class JournalService {
         'An event becomes CUSTOM only when created (with its "customTypeId")',
       );
     }
+    const moved = date !== undefined && date !== fromDbDate(current.date);
+    // An FFTA competition's day is the competition's: it does not move.
+    if (moved && current.fftaCompetitionId) {
+      throw new ApiException(
+        HttpStatus.BAD_REQUEST,
+        ErrorCode.DATE_LOCKED,
+        'An event added from the FFTA calendar keeps the day of its competition',
+      );
+    }
     // Moved to another day: that day must have room for it.
-    if (date !== undefined && date !== fromDbDate(current.date)) {
+    if (moved) {
       await this.assertDayHasRoom(userId, toDbDate(date));
     }
     const session = await this.prisma.journalSession.update({
@@ -650,6 +693,42 @@ export class JournalService {
       sessionCount: await this.prisma.journalSession.count({ where: eventsOf(journal) }),
       isDefault: journal.isDefault,
     };
+  }
+
+  /**
+   * The FFTA competition a new event is added from (competitions only; null otherwise), once
+   * checked that it is not already twice on that day (`MAX_PER_COMPETITION_DAY`).
+   */
+  private async competitionToAdd(
+    userId: string,
+    date: Date,
+    type: SessionType,
+    fftaCompetitionId: string | undefined,
+  ): Promise<string | null> {
+    if (type !== SessionType.COMPETITION || !fftaCompetitionId) return null;
+    const added = await this.prisma.journalSession.count({
+      where: { userId, date, fftaCompetitionId },
+    });
+    if (added >= MAX_PER_COMPETITION_DAY) {
+      throw new ApiException(
+        HttpStatus.CONFLICT,
+        ErrorCode.LIMIT_REACHED,
+        `At most ${MAX_PER_COMPETITION_DAY} events of one competition per day`,
+      );
+    }
+    return fftaCompetitionId;
+  }
+
+  /**
+   * A new event's place: an FFTA competition's own (its page on the FFTA website), else the
+   * one given (the competition's name when the page could not be read).
+   */
+  private async placeOf(
+    fftaCompetitionId: string | null,
+    given: string | null | undefined,
+  ): Promise<string | null> {
+    const place = fftaCompetitionId ? await this.competitions.place(fftaCompetitionId) : null;
+    return place ?? (given?.trim() || null);
   }
 
   /** At most `MAX_EVENTS_PER_DAY` events on one day of the archer's calendar. */

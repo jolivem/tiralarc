@@ -39,6 +39,8 @@ function toProfileDto(profile: ArcherProfile | null): ProfileDto {
     disciplines: stored.filter((d): d is Discipline => DISCIPLINES.includes(d as string)),
     calendarFont: profile?.calendarFont ?? null,
     favoriteIndicator: profile?.favoriteIndicator ?? null,
+    department: profile?.department ?? null,
+    paraCompetitions: profile?.paraCompetitions ?? false,
   };
 }
 

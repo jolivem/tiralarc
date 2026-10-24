@@ -12,6 +12,7 @@ import {
   MaxLength,
 } from 'class-validator';
 import { SUPPORTED_LOCALES } from '../../common/locales.js';
+import { DEPARTMENT_CODES } from '../../competitions/departments.js';
 import {
   AgeCategory,
   BowType,
@@ -64,6 +65,21 @@ export class ProfileDto {
     description: 'The indicator shown on the home page; null = none.',
   })
   favoriteIndicator!: Indicator | null;
+
+  @ApiProperty({
+    type: String,
+    nullable: true,
+    example: '78',
+    description:
+      'Department code (see GET /competitions/departments) whose FFTA competitions the ' +
+      'calendars show; null = none.',
+  })
+  department!: string | null;
+
+  @ApiProperty({
+    description: 'Also show the para-archery competitions (indoor and outdoor target archery).',
+  })
+  paraCompetitions!: boolean;
 }
 
 /** PATCH body: every field optional; `null` clears a field. */
@@ -116,6 +132,21 @@ export class UpdateProfileDto {
   @IsOptional()
   @IsIn(INDICATORS)
   favoriteIndicator?: Indicator | null;
+
+  @ApiPropertyOptional({
+    type: String,
+    nullable: true,
+    example: '78',
+    description: 'Department code (see GET /competitions/departments); null for none.',
+  })
+  @IsOptional()
+  @IsIn(DEPARTMENT_CODES)
+  department?: string | null;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  paraCompetitions?: boolean;
 }
 
 export class CreateInvitationDto {

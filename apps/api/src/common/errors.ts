@@ -32,6 +32,8 @@ export const ErrorCode = {
   SIGN_IN_REQUIRED: 'SIGN_IN_REQUIRED',
   /** A coach plans only days after today, within the archer's journal of the season in progress. */
   DATE_NOT_PLANNABLE: 'DATE_NOT_PLANNABLE',
+  /** An event added from the FFTA calendar (`fftaCompetitionId`) keeps its competition's day. */
+  DATE_LOCKED: 'DATE_LOCKED',
 } as const;
 
 export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];

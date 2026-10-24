@@ -62,7 +62,10 @@ the same API — keep it client-agnostic (no cookies, no web-only assumptions in
   profile — and set on `<html>` by the root layout; `--font-hand-upright`, Patrick Hand, as fallback). On the
   archer home page every title and the date use that font, in bold (`archer/home.module.css` points `--font-hand`
   to `--font-calendar`). The selected
-  journal's title is centred in the header.
+  journal's title is centred in the header. On the home notebook every title, the months' names and the rankings'
+  "Saison" lines sit on a ruled line (`components/notebook/on-ruling.tsx`: `RuledHeading` two lines, `RuledSubtitle`
+  / `RuledLine` one, snapped again when content above changes), and the left page's calendar starts level with the
+  right page's national ranking (`page-alignment.tsx`: the right page's top is measured, md and up).
 - Journals: a `Journal` is a named period (title + inclusive start / end days), usually one season. There is no
   link to events: a journal's events are the archer's sessions dated within its period. An archer's journals must
   not overlap (`JOURNAL_OVERLAP`, checked by the API, not the database); deleting a journal keeps its events. The
@@ -115,6 +118,40 @@ the same API — keep it client-agnostic (no cookies, no web-only assumptions in
   Versity Gateway on :9000 in dev, an in-memory fake in e2e tests); the DB keeps one `SessionPhoto` row. Uploads are
   re-encoded with `sharp` (2000 px + thumbnail, metadata dropped) and read back through 10-minute signed URLs.
   Deleting an event or a journal must also remove the files (`PhotosService.removeFiles`).
+- FFTA competitions (`apps/api/src/competitions/`, `GET /competitions?from&to`): no FFTA API — `FftaClient` reads
+  the result pages of https://www.ffta.fr/competitions (honest `Tiralarc/1.0` user agent: a spoofed browser one is
+  turned away by Cloudflare; random 403s are retried), `ffta-parser.ts` (pure, unit-tested on
+  `fixtures/ffta-search.html`) reads them. Searched per department (the site's own term ids, `departments.ts`) and
+  FFTA discipline id (`FFTA_DISCIPLINES`; `paraCompetitions` adds the para indoor / outdoor ids), kept 12 h in
+  memory, the last reading kept on failure (`complete: false` when nothing). The archer picks `department` /
+  `paraCompetitions` in the Profile page's Competitions card; the home page's season calendar
+  (`season-calendar.tsx`) outlines their days and lists them (`competition-list.tsx`) with "Add to my journal": a
+  COMPETITION event (`POST /journal/sessions` takes `location` / `discipline`) whose place is the competition's name,
+  linked by `fftaCompetitionId`: one competition at most twice a day (`MAX_PER_COMPETITION_DAY`, `LIMIT_REACHED`),
+  other competitions of that day unaffected (only `DAY_FULL` applies). On creation the API takes the place from the
+  competition's FFTA page (`parseCompetitionPlace`, `CompetitionsService.place`; the name given if unreadable) and
+  18 m for an indoor one; its date never changes afterwards (`DATE_LOCKED`, the sheet's date is read-only). A coach
+  sees the archer's competitions (`GET /coach/athletes/{id}/competitions`, the archer's profile, current journal)
+  and, with WRITE access, adds them from tomorrow on (`POST .../sessions` with `fftaCompetitionId`): coach-stamped.
+  Once its day is past, the sheet's action bar shows "Results": the PDF the organiser published, linked from the
+  competition's page (`GET /competitions/{id}/results`, `null` until then; pages cached 1 h without results).
+  The Journal page's month calendar (`journal-view.tsx`, archer only) puts a dashed "FFTA" ticket in the top-left corner of their days
+  (phones: entries in the day's list), opening `CompetitionsModal` with the same rows. Postponed and cancelled ones
+  stay off both calendars (only `SCHEDULED` ones are drawn): they show only in the season list.
+  e2e tests replace `FftaClient` with `FakeFfta` (`test/helpers.ts`).
+- FFTA national rankings (`GET /rankings`, `RankingsService`, `ffta-rankings.ts`): the extranet page framed by
+  ffta.fr's "classements nationaux" lists a season's rankings (POST filters; name, [TAE distance,] sex, bow,
+  categories); the archer's are those of their profile's bow and category, either sex, no scratch, in their
+  disciplines (no ranking for Beursault / Run Archery), this season and the one before (then also one category
+  younger: they may have moved up since). Each ranking page lists every archer with their licence:
+  only the archer's own row is kept (12 h, in memory). Web: `components/stats/rankings-card.tsx` on the right page
+  of the home notebook, loaded once shown (the pages are big); `missing` asks for licence / category / bow. Below
+  it, "Compétitions à planifier" (`CompetitionsToPlan` in `competition-list.tsx`): the next scheduled FFTA
+  competitions whose invitation (`mandateUrl`) is published, not in the journal yet; their dates and name open the
+  Journal page with `?day=YYYY-MM-DD` (that month, the day's `CompetitionsModal` open, where it is added). A black
+  cross (confirmed) dismisses one: `PUT/DELETE /competitions/{id}/dismissal` (table `dismissed_competitions`),
+  `dismissed` in the list; only this list leaves dismissed ones out, the calendars keep them. Each discipline has one pastel colour
+  (`DISCIPLINE_COLORS` in `session-types.ts`, `variant="light"`): sheet chips, rankings and competition labels.
 - Archer profile (`apps/api/src/profile/`, web `components/profile/`): sport details, favourite websites and people
   invited by email. A plain guest's invitation (public `/invitations/accept`, token used on POST) grants no access;
   a coach's does (see Coaching).

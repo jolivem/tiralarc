@@ -203,3 +203,53 @@
     color: var(--paper-ink);
   }
 }
+
+/*
+ * A text on the page's lines (on-ruling.tsx): pushed to a line, its box `--lines` lines high,
+ * its baseline lowered onto the last one (about 0.3em below the box's middle; 2px above the
+ * line), like the event sheet's titles. After the hand's own rule, so it wins.
+ */
+.onRuling {
+  --lines: 1;
+
+  position: relative;
+  top: calc(var(--step, var(--line)) * var(--lines) / 2 - 2px - 0.3em);
+  margin: 0;
+  line-height: calc(var(--step, var(--line)) * var(--lines));
+}
+
+/* HandHeading's size (order 2). */
+.ruledHeading {
+  font-size: 2rem;
+
+  /* A line higher: its blank first line over the last one before it (the snap still applies). */
+  &.raised {
+    margin-top: calc(var(--step, var(--line)) * -1);
+  }
+}
+
+.ruledSubtitle {
+  font-size: var(--mantine-font-size-sm);
+  font-weight: 600;
+}
+
+/*
+ * Lining up blocks across the two pages (page-alignment.tsx): the measured top keeps its own
+ * gap between its blocks; the left page's room is exactly as tall, both followed by their
+ * block without a gap.
+ */
+.alignedTop {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mantine-spacing-xl);
+}
+
+.alignedSpacer {
+  display: none;
+
+  /* Only with the pages side by side. */
+  @media (min-width: $mantine-breakpoint-md) {
+    display: block;
+    height: var(--aligned-height, 0px);
+  }
+}

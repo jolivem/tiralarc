@@ -1,12 +1,18 @@
 'use client';
 
-import { Center, Loader, Modal, Stack } from '@mantine/core';
+import { Center, Loader, LoadingOverlay, Modal, Stack } from '@mantine/core';
 import { useMediaQuery } from '@mantine/hooks';
-import type { CustomEventType, Journal, JournalSessionSummary } from '@tiralarc/api-client';
+import type {
+  CompetitionList,
+  CustomEventType,
+  Journal,
+  JournalSessionSummary,
+} from '@tiralarc/api-client';
 import dayjs from 'dayjs';
 import { useTranslations } from 'next-intl';
 import { type ReactNode, useState, useTransition } from 'react';
-import { listSessions } from '@/app/actions/journal';
+import { listCompetitions, listSessions } from '@/app/actions/journal';
+import { CompetitionListPanel } from './competition-list';
 import { EventLegendPanel } from './event-legend';
 import { MonthsOverview } from './months-overview';
 import classes from './season-calendar.module.css';
@@ -43,7 +49,8 @@ async function eventsOf(startDate: string, endDate: string): Promise<JournalSess
 
 /**
  * Wraps the home page's months: clicking them opens the whole season of the journal
- * (every month of its period) in a dialog titled with the journal's name.
+ * (every month of its period) in a dialog titled with the journal's name. Below the months, the
+ * FFTA competitions still to come in the archer's department (profile), their days outlined.
  */
 export function SeasonCalendar({
   journal,
@@ -63,13 +70,28 @@ export function SeasonCalendar({
   const isPhone = useMediaQuery('(max-width: 48em)');
   const [opened, setOpened] = useState(false);
   const [sessions, setSessions] = useState<JournalSessionSummary[] | null>(null);
+  /** Undefined for a season already over: no competitions to come. */
+  const [competitions, setCompetitions] = useState<CompetitionList | null | undefined>();
   const [loading, startLoading] = useTransition();
+  // The FFTA calendar from today to the end of the season.
+  const competitionsFrom = today > journal.startDate ? today : journal.startDate;
+  const withCompetitions = competitionsFrom <= journal.endDate;
 
   const open = () => {
     setOpened(true);
     // Reloaded on each opening, so events added meanwhile show.
-    startLoading(async () => setSessions(await eventsOf(journal.startDate, journal.endDate)));
+    startLoading(async () => {
+      const [events, list] = await Promise.all([
+        eventsOf(journal.startDate, journal.endDate),
+        withCompetitions ? listCompetitions(competitionsFrom, journal.endDate) : undefined,
+      ]);
+      setSessions(events);
+      setCompetitions(list);
+    });
   };
+  /** A competition was added: its day now has an event. */
+  const reloadEvents = () =>
+    startLoading(async () => setSessions(await eventsOf(journal.startDate, journal.endDate)));
 
   return (
     <>
@@ -101,21 +123,33 @@ export function SeasonCalendar({
         radius="lg"
         centered
       >
-        {loading || sessions === null ? (
+        {sessions === null ? (
           <Center py="xl">
             <Loader />
           </Center>
         ) : (
-          <Stack gap="md">
-            {/* What each event's icon and colour stand for. */}
-            <EventLegendPanel customTypes={customTypes} />
-            <MonthsOverview
-              months={monthsOf(journal.startDate, journal.endDate)}
-              today={today}
-              sessions={sessions}
-              cols={{ base: 1, xs: 2, md: 3, lg: 4 }}
-              linkToJournal
-            />
+          <Stack gap="xl" pos="relative">
+            <LoadingOverlay visible={loading} overlayProps={{ blur: 1 }} />
+            <Stack gap="md">
+              {/* What each event's icon and colour stand for. */}
+              <EventLegendPanel customTypes={customTypes} />
+              <MonthsOverview
+                months={monthsOf(journal.startDate, journal.endDate)}
+                today={today}
+                sessions={sessions}
+                competitions={competitions?.competitions}
+                cols={{ base: 1, xs: 2, md: 3, lg: 4 }}
+                linkToJournal
+              />
+            </Stack>
+            {competitions !== undefined && (
+              <CompetitionListPanel
+                list={competitions}
+                sessions={sessions}
+                today={today}
+                onAdded={reloadEvents}
+              />
+            )}
           </Stack>
         )}
       </Modal>

@@ -47,6 +47,12 @@ export type SessionType = Schemas['SessionDto']['type'];
 export type Discipline = NonNullable<Schemas['SessionDto']['discipline']>;
 export type Feeling = NonNullable<Schemas['SessionDto']['physicalFeeling']>;
 export type Indicator = NonNullable<Schemas['ProfileDto']['favoriteIndicator']>;
+export type Department = Schemas['DepartmentDto'];
+export type Competition = Schemas['CompetitionDto'];
+export type CompetitionList = Schemas['CompetitionListDto'];
+export type CompetitionStatus = Schemas['CompetitionDto']['status'];
+export type Ranking = Schemas['RankingDto'];
+export type RankingList = Schemas['RankingListDto'];
 
 /**
  * Stable error codes (apps/api/src/common/errors.ts). Clients translate these;
@@ -76,7 +82,8 @@ export type ErrorCode =
   | 'FILE_TOO_LARGE'
   | 'DAY_FULL'
   | 'SIGN_IN_REQUIRED'
-  | 'DATE_NOT_PLANNABLE';
+  | 'DATE_NOT_PLANNABLE'
+  | 'DATE_LOCKED';
 
 /** RFC 9457 error body returned by every failing API call. */
 export interface ProblemDetails {

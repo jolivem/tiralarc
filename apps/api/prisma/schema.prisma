@@ -44,6 +44,7 @@ model User {
   /// The invitations this user accepted as someone's coach.
   coachedArchers          ProfileInvitation[]      @relation("CoachedArchers")
   favoriteSites           FavoriteSite[]
+  dismissedCompetitions   DismissedCompetition[]
   sessionPhotos           SessionPhoto[]
   goals                   Goal[]
   journalSessions         JournalSession[]
@@ -139,6 +140,7 @@ enum Discipline {
   FIELD
   BEURSAULT
   RUN_ARCHERY
+  NATURE
 }
 
 enum Feeling {
@@ -210,6 +212,9 @@ model JournalSession {
   plannedById     String?     @map("planned_by_id") @db.Char(36)
   /// When the archer first opened the sheet of an event their coach planned; null = new to them.
   seenAt          DateTime?   @map("seen_at") @db.DateTime(3)
+  /// The FFTA competition it was added from (https://www.ffta.fr/epreuve/{id}); at most
+  /// `MAX_PER_COMPETITION_DAY` such events per competition and day.
+  fftaCompetitionId String?   @map("ffta_competition_id") @db.VarChar(20)
   createdAt       DateTime    @default(now()) @map("created_at") @db.DateTime(3)
   updatedAt       DateTime    @updatedAt @map("updated_at") @db.DateTime(3)
 
@@ -264,6 +269,20 @@ enum BowType {
   FREE
 }
 
+/// An FFTA competition the archer will not take part in: left out of the home page's competitions
+/// to plan (the calendars still show it).
+model DismissedCompetition {
+  userId            String   @map("user_id") @db.Char(36)
+  /// https://www.ffta.fr/epreuve/{id}
+  fftaCompetitionId String   @map("ffta_competition_id") @db.VarChar(20)
+  createdAt         DateTime @default(now()) @map("created_at") @db.DateTime(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, fftaCompetitionId])
+  @@map("dismissed_competitions")
+}
+
 /// An archer's sport details. Created on first save.
 model ArcherProfile {
   userId            String       @id @map("user_id") @db.Char(36)
@@ -276,6 +295,11 @@ model ArcherProfile {
   calendarFont      String?      @map("calendar_font") @db.VarChar(30)
   /// The indicator shown on the home page; null = none.
   favoriteIndicator Indicator?   @map("favorite_indicator")
+  /// French department code ("78", "2A", "971"…) whose FFTA competitions the calendars show;
+  /// null = none shown.
+  department        String?      @db.VarChar(3)
+  /// Also show the para-archery competitions (indoor and outdoor) of the department.
+  paraCompetitions  Boolean      @default(false) @map("para_competitions")
   createdAt         DateTime     @default(now()) @map("created_at") @db.DateTime(3)
   updatedAt         DateTime     @updatedAt @map("updated_at") @db.DateTime(3)
 

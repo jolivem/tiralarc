@@ -47,6 +47,8 @@ describe('Profile (e2e)', () => {
       disciplines: [],
       calendarFont: null,
       favoriteIndicator: null,
+      department: null,
+      paraCompetitions: false,
     });
 
     const saved = await http()
@@ -59,6 +61,8 @@ describe('Profile (e2e)', () => {
         disciplines: ['INDOOR', 'BEURSAULT', 'RUN_ARCHERY'],
         calendarFont: 'great-vibes',
         favoriteIndicator: 'DURATIONS',
+        department: '2A',
+        paraCompetitions: true,
       })
       .expect(200);
     expect(saved.body).toEqual({
@@ -68,6 +72,8 @@ describe('Profile (e2e)', () => {
       disciplines: ['INDOOR', 'BEURSAULT', 'RUN_ARCHERY'],
       calendarFont: 'great-vibes',
       favoriteIndicator: 'DURATIONS',
+      department: '2A',
+      paraCompetitions: true,
     });
 
     // Partial update; null clears a field.
