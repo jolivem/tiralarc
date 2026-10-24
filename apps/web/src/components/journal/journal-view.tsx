@@ -36,6 +36,7 @@ import {
   today,
 } from './new-session-modal';
 import { SESSION_TYPES } from './session-types';
+import { MonthSummary } from './month-summary';
 import { MonthTitle, titleFills, useLettering } from './month-title';
 import { useMonthColoring } from './use-month-coloring';
 
@@ -217,15 +218,23 @@ export function JournalView({
   // replace its events there. (Its types leave `events` out of monthViewProps, hence the
   // separate object, spread in.)
   const perDay = { events: toDayEvents(sessions, labelOf), maxEventsPerDay: 1 };
+  // The loaded events are the displayed month's (within the journal).
+  const monthArrows = sessions.reduce((sum, session) => sum + (session.arrowCount ?? 0), 0);
 
   return (
     <div>
-      {/* In the page's top corners, outside the narrower calendar: "Today" left, the rest right. */}
-      <Group justify="space-between" gap="xs" className={classes.pageActions}>
+      {/*
+        In the page's top corners, outside the narrower calendar: "Today" left, the rest right;
+        between them, centred, the month's arrows and satisfaction (a month of the journal).
+      */}
+      <div className={classes.pageActions}>
         <Button variant="default" size="sm" onClick={() => setDate(today())}>
           {t('schedule.today')}
         </Button>
-        <Group gap="xs">
+        {range && (
+          <MonthSummary journal={journal} month={month} arrows={monthArrows} readOnly={!!coach} />
+        )}
+        <Group gap="xs" className={classes.pageActionsEnd}>
           <EventLegend customTypes={customTypes} />
           {/* The decoration is the archer's own. */}
           {!coach && (
@@ -254,7 +263,7 @@ export function JournalView({
             </Tooltip>
           )}
         </Group>
-      </Group>
+      </div>
       <Box pos="relative" className={classes.calendarWidth}>
         <LoadingOverlay visible={loading} overlayProps={{ blur: 1 }} loaderProps={{ size: 'sm' }} />
         {isColoring && (

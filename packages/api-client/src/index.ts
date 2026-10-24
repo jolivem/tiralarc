@@ -40,6 +40,8 @@ export type JournalStats = Schemas['JournalStatsDto'];
 export type CompetitionStat = Schemas['CompetitionStatDto'];
 export type ScoreStat = Schemas['ScoreStatDto'];
 export type ThemeFill = Schemas['FillDto'];
+/** A month's satisfaction: 0.5 to 5 stars, by halves. */
+export type MonthStars = Schemas['MonthSatisfactionDto']['stars'];
 export type SessionPhoto = Schemas['PhotoDto'];
 export type SessionType = Schemas['SessionDto']['type'];
 export type Discipline = NonNullable<Schemas['SessionDto']['discipline']>;

@@ -6,6 +6,7 @@ import type {
   JournalSessionSummary,
   JournalUpdate,
   JournalSessionUpdate,
+  MonthStars,
   SessionType,
   ThemeFill,
 } from '@tiralarc/api-client';
@@ -77,6 +78,24 @@ export async function saveMonthColoring(
     (await getAuthedApi()).PUT('/api/v1/journals/{id}/months/{month}/coloring', {
       params: { path: { id, month } },
       body: { fills },
+    }),
+  );
+  return result.ok ? {} : result.state;
+}
+
+/**
+ * Rates one month ("YYYY-MM") of a journal, in stars (0.5 to 5, by halves); null removes the
+ * rating. No re-render: the calendar already shows it.
+ */
+export async function saveMonthSatisfaction(
+  id: string,
+  month: string,
+  stars: MonthStars | null,
+): Promise<ActionState> {
+  const result = await send(
+    (await getAuthedApi()).PUT('/api/v1/journals/{id}/months/{month}/satisfaction', {
+      params: { path: { id, month } },
+      body: { stars },
     }),
   );
   return result.ok ? {} : result.state;

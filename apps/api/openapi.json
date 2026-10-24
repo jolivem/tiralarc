@@ -848,6 +848,69 @@
         ]
       }
     },
+    "/api/v1/journals/{id}/months/{month}/satisfaction": {
+      "put": {
+        "operationId": "Journals_setMonthSatisfaction",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "month",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetMonthSatisfactionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JournalDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Month outside the journal's period"
+          },
+          "403": {
+            "description": "Archers only"
+          },
+          "404": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Rate the archer's overall satisfaction with one month (YYYY-MM)",
+        "tags": [
+          "journal"
+        ]
+      }
+    },
     "/api/v1/journal/sessions": {
       "get": {
         "operationId": "Journal_list",
@@ -2971,6 +3034,37 @@
           "fills"
         ]
       },
+      "MonthSatisfactionDto": {
+        "type": "object",
+        "properties": {
+          "month": {
+            "type": "string",
+            "example": "2026-10",
+            "description": "Month (YYYY-MM)."
+          },
+          "stars": {
+            "type": "number",
+            "enum": [
+              0.5,
+              1,
+              1.5,
+              2,
+              2.5,
+              3,
+              3.5,
+              4,
+              4.5,
+              5
+            ],
+            "example": 3.5,
+            "description": "The archer's overall satisfaction with the month, in stars (0.5 to 5, by halves)."
+          }
+        },
+        "required": [
+          "month",
+          "stars"
+        ]
+      },
       "JournalDto": {
         "type": "object",
         "properties": {
@@ -2997,6 +3091,13 @@
               "$ref": "#/components/schemas/MonthThemeDto"
             }
           },
+          "monthSatisfactions": {
+            "description": "Satisfaction of the months the archer rated (oldest first).",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MonthSatisfactionDto"
+            }
+          },
           "sessionCount": {
             "type": "number",
             "description": "Number of the archer's events dated within the period."
@@ -3012,6 +3113,7 @@
           "startDate",
           "endDate",
           "monthThemes",
+          "monthSatisfactions",
           "sessionCount",
           "isDefault"
         ]
@@ -3096,6 +3198,32 @@
         },
         "required": [
           "fills"
+        ]
+      },
+      "SetMonthSatisfactionDto": {
+        "type": "object",
+        "properties": {
+          "stars": {
+            "type": "number",
+            "nullable": true,
+            "enum": [
+              0.5,
+              1,
+              1.5,
+              2,
+              2.5,
+              3,
+              3.5,
+              4,
+              4.5,
+              5
+            ],
+            "example": 3.5,
+            "description": "Stars (0.5 to 5, by halves), or null: the month is not rated."
+          }
+        },
+        "required": [
+          "stars"
         ]
       },
       "SessionType": {
@@ -3231,6 +3359,11 @@
             "type": "number",
             "nullable": true
           },
+          "arrowCount": {
+            "type": "number",
+            "nullable": true,
+            "description": "Arrows shot (clients add them up, e.g. for the month shown)."
+          },
           "description": {
             "type": "string",
             "nullable": true,
@@ -3286,6 +3419,7 @@
           "location",
           "discipline",
           "score",
+          "arrowCount",
           "description",
           "title",
           "color",
@@ -3623,6 +3757,11 @@
             "type": "number",
             "nullable": true
           },
+          "arrowCount": {
+            "type": "number",
+            "nullable": true,
+            "description": "Arrows shot (clients add them up, e.g. for the month shown)."
+          },
           "description": {
             "type": "string",
             "nullable": true,
@@ -3681,6 +3820,7 @@
           "location",
           "discipline",
           "score",
+          "arrowCount",
           "description",
           "title",
           "color",
@@ -3755,6 +3895,11 @@
             "type": "number",
             "nullable": true
           },
+          "arrowCount": {
+            "type": "number",
+            "nullable": true,
+            "description": "Arrows shot (clients add them up, e.g. for the month shown)."
+          },
           "description": {
             "type": "string",
             "nullable": true,
@@ -3815,10 +3960,6 @@
             "type": "number",
             "nullable": true
           },
-          "arrowCount": {
-            "type": "number",
-            "nullable": true
-          },
           "objective": {
             "type": "string",
             "nullable": true
@@ -3876,6 +4017,7 @@
           "location",
           "discipline",
           "score",
+          "arrowCount",
           "description",
           "title",
           "color",
@@ -3885,7 +4027,6 @@
           "plannedByCoach",
           "plannedBy",
           "distanceMeters",
-          "arrowCount",
           "objective",
           "satisfaction",
           "technique",

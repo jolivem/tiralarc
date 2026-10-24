@@ -33,6 +33,7 @@ import {
   CreateJournalDto,
   JournalDto,
   SetMonthColoringDto,
+  SetMonthSatisfactionDto,
   SetMonthThemeDto,
   UpdateJournalDto,
 } from './dto/journal.dto.js';
@@ -105,6 +106,20 @@ export class JournalsController {
     @Body() dto: SetMonthColoringDto,
   ): Promise<JournalDto> {
     return this.journal.setMonthColoring(user.id, id, month, dto.fills);
+  }
+
+  @Put(':id/months/:month/satisfaction')
+  @ApiOperation({ summary: "Rate the archer's overall satisfaction with one month (YYYY-MM)" })
+  @ApiOkResponse({ type: JournalDto })
+  @ApiNotFoundResponse()
+  @ApiBadRequestResponse({ description: "Month outside the journal's period" })
+  setMonthSatisfaction(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Param('month') month: string,
+    @Body() dto: SetMonthSatisfactionDto,
+  ): Promise<JournalDto> {
+    return this.journal.setMonthSatisfaction(user.id, id, month, dto.stars);
   }
 
   /** The events of the period are kept. */

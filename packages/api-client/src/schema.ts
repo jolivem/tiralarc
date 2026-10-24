@@ -251,6 +251,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/journals/{id}/months/{month}/satisfaction": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Rate the archer's overall satisfaction with one month (YYYY-MM) */
+        put: operations["Journals_setMonthSatisfaction"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/journal/sessions": {
         parameters: {
             query?: never;
@@ -826,6 +843,19 @@ export interface components {
             /** @description The archer's colouring of that month (decoration bands and name), in the order it was painted. */
             fills: components["schemas"]["FillDto"][];
         };
+        MonthSatisfactionDto: {
+            /**
+             * @description Month (YYYY-MM).
+             * @example 2026-10
+             */
+            month: string;
+            /**
+             * @description The archer's overall satisfaction with the month, in stars (0.5 to 5, by halves).
+             * @example 3.5
+             * @enum {number}
+             */
+            stars: 0.5 | 1 | 1.5 | 2 | 2.5 | 3 | 3.5 | 4 | 4.5 | 5;
+        };
         JournalDto: {
             /** Format: uuid */
             id: string;
@@ -837,6 +867,8 @@ export interface components {
             endDate: string;
             /** @description Decoration of the calendar, for the months that have one (oldest first). */
             monthThemes: components["schemas"]["MonthThemeDto"][];
+            /** @description Satisfaction of the months the archer rated (oldest first). */
+            monthSatisfactions: components["schemas"]["MonthSatisfactionDto"][];
             /** @description Number of the archer's events dated within the period. */
             sessionCount: number;
             /** @description The journal to open at sign-in. At most one of the archer's journals has it. */
@@ -883,6 +915,14 @@ export interface components {
             /** @description Replaces the colouring. */
             fills: components["schemas"]["FillDto"][];
         };
+        SetMonthSatisfactionDto: {
+            /**
+             * @description Stars (0.5 to 5, by halves), or null: the month is not rated.
+             * @example 3.5
+             * @enum {number|null}
+             */
+            stars: 0.5 | 1 | 1.5 | 2 | 2.5 | 3 | 3.5 | 4 | 4.5 | 5 | null;
+        };
         /** @enum {string} */
         SessionType: "TRAINING" | "COACHING" | "COMPETITION" | "STRENGTH" | "OTHER" | "CUSTOM";
         /** @enum {string} */
@@ -917,6 +957,8 @@ export interface components {
             location: string | null;
             discipline: components["schemas"]["Discipline"] | null;
             score: number | null;
+            /** @description Arrows shot (clients add them up, e.g. for the month shown). */
+            arrowCount: number | null;
             /** @description Analyses, or the text of an `OTHER` event. */
             description: string | null;
             /** @description `OTHER` events only. */
@@ -1025,6 +1067,8 @@ export interface components {
             location: string | null;
             discipline: components["schemas"]["Discipline"] | null;
             score: number | null;
+            /** @description Arrows shot (clients add them up, e.g. for the month shown). */
+            arrowCount: number | null;
             /** @description Analyses, or the text of an `OTHER` event. */
             description: string | null;
             /** @description `OTHER` events only. */
@@ -1064,6 +1108,8 @@ export interface components {
             location: string | null;
             discipline: components["schemas"]["Discipline"] | null;
             score: number | null;
+            /** @description Arrows shot (clients add them up, e.g. for the month shown). */
+            arrowCount: number | null;
             /** @description Analyses, or the text of an `OTHER` event. */
             description: string | null;
             /** @description `OTHER` events only. */
@@ -1081,7 +1127,6 @@ export interface components {
             /** @description The coach who planned the event in the archer's journal; null when the archer created it. That coach may change its planning or delete it while it is still to come. */
             plannedBy: components["schemas"]["PlannerDto"] | null;
             distanceMeters: number | null;
-            arrowCount: number | null;
             objective: string | null;
             satisfaction: number | null;
             technique: number | null;
@@ -2037,6 +2082,52 @@ export interface operations {
             };
             /** @description MONTH_HAS_NO_THEME: decoration bands coloured in a month without decoration */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    Journals_setMonthSatisfaction: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                month: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetMonthSatisfactionDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JournalDto"];
+                };
+            };
+            /** @description Month outside the journal's period */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Archers only */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

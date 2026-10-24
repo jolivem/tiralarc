@@ -78,6 +78,10 @@ the same API — keep it client-agnostic (no cookies, no web-only assumptions in
   except band `title` (the only one allowed without a theme: such a month is stored with `theme: null`): the Journal calendar's heading (`month-title.tsx`), the month's name drawn on a fixed-size
   canvas as hollow letters (`--font-month`, Ribeye, outline only), coloured like the bands (inside letters only), or
   all at once in a pastel from the decoration dialog (`letterSeeds`: one fill per letter, holes of "o" left out).
+- Month summary (`components/journal/month-summary.tsx`, centred at the top of the Journal page, between "Today" and the other actions): the displayed
+  month's arrows (sum of the loaded summaries' `arrowCount`) and its satisfaction, 5 stars by halves
+  (`monthSatisfactions` on the journal, `PUT /journals/{id}/months/{month}/satisfaction`; read-only for a coach).
+  A click cycles the star empty → half → full → empty, those before it full, those after it empty (`month-stars.ts`).
 - Event sheet (`/archer/journal/[id]`): a loose leaf (`components/notebook/loose-leaf.tsx`, ruled every `--step`
   = 30px) drawn by `SessionForm`, its action bar sticky above it. `RuledStack` pushes each box onto a ruled line;
   names, Informations rows (`FieldRow`, xs fields = one line) and free texts (`RULED_TEXT`) are sized to sit on the

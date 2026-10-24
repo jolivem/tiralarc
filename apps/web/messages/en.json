@@ -343,6 +343,14 @@
     "readOnly": "Read only",
     "coachStamp": "Coach",
     "plannedByCoach": "planned by the coach",
+    "monthSummary": {
+      "label": "Month review",
+      "arrows": "Total arrows this month",
+      "arrowsValue": "{count, plural, =0 {No arrows} one {# arrow} other {# arrows}}",
+      "satisfaction": "Overall satisfaction this month",
+      "rating": "{stars, plural, =0 {Not rated} other {# out of 5}}",
+      "star": "Star {n}"
+    },
     "newEvents": {
       "title": "Proposed events",
       "empty": "No new proposed event."

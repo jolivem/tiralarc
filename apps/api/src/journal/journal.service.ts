@@ -18,6 +18,8 @@ import {
   type JournalDto,
   type JournalStatsDto,
   MONTH,
+  MONTH_SATISFACTIONS,
+  type MonthSatisfactionDto,
   type MonthThemeDto,
   MAX_LIST_ITEMS,
   type NewEventDto,
@@ -100,6 +102,19 @@ const toStoredThemes = (months: MonthThemeDto[]) =>
         { theme, fills: fills.map(({ band, x, y, color }) => ({ band, x, y, color })) },
       ]),
   );
+
+/** Stored as { "YYYY-MM": stars }; anything else is ignored. */
+function monthSatisfactionsOf(j: Journal): MonthSatisfactionDto[] {
+  const stored = j.monthSatisfactions;
+  if (!stored || typeof stored !== 'object' || Array.isArray(stored)) return [];
+  return Object.entries(stored)
+    .flatMap(([month, stars]): MonthSatisfactionDto[] =>
+      typeof stars === 'number' && (MONTH_SATISFACTIONS as readonly number[]).includes(stars)
+        ? [{ month, stars }]
+        : [],
+    )
+    .sort((a, b) => a.month.localeCompare(b.month));
+}
 
 /** The colouring of the month's name (band `title`): it doesn't depend on the decoration. */
 const titleOnly = (fills: FillDto[]) => fills.filter((fill) => fill.band === TITLE_BAND);
@@ -202,6 +217,7 @@ function toSummary(s: SessionRow): SessionSummaryDto {
     location: s.location,
     discipline: s.discipline,
     score: s.score,
+    arrowCount: s.arrowCount,
     description: s.description,
     title: s.title,
     color: s.color as EventColor | null,
@@ -216,7 +232,6 @@ function toDto(s: SessionRow): SessionDto {
   return {
     ...toSummary(s),
     distanceMeters: s.distanceMeters,
-    arrowCount: s.arrowCount,
     objective: s.objective,
     satisfaction: s.satisfaction,
     technique: s.technique,
@@ -332,6 +347,24 @@ export class JournalService {
     if (target) target.fills = fills;
     else months.push({ month, theme: null, fills });
     return this.saveMonthThemes(id, months);
+  }
+
+  /** Rates one month of the journal (stars), or with null removes its rating. */
+  async setMonthSatisfaction(
+    userId: string,
+    id: string,
+    month: string,
+    stars: number | null,
+  ): Promise<JournalDto> {
+    const journal = await this.findOwnedJournal(userId, id);
+    assertMonthOf(journal, month);
+    const months = monthSatisfactionsOf(journal).filter((m) => m.month !== month);
+    if (stars !== null) months.push({ month, stars });
+    const updated = await this.prisma.journal.update({
+      where: { id },
+      data: { monthSatisfactions: Object.fromEntries(months.map((m) => [m.month, m.stars])) },
+    });
+    return this.toJournalDto(updated);
   }
 
   private async saveMonthThemes(id: string, months: MonthThemeDto[]): Promise<JournalDto> {
@@ -613,6 +646,7 @@ export class JournalService {
       startDate: fromDbDate(journal.startDate),
       endDate: fromDbDate(journal.endDate),
       monthThemes: monthThemesOf(journal),
+      monthSatisfactions: monthSatisfactionsOf(journal),
       sessionCount: await this.prisma.journalSession.count({ where: eventsOf(journal) }),
       isDefault: journal.isDefault,
     };

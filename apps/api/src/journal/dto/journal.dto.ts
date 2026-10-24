@@ -274,6 +274,35 @@ export class SetMonthThemeDto {
   theme!: string | null;
 }
 
+/** Stars a month can be given: 0.5 to 5, by halves. */
+export const MONTH_SATISFACTIONS = [0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5] as const;
+
+export class MonthSatisfactionDto {
+  @ApiProperty({ example: '2026-10', description: 'Month (YYYY-MM).' })
+  month!: string;
+
+  @ApiProperty({
+    enum: MONTH_SATISFACTIONS,
+    example: 3.5,
+    description:
+      "The archer's overall satisfaction with the month, in stars (0.5 to 5, by halves).",
+  })
+  stars!: number;
+}
+
+export class SetMonthSatisfactionDto {
+  @ApiProperty({
+    type: Number,
+    nullable: true,
+    enum: MONTH_SATISFACTIONS,
+    example: 3.5,
+    description: 'Stars (0.5 to 5, by halves), or null: the month is not rated.',
+  })
+  @ValidateIf((_, value) => value !== null)
+  @IsIn(MONTH_SATISFACTIONS, { message: 'stars must be 0.5 to 5, by halves' })
+  stars!: number | null;
+}
+
 /** A season's journal: a named period. Its events are the archer's sessions dated within it. */
 export class JournalDto {
   @ApiProperty({ format: 'uuid' })
@@ -293,6 +322,12 @@ export class JournalDto {
     description: 'Decoration of the calendar, for the months that have one (oldest first).',
   })
   monthThemes!: MonthThemeDto[];
+
+  @ApiProperty({
+    type: () => [MonthSatisfactionDto],
+    description: 'Satisfaction of the months the archer rated (oldest first).',
+  })
+  monthSatisfactions!: MonthSatisfactionDto[];
 
   @ApiProperty({ description: "Number of the archer's events dated within the period." })
   sessionCount!: number;
@@ -662,6 +697,13 @@ export class SessionSummaryDto {
   score!: number | null;
 
   @ApiProperty({
+    type: Number,
+    nullable: true,
+    description: 'Arrows shot (clients add them up, e.g. for the month shown).',
+  })
+  arrowCount!: number | null;
+
+  @ApiProperty({
     type: String,
     nullable: true,
     description: 'Analyses, or the text of an `OTHER` event.',
@@ -739,9 +781,6 @@ export class SessionDto extends SessionSummaryDto {
 
   @ApiProperty({ type: Number, nullable: true })
   distanceMeters!: number | null;
-
-  @ApiProperty({ type: Number, nullable: true })
-  arrowCount!: number | null;
 
   @ApiProperty({ type: String, nullable: true })
   objective!: string | null;

@@ -735,11 +735,159 @@
  * event" (top right corner): pulled into the page's padding (notebook.module.css: --line,
  * the ruling step; the left padding is the margin line plus spacing-md).
  */
+/* "Today" left, the month's summary centred, the other actions right; phones: summary below. */
 .pageActions {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: start;
+  gap: var(--mantine-spacing-xs);
   margin-top: calc(var(--mantine-spacing-xs) - var(--line, 0px));
   margin-right: calc(var(--mantine-spacing-xs) - var(--mantine-spacing-lg));
   margin-bottom: var(--mantine-spacing-xs);
   margin-left: calc(var(--mantine-spacing-xs) - var(--mantine-spacing-md));
+
+  & > :first-child {
+    justify-self: start;
+  }
+
+  @media (max-width: $mantine-breakpoint-sm) {
+    grid-template-columns: 1fr auto;
+
+    & .monthSummary {
+      grid-row: 2;
+      grid-column: 1 / -1;
+    }
+  }
+}
+
+/* Its own column even without a summary (a month outside the journal). */
+.pageActionsEnd {
+  grid-row: 1;
+  grid-column: -2;
+  justify-self: end;
+}
+
+/*
+ * The month at a glance, centred at the top of the page (month-summary.tsx, in `.pageActions`):
+ * a framed card in line art, its arrows' total and its satisfaction stars side by side,
+ * drawings at both ends (tablets up). Drawn at 3/4 of its natural size.
+ */
+.monthSummary {
+  zoom: 0.75;
+  display: flex;
+  align-items: center;
+  gap: var(--mantine-spacing-sm);
+  width: fit-content;
+  max-width: 100%;
+  margin-inline: auto;
+  padding: 6px var(--mantine-spacing-sm);
+  border: 2px solid var(--mantine-color-text);
+  border-radius: 12px;
+  background: var(--mantine-color-body);
+  color: var(--mantine-color-text);
+
+  /* Phones: the stars go below the arrows. */
+  @media (max-width: $mantine-breakpoint-xs) {
+    flex-wrap: wrap;
+    justify-content: center;
+    width: 100%;
+  }
+}
+
+.summarySection {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.summaryTitle {
+  margin: 0;
+  /* Wide enough for two lines, evened out. */
+  max-width: 21ch;
+  text-wrap: balance;
+  font-family: var(--font-hand);
+  font-size: 1.05rem;
+  font-weight: 700;
+  line-height: 1.1;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.summaryDivider {
+  align-self: stretch;
+  width: 2px;
+  background: currentColor;
+
+  @media (max-width: $mantine-breakpoint-xs) {
+    display: none;
+  }
+}
+
+.summaryDrawing {
+  flex-shrink: 0;
+
+  @media (max-width: $mantine-breakpoint-sm) {
+    display: none;
+  }
+}
+
+/* <div>s: block without a `display` of their own, which would show them on phones. */
+.quiverDrawing {
+  height: 84px;
+  aspect-ratio: 87 / 205;
+  background-color: currentColor;
+  mask: url('/month-summary/quiver.png') center / contain no-repeat;
+}
+
+.targetDrawing {
+  height: 84px;
+  aspect-ratio: 104 / 151;
+  background-color: currentColor;
+  mask: url('/month-summary/target.png') center / contain no-repeat;
+}
+
+.arrowBox {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-width: 130px;
+  height: 44px;
+  padding-inline: 24px 44px;
+  border: 2px solid currentColor;
+  border-radius: 10px;
+  font-family: var(--font-hand);
+  font-size: 1.8rem;
+  font-weight: 700;
+}
+
+.arrowBoxDrawing {
+  position: absolute;
+  right: 4px;
+  bottom: 3px;
+  height: 36px;
+  aspect-ratio: 105 / 98;
+  background-color: currentColor;
+  mask: url('/month-summary/arrow.png') center / contain no-repeat;
+}
+
+.stars {
+  display: flex;
+  gap: 2px;
+}
+
+.star {
+  display: block;
+  color: var(--mantine-color-yellow-5);
+}
+
+.starButton {
+  border-radius: 50%;
+  transition: transform 100ms ease;
+
+  &:hover {
+    transform: scale(1.12);
+  }
 }
 
 /* The calendar's heading (month-title.tsx), in place of the schedule's own. */

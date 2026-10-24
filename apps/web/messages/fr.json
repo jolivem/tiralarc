@@ -343,6 +343,14 @@
     "readOnly": "Lecture seule",
     "coachStamp": "Coach",
     "plannedByCoach": "planifié par le coach",
+    "monthSummary": {
+      "label": "Bilan du mois",
+      "arrows": "Nombre total de flèches sur le mois",
+      "arrowsValue": "{count, plural, =0 {Aucune flèche} one {# flèche} other {# flèches}}",
+      "satisfaction": "Satisfaction globale du mois",
+      "rating": "{stars, plural, =0 {Pas de note} other {# sur 5}}",
+      "star": "Étoile {n}"
+    },
     "newEvents": {
       "title": "Événements proposés",
       "empty": "Pas de nouvel événement proposé."

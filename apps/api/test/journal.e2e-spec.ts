@@ -139,7 +139,10 @@ describe('Journal (e2e)', () => {
       .get(`/api/v1/journal/sessions?from=2026-10-01&to=2026-10-31`)
       .set(as(archer))
       .expect(200);
-    expect(october.body).toEqual([expect.objectContaining({ id, date: '2026-10-05' })]);
+    // The calendar's entries carry the arrows (the month's total is the client's sum).
+    expect(october.body).toEqual([
+      expect.objectContaining({ id, date: '2026-10-05', arrowCount: 60 }),
+    ]);
     const november = await http()
       .get(`/api/v1/journal/sessions?from=2026-11-01&to=2026-11-30`)
       .set(as(archer))
@@ -367,6 +370,31 @@ describe('Journal (e2e)', () => {
       .put(`/api/v1/journals/${current}/months/2026-10/theme`)
       .set(as(otherArcher))
       .send({ theme: 'archery' })
+      .expect(404);
+
+    // Each month's overall satisfaction, in stars by halves; null removes it.
+    const rate = (month: string, stars: unknown) =>
+      http()
+        .put(`/api/v1/journals/${current}/months/${month}/satisfaction`)
+        .set(as(token))
+        .send({ stars });
+    expect((await patch({}).expect(200)).body.monthSatisfactions).toEqual([]);
+    await rate('2026-12', 5).expect(200);
+    expect((await rate('2026-10', 3.5).expect(200)).body.monthSatisfactions).toEqual([
+      { month: '2026-10', stars: 3.5 },
+      { month: '2026-12', stars: 5 },
+    ]);
+    expect((await rate('2026-12', null).expect(200)).body.monthSatisfactions).toEqual([
+      { month: '2026-10', stars: 3.5 },
+    ]);
+    await rate('2026-10', 3.2).expect(400);
+    await rate('2026-10', 0).expect(400);
+    await rate('2026-10', 6).expect(400);
+    await rate('2025-01', 3).expect(400); // outside the journal's period
+    await http()
+      .put(`/api/v1/journals/${current}/months/2026-10/satisfaction`)
+      .set(as(otherArcher))
+      .send({ stars: 1 })
       .expect(404);
 
     // One default journal (opened at sign-in): choosing another moves it, false removes it.
