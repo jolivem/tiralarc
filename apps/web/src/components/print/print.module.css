@@ -1,0 +1,338 @@
+/*
+ * The journal's PDF extract (app/[locale]/print/journal): A5 pages on plain white paper —
+ * no notebook, no squares or ruled lines. Chromium prints it (lib/pdf.ts) at the page's
+ * content width (128 mm: 148 mm less the margins), the same width the page is laid out at.
+ */
+@page {
+  size: A5;
+  margin: 12mm 10mm;
+}
+
+.document {
+  --print-ink: #212529;
+  --print-muted: #6c757d;
+  --print-line: #dee2e6;
+  /*
+   * The printable height of a page (186 mm), less a little: a part exactly as tall would
+   * let the next one's first pixels onto its page.
+   */
+  --page-height: 184mm;
+
+  width: 128mm;
+  color: var(--print-ink);
+  background: #fff;
+  font-size: 10pt;
+  line-height: 1.35;
+  print-color-adjust: exact;
+}
+
+/* Every part after the cover starts on a new page. */
+.page {
+  break-before: page;
+}
+
+.heading {
+  margin: 0 0 4mm;
+  font-family: var(--font-calendar, var(--font-hand)), cursive;
+  font-size: 20pt;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.subheading {
+  margin: 4mm 0 2mm;
+  font-family: var(--font-calendar, var(--font-hand)), cursive;
+  font-size: 14pt;
+  font-weight: 700;
+}
+
+.muted {
+  color: var(--print-muted);
+}
+
+/* ------------------------------------------------------------------ cover */
+
+.cover {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 6mm;
+  height: var(--page-height);
+  text-align: center;
+}
+
+.coverTitle {
+  margin: 0;
+  font-family: var(--font-calendar, var(--font-hand)), cursive;
+  font-size: 30pt;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.coverName {
+  font-size: 14pt;
+  font-weight: 600;
+}
+
+/* --------------------------------------------------------- month calendar */
+
+/* One page, whatever the decoration: what doesn't fit is cut rather than spilt over. */
+.month {
+  display: flex;
+  flex-direction: column;
+  gap: 2mm;
+  height: var(--page-height);
+  overflow: hidden;
+}
+
+.band {
+  display: block;
+  width: 100%;
+  object-fit: contain;
+}
+
+.bandTop {
+  height: 26mm;
+}
+
+.bandBottom {
+  height: 22mm;
+}
+
+.bandSide {
+  width: 11mm;
+  height: 100%;
+}
+
+/* The calendar between the side bands, filling what the top and bottom bands leave. */
+.monthMiddle {
+  display: flex;
+  flex: 1;
+  gap: 2mm;
+  min-height: 0;
+}
+
+.monthBody {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+/* The month's name, hollow letters coloured in as on the Journal page. */
+.lettering {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1600 / 260;
+}
+
+.year {
+  margin-top: -1mm;
+  text-align: center;
+  font-family: var(--font-calendar, var(--font-hand-upright)), cursive;
+  font-size: 11pt;
+  font-weight: 700;
+}
+
+.weekdays,
+.days {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.weekdays {
+  margin-top: 1mm;
+  font-family: var(--font-calendar, var(--font-hand-upright)), cursive;
+  font-size: 10pt;
+  text-align: center;
+}
+
+.days {
+  flex: 1;
+  grid-auto-rows: minmax(0, 1fr);
+  border-top: 1px solid var(--print-line);
+  border-left: 1px solid var(--print-line);
+}
+
+.day {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: 0.6mm;
+  border-right: 1px solid var(--print-line);
+  border-bottom: 1px solid var(--print-line);
+  overflow: hidden;
+
+  /* Days of the month outside the extract. */
+  &[data-outside] {
+    opacity: 0.35;
+  }
+}
+
+.dayNumber {
+  align-self: flex-end;
+  font-family: var(--font-calendar, var(--font-hand-upright)), cursive;
+  font-size: 9pt;
+  line-height: 1;
+}
+
+.dayIcons {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-content: center;
+  gap: 0.5mm;
+  flex: 1;
+}
+
+/* ------------------------------------------------------------------ sheet */
+
+.sheetHeader {
+  display: flex;
+  align-items: center;
+  gap: 3mm;
+  /* The event icons are drawn larger than their box: kept off the page above. */
+  padding-top: 2mm;
+  margin-bottom: 3mm;
+  padding-bottom: 2mm;
+  border-bottom: 1px solid var(--print-line);
+}
+
+.sheetType {
+  flex: 1;
+  margin: 0;
+  font-family: var(--font-calendar, var(--font-hand)), cursive;
+  font-size: 18pt;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.sheetDate {
+  text-align: right;
+}
+
+.box {
+  margin-top: 3mm;
+  break-inside: avoid;
+}
+
+.boxTitle {
+  margin: 0 0 1mm;
+  font-family: var(--font-calendar, var(--font-hand)), cursive;
+  font-size: 12pt;
+  font-weight: 700;
+}
+
+.fields {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 0.8mm 4mm;
+  margin: 0;
+
+  & dt {
+    color: var(--print-muted);
+  }
+
+  & dd {
+    margin: 0;
+    font-weight: 600;
+  }
+}
+
+.text {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.twoColumns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4mm;
+}
+
+.rating {
+  display: flex;
+  align-items: center;
+  gap: 2mm;
+}
+
+.ratingTrack {
+  flex: 1;
+  height: 2mm;
+  border-radius: 1mm;
+  background: var(--print-line);
+  overflow: hidden;
+}
+
+.ratingBar {
+  height: 100%;
+  border-radius: 1mm;
+}
+
+.feeling {
+  display: flex;
+  align-items: center;
+  gap: 2mm;
+}
+
+.face {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 9mm;
+  height: 9mm;
+  border-radius: 50%;
+}
+
+.list {
+  margin: 0;
+  padding-left: 4mm;
+}
+
+/* ----------------------------------------------------------------- photos */
+
+.photosPage {
+  display: flex;
+  flex-direction: column;
+  height: var(--page-height);
+}
+
+.photos {
+  display: grid;
+  flex: 1;
+  grid-template-columns: repeat(var(--photo-columns), minmax(0, 1fr));
+  grid-auto-rows: minmax(0, 1fr);
+  gap: 2mm;
+  min-height: 0;
+}
+
+.photo {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* --------------------------------------------------------------- rankings */
+
+.ranking {
+  display: grid;
+  grid-template-columns: 30mm minmax(0, 1fr);
+  column-gap: 3mm;
+  align-items: baseline;
+  margin-bottom: 2mm;
+  break-inside: avoid;
+}
+
+.rankingDetails {
+  grid-column: 2;
+}
+
+/* ------------------------------------------------------------- indicators */
+
+.indicators {
+  display: flex;
+  flex-direction: column;
+  gap: 6mm;
+}

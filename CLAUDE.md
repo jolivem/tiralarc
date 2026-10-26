@@ -123,8 +123,8 @@ the same API — keep it client-agnostic (no cookies, no web-only assumptions in
   turned away by Cloudflare; random 403s are retried), `ffta-parser.ts` (pure, unit-tested on
   `fixtures/ffta-search.html`) reads them. Searched per department (the site's own term ids, `departments.ts`) and
   FFTA discipline id (`FFTA_DISCIPLINES`; `paraCompetitions` adds the para indoor / outdoor ids), kept 12 h in
-  memory, the last reading kept on failure (`complete: false` when nothing). The archer picks `department` /
-  `paraCompetitions` in the Profile page's Competitions card; the home page's season calendar
+  memory, the last reading kept on failure (`complete: false` when nothing). The archer picks `departments` (up to
+  5, `MAX_DEPARTMENTS`; one search per department, merged) / `paraCompetitions` in the Profile page's Competitions card; the home page's season calendar
   (`season-calendar.tsx`) outlines their days and lists them (`competition-list.tsx`) with "Add to my journal": a
   COMPETITION event (`POST /journal/sessions` takes `location` / `discipline`) whose place is the competition's name,
   linked by `fftaCompetitionId`: one competition at most twice a day (`MAX_PER_COMPETITION_DAY`, `LIMIT_REACHED`),
@@ -152,6 +152,18 @@ the same API — keep it client-agnostic (no cookies, no web-only assumptions in
   cross (confirmed) dismisses one: `PUT/DELETE /competitions/{id}/dismissal` (table `dismissed_competitions`),
   `dismissed` in the list; only this list leaves dismissed ones out, the calendars keep them. Each discipline has one pastel colour
   (`DISCIPLINE_COLORS` in `session-types.ts`, `variant="light"`): sheet chips, rankings and competition labels.
+- PDF extract (web only, no API endpoint of its own): the home page's "Extrait PDF" dialog
+  (`components/export/export-button.tsx`: days, at most 366, + rankings / indicators / sheets / photos;
+  `lib/export-options.ts`, unit-tested) downloads `GET /[locale]/archer/export` (route handler), which opens
+  `/[locale]/print/journal` in a headless Chromium (`lib/pdf.ts`, `playwright-core`; signed in with the access
+  cookie only — refresh tokens are single-use) and prints it A5. That page (no shell: `app-shell.tsx` leaves
+  `/print/` bare; data in `lib/export-data.ts`) is plain paper, no notebook: cover, rankings, indicators
+  (`PrintedCards` context in `stats-cards.tsx`: whole span, no choice bars), then per month the calendar with its
+  decoration / colouring (`components/print/print-month.tsx`, reusing `useArtwork` / `ColorableCanvas` /
+  `useLettering`), each training / coaching / competition sheet on its own page and its photos on the next.
+  Chromium prints once `<html data-print-ready>` is set (`print-ready.tsx`: fonts, images, nothing
+  `data-print-pending`). Dev: `pnpm --filter @tiralarc/web exec playwright-core install chromium-headless-shell`;
+  Docker: Alpine's `chromium` (`CHROMIUM_PATH`). `PRINT_BASE_URL` if the server isn't on localhost:`PORT`.
 - Archer profile (`apps/api/src/profile/`, web `components/profile/`): sport details, favourite websites and people
   invited by email. A plain guest's invitation (public `/invitations/accept`, token used on POST) grants no access;
   a coach's does (see Coaching).

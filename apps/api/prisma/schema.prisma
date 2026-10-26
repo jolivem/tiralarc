@@ -295,10 +295,10 @@ model ArcherProfile {
   calendarFont      String?      @map("calendar_font") @db.VarChar(30)
   /// The indicator shown on the home page; null = none.
   favoriteIndicator Indicator?   @map("favorite_indicator")
-  /// French department code ("78", "2A", "971"…) whose FFTA competitions the calendars show;
-  /// null = none shown.
-  department        String?      @db.VarChar(3)
-  /// Also show the para-archery competitions (indoor and outdoor) of the department.
+  /// Array of French department codes ("78", "2A", "971"…, at most 5) whose FFTA competitions
+  /// the calendars show; empty = none shown.
+  departments       Json
+  /// Also show the para-archery competitions (indoor and outdoor) of the departments.
   paraCompetitions  Boolean      @default(false) @map("para_competitions")
   createdAt         DateTime     @default(now()) @map("created_at") @db.DateTime(3)
   updatedAt         DateTime     @updatedAt @map("updated_at") @db.DateTime(3)

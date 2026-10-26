@@ -443,7 +443,7 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Upcoming FFTA competitions of the archer's department, in their disciplines (profile)
+         * Upcoming FFTA competitions of the archer's departments, in their disciplines (profile)
          * @description Read from the FFTA website and kept for a few hours. With `paraCompetitions` in the profile, the para-archery indoor and outdoor competitions are included.
          */
         get: operations["Competitions_list"];
@@ -791,7 +791,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Upcoming FFTA competitions of the archer's department and disciplines, within the current journal (WRITE access adds them with POST .../sessions and `fftaCompetitionId`) */
+        /** Upcoming FFTA competitions of the archer's departments and disciplines, within the current journal (WRITE access adds them with POST .../sessions and `fftaCompetitionId`) */
         get: operations["Coaching_competitions"];
         put?: never;
         post?: never;
@@ -1398,9 +1398,9 @@ export interface components {
             mandateUrl: string | null;
         };
         CompetitionListDto: {
-            /** @description The archer's department (profile); null = none chosen, hence no competitions. */
-            department: components["schemas"]["DepartmentDto"] | null;
-            /** @description The department's competitions in the archer's disciplines (profile) that have not ended yet and touch the requested days, by first day. */
+            /** @description The archer's departments (profile), in their order; empty = none chosen, hence no competitions. */
+            departments: components["schemas"]["DepartmentDto"][];
+            /** @description The departments' competitions in the archer's disciplines (profile) that have not ended yet and touch the requested days, by first day. */
             competitions: components["schemas"]["CompetitionDto"][];
             /** @description False when the FFTA website could not be read for some of the disciplines: the list may miss competitions (try again later). */
             complete: boolean;
@@ -1492,10 +1492,13 @@ export interface components {
             /** @description The indicator shown on the home page; null = none. */
             favoriteIndicator: components["schemas"]["Indicator"] | null;
             /**
-             * @description Department code (see GET /competitions/departments) whose FFTA competitions the calendars show; null = none.
-             * @example 78
+             * @description Department codes (see GET /competitions/departments, at most 5) whose FFTA competitions the calendars show; empty = none.
+             * @example [
+             *       "78",
+             *       "92"
+             *     ]
              */
-            department: string | null;
+            departments: string[];
             /** @description Also show the para-archery competitions (indoor and outdoor target archery). */
             paraCompetitions: boolean;
         };
@@ -1513,10 +1516,13 @@ export interface components {
             /** @description The indicator shown on the home page; null for none. */
             favoriteIndicator?: components["schemas"]["Indicator"] | null;
             /**
-             * @description Department code (see GET /competitions/departments); null for none.
-             * @example 78
+             * @description Replaces the departments (codes, see GET /competitions/departments); empty for none.
+             * @example [
+             *       "78",
+             *       "92"
+             *     ]
              */
-            department?: string | null;
+            departments?: string[];
             paraCompetitions?: boolean;
         };
         /**

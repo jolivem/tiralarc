@@ -285,7 +285,7 @@ function CompetitionItems({
   );
 }
 
-/** The season calendar's list: the upcoming FFTA competitions of the archer's department. */
+/** The season calendar's list: the upcoming FFTA competitions of the archer's departments. */
 export function CompetitionListPanel({
   list,
   sessions,
@@ -301,7 +301,7 @@ export function CompetitionListPanel({
   const t = useTranslations('archer.competitions');
 
   if (!list) return <FormError state={{ code: 'NETWORK_ERROR' }} />;
-  if (!list.department) {
+  if (list.departments.length === 0) {
     return (
       <Text size="sm" c="dimmed">
         {t('noDepartment')}{' '}
@@ -316,7 +316,13 @@ export function CompetitionListPanel({
     <Stack gap="sm">
       <Group justify="space-between" align="baseline" gap="xs">
         <Text fw={700} className={classes.monthName}>
-          {t('title', { department: `${list.department.code} - ${list.department.name}` })}
+          {/* One department in full ("78 - Yvelines"), several by their codes ("78, 91"). */}
+          {t('title', {
+            departments:
+              list.departments.length === 1
+                ? `${list.departments[0]!.code} - ${list.departments[0]!.name}`
+                : list.departments.map((d) => d.code).join(', '),
+          })}
         </Text>
         <Text size="xs" c="dimmed">
           <span className={classes.competitionMark} aria-hidden />
@@ -349,7 +355,7 @@ const TO_PLAN_DAYS = 120;
 const TO_PLAN_COUNT = 5;
 
 /**
- * Home page, right page: the next FFTA competitions of the archer's department and disciplines
+ * Home page, right page: the next FFTA competitions of the archer's departments and disciplines
  * still to plan — scheduled, their invitation published, not in the journal yet. Their dates
  * and name open the Journal on the competition's month with its dialog, where it is added
  * (then it leaves this list). Loaded once shown, like the national rankings.
@@ -389,7 +395,7 @@ export function CompetitionsToPlan({ today }: { today: string }) {
     if (!loaded) return <Loader size="sm" aria-label={t('toPlanLoading')} />;
     const { list, sessions } = loaded;
     if (!list) return <FormError state={{ code: 'NETWORK_ERROR' }} />;
-    if (!list.department) {
+    if (list.departments.length === 0) {
       return (
         <Text size="sm" c="dimmed">
           {t('noDepartment')}{' '}

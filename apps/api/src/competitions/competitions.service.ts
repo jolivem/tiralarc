@@ -53,7 +53,7 @@ const toDepartmentDto = (d: Department): DepartmentDto => ({ code: d.code, name:
 const isoDay = (date: Date) => date.toISOString().slice(0, 10);
 
 /**
- * The FFTA competitions of the archer's department in their disciplines. The site is read on
+ * The FFTA competitions of the archer's departments in their disciplines. The site is read on
  * demand, one search per department and discipline, and kept in memory: archers of one
  * department share it, and a failed reading falls back on the last one.
  */
@@ -124,8 +124,8 @@ export class CompetitionsService {
 
   async list(userId: string, from?: string, to?: string): Promise<CompetitionListDto> {
     const profile = await this.profiles.get(userId);
-    const department = profile.department ? departmentByCode(profile.department) : undefined;
-    if (!department) return { department: null, competitions: [], complete: true };
+    const departments = profile.departments.flatMap((code) => departmentByCode(code) ?? []);
+    if (departments.length === 0) return { departments: [], competitions: [], complete: true };
 
     // The FFTA id searched → the archer's discipline it shows as.
     const searched = new Map<number, Discipline>();
@@ -142,11 +142,14 @@ export class CompetitionsService {
     const today = isoDay(new Date());
     const first = from && from > today ? from : today;
     const [results, dismissals] = await Promise.all([
+      // One search per department and discipline (each shared with the other archers).
       Promise.all(
-        [...searched.keys()].map(async (id) => ({
-          id,
-          competitions: await this.search(department, id),
-        })),
+        departments.flatMap((department) =>
+          [...searched.keys()].map(async (id) => ({
+            id,
+            competitions: await this.search(department, id),
+          })),
+        ),
       ),
       this.prisma.dismissedCompetition.findMany({
         where: { userId },
@@ -173,7 +176,7 @@ export class CompetitionsService {
       (a, b) => a.startDate.localeCompare(b.startDate) || a.title.localeCompare(b.title),
     );
     return {
-      department: toDepartmentDto(department),
+      departments: departments.map(toDepartmentDto),
       competitions,
       complete: results.every((r) => r.competitions !== null),
     };

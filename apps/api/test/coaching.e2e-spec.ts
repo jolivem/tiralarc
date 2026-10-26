@@ -251,11 +251,11 @@ describe('Coaching (e2e)', () => {
   });
 
   it("shows the archer's FFTA competitions, which a coach with write access adds", async () => {
-    // The archer's department and disciplines decide (Essonne, 91, is "dep[]=92" on the site).
+    // The archer's departments and disciplines decide (Essonne, 91, is "dep[]=92" on the site).
     await http()
       .patch('/api/v1/profile')
       .set(as(archer))
-      .send({ department: '91', disciplines: ['NATURE'] })
+      .send({ departments: ['91'], disciplines: ['NATURE'] })
       .expect(200);
     const competition = {
       id: '27001',
@@ -276,7 +276,7 @@ describe('Coaching (e2e)', () => {
 
     await setAccess('READ');
     const { body } = await http().get(`${base()}/competitions`).set(as(coach)).expect(200);
-    expect(body).toMatchObject({ department: { code: '91' }, complete: true });
+    expect(body).toMatchObject({ departments: [{ code: '91' }], complete: true });
     expect(body.competitions).toEqual([
       expect.objectContaining({
         id: '27001',

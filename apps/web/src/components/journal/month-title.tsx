@@ -51,30 +51,34 @@ export function useLettering(text: string): Artwork | null {
       .getPropertyValue('--font-month')
       .trim();
     if (!family) return;
-    // Drawing before the font arrives would draw the fallback's letters.
-    void document.fonts.load(`${FONT_SIZE}px ${family}`, text).then(() => {
-      if (cancelled) return;
-      const context = Object.assign(document.createElement('canvas'), {
-        width: WIDTH,
-        height: HEIGHT,
-      }).getContext('2d', { willReadFrequently: true });
-      if (!context) return;
-      context.fillStyle = '#fff';
-      context.fillRect(0, 0, WIDTH, HEIGHT);
-      context.font = `${FONT_SIZE}px ${family}`;
-      const fit = Math.min(1, (WIDTH * 0.96) / context.measureText(text).width);
-      context.font = `${Math.floor(FONT_SIZE * fit)}px ${family}`;
-      context.textAlign = 'center';
-      context.textBaseline = 'middle';
-      context.strokeStyle = '#000';
-      context.lineWidth = OUTLINE_WIDTH;
-      context.lineJoin = 'round';
-      context.strokeText(text, WIDTH / 2, HEIGHT / 2);
-      setDrawn({
-        text,
-        art: toArtwork(context.getImageData(0, 0, WIDTH, HEIGHT).data, WIDTH, HEIGHT),
+    // Drawing before the font arrives would draw the fallback's letters. A failed load
+    // (e.g. the fallback face's local() font missing, as on a bare Linux) still draws.
+    void document.fonts
+      .load(`${FONT_SIZE}px ${family}`, text)
+      .catch(() => [])
+      .then(() => {
+        if (cancelled) return;
+        const context = Object.assign(document.createElement('canvas'), {
+          width: WIDTH,
+          height: HEIGHT,
+        }).getContext('2d', { willReadFrequently: true });
+        if (!context) return;
+        context.fillStyle = '#fff';
+        context.fillRect(0, 0, WIDTH, HEIGHT);
+        context.font = `${FONT_SIZE}px ${family}`;
+        const fit = Math.min(1, (WIDTH * 0.96) / context.measureText(text).width);
+        context.font = `${Math.floor(FONT_SIZE * fit)}px ${family}`;
+        context.textAlign = 'center';
+        context.textBaseline = 'middle';
+        context.strokeStyle = '#000';
+        context.lineWidth = OUTLINE_WIDTH;
+        context.lineJoin = 'round';
+        context.strokeText(text, WIDTH / 2, HEIGHT / 2);
+        setDrawn({
+          text,
+          art: toArtwork(context.getImageData(0, 0, WIDTH, HEIGHT).data, WIDTH, HEIGHT),
+        });
       });
-    });
     return () => {
       cancelled = true;
     };

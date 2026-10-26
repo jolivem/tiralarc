@@ -11,7 +11,11 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN pnpm turbo run build --filter=@tiralarc/web
 
 FROM node:22-alpine AS runtime
-ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 PORT=3000 HOSTNAME=0.0.0.0
+# Chromium prints the journal's PDF extract (src/lib/pdf.ts); fonts for any text the site's
+# own web fonts don't cover.
+RUN apk add --no-cache chromium font-noto
+ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 PORT=3000 HOSTNAME=0.0.0.0 \
+    CHROMIUM_PATH=/usr/bin/chromium-browser
 WORKDIR /app
 COPY --from=build --chown=node:node /repo/apps/web/.next/standalone ./
 COPY --from=build --chown=node:node /repo/apps/web/.next/static ./apps/web/.next/static

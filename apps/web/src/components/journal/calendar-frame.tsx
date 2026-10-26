@@ -59,20 +59,11 @@ export function CalendarFrame({
   );
 }
 
-/** One band: the plain image until its pixels are read, then a canvas with the colouring. */
-function Band({
-  src,
-  band,
-  fills,
-  tool,
-  onFillsChange,
-}: {
-  src: string;
-  band: ThemeBand;
-  fills: ThemeFill[];
-  tool: ColoringTool;
-  onFillsChange: (fills: ThemeFill[]) => void;
-}) {
+/**
+ * A decoration image read as line art (scaled down to `MAX_WORK_SIZE`), to be coloured;
+ * null until its pixels are read.
+ */
+export function useArtwork(src: string): Artwork | null {
   const [art, setArt] = useState<Artwork | null>(null);
 
   useEffect(() => {
@@ -96,6 +87,25 @@ function Band({
       cancelled = true;
     };
   }, [src]);
+
+  return art;
+}
+
+/** One band: the plain image until its pixels are read, then a canvas with the colouring. */
+function Band({
+  src,
+  band,
+  fills,
+  tool,
+  onFillsChange,
+}: {
+  src: string;
+  band: ThemeBand;
+  fills: ThemeFill[];
+  tool: ColoringTool;
+  onFillsChange: (fills: ThemeFill[]) => void;
+}) {
+  const art = useArtwork(src);
 
   if (!art) {
     // Decorative, and static files of unknown size: a plain <img> rather than next/image.

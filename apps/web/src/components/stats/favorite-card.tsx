@@ -14,7 +14,7 @@ import classes from './stats.module.css';
 
 /**
  * The card of one indicator, as on the Indicators page (the home page's favourite);
- * `compact`: at half height, in slightly smaller text.
+ * `compact`: smaller (3/4 wide, half height), in slightly smaller text, without its frame.
  */
 export function IndicatorCard({
   compact = false,

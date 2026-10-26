@@ -1,6 +1,7 @@
-import { Box, SimpleGrid, Stack, Text } from '@mantine/core';
+import { Box, Group, SimpleGrid, Stack, Text } from '@mantine/core';
 import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/server';
 import binder from '@/components/binder/binder.module.css';
+import { ExportButton } from '@/components/export/export-button';
 import { FirstJournalPrompt } from '@/components/journal/journal-modal';
 import { MonthsOverview } from '@/components/journal/months-overview';
 import { NewEvents } from '@/components/journal/new-events';
@@ -152,32 +153,39 @@ export default async function ArcherHomePage({ params }: PageProps<'/[locale]/ar
     </Stack>
   );
 
-  // On the right, under the day: the favourite indicator, its star filled (a click there
-  // takes it off the home page), the archer's FFTA national rankings, then the FFTA
-  // competitions still to plan.
+  // On the right, under the day: the archer's FFTA national rankings, the FFTA competitions
+  // still to plan, then the favourite indicator, its star filled (a click there takes it off
+  // the home page).
   const right = (
     <Stack gap={0} h="100%">
-      {/* The national ranking's heading right under the day (or the favourite indicator). */}
+      {/* The national ranking's heading right under the day. */}
       <div>
         <AlignedTop>
+          {/* The PDF extract, over the selected journal's period at first. */}
+          <Group justify="flex-end">
+            <ExportButton
+              from={selected?.startDate ?? `${today.slice(0, 7)}-01`}
+              to={selected?.endDate ?? today}
+            />
+          </Group>
           <Box visibleFrom="md">{date}</Box>
-          {favorite && favoriteStats && (
-            <RuledCardTitles value>
-              <FavoriteIndicatorProvider initial={favorite}>
-                <IndicatorCard
-                  compact
-                  indicator={favorite}
-                  stats={favoriteStats.stats}
-                  period={favoriteStats.span}
-                  today={favoriteStats.today}
-                />
-              </FavoriteIndicatorProvider>
-            </RuledCardTitles>
-          )}
         </AlignedTop>
         <RankingsCard />
       </div>
       <CompetitionsToPlan today={today} />
+      {favorite && favoriteStats && (
+        <RuledCardTitles value>
+          <FavoriteIndicatorProvider initial={favorite}>
+            <IndicatorCard
+              compact
+              indicator={favorite}
+              stats={favoriteStats.stats}
+              period={favoriteStats.span}
+              today={favoriteStats.today}
+            />
+          </FavoriteIndicatorProvider>
+        </RuledCardTitles>
+      )}
       <Box mt="auto">{notes(RIGHT_NOTES, LEFT_NOTES.length)}</Box>
     </Stack>
   );

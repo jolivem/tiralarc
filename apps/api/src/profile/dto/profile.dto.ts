@@ -1,5 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
+  ArrayMaxSize,
   ArrayUnique,
   IsArray,
   IsBoolean,
@@ -12,7 +13,7 @@ import {
   MaxLength,
 } from 'class-validator';
 import { SUPPORTED_LOCALES } from '../../common/locales.js';
-import { DEPARTMENT_CODES } from '../../competitions/departments.js';
+import { DEPARTMENT_CODES, MAX_DEPARTMENTS } from '../../competitions/departments.js';
 import {
   AgeCategory,
   BowType,
@@ -67,14 +68,13 @@ export class ProfileDto {
   favoriteIndicator!: Indicator | null;
 
   @ApiProperty({
-    type: String,
-    nullable: true,
-    example: '78',
+    type: [String],
+    example: ['78', '92'],
     description:
-      'Department code (see GET /competitions/departments) whose FFTA competitions the ' +
-      'calendars show; null = none.',
+      `Department codes (see GET /competitions/departments, at most ${MAX_DEPARTMENTS}) whose ` +
+      'FFTA competitions the calendars show; empty = none.',
   })
-  department!: string | null;
+  departments!: string[];
 
   @ApiProperty({
     description: 'Also show the para-archery competitions (indoor and outdoor target archery).',
@@ -134,14 +134,18 @@ export class UpdateProfileDto {
   favoriteIndicator?: Indicator | null;
 
   @ApiPropertyOptional({
-    type: String,
-    nullable: true,
-    example: '78',
-    description: 'Department code (see GET /competitions/departments); null for none.',
+    type: [String],
+    example: ['78', '92'],
+    maxItems: MAX_DEPARTMENTS,
+    description:
+      'Replaces the departments (codes, see GET /competitions/departments); empty for none.',
   })
   @IsOptional()
-  @IsIn(DEPARTMENT_CODES)
-  department?: string | null;
+  @IsArray()
+  @ArrayMaxSize(MAX_DEPARTMENTS)
+  @ArrayUnique()
+  @IsIn(DEPARTMENT_CODES, { each: true })
+  departments?: string[];
 
   @ApiPropertyOptional()
   @IsOptional()

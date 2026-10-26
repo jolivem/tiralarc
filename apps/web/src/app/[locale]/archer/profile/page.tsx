@@ -16,7 +16,7 @@ const EMPTY_PROFILE = {
   disciplines: [],
   calendarFont: null,
   favoriteIndicator: null,
-  department: null,
+  departments: [],
   paraCompetitions: false,
 };
 

@@ -189,8 +189,8 @@
     "open": "Ouvrir",
     "openJournal": "Ouvrir le journal",
     "competitions": {
-      "title": "Concours à venir · {department}",
-      "noDepartment": "Choisissez votre département sur la page Profil pour voir ici les concours FFTA à venir dans vos disciplines.",
+      "title": "Concours à venir · {departments}",
+      "noDepartment": "Choisissez vos départements sur la page Profil pour voir ici les concours FFTA à venir dans vos disciplines.",
       "setUp": "Aller au profil",
       "empty": "Aucun concours à venir cette saison dans vos disciplines (page Profil).",
       "incomplete": "Le calendrier de la FFTA n'a pas pu être lu en entier : la liste est peut-être incomplète, réessayez plus tard.",
@@ -204,7 +204,7 @@
       "dismissCancel": "Annuler",
       "dismissConfirm": "Retirer de la liste",
       "toPlanLoading": "Chargement des compétitions",
-      "toPlanNone": "Aucune compétition FFTA avec mandat publié à planifier dans les mois qui viennent (département et disciplines de la page Profil).",
+      "toPlanNone": "Aucune compétition FFTA avec mandat publié à planifier dans les mois qui viennent (départements et disciplines de la page Profil).",
       "ticket": "FFTA",
       "fftaPage": "Fiche FFTA",
       "mandate": "Mandat",
@@ -594,8 +594,8 @@
     },
     "competitions": {
       "title": "Compétitions",
-      "hint": "Les concours à venir du calendrier de la FFTA dans votre département et vos disciplines pratiquées s'affichent dans le calendrier annuel.",
-      "department": "Département",
+      "hint": "Choisissez jusqu'à {max} départements : leurs concours à venir du calendrier de la FFTA, dans vos disciplines pratiquées, s'affichent dans vos calendriers et dans les compétitions à planifier de la page d'accueil.",
+      "departments": "Départements",
       "noDepartment": "Aucun (ne pas afficher les concours)",
       "para": "Inclure les concours de para-tir à l'arc (salle et extérieur)",
       "save": "Enregistrer",
@@ -729,5 +729,27 @@
       "READ": "Lecture seule",
       "WRITE": "Vous pouvez planifier les jours à venir"
     }
+  },
+  "export": {
+    "button": "Extrait PDF",
+    "title": "Extrait PDF de mon journal",
+    "intro": "Un fichier PDF au format A5 : le calendrier de chaque mois avec son décor et ses couleurs, et les éléments choisis ci-dessous.",
+    "periodLabel": "Période",
+    "tooLong": "Choisissez au plus {max} jours.",
+    "parts": "À inclure",
+    "rankings": "Classement national",
+    "stats": "Indicateurs",
+    "sheets": "Fiches des entraînements, coachings et compétitions (une page par fiche)",
+    "photos": "Photos de chaque événement (une page par événement)",
+    "generate": "Générer le PDF",
+    "generating": "Préparation du PDF : cela peut prendre une minute, davantage avec les photos.",
+    "failed": "Le PDF n'a pas pu être généré. Réessayez plus tard.",
+    "cancel": "Annuler",
+    "coverTitle": "Mon journal d'archer",
+    "period": "Du {from} au {to}",
+    "generatedOn": "Extrait du {date}",
+    "noReview": "Bilan pas encore rempli.",
+    "photosOf": "Photos · {type} du {date}",
+    "unavailable": "Les indicateurs n'ont pas pu être chargés."
   }
 }

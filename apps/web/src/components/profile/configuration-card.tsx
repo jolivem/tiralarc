@@ -1,6 +1,6 @@
 'use client';
 
-import { Checkbox, Select, SimpleGrid, Stack, Text, TextInput } from '@mantine/core';
+import { Checkbox, MultiSelect, Select, SimpleGrid, Stack, Text, TextInput } from '@mantine/core';
 import type {
   AgeCategory,
   ArcherProfile,
@@ -18,6 +18,8 @@ import classes from './profile.module.css';
 
 const CATEGORIES: AgeCategory[] = ['U11', 'U13', 'U15', 'U18', 'U21', 'S1', 'S2', 'S3'];
 const BOW_TYPES: BowType[] = ['RECURVE', 'COMPOUND', 'BAREBOW', 'LONGBOW', 'HUNTING', 'FREE'];
+/** As many departments as the API takes (`departments` in the archer profile). */
+const MAX_DEPARTMENTS = 5;
 
 /** Sport details: licence, category, bow and practised disciplines. */
 export function ConfigurationCard({ profile }: { profile: ArcherProfile }) {
@@ -120,18 +122,18 @@ export function ConfigurationCard({ profile }: { profile: ArcherProfile }) {
   );
 }
 
-/** Which FFTA competitions the yearly calendar shows: the department's, para ones or not. */
+/** Which FFTA competitions the calendars show: those of up to 5 departments, para ones or not. */
 export function CompetitionsCard({
   profile,
   departments,
 }: {
-  profile: Pick<ArcherProfile, 'department' | 'paraCompetitions'>;
+  profile: Pick<ArcherProfile, 'departments' | 'paraCompetitions'>;
   departments: Department[];
 }) {
   const t = useTranslations('profile.competitions');
   const fieldId = useId();
   const [values, setValues] = useState({
-    department: profile.department,
+    departments: profile.departments,
     paraCompetitions: profile.paraCompetitions,
   });
   const [saved, setSaved] = useState(() => JSON.stringify(values));
@@ -159,20 +161,23 @@ export function CompetitionsCard({
       >
         <Stack gap="md">
           <Text size="sm" c="dimmed">
-            {t('hint')}
+            {t('hint', { max: MAX_DEPARTMENTS })}
           </Text>
           <div className={classes.fieldRows}>
-            <label htmlFor={`${fieldId}-department`} className={classes.fieldName}>
-              {t('department')}
+            <label htmlFor={`${fieldId}-departments`} className={classes.fieldName}>
+              {t('departments')}
             </label>
-            <Select
-              id={`${fieldId}-department`}
-              placeholder={t('noDepartment')}
+            <MultiSelect
+              id={`${fieldId}-departments`}
+              // Only while none is chosen.
+              placeholder={values.departments.length === 0 ? t('noDepartment') : undefined}
               data={departments.map((d) => ({ value: d.code, label: `${d.code} - ${d.name}` }))}
-              value={values.department}
-              onChange={(v) => set('department', v)}
+              value={values.departments}
+              onChange={(v) => set('departments', v)}
+              maxValues={MAX_DEPARTMENTS}
               searchable
               clearable
+              hidePickedOptions
             />
           </div>
           <Checkbox

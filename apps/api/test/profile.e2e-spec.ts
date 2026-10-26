@@ -47,7 +47,7 @@ describe('Profile (e2e)', () => {
       disciplines: [],
       calendarFont: null,
       favoriteIndicator: null,
-      department: null,
+      departments: [],
       paraCompetitions: false,
     });
 
@@ -61,7 +61,7 @@ describe('Profile (e2e)', () => {
         disciplines: ['INDOOR', 'BEURSAULT', 'RUN_ARCHERY'],
         calendarFont: 'great-vibes',
         favoriteIndicator: 'DURATIONS',
-        department: '2A',
+        departments: ['2A', '971'],
         paraCompetitions: true,
       })
       .expect(200);
@@ -72,7 +72,7 @@ describe('Profile (e2e)', () => {
       disciplines: ['INDOOR', 'BEURSAULT', 'RUN_ARCHERY'],
       calendarFont: 'great-vibes',
       favoriteIndicator: 'DURATIONS',
-      department: '2A',
+      departments: ['2A', '971'],
       paraCompetitions: true,
     });
 

@@ -228,7 +228,7 @@ export function JournalView({
     });
   }, [from, to, typesKey, archerId, reloads]);
 
-  // The FFTA competitions of the archer's department still to come in the month (the archer's
+  // The FFTA competitions of the archer's departments still to come in the month (the archer's
   // profile decides which), for the archer and for their coach.
   const [loadedCompetitions, setLoadedCompetitions] = useState<{
     range: string;

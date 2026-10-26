@@ -55,6 +55,8 @@ export function TiralarcShell({ user, children }: { user: ShellUser | null; chil
   const t = useTranslations();
   const pathname = usePathname();
   const [opened, { toggle, close }] = useDisclosure();
+  // The PDF extract's pages (print/): paper only, no header or tabs.
+  const printed = pathname.startsWith('/print/');
 
   // The tabs of the journal shown: the archer's own (archer area) or a coached archer's.
   const inArcherArea = pathname === '/archer' || pathname.startsWith('/archer/');
@@ -67,6 +69,7 @@ export function TiralarcShell({ user, children }: { user: ShellUser | null; chil
   const hasSections = sections.length > 0;
   const current = hasSections ? sectionOf(pathname, sections) : undefined;
 
+  if (printed) return <>{children}</>;
   return (
     <AppShell
       header={{ height: 60 }}

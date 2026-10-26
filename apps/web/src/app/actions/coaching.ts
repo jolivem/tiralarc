@@ -60,7 +60,7 @@ export async function listAthleteSessions(
 }
 
 /**
- * The FFTA competitions the archer sees (their department and disciplines) between two days,
+ * The FFTA competitions the archer sees (their departments and disciplines) between two days,
  * within their journal of the season in progress; null when they could not be loaded.
  */
 export async function listAthleteCompetitions(

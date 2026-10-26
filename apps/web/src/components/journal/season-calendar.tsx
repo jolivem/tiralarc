@@ -50,7 +50,7 @@ async function eventsOf(startDate: string, endDate: string): Promise<JournalSess
 /**
  * Wraps the home page's months: clicking them opens the whole season of the journal
  * (every month of its period) in a dialog titled with the journal's name. Below the months, the
- * FFTA competitions still to come in the archer's department (profile), their days outlined.
+ * FFTA competitions still to come in the archer's departments (profile), their days outlined.
  */
 export function SeasonCalendar({
   journal,

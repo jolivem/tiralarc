@@ -130,7 +130,7 @@ export async function listSessions(from: string, to: string): Promise<JournalSes
 }
 
 /**
- * The FFTA competitions of the archer's department and disciplines between two days
+ * The FFTA competitions of the archer's departments and disciplines between two days
  * (inclusive); null when they could not be loaded.
  */
 export async function listCompetitions(from: string, to: string): Promise<CompetitionList | null> {

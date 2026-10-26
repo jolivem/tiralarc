@@ -1626,7 +1626,7 @@
             "bearer": []
           }
         ],
-        "summary": "Upcoming FFTA competitions of the archer's department, in their disciplines (profile)",
+        "summary": "Upcoming FFTA competitions of the archer's departments, in their disciplines (profile)",
         "tags": [
           "competitions"
         ]
@@ -2888,7 +2888,7 @@
             "bearer": []
           }
         ],
-        "summary": "Upcoming FFTA competitions of the archer's department and disciplines, within the current journal (WRITE access adds them with POST .../sessions and `fftaCompetitionId`)",
+        "summary": "Upcoming FFTA competitions of the archer's departments and disciplines, within the current journal (WRITE access adds them with POST .../sessions and `fftaCompetitionId`)",
         "tags": [
           "coaching"
         ]
@@ -4726,18 +4726,15 @@
       "CompetitionListDto": {
         "type": "object",
         "properties": {
-          "department": {
-            "nullable": true,
-            "description": "The archer's department (profile); null = none chosen, hence no competitions.",
-            "type": "object",
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/DepartmentDto"
-              }
-            ]
+          "departments": {
+            "description": "The archer's departments (profile), in their order; empty = none chosen, hence no competitions.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DepartmentDto"
+            }
           },
           "competitions": {
-            "description": "The department's competitions in the archer's disciplines (profile) that have not ended yet and touch the requested days, by first day.",
+            "description": "The departments' competitions in the archer's disciplines (profile) that have not ended yet and touch the requested days, by first day.",
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/CompetitionDto"
@@ -4749,7 +4746,7 @@
           }
         },
         "required": [
-          "department",
+          "departments",
           "competitions",
           "complete"
         ]
@@ -4964,11 +4961,16 @@
               }
             ]
           },
-          "department": {
-            "type": "string",
-            "nullable": true,
-            "example": "78",
-            "description": "Department code (see GET /competitions/departments) whose FFTA competitions the calendars show; null = none."
+          "departments": {
+            "example": [
+              "78",
+              "92"
+            ],
+            "description": "Department codes (see GET /competitions/departments, at most 5) whose FFTA competitions the calendars show; empty = none.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           },
           "paraCompetitions": {
             "type": "boolean",
@@ -4982,7 +4984,7 @@
           "disciplines",
           "calendarFont",
           "favoriteIndicator",
-          "department",
+          "departments",
           "paraCompetitions"
         ]
       },
@@ -5033,11 +5035,17 @@
               }
             ]
           },
-          "department": {
-            "type": "string",
-            "nullable": true,
-            "example": "78",
-            "description": "Department code (see GET /competitions/departments); null for none."
+          "departments": {
+            "example": [
+              "78",
+              "92"
+            ],
+            "maxItems": 5,
+            "description": "Replaces the departments (codes, see GET /competitions/departments); empty for none.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           },
           "paraCompetitions": {
             "type": "boolean"

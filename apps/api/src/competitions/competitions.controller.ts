@@ -49,7 +49,7 @@ export class CompetitionsController {
   @Get()
   @ApiOperation({
     summary:
-      "Upcoming FFTA competitions of the archer's department, in their disciplines (profile)",
+      "Upcoming FFTA competitions of the archer's departments, in their disciplines (profile)",
     description:
       'Read from the FFTA website and kept for a few hours. With `paraCompetitions` in the ' +
       'profile, the para-archery indoor and outdoor competitions are included.',

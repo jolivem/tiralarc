@@ -50,11 +50,18 @@ const SCORE_STEP = 50;
 export const RuledCardTitles = createContext(false);
 
 /**
+ * Cards printed in the PDF extract (components/print): no frame, no choice bar, the whole
+ * period shown (all event types for the scores), every competition listed.
+ */
+export const PrintedCards = createContext(false);
+
+/**
  * A card's title, in the calligraphy font the archer chose on the Profile page, written on
  * a line of the squared paper (see `.cardTitle`) — or of a ruled page (`RuledCardTitles`).
  */
-export function StatsCardTitle({ children }: { children: ReactNode }) {
-  // On the home notebook's ruled page: on its lines, like the page's other titles.
+export function StatsCardTitle({ aside, children }: { aside?: ReactNode; children: ReactNode }) {
+  // On the home notebook's ruled page: on its lines, as big as the page's other titles
+  // (RuledHeading).
   if (use(RuledCardTitles)) {
     return (
       <OnRuling
@@ -62,11 +69,15 @@ export function StatsCardTitle({ children }: { children: ReactNode }) {
         lines={2}
         style={{
           fontFamily: 'var(--font-calendar, var(--font-hand)), cursive',
-          fontSize: '1.7rem',
+          fontSize: '2rem',
           fontWeight: 'var(--card-title-weight, 400)' as CSSProperties['fontWeight'],
         }}
       >
-        {children}
+        {/* `aside` (the star) at the end of the line, level with the title. */}
+        <span className={classes.ruledTitle}>
+          <span>{children}</span>
+          {aside}
+        </span>
       </OnRuling>
     );
   }
@@ -154,16 +165,27 @@ function StatsCard({
   indicator: Indicator;
   children: ReactNode;
 }) {
+  const star = <FavoriteStar indicator={indicator} />;
+  // On a ruled page the title is pushed onto a line: the star goes along with it.
+  const ruled = use(RuledCardTitles);
+  if (use(PrintedCards)) {
+    return (
+      <section className={`${classes.viz} ${classes.printedCard}`}>
+        <Stack gap="sm">
+          <StatsCardTitle>{title}</StatsCardTitle>
+          {children}
+        </Stack>
+      </section>
+    );
+  }
   return (
     <SquaredCard className={classes.viz}>
       <Stack gap="md">
-        <StatsCardTitle>{title}</StatsCardTitle>
+        <StatsCardTitle aside={ruled ? star : undefined}>{title}</StatsCardTitle>
         {children}
       </Stack>
       {/* In the centre of the top right square (see SquaredCard). */}
-      <div className={classes.cornerStar}>
-        <FavoriteStar indicator={indicator} />
-      </div>
+      {!ruled && <div className={classes.cornerStar}>{star}</div>}
     </SquaredCard>
   );
 }
@@ -191,6 +213,8 @@ function ChoiceBar<T extends string>({
   /** Smaller text, so longer labels fit the same buttons. */
   size?: 'xs';
 }) {
+  // On paper, nothing to choose: the card shows its widest choice.
+  if (use(PrintedCards)) return null;
   return (
     <Group justify="center">
       <SegmentedControl
@@ -308,6 +332,7 @@ function SortHeader({
 export function CompetitionsCard({ competitions }: { competitions: CompetitionStat[] }) {
   const t = useTranslations();
   const locale = useLocale();
+  const printed = use(PrintedCards);
   const { shortDay, number } = useDates();
   // The disciplines competed in, in the usual order; one shown, or all.
   const disciplines = DISCIPLINE_ORDER.filter((d) => competitions.some((c) => c.discipline === d));
@@ -370,7 +395,13 @@ export function CompetitionsCard({ competitions }: { competitions: CompetitionSt
             />
           )}
           {/* One line per competition, as wide as the card: a long place is cut short. */}
-          <Table.ScrollContainer minWidth={0} type="native" className={classes.tableBox}>
+          <Table.ScrollContainer
+            minWidth={0}
+            type="native"
+            className={classes.tableBox}
+            // Printed: all the rows, nothing to scroll.
+            style={printed ? { maxHeight: 'none' } : undefined}
+          >
             <Table
               // Compact rows: 5px above and below the text.
               verticalSpacing={5}
@@ -580,7 +611,7 @@ function CumulativeCard({
   const t = useTranslations('stats');
   const format = useFormatter();
   const { day, month } = useDates();
-  const [range, setRange] = useState<ArrowRange>('7');
+  const [range, setRange] = useState<ArrowRange>(use(PrintedCards) ? 'all' : '7');
   const shown = rangeWindow(range, period, today);
   const series = [{ name: 'amount', label: seriesLabel, color }];
 
@@ -683,7 +714,7 @@ export function ScoresCard({
 }) {
   const t = useTranslations();
   const { day, month, number } = useDates();
-  const [type, setType] = useState<ScoreType>('COMPETITION');
+  const [type, setType] = useState<ScoreType>(use(PrintedCards) ? 'all' : 'COMPETITION');
   const shown = untilToday(period, today);
 
   const scored = allScores.filter(
@@ -820,7 +851,7 @@ export function EventsCard({
   today: string;
 }) {
   const t = useTranslations();
-  const [range, setRange] = useState<ShareRange>('30');
+  const [range, setRange] = useState<ShareRange>(use(PrintedCards) ? 'all' : '30');
   const shown = rangeWindow(range, period, today);
 
   const inSpan = eventsByDay.filter((d) => d.date >= shown.startDate && d.date <= shown.endDate);
@@ -912,7 +943,7 @@ export function FeelingsCard({
   today: string;
 }) {
   const t = useTranslations();
-  const [range, setRange] = useState<ShareRange>('30');
+  const [range, setRange] = useState<ShareRange>(use(PrintedCards) ? 'all' : '30');
   const shown = rangeWindow(range, period, today);
 
   const inSpan = feelingsByDay.filter((d) => d.date >= shown.startDate && d.date <= shown.endDate);

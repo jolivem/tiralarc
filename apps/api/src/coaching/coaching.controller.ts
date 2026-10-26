@@ -176,7 +176,7 @@ export class CoachingController {
   @Get(':archerId/competitions')
   @ApiOperation({
     summary:
-      "Upcoming FFTA competitions of the archer's department and disciplines, within the " +
+      "Upcoming FFTA competitions of the archer's departments and disciplines, within the " +
       'current journal (WRITE access adds them with POST .../sessions and `fftaCompetitionId`)',
   })
   @ApiOkResponse({ type: CompetitionListDto })

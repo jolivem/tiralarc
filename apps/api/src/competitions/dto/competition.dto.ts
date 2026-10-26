@@ -6,7 +6,7 @@ const DATE = /^\d{4}-\d{2}-\d{2}$/;
 const DISCIPLINES = Object.values(Discipline);
 export const COMPETITION_STATUSES = ['SCHEDULED', 'POSTPONED', 'CANCELLED'] as const;
 
-/** A French department, for the archer profile's `department`. */
+/** A French department, for the archer profile's `departments`. */
 export class DepartmentDto {
   @ApiProperty({ example: '78', description: 'INSEE code: "01"…"95", "2A", "2B", "971"…' })
   code!: string;
@@ -74,16 +74,17 @@ export class CompetitionDto {
 
 export class CompetitionListDto {
   @ApiProperty({
-    type: () => DepartmentDto,
-    nullable: true,
-    description: "The archer's department (profile); null = none chosen, hence no competitions.",
+    type: () => [DepartmentDto],
+    description:
+      "The archer's departments (profile), in their order; empty = none chosen, hence no " +
+      'competitions.',
   })
-  department!: DepartmentDto | null;
+  departments!: DepartmentDto[];
 
   @ApiProperty({
     type: () => [CompetitionDto],
     description:
-      "The department's competitions in the archer's disciplines (profile) that have not ended " +
+      "The departments' competitions in the archer's disciplines (profile) that have not ended " +
       'yet and touch the requested days, by first day.',
   })
   competitions!: CompetitionDto[];

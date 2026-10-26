@@ -94,7 +94,7 @@ export class CoachingService {
   }
 
   /**
-   * The FFTA competitions the archer sees (their department and disciplines), within the
+   * The FFTA competitions the archer sees (their departments and disciplines), within the
    * current journal's period: what the coach may add to it.
    */
   async competitionList(

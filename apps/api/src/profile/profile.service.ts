@@ -1,6 +1,7 @@
 import { createHash, randomBytes } from 'node:crypto';
 import { HttpStatus, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { ApiException, ErrorCode } from '../common/errors.js';
+import { DEPARTMENT_CODES } from '../competitions/departments.js';
 import type { AuthenticatedUser } from '../common/decorators/current-user.decorator.js';
 import {
   type ArcherProfile,
@@ -32,6 +33,7 @@ const hashToken = (token: string) => createHash('sha256').update(token).digest('
 
 function toProfileDto(profile: ArcherProfile | null): ProfileDto {
   const stored: unknown[] = Array.isArray(profile?.disciplines) ? profile.disciplines : [];
+  const departments: unknown[] = Array.isArray(profile?.departments) ? profile.departments : [];
   return {
     licenceNumber: profile?.licenceNumber ?? null,
     category: profile?.category ?? null,
@@ -39,7 +41,7 @@ function toProfileDto(profile: ArcherProfile | null): ProfileDto {
     disciplines: stored.filter((d): d is Discipline => DISCIPLINES.includes(d as string)),
     calendarFont: profile?.calendarFont ?? null,
     favoriteIndicator: profile?.favoriteIndicator ?? null,
-    department: profile?.department ?? null,
+    departments: departments.filter((d): d is string => DEPARTMENT_CODES.includes(d as string)),
     paraCompetitions: profile?.paraCompetitions ?? false,
   };
 }
@@ -90,7 +92,12 @@ export class ProfileService {
     const profile = await this.prisma.archerProfile.upsert({
       where: { userId },
       // Fields left out of the PATCH come as `undefined`: don't let them unset the default.
-      create: { userId, ...data, disciplines: data.disciplines ?? [] },
+      create: {
+        userId,
+        ...data,
+        disciplines: data.disciplines ?? [],
+        departments: data.departments ?? [],
+      },
       update: data,
     });
     return toProfileDto(profile);

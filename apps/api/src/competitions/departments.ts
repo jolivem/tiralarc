@@ -126,5 +126,8 @@ export const DEPARTMENTS: Department[] = NAMES.map(([code, name], index) => ({
 
 export const DEPARTMENT_CODES = DEPARTMENTS.map((d) => d.code);
 
+/** How many departments an archer's profile may pick. */
+export const MAX_DEPARTMENTS = 5;
+
 export const departmentByCode = (code: string): Department | undefined =>
   DEPARTMENTS.find((d) => d.code === code);

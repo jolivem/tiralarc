@@ -189,8 +189,8 @@
     "open": "Open",
     "openJournal": "Open journal",
     "competitions": {
-      "title": "Upcoming competitions · {department}",
-      "noDepartment": "Choose your department on the Profile page to see the upcoming FFTA competitions in your disciplines here.",
+      "title": "Upcoming competitions · {departments}",
+      "noDepartment": "Choose your departments on the Profile page to see the upcoming FFTA competitions in your disciplines here.",
       "setUp": "Go to the profile",
       "empty": "No upcoming competition this season in your disciplines (Profile page).",
       "incomplete": "The FFTA calendar could not be read in full: the list may be incomplete, try again later.",
@@ -204,7 +204,7 @@
       "dismissCancel": "Cancel",
       "dismissConfirm": "Remove from the list",
       "toPlanLoading": "Loading the competitions",
-      "toPlanNone": "No FFTA competition with a published invitation to plan in the coming months (department and disciplines of the Profile page).",
+      "toPlanNone": "No FFTA competition with a published invitation to plan in the coming months (departments and disciplines of the Profile page).",
       "ticket": "FFTA",
       "fftaPage": "FFTA page",
       "mandate": "Invitation",
@@ -594,8 +594,8 @@
     },
     "competitions": {
       "title": "Competitions",
-      "hint": "The upcoming competitions of the FFTA calendar in your department and your disciplines show in the yearly calendar.",
-      "department": "Department",
+      "hint": "Choose up to {max} departments: their upcoming competitions of the FFTA calendar, in your disciplines, show in your calendars and in the competitions to plan on the home page.",
+      "departments": "Departments",
       "noDepartment": "None (don't show competitions)",
       "para": "Include para-archery competitions (indoor and outdoor)",
       "save": "Save",
@@ -729,5 +729,27 @@
       "READ": "Read only",
       "WRITE": "You can plan the days to come"
     }
+  },
+  "export": {
+    "button": "PDF extract",
+    "title": "PDF extract of my journal",
+    "intro": "An A5 PDF file: each month's calendar with its decoration and colours, and the parts chosen below.",
+    "periodLabel": "Period",
+    "tooLong": "Choose {max} days at most.",
+    "parts": "Include",
+    "rankings": "National ranking",
+    "stats": "Indicators",
+    "sheets": "Training, coaching and competition sheets (one page per sheet)",
+    "photos": "Photos of each event (one page per event)",
+    "generate": "Generate the PDF",
+    "generating": "Preparing the PDF: it may take a minute, longer with photos.",
+    "failed": "The PDF could not be generated. Please try again later.",
+    "cancel": "Cancel",
+    "coverTitle": "My archery journal",
+    "period": "From {from} to {to}",
+    "generatedOn": "Extract of {date}",
+    "noReview": "Review not written yet.",
+    "photosOf": "Photos · {type} on {date}",
+    "unavailable": "The indicators could not be loaded."
   }
 }

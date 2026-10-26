@@ -54,7 +54,7 @@ describe('Competitions (e2e)', () => {
 
   it('shows nothing without a department', async () => {
     const { body } = await list();
-    expect(body).toEqual({ department: null, competitions: [], complete: true });
+    expect(body).toEqual({ departments: [], competitions: [], complete: true });
     expect(ctx.ffta.searches).toHaveLength(0);
   });
 
@@ -69,12 +69,12 @@ describe('Competitions (e2e)', () => {
     ctx.ffta.results.set('79:109', [competition('5', 300)]);
     ctx.ffta.results.set('79:118', [competition('6', 10)]);
     await setProfile({
-      department: '78',
+      departments: ['78'],
       disciplines: ['INDOOR', 'TAE_INTERNATIONAL', 'NATURE'],
     });
 
     const { body } = await list();
-    expect(body.department).toEqual({ code: '78', name: 'Yvelines' });
+    expect(body.departments).toEqual([{ code: '78', name: 'Yvelines' }]);
     expect(body.complete).toBe(true);
     // Ended ones are left out, para ones too (not asked for); by first day.
     expect(body.competitions.map((c: { id: string }) => c.id)).toEqual(['2', '4', '3', '5']);
@@ -117,16 +117,28 @@ describe('Competitions (e2e)', () => {
     await http().put('/api/v1/competitions/abc/dismissal').set(as(archer)).expect(404);
   });
 
+  it('merges the competitions of several departments', async () => {
+    // Essonne (91) is "dep[]=92" on the site; a competition listed in both shows once.
+    ctx.ffta.results.set('92:103', [competition('8', 25), competition('3', 40)]);
+    await setProfile({ departments: ['91', '78'], paraCompetitions: false });
+    const { body } = await list();
+    expect(body.departments).toEqual([
+      { code: '91', name: 'Essonne' },
+      { code: '78', name: 'Yvelines' },
+    ]);
+    expect(body.competitions.map((c: { id: string }) => c.id)).toEqual(['2', '4', '8', '3', '5']);
+  });
+
   it('says when the website could not be read', async () => {
     ctx.ffta.failing.add('76:103');
     ctx.ffta.results.set('76:109', [competition('7', 3)]);
     await setProfile({
-      department: '75',
+      departments: ['75'],
       disciplines: ['INDOOR', 'NATURE'],
       paraCompetitions: false,
     });
     const { body } = await list();
-    expect(body).toMatchObject({ complete: false, department: { code: '75' } });
+    expect(body).toMatchObject({ complete: false, departments: [{ code: '75' }] });
     expect(body.competitions.map((c: { id: string }) => c.id)).toEqual(['7']);
   });
 
@@ -147,13 +159,15 @@ describe('Competitions (e2e)', () => {
     });
   });
 
-  it('rejects an unknown department', async () => {
-    const { body } = await http()
-      .patch('/api/v1/profile')
-      .set(as(archer))
-      .send({ department: '20' })
-      .expect(400);
-    expect(body.code).toBe('VALIDATION_FAILED');
+  it('rejects an unknown department, or more than five', async () => {
+    for (const departments of [['20'], ['01', '02', '03', '04', '05', '06'], ['78', '78']]) {
+      const { body } = await http()
+        .patch('/api/v1/profile')
+        .set(as(archer))
+        .send({ departments })
+        .expect(400);
+      expect(body.code).toBe('VALIDATION_FAILED');
+    }
   });
 
   it('adds a competition to the journal, place and discipline filled in', async () => {

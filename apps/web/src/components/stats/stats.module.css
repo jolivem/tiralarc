@@ -109,6 +109,27 @@
 }
 
 /*
+ * A card in the PDF extract: no frame, kept on one page, its chart or bars low enough for
+ * two cards per A5 page (Mantine sets the charts' height inline, hence the !important).
+ */
+.printedCard {
+  break-inside: avoid;
+
+  & :global(.mantine-AreaChart-root),
+  & :global(.mantine-LineChart-root) {
+    height: 190px !important;
+  }
+
+  & .barTrack {
+    height: 120px;
+  }
+
+  & .bars {
+    margin-top: var(--mantine-spacing-xs);
+  }
+}
+
+/*
  * The favourite star, centred on the card's top right square (--corner-x / --corner-y, set
  * by SquaredCard); off the squared paper, near the top right corner.
  */
@@ -121,11 +142,22 @@
 }
 
 /*
- * A card at half height (the home page's favourite indicator): charts, bars and table half
- * as high, slightly smaller text. Mantine sets the charts' height and the title's size
- * inline, hence the !important.
+ * A small card (the home page's favourite indicator): three quarters of the page wide (on its left) once
+ * the notebook's pages sit side by side (as wide as on the Indicators page otherwise), charts,
+ * bars and table half as high, slightly smaller text, no ink frame. Mantine sets the charts'
+ * height, the title's size and the frame inline, hence the !important.
  */
 .compact {
+  @media (min-width: $mantine-breakpoint-md) {
+    width: 75%;
+  }
+
+  /* Its title starting where the page's other titles do. */
+  & .squaredCard {
+    border: 0 !important;
+    padding-inline: 0 !important;
+  }
+
   & :global(.mantine-AreaChart-root),
   & :global(.mantine-LineChart-root) {
     height: 140px !important;
@@ -153,7 +185,15 @@
     max-height: calc(var(--row) * 6);
   }
 
-  & .cardTitle {
+  & /* A title on a ruled page with the star at the end of its line, both centred on it. */
+.ruledTitle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--mantine-spacing-xs);
+  }
+
+  .cardTitle {
     font-size: 1.35rem !important;
   }
 
