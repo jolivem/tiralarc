@@ -7,6 +7,7 @@ import classes from './notebook.module.css';
  * Puts every `[data-on-ruling]` text of a page (`[data-leaf]`) on the page's ruling: each is
  * pushed down (padding) to the next ruled line, in page order — pushing one moves the next.
  * Its line box (a whole number of lines) then lowers the text's baseline onto the last of them.
+ * Measured where the box sits in the flow: its relative `top` (that lowering) left out.
  */
 function snapPage(leaf: HTMLElement) {
   const step = parseFloat(getComputedStyle(leaf).getPropertyValue('--step'));
@@ -14,7 +15,8 @@ function snapPage(leaf: HTMLElement) {
   const texts = [...leaf.querySelectorAll<HTMLElement>('[data-on-ruling]')];
   for (const text of texts) text.style.paddingTop = '';
   for (const text of texts) {
-    const top = text.getBoundingClientRect().top - leaf.getBoundingClientRect().top;
+    const lowered = parseFloat(getComputedStyle(text).top) || 0;
+    const top = text.getBoundingClientRect().top - lowered - leaf.getBoundingClientRect().top;
     const push = Math.ceil(top / step - 0.01) * step - top;
     if (push > 0.5) text.style.paddingTop = `${push}px`;
   }
@@ -74,15 +76,41 @@ export function OnRuling({
  */
 export function RuledHeading({
   raised = false,
+  penRule = false,
   children,
 }: {
   raised?: boolean;
+  /** A double rule drawn in pen on the line above it, setting off what follows. */
+  penRule?: boolean;
   children: ReactNode;
 }) {
-  const className = `${classes.hand} ${classes.ruledHeading}`;
+  const className = [
+    classes.hand,
+    classes.ruledHeading,
+    raised && classes.raised,
+    penRule && classes.penRule,
+  ]
+    .filter(Boolean)
+    .join(' ');
   return (
-    <OnRuling as="h2" lines={2} className={raised ? `${className} ${classes.raised}` : className}>
+    <OnRuling as="h2" lines={2} className={className}>
       {children}
+    </OnRuling>
+  );
+}
+
+/**
+ * The pen rule of a `RuledHeading penRule` without the heading: as tall, so a page without
+ * the heading draws it level with the one that has it.
+ */
+export function RuledPenRule() {
+  return (
+    <OnRuling
+      as="p"
+      lines={2}
+      className={`${classes.hand} ${classes.ruledHeading} ${classes.penRule}`}
+    >
+      {' '}
     </OnRuling>
   );
 }

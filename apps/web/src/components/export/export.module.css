@@ -1,0 +1,26 @@
+/*
+ * The home page's PDF extract card (export-card.tsx), on the notebook's ruling: the text,
+ * one line of it per ruled line, with the button on its right.
+ */
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--mantine-spacing-sm);
+  padding-inline: 6px;
+}
+
+/* The size of the rankings' "Saison" lines (RuledSubtitle), lowered onto the lines as they are. */
+.intro {
+  position: relative;
+  top: calc(var(--step) / 2 - 2px - 0.3em);
+  flex: 1;
+  margin: 0;
+  color: var(--mantine-color-dimmed);
+  font-size: var(--mantine-font-size-sm);
+  font-style: italic;
+  line-height: var(--step);
+}
+
+.action {
+  flex: none;
+}

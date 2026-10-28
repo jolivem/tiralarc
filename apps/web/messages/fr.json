@@ -34,8 +34,6 @@
     "tagline": "Le carnet de bord des archers",
     "welcomeTitle": "Bienvenue !",
     "welcomeBody": "MyArcheryDiary est votre carnet de tir à l'arc, toujours à portée de main. Comme un vrai carnet posé sur votre bureau, il garde la trace de chaque séance : entraînements, coachings, compétitions et renfo.",
-    "purposeTitle": "À quoi ça sert ?",
-    "purposeBody": "Noter régulièrement ce que l'on fait, c'est mieux comprendre ce qui marche. MyArcheryDiary vous aide à préparer vos séances, à en faire le bilan et à suivre votre progression au fil de la saison.",
     "faqTitle": "Questions fréquentes",
     "faq": {
       "audience": {
@@ -88,7 +86,6 @@
     "COACH": "Coach"
   },
   "login": {
-    "title": "Connexion",
     "submit": "Se connecter",
     "noAccount": "Pas encore de compte ?",
     "createAccount": "Créer un compte",
@@ -732,7 +729,8 @@
   },
   "export": {
     "button": "Extrait PDF",
-    "title": "Extrait PDF de mon journal",
+    "title": "Extrait PDF",
+    "cardIntro": "Gardez une trace papier de votre saison : calendriers, fiches, indicateurs et classements réunis dans un carnet A5, à imprimer, à archiver ou à partager.",
     "intro": "Un fichier PDF au format A5 : le calendrier de chaque mois avec son décor et ses couleurs, et les éléments choisis ci-dessous.",
     "periodLabel": "Période",
     "tooLong": "Choisissez au plus {max} jours.",

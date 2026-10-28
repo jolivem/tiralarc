@@ -105,10 +105,38 @@ export function touchesEdge({ width, height }: Artwork, mask: Uint8Array): boole
 }
 
 /**
+ * The closed area at (x, y), for hollow letters: when the point falls on a stroke or in the
+ * paper around the drawing, a few pixels lower (then aside) — the same letters drawn on
+ * another system come out a pixel or so off, while a point kept near a letter's top edge
+ * (older `letterSeeds`) belongs to the shape just below it. Null when none is found.
+ */
+export function enclosedRegionAt(art: Artwork, x: number, y: number): Uint8Array | null {
+  for (const [dx, dy] of NUDGES) {
+    const region = regionAt(art, x + dx / art.width, y + dy / art.height);
+    if (region && !touchesEdge(art, region)) return region;
+  }
+  return null;
+}
+
+/** Offsets tried by `enclosedRegionAt`, in pixels: the point itself, then lower, then aside. */
+const NUDGES: readonly (readonly [number, number])[] = [
+  [0, 0],
+  [0, 1],
+  [0, 2],
+  [0, 3],
+  [0, 4],
+  [1, 2],
+  [-1, 2],
+  [2, 3],
+  [-2, 3],
+];
+
+/**
  * One point (fractions of the image size) in each closed shape forming hollow letters:
  * the paper areas one stroke away from the paper around the drawing, not the holes of
  * letters such as "o" (two strokes away), nor the paper around. Filling each point
- * colours the letters, and only them.
+ * colours the letters, and only them. Each point is the one furthest from the shape's
+ * outline, so the same letters drawn a pixel off elsewhere still have it inside.
  */
 export function letterSeeds(art: Artwork): { x: number; y: number }[] {
   const { width, height, light } = art;
@@ -193,9 +221,33 @@ export function letterSeeds(art: Artwork): { x: number; y: number }[] {
     queue = next;
   }
 
+  // Steps from each paper pixel to the nearest stroke (4-neighbourhood, two passes), and in
+  // each area the deepest pixel (its first pixel if none deeper).
+  const far = width + height;
+  const distance = new Int32Array(size);
+  for (let i = 0; i < size; i++) {
+    if (!isPaper(i)) continue;
+    const col = i % width;
+    const left = col > 0 ? at(distance, i - 1) : far;
+    const up = i >= width ? at(distance, i - width) : far;
+    distance[i] = Math.min(far, left + 1, up + 1);
+  }
+  const deepest = [...firstPixel];
+  for (let i = size - 1; i >= 0; i--) {
+    if (!isPaper(i)) continue;
+    const col = i % width;
+    const right = col < width - 1 ? at(distance, i + 1) : far;
+    const down = i < size - width ? at(distance, i + width) : far;
+    distance[i] = Math.min(at(distance, i), right + 1, down + 1);
+  }
+  for (let i = 0; i < size; i++) {
+    const id = at(area, i);
+    if (id >= 0 && at(distance, i) > at(distance, at(deepest, id))) deepest[id] = i;
+  }
+
   return depth.flatMap((d, id) => {
     if (d % 2 !== 1) return [];
-    const i = at(firstPixel, id);
+    const i = at(deepest, id);
     return [{ x: ((i % width) + 0.5) / width, y: (Math.floor(i / width) + 0.5) / height }];
   });
 }
@@ -214,18 +266,23 @@ const channels = (hex: string): [number, number, number] => [
 /**
  * RGBA pixels of the coloured artwork: strokes in `line` colour over the fills,
  * uncoloured paper left transparent (so it takes the page colour, light or dark).
+ * `enclosedOnly` (hollow letters): fills colour closed shapes only, found as
+ * `enclosedRegionAt` does — never the paper around the drawing.
  */
 export function paint(
   art: Artwork,
   fills: Fill[],
   line: [number, number, number],
+  { enclosedOnly = false }: { enclosedOnly?: boolean } = {},
 ): Uint8ClampedArray<ArrayBuffer> {
   const { width, height, light } = art;
   // 0 = not coloured, otherwise 1 + index in `colors`.
   const under = new Uint16Array(width * height);
   const colors: [number, number, number][] = [];
   for (const fill of fills) {
-    const mask = regionAt(art, fill.x, fill.y);
+    const mask = enclosedOnly
+      ? enclosedRegionAt(art, fill.x, fill.y)
+      : regionAt(art, fill.x, fill.y);
     if (!mask) continue;
     colors.push(channels(fill.color));
     for (let i = 0; i < mask.length; i++) if (mask[i]) under[i] = colors.length;

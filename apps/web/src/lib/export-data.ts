@@ -50,10 +50,10 @@ export async function getExportData(options: ExportOptions): Promise<ExportData>
   const [journals, { data: sessions }, stats, rankings] = await Promise.all([
     getJournals(),
     api.GET('/api/v1/journal/sessions', { params: { query: range } }),
-    options.stats
+    options.indicators.length > 0
       ? api.GET('/api/v1/journal/sessions/stats', { params: { query: range } }).then((r) => r.data)
       : undefined,
-    options.rankings ? api.GET('/api/v1/rankings').then((r) => r.data) : undefined,
+    options.rankings.length > 0 ? api.GET('/api/v1/rankings').then((r) => r.data) : undefined,
   ]);
 
   const sheeted = options.sheets

@@ -7,6 +7,7 @@ import type { CSSProperties, ReactNode } from 'react';
 import { EventIcon } from '@/components/journal/event-display';
 import { FEELING_INK, FEELINGS } from '@/components/journal/feelings';
 import { DISCIPLINE_COLORS } from '@/components/journal/session-types';
+import { SHEET_ATTRIBUTE } from './markers';
 import classes from './print.module.css';
 
 /** A rating's colour, as on the sheet: red up to 3, orange up to 6, green from 7. */
@@ -59,8 +60,9 @@ function FeelingFace({ label, value }: { label: string; value: Feeling }) {
 }
 
 /**
- * One training, coaching or competition sheet, on a page of its own: what the archer wrote
- * on it, the empty boxes left out. A sheet still to review says so.
+ * One training, coaching or competition sheet, on a page of its own (or sharing it with the
+ * next one when both fit: paginate.tsx): what the archer wrote on it, the empty boxes
+ * left out. A sheet still to review says so.
  */
 export function PrintSheet({ session: s }: { session: JournalSession }) {
   const t = useTranslations();
@@ -98,7 +100,7 @@ export function PrintSheet({ session: s }: { session: JournalSession }) {
   ).flatMap(([kind, value]) => (value ? [{ kind, value }] : []));
 
   return (
-    <section className={classes.page}>
+    <section className={`${classes.page} ${classes.sheet}`} {...{ [SHEET_ATTRIBUTE]: '' }}>
       <header className={classes.sheetHeader}>
         <EventIcon session={s} size={36} />
         <h2 className={classes.sheetType}>{t(`journal.types.${s.type}`)}</h2>

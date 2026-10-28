@@ -1,18 +1,33 @@
 import { describe, expect, it } from 'vitest';
-import { exportMonths, exportQuery, parseExportOptions } from './export-options';
+import {
+  type ExportOptions,
+  exportMonths,
+  exportQuery,
+  parseExportOptions,
+} from './export-options';
 
 const parse = (query: string) => parseExportOptions(new URLSearchParams(query));
 
 describe('parseExportOptions', () => {
   it('reads the days and the parts asked for', () => {
-    expect(parse('from=2026-09-01&to=2027-08-31&stats=1&sheets=1&photos=1')).toEqual({
+    expect(
+      parse('from=2026-09-01&to=2027-08-31&indicators=SCORES,ARROWS&sheets=1&photos=1'),
+    ).toEqual({
       from: '2026-09-01',
       to: '2027-08-31',
-      rankings: false,
-      stats: true,
+      rankings: [],
+      indicators: ['ARROWS', 'SCORES'],
       sheets: true,
       photos: true,
     });
+  });
+
+  it('keeps only the ranked disciplines and the known indicators', () => {
+    const options = parse(
+      'from=2026-09-01&to=2026-09-30&rankings=BEURSAULT,FIELD,INDOOR&indicators=GOALS,EVENTS',
+    );
+    expect(options?.rankings).toEqual(['INDOOR', 'FIELD']);
+    expect(options?.indicators).toEqual(['EVENTS']);
   });
 
   it('takes no photos without the sheets', () => {
@@ -27,11 +42,11 @@ describe('parseExportOptions', () => {
   });
 
   it('round-trips through its query string', () => {
-    const options = {
+    const options: ExportOptions = {
       from: '2026-09-01',
       to: '2026-12-31',
-      rankings: true,
-      stats: false,
+      rankings: ['INDOOR', 'TAE_NATIONAL'],
+      indicators: [],
       sheets: true,
       photos: false,
     };

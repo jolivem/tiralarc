@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { inRegion, letterSeeds, paint, regionAt, toArtwork, touchesEdge } from './coloring';
+import {
+  enclosedRegionAt,
+  inRegion,
+  letterSeeds,
+  paint,
+  regionAt,
+  toArtwork,
+  touchesEdge,
+} from './coloring';
 
 /**
  * 9 × 5 drawing: a closed box (#) in the middle of the paper (.).
@@ -94,6 +102,39 @@ describe('colouring', () => {
     expect(inRegion(art, body, point(2, 2))).toBe(true); // the ring
     expect(inRegion(art, body, point(5, 4))).toBe(false); // the hole
     expect(inRegion(art, body, point(0, 0))).toBe(false); // around
+  });
+
+  it('seeds each letter at its deepest point, away from its outline', () => {
+    // A thick hollow bar: its inside is 3 rows high, the seed on the middle one.
+    const rows = ['.......', '.#####.', '.#...#.', '.#...#.', '.#...#.', '.#####.', '.......'];
+    const width = 7;
+    const rgba = new Uint8ClampedArray(width * rows.length * 4);
+    rows
+      .join('')
+      .split('')
+      .forEach((cell, i) => rgba.set(cell === '#' ? [0, 0, 0, 255] : [255, 255, 255, 255], i * 4));
+    const seeds = letterSeeds(toArtwork(rgba, width, rows.length));
+    expect(seeds).toEqual([{ x: 3.5 / width, y: 3.5 / rows.length }]);
+  });
+
+  it('finds a closed shape a few pixels below a point on its outline or just above it', () => {
+    const art = drawing();
+    const inside = regionAt(art, at(3, 2).x, at(3, 2).y)!;
+    // On the box's top outline, and in the paper right above it.
+    for (const point of [at(3, 1), at(3, 0)]) {
+      const found = enclosedRegionAt(art, point.x, point.y);
+      expect(found && inRegion(art, found, at(3, 2))).toBe(true);
+    }
+    expect(inRegion(art, inside, at(2, 2))).toBe(true);
+    // Far from any closed shape: nothing.
+    expect(enclosedRegionAt(art, at(8, 0).x, at(8, 0).y)).toBeNull();
+  });
+
+  it('never paints the paper around hollow letters', () => {
+    const art = drawing();
+    const out = paint(art, [{ ...at(8, 0), color: '#ff0000' }], [0, 0, 0], { enclosedOnly: true });
+    expect(pixel(out, 7, 2)).toEqual([0, 0, 0, 0]);
+    expect(pixel(out, 3, 2)).toEqual([0, 0, 0, 0]);
   });
 
   it('tells the paper around the drawing from a closed shape', () => {

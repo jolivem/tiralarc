@@ -1,13 +1,13 @@
-import { Box, Group, SimpleGrid, Stack, Text } from '@mantine/core';
+import { Box, SimpleGrid, Stack, Text } from '@mantine/core';
 import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/server';
 import binder from '@/components/binder/binder.module.css';
-import { ExportButton } from '@/components/export/export-button';
+import { ExportCard } from '@/components/export/export-card';
 import { FirstJournalPrompt } from '@/components/journal/journal-modal';
 import { MonthsOverview } from '@/components/journal/months-overview';
 import { NewEvents } from '@/components/journal/new-events';
 import { SeasonCalendar } from '@/components/journal/season-calendar';
 import { HandHeading, HandNote, Notebook } from '@/components/notebook/notebook';
-import { RuledHeading } from '@/components/notebook/on-ruling';
+import { RuledHeading, RuledPenRule } from '@/components/notebook/on-ruling';
 import { AlignedSpacer, AlignedTop, PageAlignment } from '@/components/notebook/page-alignment';
 import { SectionCard } from '@/components/section-card';
 import type { Locale } from '@/i18n/routing';
@@ -19,6 +19,7 @@ import { CompetitionsToPlan } from '@/components/journal/competition-list';
 import { getAuthedApi } from '@/lib/api';
 import { getArcherProfile } from '@/lib/archer-profile';
 import { getCurrentUser } from '@/lib/current-user';
+import { RANKED_DISCIPLINES } from '@/lib/export-options';
 import { getJournals, getSelectedJournal } from '@/lib/journals';
 import { getStats } from '@/lib/stats';
 import home from './home.module.css';
@@ -100,8 +101,8 @@ export default async function ArcherHomePage({ params }: PageProps<'/[locale]/ar
 
   // Two sticky notes side by side; `first` numbers them across both pages (tilts).
   const notes = (sections: readonly NoteSection[], first: number) => (
-    // Room above each note for its strip of tape.
-    <SimpleGrid cols={{ base: 1, xs: 2 }} spacing="xl" verticalSpacing="xl" pt="xs">
+    // Room above each note for its strip of tape, and some air under the heading.
+    <SimpleGrid cols={{ base: 1, xs: 2 }} spacing="xl" verticalSpacing="xl" pt={36}>
       {sections.map((section, i) => (
         <SectionCard
           key={section}
@@ -146,8 +147,16 @@ export default async function ArcherHomePage({ params }: PageProps<'/[locale]/ar
         )}
       </div>
       <NewEvents events={newEvents ?? []} hasPlanningCoach={hasPlanningCoach} />
-      <Box mt="auto">
-        <RuledHeading>{t('sections')}</RuledHeading>
+      {/* The PDF extract, over the selected journal's period at first. */}
+      <ExportCard
+        from={selected?.startDate ?? `${today.slice(0, 7)}-01`}
+        to={selected?.endDate ?? today}
+        disciplines={RANKED_DISCIPLINES.filter((d) => profile?.disciplines.includes(d))}
+      />
+      {/* A blank line at least above the pen rule (on both pages: they stay level). */}
+      <Box mt="auto" pt="var(--line)">
+        {/* A pen rule above the sections, across both pages, sets them off. */}
+        <RuledHeading penRule>{t('sections')}</RuledHeading>
         {notes(LEFT_NOTES, 0)}
       </Box>
     </Stack>
@@ -161,13 +170,6 @@ export default async function ArcherHomePage({ params }: PageProps<'/[locale]/ar
       {/* The national ranking's heading right under the day. */}
       <div>
         <AlignedTop>
-          {/* The PDF extract, over the selected journal's period at first. */}
-          <Group justify="flex-end">
-            <ExportButton
-              from={selected?.startDate ?? `${today.slice(0, 7)}-01`}
-              to={selected?.endDate ?? today}
-            />
-          </Group>
           <Box visibleFrom="md">{date}</Box>
         </AlignedTop>
         <RankingsCard />
@@ -186,7 +188,10 @@ export default async function ArcherHomePage({ params }: PageProps<'/[locale]/ar
           </FavoriteIndicatorProvider>
         </RuledCardTitles>
       )}
-      <Box mt="auto">{notes(RIGHT_NOTES, LEFT_NOTES.length)}</Box>
+      <Box mt="auto" pt="var(--line)">
+        <RuledPenRule />
+        {notes(RIGHT_NOTES, LEFT_NOTES.length)}
+      </Box>
     </Stack>
   );
 

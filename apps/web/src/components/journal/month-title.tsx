@@ -51,10 +51,12 @@ export function useLettering(text: string): Artwork | null {
       .getPropertyValue('--font-month')
       .trim();
     if (!family) return;
-    // Drawing before the font arrives would draw the fallback's letters. A failed load
-    // (e.g. the fallback face's local() font missing, as on a bare Linux) still draws.
+    // Drawing before the font arrives would draw the fallback's letters: wait for the first
+    // family (Ribeye) alone — with the list, the fallback face's missing local() font (as on
+    // a bare Linux, where the PDF is printed) fails the load at once. A failed load still draws.
+    const first = family.split(',')[0]!.trim();
     void document.fonts
-      .load(`${FONT_SIZE}px ${family}`, text)
+      .load(`${FONT_SIZE}px ${first}`, text)
       .catch(() => [])
       .then(() => {
         if (cancelled) return;

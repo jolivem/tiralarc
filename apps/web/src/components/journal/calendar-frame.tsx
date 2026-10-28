@@ -156,9 +156,9 @@ export function ColorableCanvas({
     const context = canvas.current?.getContext('2d');
     if (!context) return;
     const line: [number, number, number] = dark ? [255, 255, 255] : [0, 0, 0];
-    const pixels = paint(art, JSON.parse(signature) as ThemeFill[], line);
+    const pixels = paint(art, JSON.parse(signature) as ThemeFill[], line, { enclosedOnly });
     context.putImageData(new ImageData(pixels, art.width, art.height), 0, 0);
-  }, [art, signature, dark]);
+  }, [art, signature, dark, enclosedOnly]);
 
   const click = (event: MouseEvent<HTMLCanvasElement>) => {
     if (!tool) return;

@@ -34,8 +34,6 @@
     "tagline": "The archer's logbook",
     "welcomeTitle": "Welcome!",
     "welcomeBody": "MyArcheryDiary is your archery notebook, always at hand. Like a real notebook lying on your desk, it keeps track of every session: training, coaching, competitions and strength work.",
-    "purposeTitle": "What is it for?",
-    "purposeBody": "Writing down what you do, regularly, is the best way to understand what works. MyArcheryDiary helps you plan your sessions, review them and follow your progress throughout the season.",
     "faqTitle": "Frequently asked questions",
     "faq": {
       "audience": {
@@ -88,7 +86,6 @@
     "COACH": "Coach"
   },
   "login": {
-    "title": "Sign in",
     "submit": "Sign in",
     "noAccount": "No account yet?",
     "createAccount": "Create an account",
@@ -732,7 +729,8 @@
   },
   "export": {
     "button": "PDF extract",
-    "title": "PDF extract of my journal",
+    "title": "PDF extract",
+    "cardIntro": "Keep a paper record of your season: calendars, sheets, indicators and rankings gathered in an A5 notebook, to print, archive or share.",
     "intro": "An A5 PDF file: each month's calendar with its decoration and colours, and the parts chosen below.",
     "periodLabel": "Period",
     "tooLong": "Choose {max} days at most.",

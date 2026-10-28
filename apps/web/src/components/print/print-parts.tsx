@@ -1,8 +1,9 @@
 'use client';
 
 import { Badge } from '@mantine/core';
-import type { JournalStats, RankingList } from '@tiralarc/api-client';
+import type { Discipline, Indicator, JournalStats, RankingList } from '@tiralarc/api-client';
 import { useFormatter, useTranslations } from 'next-intl';
+import { Fragment } from 'react';
 import { DISCIPLINE_COLORS } from '@/components/journal/session-types';
 import {
   ArrowsCard,
@@ -15,8 +16,17 @@ import {
 } from '@/components/stats/stats-cards';
 import classes from './print.module.css';
 
-/** The archer's FFTA national rankings, this season and the one before (as on the home page). */
-export function PrintRankings({ list }: { list: RankingList | null }) {
+/**
+ * The archer's FFTA national rankings, this season and the one before (as on the home page),
+ * in the chosen disciplines only.
+ */
+export function PrintRankings({
+  list,
+  disciplines,
+}: {
+  list: RankingList | null;
+  disciplines: Discipline[];
+}) {
   const t = useTranslations('archer.rankings');
   const tJournal = useTranslations('journal');
   const format = useFormatter();
@@ -32,7 +42,9 @@ export function PrintRankings({ list }: { list: RankingList | null }) {
     }
     const current = list.season ?? '';
     const seasons = [current, String(Number(current) - 1)].flatMap((season) => {
-      const rankings = list.rankings.filter((r) => r.season === season);
+      const rankings = list.rankings.filter(
+        (r) => r.season === season && disciplines.includes(r.discipline),
+      );
       return season === current || rankings.length > 0 ? [{ season, rankings }] : [];
     });
     return seasons.map(({ season, rankings }) => (
@@ -76,45 +88,68 @@ export function PrintRankings({ list }: { list: RankingList | null }) {
 }
 
 /**
- * The Indicators page's cards over the extract's days, as printed (`PrintedCards`): the
- * whole span, no choices. The goals are not part of it.
+ * The chosen cards of the Indicators page over the extract's days, as printed
+ * (`PrintedCards`): the whole span, no choices. The goals are not part of it.
  */
 export function PrintStats({
   stats,
+  indicators,
   from,
   to,
   today,
 }: {
   stats: JournalStats | null;
+  /** In the Indicators page's order. */
+  indicators: Indicator[];
   from: string;
   to: string;
   today: string;
 }) {
   const t = useTranslations();
   const period = { startDate: from, endDate: to };
+  const card = (indicator: Indicator, stats: JournalStats) => {
+    switch (indicator) {
+      case 'ARROWS':
+        return <ArrowsCard period={period} arrowsByDay={stats.arrowsByDay} today={today} />;
+      case 'DURATIONS':
+        return (
+          <DurationsCard period={period} durationsByDay={stats.durationsByDay} today={today} />
+        );
+      case 'SCORES':
+        return <ScoresCard period={period} scores={stats.scores} today={today} />;
+      case 'EVENTS':
+        return <EventsCard period={period} eventsByDay={stats.eventsByDay} today={today} />;
+      case 'PHYSICAL_FEELINGS':
+        return (
+          <FeelingsCard
+            kind="physical"
+            period={period}
+            feelingsByDay={stats.physicalFeelingsByDay}
+            today={today}
+          />
+        );
+      case 'MENTAL_FEELINGS':
+        return (
+          <FeelingsCard
+            kind="mental"
+            period={period}
+            feelingsByDay={stats.mentalFeelingsByDay}
+            today={today}
+          />
+        );
+      case 'COMPETITIONS':
+        return <CompetitionsCard competitions={stats.competitions} />;
+    }
+  };
   return (
+    // No heading: the chapter's title page already says "Indicators".
     <section className={classes.page}>
-      <h2 className={classes.heading}>{t('archer.stats')}</h2>
       {stats ? (
         <PrintedCards value>
           <div className={classes.indicators}>
-            <ArrowsCard period={period} arrowsByDay={stats.arrowsByDay} today={today} />
-            <DurationsCard period={period} durationsByDay={stats.durationsByDay} today={today} />
-            <ScoresCard period={period} scores={stats.scores} today={today} />
-            <EventsCard period={period} eventsByDay={stats.eventsByDay} today={today} />
-            <FeelingsCard
-              kind="physical"
-              period={period}
-              feelingsByDay={stats.physicalFeelingsByDay}
-              today={today}
-            />
-            <FeelingsCard
-              kind="mental"
-              period={period}
-              feelingsByDay={stats.mentalFeelingsByDay}
-              today={today}
-            />
-            <CompetitionsCard competitions={stats.competitions} />
+            {indicators.map((indicator) => (
+              <Fragment key={indicator}>{card(indicator, stats)}</Fragment>
+            ))}
           </div>
         </PrintedCards>
       ) : (

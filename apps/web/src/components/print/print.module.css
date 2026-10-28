@@ -75,15 +75,87 @@
   font-weight: 600;
 }
 
+/* ---------------------------------------------------------- chapter pages */
+
+/* A chapter's title page (Indicators, Journal, Sheets): the name, centred, a note under it. */
+.chapter {
+  display: flex;
+  flex-direction: column;
+  gap: 6mm;
+  align-items: center;
+  justify-content: center;
+  height: var(--page-height);
+  text-align: center;
+}
+
+.chapterTitle {
+  margin: 0;
+  padding: 3mm 8mm;
+  border-block: 1px solid var(--print-ink);
+  font-family: var(--font-calendar, var(--font-hand)), cursive;
+  font-size: 32pt;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.chapterNote {
+  max-width: 90mm;
+  font-size: 11pt;
+
+  & p {
+    margin: 0 0 2mm;
+  }
+}
+
 /* --------------------------------------------------------- month calendar */
 
-/* One page, whatever the decoration: what doesn't fit is cut rather than spilt over. */
+/*
+ * A double page, whatever the decoration: what doesn't fit is cut rather than spilt over.
+ * Each page is a window on the same spread (two pages wide), the right one shifted by a
+ * page. The left page lands on an even page, facing the right one: Chromium ignores
+ * `break-before: left`, so lib/pdf.ts shows the blank page before it when needed.
+ */
 .month {
+  height: var(--page-height);
+  overflow: hidden;
+}
+
+.blankPage {
+  display: none;
+
+  &[data-print-blank='shown'] {
+    display: block;
+    break-before: page;
+    height: var(--page-height);
+  }
+}
+
+.monthRight .spread {
+  margin-left: -128mm;
+}
+
+.spread {
   display: flex;
   flex-direction: column;
   gap: 2mm;
-  height: var(--page-height);
-  overflow: hidden;
+  width: 256mm;
+  height: 100%;
+}
+
+/* One page's share of the calendar: its side band, if any, and its days' columns. */
+.half {
+  display: flex;
+  gap: 2mm;
+  width: 128mm;
+  min-width: 0;
+}
+
+/* The month's name on the left page, a blank as tall on the right one. */
+.monthHeader {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  height: 18mm;
 }
 
 .band {
@@ -105,11 +177,10 @@
   height: 100%;
 }
 
-/* The calendar between the side bands, filling what the top and bottom bands leave. */
+/* The calendar's two halves, filling what the top and bottom bands leave. */
 .monthMiddle {
   display: flex;
   flex: 1;
-  gap: 2mm;
   min-height: 0;
 }
 
@@ -124,21 +195,20 @@
 .lettering {
   display: block;
   width: 100%;
-  aspect-ratio: 1600 / 260;
+  height: 100%;
+  object-fit: contain;
+  object-position: center bottom;
 }
 
-.year {
-  margin-top: -1mm;
-  text-align: center;
-  font-family: var(--font-calendar, var(--font-hand-upright)), cursive;
-  font-size: 11pt;
-  font-weight: 700;
-}
-
+/* Monday to Thursday on the left page; Friday to Sunday (`threeDays`) on the right. */
 .weekdays,
 .days {
   display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+
+  &.threeDays {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 
 .weekdays {
@@ -151,22 +221,29 @@
 .days {
   flex: 1;
   grid-auto-rows: minmax(0, 1fr);
-  border-top: 1px solid var(--print-line);
-  border-left: 1px solid var(--print-line);
 }
 
+/*
+ * Each day drawn with its whole outline, over its neighbours' (1px back right and below), so
+ * the blank boxes before the 1st and after the last day show nothing.
+ */
 .day {
   display: flex;
   flex-direction: column;
   min-height: 0;
+  margin: 0 -1px -1px 0;
   padding: 0.6mm;
-  border-right: 1px solid var(--print-line);
-  border-bottom: 1px solid var(--print-line);
+  border: 1px solid var(--print-line);
   overflow: hidden;
 
   /* Days of the month outside the extract. */
   &[data-outside] {
     opacity: 0.35;
+  }
+
+  /* Not a day of the month. */
+  &.blank {
+    border-color: transparent;
   }
 }
 
@@ -187,6 +264,23 @@
 }
 
 /* ------------------------------------------------------------------ sheet */
+
+/* A sheet sharing the page of the one before it (paginate.tsx): a rule between them. */
+.sheet[data-print-follows] {
+  break-before: auto;
+  margin-top: 6mm;
+  padding-top: 4mm;
+  border-top: 1px dashed var(--print-muted);
+}
+
+/* A page's printable height, measured by paginate.tsx: out of the flow, unseen. */
+.pageProbe {
+  position: absolute;
+  top: 0;
+  height: var(--page-height);
+  visibility: hidden;
+  pointer-events: none;
+}
 
 .sheetHeader {
   display: flex;

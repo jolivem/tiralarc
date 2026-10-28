@@ -1,3 +1,5 @@
+import type { Discipline, Indicator } from '@tiralarc/api-client';
+
 /**
  * What the PDF extract of the journal holds (the home page's export dialog): the days it
  * covers and its optional parts. The month calendars are always in it. Read from a query
@@ -7,18 +9,47 @@ export interface ExportOptions {
   /** First and last day, inclusive (YYYY-MM-DD). */
   from: string;
   to: string;
-  rankings: boolean;
-  stats: boolean;
-  /** One page per training, coaching and competition sheet, after its month's calendar. */
+  /** The disciplines whose national rankings are printed, in `RANKED_DISCIPLINES` order. */
+  rankings: Discipline[];
+  /** The Indicators page's cards printed, in `INDICATORS` order. */
+  indicators: Indicator[];
+  /** One page per training, coaching and competition sheet. */
   sheets: boolean;
   /** Each sheet's photos on a page of their own (with the sheets only). */
   photos: boolean;
 }
 
+/** The disciplines with a national ranking (the API's: not Beursault nor Run Archery). */
+export const RANKED_DISCIPLINES: readonly Discipline[] = [
+  'INDOOR',
+  'TAE_NATIONAL',
+  'TAE_INTERNATIONAL',
+  'FIELD',
+  'THREE_D',
+  'NATURE',
+];
+
+/** The Indicators page's cards, in its order (goals aside). */
+export const INDICATORS: readonly Indicator[] = [
+  'ARROWS',
+  'DURATIONS',
+  'SCORES',
+  'EVENTS',
+  'PHYSICAL_FEELINGS',
+  'MENTAL_FEELINGS',
+  'COMPETITIONS',
+];
+
 /** The longest extract, in days: a year, as far as the API lists events at once. */
 export const MAX_EXPORT_DAYS = 366;
-const PARTS = ['rankings', 'stats', 'sheets', 'photos'] as const;
+const PARTS = ['sheets', 'photos'] as const;
 const DAY = /^\d{4}-\d{2}-\d{2}$/;
+
+/** The known values of a comma-separated list, in the order of `known`. */
+const listOf = <T extends string>(value: string | null, known: readonly T[]): T[] => {
+  const given = new Set(value?.split(','));
+  return known.filter((item) => given.has(item));
+};
 
 /** A real day: some engines read "02-31" as March 3rd, hence the round trip. */
 const isDay = (value: string | null): value is string => {
@@ -41,8 +72,8 @@ export function parseExportOptions(query: URLSearchParams): ExportOptions | null
   return {
     from,
     to,
-    rankings: on('rankings'),
-    stats: on('stats'),
+    rankings: listOf(query.get('rankings'), RANKED_DISCIPLINES),
+    indicators: listOf(query.get('indicators'), INDICATORS),
     sheets: on('sheets'),
     photos: on('sheets') && on('photos'),
   };
@@ -50,6 +81,8 @@ export function parseExportOptions(query: URLSearchParams): ExportOptions | null
 
 export function exportQuery(options: ExportOptions): URLSearchParams {
   const query = new URLSearchParams({ from: options.from, to: options.to });
+  if (options.rankings.length > 0) query.set('rankings', options.rankings.join(','));
+  if (options.indicators.length > 0) query.set('indicators', options.indicators.join(','));
   for (const part of PARTS) if (options[part]) query.set(part, '1');
   return query;
 }

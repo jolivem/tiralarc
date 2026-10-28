@@ -261,6 +261,8 @@
   padding: 0 6px 3px;
   border-radius: var(--mantine-radius-sm);
   color: inherit;
+  /* As the home page's other notes (the PDF extract's text). */
+  font-size: var(--mantine-font-size-sm);
   text-decoration: none;
 
   @mixin hover {
@@ -285,6 +287,7 @@
   margin: 0;
   padding: 0 6px 3px;
   color: var(--mantine-color-dimmed);
+  font-size: var(--mantine-font-size-sm);
   font-style: italic;
   line-height: 1.2;
 }

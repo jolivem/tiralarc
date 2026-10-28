@@ -80,7 +80,10 @@ the same API — keep it client-agnostic (no cookies, no web-only assumptions in
   Flood fill stops at dark strokes, so artwork needs closed shapes; changing a month's theme clears its colouring,
   except band `title` (the only one allowed without a theme: such a month is stored with `theme: null`): the Journal calendar's heading (`month-title.tsx`), the month's name drawn on a fixed-size
   canvas as hollow letters (`--font-month`, Ribeye, outline only), coloured like the bands (inside letters only), or
-  all at once in a pastel from the decoration dialog (`letterSeeds`: one fill per letter, holes of "o" left out).
+  all at once in a pastel from the decoration dialog (`letterSeeds`: one fill per letter, holes of "o" left out,
+  each at the letter's deepest point). Letters render a pixel off across systems (the PDF's Linux Chromium): a
+  title fill on a stroke or around the letters is looked for a few pixels lower (`enclosedRegionAt`), never
+  painting the paper around.
 - Month summary (`components/journal/month-summary.tsx`, centred at the top of the Journal page, between "Today" and the other actions): the displayed
   month's arrows (sum of the loaded summaries' `arrowCount`) and its satisfaction, 5 stars by halves
   (`monthSatisfactions` on the journal, `PUT /journals/{id}/months/{month}/satisfaction`; read-only for a coach).
@@ -152,17 +155,26 @@ the same API — keep it client-agnostic (no cookies, no web-only assumptions in
   cross (confirmed) dismisses one: `PUT/DELETE /competitions/{id}/dismissal` (table `dismissed_competitions`),
   `dismissed` in the list; only this list leaves dismissed ones out, the calendars keep them. Each discipline has one pastel colour
   (`DISCIPLINE_COLORS` in `session-types.ts`, `variant="light"`): sheet chips, rankings and competition labels.
-- PDF extract (web only, no API endpoint of its own): the home page's "Extrait PDF" dialog
-  (`components/export/export-button.tsx`: days, at most 366, + rankings / indicators / sheets / photos;
+- PDF extract (web only, no API endpoint of its own): a card of the home page's left page, under "Événements
+  proposés" (`components/export/export-card.tsx`: title, what it is for, button), opens the "Extrait PDF" dialog
+  (`components/export/export-button.tsx`: days, at most 366, + each ranking (by ranked discipline of the profile,
+  `RANKED_DISCIPLINES`) / each indicator (`INDICATORS`) / sheets / photos;
   `lib/export-options.ts`, unit-tested) downloads `GET /[locale]/archer/export` (route handler), which opens
   `/[locale]/print/journal` in a headless Chromium (`lib/pdf.ts`, `playwright-core`; signed in with the access
   cookie only — refresh tokens are single-use) and prints it A5. That page (no shell: `app-shell.tsx` leaves
   `/print/` bare; data in `lib/export-data.ts`) is plain paper, no notebook: cover, rankings, indicators
   (`PrintedCards` context in `stats-cards.tsx`: whole span, no choice bars), then per month the calendar with its
   decoration / colouring (`components/print/print-month.tsx`, reusing `useArtwork` / `ColorableCanvas` /
-  `useLettering`), each training / coaching / competition sheet on its own page and its photos on the next.
+  `useLettering`), each training / coaching / competition sheet on its own page and its photos on the next
+  (two sheets in a row that fit on one page share it: `paginate.tsx` measures them before printing).
   Chromium prints once `<html data-print-ready>` is set (`print-ready.tsx`: fonts, images, nothing
-  `data-print-pending`). Dev: `pnpm --filter @tiralarc/web exec playwright-core install chromium-headless-shell`;
+  `data-print-pending`). Chapters each open on a title page (`ChapterPage`): Indicateurs (rankings, indicators),
+  Journal (the months, each on a double page: one spread laid out two pages wide, seen through each page, left
+  page even — Chromium ignores `break-before: left`, and only its printing knows the page count (charts lay out
+  differently on paper), so `lib/pdf.ts` (`faceSpreads`) prints the parts between months alone, counts their
+  pages and shows the blank page before a month when needed; Mon–Thu left, Fri–Sun right, no year), each followed by its month's sheets by
+  day (and photos — the events' sheets), then Fiches: the Sheets section (technique / settings sheets, coming
+  soon: title page only for now; not the events' sheets). Dev: `pnpm --filter @tiralarc/web exec playwright-core install chromium-headless-shell`;
   Docker: Alpine's `chromium` (`CHROMIUM_PATH`). `PRINT_BASE_URL` if the server isn't on localhost:`PORT`.
 - Archer profile (`apps/api/src/profile/`, web `components/profile/`): sport details, favourite websites and people
   invited by email. A plain guest's invitation (public `/invitations/accept`, token used on POST) grants no access;

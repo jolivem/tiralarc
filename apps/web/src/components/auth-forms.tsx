@@ -40,7 +40,8 @@ export function LoginForm({ next }: { next?: string }) {
             error={fieldError(state, 'password')}
           />
           <FormError state={state} />
-          <Button type="submit" loading={pending} fullWidth>
+          {/* The dark leather brown of the home page's sign-up button. */}
+          <Button type="submit" loading={pending} fullWidth color="#3f2817">
             {t('login.submit')}
           </Button>
         </Stack>
