@@ -689,14 +689,18 @@
     touch-action: manipulation;
   }
 
+  /*
+   * Fixed heights, the artwork fitted inside ("contain"): every month leaves the same room
+   * around the calendar, with or without a decoration (calendar-frame.tsx keeps empty bands).
+   */
   &[data-band='top'] {
     grid-area: top;
-    max-height: 180px;
+    height: min(180px, 25vw);
   }
 
   &[data-band='bottom'] {
     grid-area: bottom;
-    max-height: 180px;
+    height: min(180px, 25vw);
     display: none;
 
     @media (min-width: $mantine-breakpoint-sm) {

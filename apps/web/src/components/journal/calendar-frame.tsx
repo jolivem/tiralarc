@@ -18,6 +18,8 @@ export const ERASER = 'eraser';
  * side on large screens, top and bottom on tablets, top only on phones.
  * The archer's colouring (`fills`) is painted on the bands; with a `tool`,
  * clicking a band colours or clears the closed area under the pointer.
+ * Each band's room is kept, empty, when the month has no theme or the theme lacks
+ * that band: the calendar sits in the same place whatever the decoration.
  */
 export function CalendarFrame({
   theme,
@@ -32,11 +34,9 @@ export function CalendarFrame({
   onFillsChange: (fills: ThemeFill[]) => void;
   children: ReactNode;
 }) {
-  if (!theme) return <>{children}</>;
-
-  const bands: readonly ThemeBand[] = THEMES[theme].bands;
+  const bands: readonly ThemeBand[] = theme ? THEMES[theme].bands : [];
   const band = (name: ThemeBand) =>
-    bands.includes(name) && (
+    theme && bands.includes(name) ? (
       <Band
         // A new image means new artwork: start again from the plain picture.
         key={`${theme}/${name}`}
@@ -46,6 +46,8 @@ export function CalendarFrame({
         tool={tool}
         onFillsChange={onFillsChange}
       />
+    ) : (
+      <div key={name} className={classes.frameBand} data-band={name} aria-hidden />
     );
 
   return (
