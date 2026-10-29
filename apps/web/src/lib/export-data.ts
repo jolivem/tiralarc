@@ -1,5 +1,6 @@
 import 'server-only';
 import type {
+  CustomEventType,
   Journal,
   JournalSession,
   JournalSessionSummary,
@@ -27,6 +28,8 @@ export interface ExportData {
   journals: Journal[];
   /** Every event of the days, for the month calendars. */
   sessions: JournalSessionSummary[];
+  /** The archer's own event types, for the year calendar's legend. */
+  customTypes: CustomEventType[];
   /** By day, when asked for. */
   sheets: ExportSheet[];
   /** Null when not asked for, or the API could not be reached. */
@@ -47,9 +50,10 @@ async function inBatches<T, R>(items: T[], task: (item: T) => Promise<R>): Promi
 export async function getExportData(options: ExportOptions): Promise<ExportData> {
   const api = await getAuthedApi();
   const range = { from: options.from, to: options.to };
-  const [journals, { data: sessions }, stats, rankings] = await Promise.all([
+  const [journals, { data: sessions }, { data: customTypes }, stats, rankings] = await Promise.all([
     getJournals(),
     api.GET('/api/v1/journal/sessions', { params: { query: range } }),
+    api.GET('/api/v1/journal/event-types'),
     options.indicators.length > 0
       ? api.GET('/api/v1/journal/sessions/stats', { params: { query: range } }).then((r) => r.data)
       : undefined,
@@ -77,10 +81,19 @@ export async function getExportData(options: ExportOptions): Promise<ExportData>
   return {
     journals,
     sessions: sessions ?? [],
+    customTypes: customTypes ?? [],
     sheets: sheets.filter((s): s is ExportSheet => s !== null),
     stats: stats ?? null,
     rankings: rankings ?? null,
   };
+}
+
+/** The journal the extract's days belong to: the one covering its first day, or any of them. */
+export function periodJournal(journals: Journal[], from: string, to: string) {
+  return (
+    journals.find((j) => j.startDate <= from && from <= j.endDate) ??
+    journals.find((j) => j.startDate <= to && from <= j.endDate)
+  );
 }
 
 /**

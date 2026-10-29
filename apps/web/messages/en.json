@@ -731,7 +731,7 @@
     "button": "PDF extract",
     "title": "PDF extract",
     "cardIntro": "Keep a paper record of your season: calendars, sheets, indicators and rankings gathered in an A5 notebook, to print, archive or share.",
-    "intro": "An A5 PDF file: each month's calendar with its decoration and colours, and the parts chosen below.",
+    "intro": "An A5 PDF file: the whole period's calendar on one page, each month's calendar with its decoration and colours, and the parts chosen below.",
     "periodLabel": "Period",
     "tooLong": "Choose {max} days at most.",
     "parts": "Include",
@@ -746,6 +746,7 @@
     "coverTitle": "My archery journal",
     "period": "From {from} to {to}",
     "generatedOn": "Extract of {date}",
+    "yearTitle": "Year calendar",
     "noReview": "Review not written yet.",
     "photosOf": "Photos · {type} on {date}",
     "unavailable": "The indicators could not be loaded."

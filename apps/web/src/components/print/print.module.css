@@ -107,6 +107,105 @@
   }
 }
 
+/* ---------------------------------------------------------- year calendar */
+
+/* Every month of the extract on one page (print-year.tsx): up to 13, three a row. */
+.year {
+  display: flex;
+  flex-direction: column;
+  height: var(--page-height);
+  overflow: hidden;
+}
+
+.yearTitle {
+  text-align: center;
+}
+
+/* A pastel blue highlighter stroke under the title and the months' names. */
+.highlight {
+  padding: 0 1.5mm;
+  background: linear-gradient(transparent 35%, #bfe0ff 35%, #bfe0ff 90%, transparent 90%);
+  box-decoration-break: clone;
+}
+
+/* The legend, at the bottom of the page. */
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1mm 4mm;
+  margin-top: 4mm;
+  padding: 1.5mm 3mm;
+  border: 1px solid var(--print-line);
+  border-radius: 2mm;
+  font-size: 8pt;
+}
+
+.legendItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 1.5mm;
+
+  & i {
+    width: 2.2mm;
+    height: 2.2mm;
+    border-radius: 50%;
+  }
+}
+
+.yearMonths {
+  display: grid;
+  flex: 1;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-content: space-evenly;
+  gap: 3mm 4mm;
+  min-height: 0;
+  font-family: var(--font-calendar, var(--font-hand-upright)), cursive;
+}
+
+.yearMonthName {
+  margin-bottom: 0.5mm;
+  font-size: 10pt;
+  font-weight: 700;
+  text-align: center;
+  text-transform: capitalize;
+}
+
+.yearGrid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  font-size: 6.5pt;
+  line-height: 1.1;
+  text-align: center;
+}
+
+.yearDay {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  /* Days of the month outside the extract. */
+  &[data-outside] {
+    opacity: 0.35;
+  }
+}
+
+.yearDots {
+  display: flex;
+  gap: 0.3mm;
+  height: 1.2mm;
+
+  & i {
+    width: 1.2mm;
+    height: 1.2mm;
+    border-radius: 50%;
+  }
+
+  & i[data-pending] {
+    opacity: 0.4;
+  }
+}
+
 /* --------------------------------------------------------- month calendar */
 
 /*

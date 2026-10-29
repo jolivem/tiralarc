@@ -6,15 +6,16 @@ import { PrintMonth } from '@/components/print/print-month';
 import { PrintRankings, PrintStats } from '@/components/print/print-parts';
 import { PrintReady } from '@/components/print/print-ready';
 import { PrintPhotos, PrintSheet } from '@/components/print/print-sheet';
+import { PrintYear } from '@/components/print/print-year';
 import classes from '@/components/print/print.module.css';
 import type { Locale } from '@/i18n/routing';
 import { getCurrentUser } from '@/lib/current-user';
-import { getExportData, monthDecoration } from '@/lib/export-data';
+import { getExportData, monthDecoration, periodJournal } from '@/lib/export-data';
 import { exportMonths, parseExportOptions } from '@/lib/export-options';
 
 /**
- * The journal's PDF extract, as Chromium prints it (archer/export/route.ts): a cover, then
- * chapters, each opened by a title page: Indicators (the national rankings and the
+ * The journal's PDF extract, as Chromium prints it (archer/export/route.ts): a cover, the
+ * whole period's calendar on one page (its events' colours and their legend), then chapters, each opened by a title page: Indicators (the national rankings and the
  * indicators, if asked for), Journal (each month's calendar, followed by that month's sheets
  * by day if asked for, each with its photos), Sheets (the Sheets section's technique and
  * settings sheets, coming soon). A5, plain paper: no header, tabs or notebook (app-shell).
@@ -50,6 +51,15 @@ export default async function PrintJournalPage({
         <div>{t('period', { from: day(options.from), to: day(options.to) })}</div>
         <div className={classes.muted}>{t('generatedOn', { date: day(today) })}</div>
       </section>
+      <PrintYear
+        title={periodJournal(data.journals, options.from, options.to)?.title ?? null}
+        months={exportMonths(options.from, options.to)}
+        sessions={data.sessions}
+        customTypes={data.customTypes}
+        from={options.from}
+        to={options.to}
+        today={today}
+      />
 
       {(options.rankings.length > 0 || options.indicators.length > 0) && (
         <>

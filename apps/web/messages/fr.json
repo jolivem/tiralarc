@@ -731,7 +731,7 @@
     "button": "Extrait PDF",
     "title": "Extrait PDF",
     "cardIntro": "Gardez une trace papier de votre saison : calendriers, fiches, indicateurs et classements réunis dans un carnet A5, à imprimer, à archiver ou à partager.",
-    "intro": "Un fichier PDF au format A5 : le calendrier de chaque mois avec son décor et ses couleurs, et les éléments choisis ci-dessous.",
+    "intro": "Un fichier PDF au format A5 : le calendrier de toute la période sur une page, celui de chaque mois avec son décor et ses couleurs, et les éléments choisis ci-dessous.",
     "periodLabel": "Période",
     "tooLong": "Choisissez au plus {max} jours.",
     "parts": "À inclure",
@@ -746,6 +746,7 @@
     "coverTitle": "Mon journal d'archer",
     "period": "Du {from} au {to}",
     "generatedOn": "Extrait du {date}",
+    "yearTitle": "Calendrier de l'année",
     "noReview": "Bilan pas encore rempli.",
     "photosOf": "Photos · {type} du {date}",
     "unavailable": "Les indicateurs n'ont pas pu être chargés."

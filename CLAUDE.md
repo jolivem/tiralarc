@@ -162,7 +162,8 @@ the same API — keep it client-agnostic (no cookies, no web-only assumptions in
   `lib/export-options.ts`, unit-tested) downloads `GET /[locale]/archer/export` (route handler), which opens
   `/[locale]/print/journal` in a headless Chromium (`lib/pdf.ts`, `playwright-core`; signed in with the access
   cookie only — refresh tokens are single-use) and prints it A5. That page (no shell: `app-shell.tsx` leaves
-  `/print/` bare; data in `lib/export-data.ts`) is plain paper, no notebook: cover, rankings, indicators
+  `/print/` bare; data in `lib/export-data.ts`) is plain paper, no notebook: cover, the whole period's calendar on one page (`print-year.tsx`: titled with the
+  journal's name, coloured dots per event, the legend at the bottom), rankings, indicators
   (`PrintedCards` context in `stats-cards.tsx`: whole span, no choice bars), then per month the calendar with its
   decoration / colouring (`components/print/print-month.tsx`, reusing `useArtwork` / `ColorableCanvas` /
   `useLettering`), each training / coaching / competition sheet on its own page and its photos on the next

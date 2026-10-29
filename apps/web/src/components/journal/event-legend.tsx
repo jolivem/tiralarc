@@ -8,7 +8,7 @@ import type { EventIconComponent } from './image-icon';
 import { SESSION_TYPE_ORDER, SESSION_TYPES } from './session-types';
 
 /** Each event type, the archer's own included, with its icon in its colour. */
-function useLegendRows(customTypes: CustomEventType[]) {
+export function useLegendRows(customTypes: CustomEventType[]) {
   const t = useTranslations('journal');
   const rows: { key: string; color: string; icon: EventIconComponent; label: string }[] = [
     ...SESSION_TYPE_ORDER.map((type) => ({
