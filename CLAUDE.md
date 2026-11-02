@@ -171,7 +171,8 @@ the same API — keep it client-agnostic (no cookies, no web-only assumptions in
   disciplines (no ranking for Beursault / Run Archery), this season and the one before (then also one category
   younger: they may have moved up since). Each ranking page lists every archer with their licence:
   only the archer's own row is kept (12 h, in memory). Web: `components/stats/rankings-card.tsx` on the right page
-  of the home notebook, loaded once shown (the pages are big); `missing` asks for licence / category / bow. Below
+  of the home notebook, loaded once shown (the pages are big), then kept an hour in the browser like the competitions
+  to plan (`lib/browser-cache.ts`, keyed by the archer and the profile settings they depend on; complete readings only); `missing` asks for licence / category / bow. Below
   it, "Compétitions à planifier" (`CompetitionsToPlan` in `competition-list.tsx`): the next scheduled FFTA
   competitions whose invitation (`mandateUrl`) is published, not in the journal yet; their dates and name open the
   Journal page with `?day=YYYY-MM-DD` (that month, the day's `CompetitionsModal` open, where it is added). A black
@@ -189,7 +190,7 @@ the same API — keep it client-agnostic (no cookies, no web-only assumptions in
   journal's name, coloured dots per event, the legend at the bottom), rankings, indicators
   (`PrintedCards` context in `stats-cards.tsx`: whole span, no choice bars), then per month the calendar with its
   decoration / colouring (`components/print/print-month.tsx`, reusing `useArtwork` / `ColorableCanvas` /
-  `useLettering`), each training / coaching / competition sheet on its own page and its photos on the next
+  `useLettering`; the month summary at the right page's bottom right: `MonthSummaryCard` with `print`), each training / coaching / competition sheet on its own page and its photos on the next
   (two sheets in a row that fit on one page share it: `paginate.tsx` measures them before printing).
   Chromium prints once `<html data-print-ready>` is set (`print-ready.tsx`: fonts, images, nothing
   `data-print-pending`). Chapters each open on a title page (`ChapterPage`): Indicateurs (rankings, indicators),

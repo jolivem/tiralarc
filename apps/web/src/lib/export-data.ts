@@ -96,16 +96,25 @@ export function periodJournal(journals: Journal[], from: string, to: string) {
   );
 }
 
-/**
- * The decoration and colouring of a month: those the journal covering its first day (or,
- * failing that, any day of it) keeps for it.
- */
-export function monthDecoration(journals: Journal[], month: string) {
+/** The journal covering a month's first day or, failing that, any day of it. */
+function monthJournal(journals: Journal[], month: string) {
   const first = `${month}-01`;
   const last = `${month}-31`;
-  const journal =
+  return (
     journals.find((j) => j.startDate <= first && first <= j.endDate) ??
-    journals.find((j) => j.startDate <= last && first <= j.endDate);
-  const entry = journal?.monthThemes.find((m) => m.month === month);
+    journals.find((j) => j.startDate <= last && first <= j.endDate)
+  );
+}
+
+/** The decoration and colouring of a month: those its journal keeps for it. */
+export function monthDecoration(journals: Journal[], month: string) {
+  const entry = monthJournal(journals, month)?.monthThemes.find((m) => m.month === month);
   return { theme: entry?.theme ?? null, fills: entry?.fills ?? [] };
+}
+
+/** The archer's satisfaction with a month (its journal's); null when not given. */
+export function monthStars(journals: Journal[], month: string) {
+  return (
+    monthJournal(journals, month)?.monthSatisfactions.find((m) => m.month === month)?.stars ?? null
+  );
 }

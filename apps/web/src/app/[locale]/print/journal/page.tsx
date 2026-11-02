@@ -10,7 +10,7 @@ import { PrintYear } from '@/components/print/print-year';
 import classes from '@/components/print/print.module.css';
 import type { Locale } from '@/i18n/routing';
 import { getCurrentUser } from '@/lib/current-user';
-import { getExportData, monthDecoration, periodJournal } from '@/lib/export-data';
+import { getExportData, monthDecoration, monthStars, periodJournal } from '@/lib/export-data';
 import { exportMonths, parseExportOptions } from '@/lib/export-options';
 
 /**
@@ -85,6 +85,7 @@ export default async function PrintJournalPage({
           <PrintMonth
             month={month}
             {...monthDecoration(data.journals, month)}
+            stars={monthStars(data.journals, month)}
             sessions={data.sessions.filter((s) => s.date.startsWith(month))}
             from={options.from}
             to={options.to}

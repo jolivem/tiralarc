@@ -910,6 +910,21 @@
   }
 }
 
+/*
+ * On paper (the PDF's month, print-month.tsx): as on a tablet, drawings included, whatever
+ * the A5 page's width (the media queries above see it as a phone); a little smaller.
+ */
+.monthSummary[data-print] {
+  zoom: 0.62;
+  flex-wrap: nowrap;
+  width: fit-content;
+
+  & .summaryDrawing,
+  & .summaryDivider {
+    display: block;
+  }
+}
+
 .summarySection {
   display: flex;
   flex-direction: column;

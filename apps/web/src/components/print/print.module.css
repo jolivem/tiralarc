@@ -324,6 +324,13 @@
   grid-auto-rows: minmax(0, 1fr);
 }
 
+/* Under the right page's days, at its right: the month's arrows and satisfaction. */
+.monthSummaryRow {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 2mm;
+}
+
 /*
  * Each day drawn with its whole outline, over its neighbours' (1px back right and below), so
  * the blank boxes before the 1st and after the last day show nothing.

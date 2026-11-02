@@ -5,12 +5,16 @@ import {
   Box,
   Button,
   Group,
+  Loader,
   LoadingOverlay,
+  Modal,
+  Text,
   Tooltip,
   UnstyledButton,
 } from '@mantine/core';
+import { useMediaQuery } from '@mantine/hooks';
 import { Schedule, type ScheduleEventData } from '@mantine/schedule';
-import { IconPalette, IconPlus } from '@tabler/icons-react';
+import { IconCalendarMonth, IconPalette, IconPlus } from '@tabler/icons-react';
 import type {
   CoachAccess,
   Competition,
@@ -40,6 +44,7 @@ import { ColoringToolbar, DEFAULT_COLOR } from './coloring-toolbar';
 import { MonthThemeModal, monthTheme } from './month-theme-modal';
 import { eventDisplay, pendingReason } from './event-display';
 import { EventLegend } from './event-legend';
+import { MonthsOverview } from './months-overview';
 import classes from './journal.module.css';
 import {
   clampToJournal,
@@ -320,6 +325,29 @@ export function JournalView({
   // The loaded events are the displayed month's (within the journal).
   const monthArrows = sessions.reduce((sum, session) => sum + (session.arrowCount ?? 0), 0);
 
+  // The season dialog: every month of the journal with its events (read on each opening);
+  // a click on one shows it here.
+  const [seasonSessions, setSeasonSessions] = useState<JournalSessionSummary[] | null>(null);
+  const [seasonOpened, setSeasonOpened] = useState(false);
+  const isPhone = useMediaQuery('(max-width: 48em)');
+  const openSeason = () => {
+    setSeasonOpened(true);
+    setSeasonSessions(null);
+    const { startDate, endDate } = journal;
+    (archerId
+      ? listAthleteSessions(archerId, startDate, endDate)
+      : listSessions(startDate, endDate)
+    ).then(setSeasonSessions);
+  };
+  const seasonMonths: string[] = [];
+  for (
+    let m = dayjs(journal.startDate).startOf('month');
+    !m.isAfter(journal.endDate, 'month');
+    m = m.add(1, 'month')
+  ) {
+    seasonMonths.push(m.format('YYYY-MM'));
+  }
+
   return (
     <div>
       {/*
@@ -327,9 +355,23 @@ export function JournalView({
         between them, centred, the month's arrows and satisfaction (a month of the journal).
       */}
       <div className={classes.pageActions}>
-        <Button variant="default" size="sm" onClick={() => setDate(today())}>
-          {t('schedule.today')}
-        </Button>
+        <Group gap="xs">
+          <Button variant="default" size="sm" onClick={() => setDate(today())}>
+            {t('schedule.today')}
+          </Button>
+          {/* The whole season, to jump to one of its months. */}
+          <Tooltip label={t('schedule.seasonHint')}>
+            <ActionIcon
+              variant="default"
+              // As tall as the "Today" button beside it.
+              size="input-sm"
+              aria-label={t('schedule.seasonHint')}
+              onClick={openSeason}
+            >
+              <IconCalendarMonth size={18} />
+            </ActionIcon>
+          </Tooltip>
+        </Group>
         {range && (
           <MonthSummary journal={journal} month={month} arrows={monthArrows} readOnly={!!coach} />
         )}
@@ -603,6 +645,28 @@ export function JournalView({
           onClose={() => setNewSession(null)}
           coachOf={archerId}
         />
+        <Modal
+          opened={seasonOpened}
+          onClose={() => setSeasonOpened(false)}
+          title={<Text fw={600}>{journal.title}</Text>}
+          size="xl"
+          fullScreen={isPhone}
+        >
+          {seasonSessions === null ? (
+            <Loader size="sm" />
+          ) : (
+            <MonthsOverview
+              months={seasonMonths}
+              today={todayDate}
+              sessions={seasonSessions}
+              cols={{ base: 1, xs: 2, md: 3 }}
+              onPick={(picked) => {
+                setDate(clampToJournal(`${picked}-01`, journal));
+                setSeasonOpened(false);
+              }}
+            />
+          )}
+        </Modal>
         <CompetitionsModal
           day={competitionDay}
           competitions={shownCompetitions}

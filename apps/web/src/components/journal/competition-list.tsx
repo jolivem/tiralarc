@@ -34,6 +34,7 @@ import { FormError } from '@/components/form-feedback';
 import { RuledHeading } from '@/components/notebook/on-ruling';
 import { Link } from '@/i18n/navigation';
 import type { ActionState } from '@/lib/action-state';
+import { readCached, updateCached, writeCached } from '@/lib/browser-cache';
 import classes from './journal.module.css';
 import { DISCIPLINE_COLORS } from './session-types';
 
@@ -391,24 +392,36 @@ const TO_PLAN_COUNT = 5;
  * Home page, right page: the next FFTA competitions of the archer's departments and disciplines
  * still to plan — scheduled, their invitation published, not in the journal yet. Their dates
  * and name open the Journal on the competition's month with its dialog, where it is added
- * (then it leaves this list). Loaded once shown, like the national rankings.
+ * (then it leaves this list). Loaded once shown, like the national rankings: the FFTA's list
+ * is kept an hour in the browser (`cacheScope`: the archer and the settings it depends on);
+ * the journal's events, which decide what is still to plan, are read each time.
  */
-export function CompetitionsToPlan({ today }: { today: string }) {
+export function CompetitionsToPlan({ today, cacheScope }: { today: string; cacheScope: string }) {
   const t = useTranslations('archer.competitions');
   const [loaded, setLoaded] = useState<{
     list: CompetitionList | null;
     sessions: JournalSessionSummary[];
   }>();
+  // Kept per day (the list starts today).
+  const scope = `${cacheScope}|${today}`;
   useEffect(() => {
     let current = true;
     const to = dayjs(today).add(TO_PLAN_DAYS, 'day').format('YYYY-MM-DD');
-    Promise.all([listCompetitions(today, to), listSessions(today, to)]).then(([list, sessions]) => {
+    const kept = readCached<CompetitionList>('toPlan', scope);
+    const competitions = kept
+      ? Promise.resolve(kept)
+      : listCompetitions(today, to).then((list) => {
+          // Kept once read in full only: an incomplete reading is tried again next time.
+          if (list?.complete) writeCached('toPlan', scope, list);
+          return list;
+        });
+    Promise.all([competitions, listSessions(today, to)]).then(([list, sessions]) => {
       if (current) setLoaded({ list, sessions });
     });
     return () => {
       current = false;
     };
-  }, [today]);
+  }, [today, scope]);
   // "I won't take part": asked first, then left out at once (the API keeps it).
   const [dismissing, setDismissing] = useState<Competition | null>(null);
   const [dismissed, setDismissed] = useState<string[]>([]);
@@ -420,7 +433,13 @@ export function CompetitionsToPlan({ today }: { today: string }) {
       const result = await dismissCompetition(dismissing.id);
       setDismissState(result);
       if (result.code) return;
-      setDismissed((ids) => [...ids, dismissing.id]);
+      const { id } = dismissing;
+      setDismissed((ids) => [...ids, id]);
+      // The list kept in the browser too: it stays out when coming back.
+      updateCached<CompetitionList>('toPlan', scope, (list) => ({
+        ...list,
+        competitions: list.competitions.map((c) => (c.id === id ? { ...c, dismissed: true } : c)),
+      }));
       setDismissing(null);
     });
 

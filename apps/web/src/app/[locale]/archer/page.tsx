@@ -73,6 +73,16 @@ export default async function ArcherHomePage({ params }: PageProps<'/[locale]/ar
   const favoriteStats = favorite ? await getStats(selected ?? null) : null;
   // Practising in France (or not said yet): the FFTA's competitions and rankings show.
   const ffta = profile?.practisesInFrance !== false;
+  // What they depend on: kept an hour in the browser, read again once any of it changes.
+  const fftaScope = JSON.stringify([
+    user?.id,
+    profile?.licenceNumber,
+    profile?.category,
+    profile?.bowType,
+    profile?.disciplines,
+    profile?.departments,
+    profile?.paraCompetitions,
+  ]);
 
   // The selected journal's events over the months shown: those dated within its period.
   const today = new Date().toISOString().slice(0, 10);
@@ -179,9 +189,9 @@ export default async function ArcherHomePage({ params }: PageProps<'/[locale]/ar
         <AlignedTop>
           <Box visibleFrom="md">{date}</Box>
         </AlignedTop>
-        {ffta && <RankingsCard />}
+        {ffta && <RankingsCard cacheScope={fftaScope} />}
       </div>
-      {ffta && <CompetitionsToPlan today={today} />}
+      {ffta && <CompetitionsToPlan today={today} cacheScope={fftaScope} />}
       {favorite && favoriteStats && (
         <RuledCardTitles value>
           <FavoriteIndicatorProvider initial={favorite}>

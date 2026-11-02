@@ -62,13 +62,45 @@ export function MonthSummary({
   arrows: number;
   readOnly?: boolean;
 }) {
+  const { stars, change } = useMonthSatisfaction(journal, month);
+  return <MonthSummaryCard arrows={arrows} stars={stars} onStar={readOnly ? undefined : change} />;
+}
+
+/** The month summary's drawings (masks): the PDF waits for them as pictures (`print`). */
+const DRAWINGS = ['quiver', 'arrow', 'target'].map((name) => `/month-summary/${name}.png`);
+
+/**
+ * The month summary's card: the month's arrows and its satisfaction stars, a click on a star
+ * changing it (`onStar`; read-only without). `print`: on the PDF's month (print-month.tsx),
+ * laid out as on a tablet whatever the paper's width.
+ */
+export function MonthSummaryCard({
+  arrows,
+  stars,
+  onStar,
+  print = false,
+}: {
+  arrows: number;
+  stars: MonthStars | null;
+  onStar?: (stars: MonthStars | null) => void;
+  print?: boolean;
+}) {
   const t = useTranslations('journal.monthSummary');
   const format = useFormatter();
-  const { stars, change } = useMonthSatisfaction(journal, month);
   const rating = t('rating', { stars: stars ?? 0 });
 
   return (
-    <section className={classes.monthSummary} aria-label={t('label')}>
+    <section
+      className={classes.monthSummary}
+      data-print={print || undefined}
+      aria-label={t('label')}
+    >
+      {/* Masks don't hold the printing back: the same files as pictures do (print-ready.tsx). */}
+      {print &&
+        DRAWINGS.map((src) => (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img key={src} src={src} alt="" hidden />
+        ))}
       <QuiverDrawing />
       <div className={classes.summarySection}>
         <h3 className={classes.summaryTitle}>{t('arrows')}</h3>
@@ -85,7 +117,7 @@ export function MonthSummary({
             const n = i + 1;
             const Icon = STAR_ICONS[starFill(stars, n)];
             const icon = <Icon size={30} className={classes.star} />;
-            return readOnly ? (
+            return !onStar ? (
               <span key={n} aria-hidden>
                 {icon}
               </span>
@@ -94,7 +126,7 @@ export function MonthSummary({
                 key={n}
                 className={classes.starButton}
                 aria-label={t('star', { n })}
-                onClick={() => change(clickStar(stars, n))}
+                onClick={() => onStar(clickStar(stars, n))}
               >
                 {icon}
               </UnstyledButton>

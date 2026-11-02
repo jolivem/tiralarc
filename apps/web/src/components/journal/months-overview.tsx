@@ -1,6 +1,6 @@
 'use client';
 
-import { SimpleGrid, type SimpleGridProps, Text } from '@mantine/core';
+import { SimpleGrid, type SimpleGridProps, Text, UnstyledButton } from '@mantine/core';
 import type { Competition, JournalSessionSummary } from '@tiralarc/api-client';
 import dayjs from 'dayjs';
 import { useFormatter, useTranslations } from 'next-intl';
@@ -17,7 +17,8 @@ const MAX_DOTS = 3;
 /**
  * Read-only glance at a journal, drawn straight on the notebook page: a few months,
  * each day carrying one coloured dot per event. The Journal section edits: with
- * `linkToJournal`, each month leads there, opened on that month.
+ * `linkToJournal`, each month leads there, opened on that month; with `onPick`, a click on a
+ * month hands it over (the Journal's season dialog).
  */
 export function MonthsOverview({
   months,
@@ -26,8 +27,11 @@ export function MonthsOverview({
   competitions = [],
   cols = 1,
   linkToJournal = false,
+  onPick,
   ruled = false,
 }: {
+  /** A click on a month ("YYYY-MM") picks it. */
+  onPick?: (month: string) => void;
   /** The months' names on the notebook page's lines (home page). */
   ruled?: boolean;
   /** Months to show, "YYYY-MM", in order. */
@@ -135,6 +139,19 @@ export function MonthsOverview({
             </div>
           </>
         );
+        if (onPick) {
+          return (
+            <UnstyledButton
+              key={month}
+              className={classes.monthLink}
+              aria-label={tArcher('openMonth', { month: name })}
+              title={tArcher('openMonth', { month: name })}
+              onClick={() => onPick(month)}
+            >
+              {content}
+            </UnstyledButton>
+          );
+        }
         return linkToJournal ? (
           <Link
             key={month}

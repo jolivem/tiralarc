@@ -257,6 +257,7 @@
     "year": "Year",
     "allDay": "All day",
     "today": "Today",
+    "seasonHint": "Show the whole season and pick a month",
     "next": "Next",
     "previous": "Previous",
     "noEvents": "No events",

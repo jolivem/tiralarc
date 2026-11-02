@@ -9,14 +9,16 @@ import { listRankings } from '@/app/actions/rankings';
 import { DISCIPLINE_COLORS } from '@/components/journal/session-types';
 import { AnchorLink } from '@/components/links';
 import { RuledHeading, RuledSubtitle } from '@/components/notebook/on-ruling';
+import { readCached, writeCached } from '@/lib/browser-cache';
 import classes from './stats.module.css';
 
 /**
  * The archer's places in the FFTA national rankings of their category and bow, one per
  * discipline (outdoor: per distance), this season and the one before, on the right page of
- * the home notebook. Loaded once shown: the FFTA website can be slow.
+ * the home notebook. Loaded once shown (the FFTA website can be slow), then kept an hour in
+ * the browser (`cacheScope`: the archer and the settings the rankings depend on).
  */
-export function RankingsCard() {
+export function RankingsCard({ cacheScope }: { cacheScope: string }) {
   const t = useTranslations('archer.rankings');
   const tJournal = useTranslations('journal');
   const format = useFormatter();
@@ -24,13 +26,21 @@ export function RankingsCard() {
   const [list, setList] = useState<RankingList | null | undefined>();
   useEffect(() => {
     let current = true;
-    listRankings().then((loaded) => {
+    const kept = readCached<RankingList>('rankings', cacheScope);
+    const loading = kept
+      ? Promise.resolve(kept)
+      : listRankings().then((loaded) => {
+          // Kept once read in full only: an incomplete reading is tried again next time.
+          if (loaded?.complete) writeCached('rankings', cacheScope, loaded);
+          return loaded;
+        });
+    loading.then((loaded) => {
       if (current) setList(loaded);
     });
     return () => {
       current = false;
     };
-  }, []);
+  }, [cacheScope]);
 
   const body = () => {
     if (list === undefined) return <Loader size="sm" aria-label={t('loading')} />;

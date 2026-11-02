@@ -1,9 +1,10 @@
 'use client';
 
-import type { JournalSessionSummary, ThemeFill } from '@tiralarc/api-client';
+import type { JournalSessionSummary, MonthStars, ThemeFill } from '@tiralarc/api-client';
 import { useFormatter } from 'next-intl';
 import { ColorableCanvas, useArtwork } from '@/components/journal/calendar-frame';
 import { EventIcon } from '@/components/journal/event-display';
+import { MonthSummaryCard } from '@/components/journal/month-summary';
 import { useLettering } from '@/components/journal/month-title';
 import { findTheme, type ThemeBand, themeImage, THEMES } from '@/components/journal/themes';
 import { BLANK_ATTRIBUTE, PENDING_ATTRIBUTE, SPREAD_ATTRIBUTE } from './markers';
@@ -48,17 +49,21 @@ function PrintBand({
  * decoration (bands around the calendar) and its name in hollow letters, both coloured as on
  * the Journal page, then the days with the icons of their events: Monday to Thursday on the
  * left, Friday to Sunday on the right (wider columns), no year. Days of the month outside the
- * extract are faded. Laid out once across both pages (the bands run across the fold), then
- * shown through each page's window.
+ * extract are faded. At the bottom right of the right page, the month's summary (its arrows
+ * and the archer's satisfaction), as on the Journal page. Laid out once across both pages (the
+ * bands run across the fold), then shown through each page's window.
  */
 export function PrintMonth({
   month,
   theme: themeId,
   fills,
   sessions,
+  stars,
   from,
   to,
 }: {
+  /** The month's satisfaction (the journal's), null when not given. */
+  stars: MonthStars | null;
   /** "YYYY-MM". */
   month: string;
   theme: string | null;
@@ -153,6 +158,13 @@ export function PrintMonth({
               {Array.from({ length: 3 }, (_, i) => weekday(4 + i))}
             </div>
             <div className={`${classes.days} ${classes.threeDays}`}>{days([4, 5, 6])}</div>
+            <div className={classes.monthSummaryRow}>
+              <MonthSummaryCard
+                arrows={sessions.reduce((sum, s) => sum + (s.arrowCount ?? 0), 0)}
+                stars={stars}
+                print
+              />
+            </div>
           </div>
           {band('right', classes.bandSide)}
         </div>
