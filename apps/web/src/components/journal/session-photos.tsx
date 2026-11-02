@@ -26,6 +26,7 @@ import { FormError } from '@/components/form-feedback';
 import { useRouter } from '@/i18n/navigation';
 import type { ActionState } from '@/lib/action-state';
 import classes from './journal.module.css';
+import { PushPin } from './push-pin';
 import { SheetLockedContext } from './session-form';
 
 /** Same limits as the API (which enforces them). */
@@ -171,7 +172,7 @@ export function SessionPhotos({
               )}
             </FileButton>
           )}
-          <span className={classes.pin} aria-hidden />
+          <PushPin className={classes.pin} />
           {/* Going through the photos on top of the stack. */}
           {photos.length > 1 && (
             <>

@@ -1,16 +1,32 @@
 'use client';
 
-import { Button, Group, Modal, SimpleGrid, Stack, Text, TextInput } from '@mantine/core';
+import {
+  Button,
+  Group,
+  Loader,
+  Modal,
+  Radio,
+  Select,
+  SimpleGrid,
+  Stack,
+  Text,
+  TextInput,
+} from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
 import { useMediaQuery } from '@mantine/hooks';
 import { IconCalendar, IconPlus } from '@tabler/icons-react';
 import type { Journal } from '@tiralarc/api-client';
 import dayjs from 'dayjs';
 import { useTranslations } from 'next-intl';
-import { useState, useTransition } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 import { createJournal, updateJournal } from '@/app/actions/journal';
+import { practiceSettings, saveProfile } from '@/app/actions/profile';
 import { FormError, useFieldError } from '@/components/form-feedback';
 import type { ActionState } from '@/lib/action-state';
+import { departmentOptions, DEPARTMENT_LIST_STYLES } from '@/lib/departments';
+
+/** As many departments as the API takes (`departments` in the archer profile). */
+const MAX_DEPARTMENTS = 5;
 
 /** First month (0-based) of an archery season: 1 September – 31 August. */
 const SEASON_START_MONTH = 8;
@@ -86,6 +102,8 @@ export function JournalModal({
   );
 }
 
+type Practice = Awaited<ReturnType<typeof practiceSettings>>;
+
 function JournalForm({
   journal,
   first,
@@ -104,10 +122,60 @@ function JournalForm({
   const [state, setState] = useState<ActionState>({});
   const [pending, startTransition] = useTransition();
 
-  const valid = title.trim() !== '' && startDate !== null && endDate !== null;
+  // Creating: where the archer practises (France or not, the licence department), filled in
+  // from the profile once answered; saved to the profile with the journal.
+  const [practice, setPractice] = useState<Practice | null>(null);
+  const [inFrance, setInFrance] = useState<boolean | null>(null);
+  const [department, setDepartment] = useState<string | null>(null);
+  useEffect(() => {
+    if (journal) return;
+    let current = true;
+    void practiceSettings().then((settings) => {
+      if (!current) return;
+      setPractice(settings);
+      setInFrance(settings.practisesInFrance);
+      setDepartment(settings.licenceDepartment);
+    });
+    return () => {
+      current = false;
+    };
+  }, [journal]);
+
+  const practiceValid = journal !== undefined || inFrance === false || (inFrance && department);
+  const valid =
+    title.trim() !== '' && startDate !== null && endDate !== null && Boolean(practiceValid);
   const submit = () => {
     if (!valid) return;
     startTransition(async () => {
+      // The answer first (to the profile). A new licence department joins the departments
+      // whose competitions show (Competitions card, where it can be taken out), if there's room.
+      if (
+        !journal &&
+        practice &&
+        (inFrance !== practice.practisesInFrance ||
+          (inFrance && department !== practice.licenceDepartment))
+      ) {
+        const { chosen } = practice;
+        const added =
+          department && !chosen.includes(department) && chosen.length < MAX_DEPARTMENTS
+            ? { departments: [...chosen, department] }
+            : {};
+        const saved = await saveProfile(
+          inFrance
+            ? { practisesInFrance: true, licenceDepartment: department, ...added }
+            : { practisesInFrance: false },
+        );
+        if (saved.code) {
+          setState(saved);
+          return;
+        }
+        setPractice({
+          ...practice,
+          practisesInFrance: inFrance,
+          licenceDepartment: department,
+          chosen: added.departments ?? chosen,
+        });
+      }
       const values = { title: title.trim(), startDate, endDate };
       const result = journal
         ? await updateJournal(journal.id, values)
@@ -164,6 +232,43 @@ function JournalForm({
             required
           />
         </SimpleGrid>
+        {!journal &&
+          (practice ? (
+            <>
+              <Radio.Group
+                label={t('inFrance')}
+                value={inFrance === null ? null : String(inFrance)}
+                onChange={(v) => {
+                  setInFrance(v === 'true');
+                  setState({});
+                }}
+                required
+              >
+                <Group gap="lg" mt="xs">
+                  <Radio value="true" label={t('inFranceYes')} />
+                  <Radio value="false" label={t('inFranceNo')} />
+                </Group>
+              </Radio.Group>
+              {inFrance && (
+                <Select
+                  label={t('licenceDepartment')}
+                  description={t('licenceDepartmentHint')}
+                  placeholder={t('chooseDepartment')}
+                  data={departmentOptions(practice.departments)}
+                  styles={DEPARTMENT_LIST_STYLES}
+                  value={department}
+                  onChange={(v) => {
+                    setDepartment(v);
+                    setState({});
+                  }}
+                  searchable
+                  required
+                />
+              )}
+            </>
+          ) : (
+            <Loader size="sm" />
+          ))}
         <FormError state={state} />
         <Group justify="flex-end" gap="sm">
           <Button variant="default" onClick={onDone}>

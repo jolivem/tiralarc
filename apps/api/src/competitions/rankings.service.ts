@@ -62,6 +62,10 @@ export class RankingsService {
 
   async list(userId: string): Promise<RankingListDto> {
     const profile = await this.profiles.get(userId);
+    // Not practising in France: no FFTA ranking (nothing missing either).
+    if (profile.practisesInFrance === false) {
+      return { season: null, missing: [], rankings: [], complete: true };
+    }
     const licence = profile.licenceNumber?.trim().toUpperCase() ?? '';
     const { category, bowType } = profile;
     const missing: RankingField[] = [

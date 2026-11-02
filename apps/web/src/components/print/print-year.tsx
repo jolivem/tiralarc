@@ -6,12 +6,9 @@ import { eventDisplay, pendingReason } from '@/components/journal/event-display'
 import { useLegendRows } from '@/components/journal/event-legend';
 import classes from './print.module.css';
 
-/** A Monday, to name the weekdays from. */
-const MONDAY = Date.UTC(2024, 0, 1);
-const DAY_MS = 86_400_000;
-
 /**
- * Every month of the extract on one page, as the season calendar shows them: each day with
+ * Every month of the extract on one page, as the season calendar shows them (weeks from
+ * Monday, no weekday names): each day with
  * one coloured dot per event (lighter while its review is missing or its day is to come),
  * the legend of the colours at the bottom. Days of a month outside the extract are faded.
  * Titled with the journal's name; that and the months' names (no year) highlighted.
@@ -44,9 +41,6 @@ export function PrintYear({
   for (const session of sessions) {
     byDay.set(session.date, [...(byDay.get(session.date) ?? []), session]);
   }
-  const weekdays = Array.from({ length: 7 }, (_, i) =>
-    format.dateTime(new Date(MONDAY + i * DAY_MS), { weekday: 'narrow', timeZone: 'UTC' }),
-  );
 
   return (
     <section className={`${classes.page} ${classes.year}`}>
@@ -67,11 +61,6 @@ export function PrintYear({
                 <span className={classes.highlight}>{name}</span>
               </div>
               <div className={classes.yearGrid}>
-                {weekdays.map((day, i) => (
-                  <span key={i} className={classes.muted}>
-                    {day}
-                  </span>
-                ))}
                 {Array.from({ length: lead }, (_, i) => (
                   <span key={`blank-${i}`} />
                 ))}

@@ -35,10 +35,19 @@ import type {
   JournalSession,
   JournalSessionUpdate,
   JournalSuggestions,
+  SessionPhoto,
   SessionType,
 } from '@tiralarc/api-client';
 import { useTranslations } from 'next-intl';
-import { createContext, type ReactNode, useEffect, useId, useState, useTransition } from 'react';
+import {
+  createContext,
+  type ReactNode,
+  useEffect,
+  useId,
+  useMemo,
+  useState,
+  useTransition,
+} from 'react';
 import { deletePlannedSession, savePlannedSession } from '@/app/actions/coaching';
 import {
   competitionResults,
@@ -56,6 +65,7 @@ import { FEELING_INK, FEELINGS } from './feelings';
 import classes from './journal.module.css';
 import { today, tomorrow } from './new-session-modal';
 import { DISCIPLINE_COLORS, DISCIPLINE_ORDER, SESSION_TYPES } from './session-types';
+import { ShareButton } from './share-modal';
 
 const DEFAULT_NOTE_COLOR = 'gray';
 /** The distances offered as one-tap chips (others are typed in the field). */
@@ -185,9 +195,12 @@ export function SessionForm({
   disciplines,
   title,
   coach,
+  sharePhotos,
   children,
 }: {
   session: JournalSession;
+  /** The event's photos, offered with its Instagram summary (the archer's own sheet only). */
+  sharePhotos?: SessionPhoto[];
   suggestions: JournalSuggestions;
   /** The disciplines the archer practises (Profile page): the only ones offered. */
   disciplines: Discipline[];
@@ -276,6 +289,12 @@ export function SessionForm({
     taken place (as saved; like the calendar's stamp) — a type without review, until its day.
   */
   const savedValues = JSON.parse(saved) as Values;
+  // A training, coaching or competition that has taken place, shared as saved (Instagram).
+  const sharedSession = useMemo(
+    () => ({ ...session, ...(JSON.parse(saved) as Values) }),
+    [session, saved],
+  );
+  const sharable = !coach && sharePhotos !== undefined && hasSheet && savedValues.date <= today();
   const stamped =
     session.plannedBy !== null && (hasSheet ? !hasReview(savedValues) : savedValues.date > today());
   const stamp = stamped && (
@@ -340,8 +359,8 @@ export function SessionForm({
   // A coach who only reads it gets the close button alone.
   const actionBar = (
     <Paper withBorder shadow="md" p="sm" radius="md" className={classes.actionBar}>
-      {/* Wraps on narrow screens. */}
-      <Group justify="space-between" gap="sm">
+      {/* Wraps on narrow screens; from tablets up, "Share" in the middle. */}
+      <div className={classes.actionRow} data-centred={sharable || undefined}>
         {readOnly ? (
           (plannedBy ?? (
             <Text size="sm" c="dimmed">
@@ -361,6 +380,14 @@ export function SessionForm({
             {plannedBy}
           </Group>
         )}
+        {sharable && (
+          <ShareButton
+            session={sharedSession}
+            title={t(`types.${savedValues.type}`)}
+            photos={sharePhotos}
+            disabled={dirty}
+          />
+        )}
         <Group gap="sm" wrap="nowrap">
           {!readOnly && (
             <>
@@ -379,7 +406,7 @@ export function SessionForm({
           )}
           <CloseButton size="lg" aria-label={t('close')} title={t('close')} onClick={close} />
         </Group>
-      </Group>
+      </div>
       {state.code && (
         <Stack mt="sm">
           <FormError state={state} />
@@ -417,7 +444,8 @@ export function SessionForm({
                     size="xs"
                     value={values.date}
                     onChange={(date) => date && changeDate(date)}
-                    valueFormat="ddd D MMM YYYY"
+                    // No year: the journal's period says it.
+                    valueFormat="ddd D MMM"
                     leftSection={<IconCalendar size={16} />}
                     // An FFTA competition keeps its competition's day (DATE_LOCKED).
                     readOnly={readOnly || session.fftaCompetitionId !== null}

@@ -121,17 +121,40 @@ the same API — keep it client-agnostic (no cookies, no web-only assumptions in
   Versity Gateway on :9000 in dev, an in-memory fake in e2e tests); the DB keeps one `SessionPhoto` row. Uploads are
   re-encoded with `sharp` (2000 px + thumbnail, metadata dropped) and read back through 10-minute signed URLs.
   Deleting an event or a journal must also remove the files (`PhotosService.removeFiles`).
+- Instagram share (web only, no Instagram API: it only publishes for business accounts): "Share" in the action bar
+  of the archer's own training / coaching / competition sheet once its day has come (saved first;
+  `components/journal/share-modal.tsx`). The archer ticks fields (`share-card.ts`, pure parts unit-tested: a
+  1080×1350 card: a ruled leaf torn off a spiral notebook (left side), leaning left on black, pinned at the top (`drawPin`, also the
+  photos' pin: `push-pin.tsx`), in the archer's calendar font (`--font-calendar`); the type's drawing top right (`TYPE_PICTURES`), place → score in
+  two columns, ratings as bars, the two feelings' faces side by side, as the two lists
+  (`pairing`), signed with the site's host; the caption is only the
+  heading, the site's link and hashtags) and up to 9 photos (read as JPEG through
+  `/[locale]/archer/journal/[id]/photos/[photoId]`, same origin), edits the caption; Web Share API with files (the
+  caption copied, Instagram drops shared text), else the pictures are downloaded.
 - FFTA competitions (`apps/api/src/competitions/`, `GET /competitions?from&to`): no FFTA API — `FftaClient` reads
   the result pages of https://www.ffta.fr/competitions (honest `Tiralarc/1.0` user agent: a spoofed browser one is
   turned away by Cloudflare; random 403s are retried), `ffta-parser.ts` (pure, unit-tested on
   `fixtures/ffta-search.html`) reads them. Searched per department (the site's own term ids, `departments.ts`) and
   FFTA discipline id (`FFTA_DISCIPLINES`; `paraCompetitions` adds the para indoor / outdoor ids), kept 12 h in
   memory, the last reading kept on failure (`complete: false` when nothing). The archer picks `departments` (up to
-  5, `MAX_DEPARTMENTS`; one search per department, merged) / `paraCompetitions` in the Profile page's Competitions card; the home page's season calendar
+  5, `MAX_DEPARTMENTS`; one search per department, merged) / `paraCompetitions` in the Profile page's Competitions card.
+  Creating a journal asks whether the archer practises in France (`practisesInFrance`, null until answered) and, if so,
+  their licence department (`licenceDepartment`, `JournalForm` → `saveProfile` first; changeable in the Configuration
+  card; `practisesInFrance` false clears it). A new licence department joins `departments` (if room) from the dialog
+  only: the API doesn't tie them, the archer may take it out. Department lists are grouped by region (the API's
+  `region`, `lib/departments.ts`: `departmentOptions`, `DEPARTMENT_LIST_STYLES`). Not practising in France
+  (`practisesInFrance` false) hides everything FFTA: the API answers no competitions / rankings (coach too), the web
+  drops the licence number, the Competitions card, the rankings, the competitions to plan and the PDF's rankings
+  (null = not answered yet: shown). Championships (`championship`: NATIONAL / REGIONAL / DEPARTMENTAL, told by the
+  title, `championshipLevel`: qualifying and team ones left out) in the archer's disciplines: the departments'
+  are among their searches; each department's region and the whole of France are searched too, by the site's free
+  text ("championnat", "championnat de france"; `Scope` in `CompetitionsService`). A U11–U21 archer sees the
+  young archers' championships, not the adults' (`championshipAge`), others the other way round. Web: a medal badge,
+  and the Journal calendar's ticket says "CF" / "CR" / "CD" (gold / silver / bronze). The home page's season calendar
   (`season-calendar.tsx`) outlines their days and lists them (`competition-list.tsx`) with "Add to my journal": a
   COMPETITION event (`POST /journal/sessions` takes `location` / `discipline`) whose place is the competition's name,
   linked by `fftaCompetitionId`: one competition at most twice a day (`MAX_PER_COMPETITION_DAY`, `LIMIT_REACHED`),
-  other competitions of that day unaffected (only `DAY_FULL` applies). On creation the API takes the place from the
+  other competitions of that day unaffected (only `DAY_FULL` applies). On creation the API takes the place (the town only) from the
   competition's FFTA page (`parseCompetitionPlace`, `CompetitionsService.place`; the name given if unreadable) and
   18 m for an indoor one; its date never changes afterwards (`DATE_LOCKED`, the sheet's date is read-only). A coach
   sees the archer's competitions (`GET /coach/athletes/{id}/competitions`, the archer's profile, current journal)

@@ -55,6 +55,7 @@ export class RankingDto {
   url!: string;
 }
 
+/** Empty, nothing missing, for an archer who doesn't practise in France. */
 export class RankingListDto {
   @ApiProperty({
     type: String,

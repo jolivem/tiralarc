@@ -27,8 +27,10 @@ const ATTEMPTS = 3;
 const TIMEOUT_MS = 15_000;
 
 export interface FftaSearch {
-  /** The site's department term ids (see DEPARTMENTS). */
+  /** The site's department term ids (see DEPARTMENTS); none = the whole of France. */
   departmentIds: number[];
+  /** Words the competitions' titles must have (the form's free text, e.g. "championnat de france"). */
+  text?: string;
   /** The site's discipline term id (see FFTA_DISCIPLINES). */
   discipline: number;
   /** YYYY-MM-DD, both inclusive. */
@@ -88,6 +90,7 @@ export class FftaClient {
 
   private fetchPage(search: FftaSearch, page: number): Promise<string> {
     const url = new URL(SEARCH_URL);
+    if (search.text) url.searchParams.set('search', search.text);
     url.searchParams.set('start', search.start);
     url.searchParams.set('end', search.end);
     for (const id of search.departmentIds) url.searchParams.append('dep[]', String(id));

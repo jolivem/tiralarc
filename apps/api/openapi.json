@@ -4621,12 +4621,27 @@
           "name": {
             "type": "string",
             "example": "Yvelines"
+          },
+          "region": {
+            "type": "string",
+            "example": "Île-de-France",
+            "description": "Its region, to group the departments by (the 13 of metropolitan France; \"Outre-mer\" for the others)."
           }
         },
         "required": [
           "code",
-          "name"
+          "name",
+          "region"
         ]
+      },
+      "ChampionshipLevel": {
+        "type": "string",
+        "enum": [
+          "NATIONAL",
+          "REGIONAL",
+          "DEPARTMENTAL"
+        ],
+        "description": "The individual championship it is, told by its title: NATIONAL (French, listed wherever in France), REGIONAL (of the region of one of the archer's departments, wherever in it), DEPARTMENTAL; null for any other competition."
       },
       "CompetitionStatus": {
         "type": "string",
@@ -4680,6 +4695,15 @@
             "type": "boolean",
             "description": "A para-archery competition."
           },
+          "championship": {
+            "nullable": true,
+            "description": "The individual championship it is, told by its title: NATIONAL (French, listed wherever in France), REGIONAL (of the region of one of the archer's departments, wherever in it), DEPARTMENTAL; null for any other competition.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ChampionshipLevel"
+              }
+            ]
+          },
           "teamOnly": {
             "type": "boolean",
             "description": "Teams only: no individual ranking."
@@ -4716,6 +4740,7 @@
           "organizer",
           "discipline",
           "para",
+          "championship",
           "teamOnly",
           "status",
           "url",
@@ -4727,14 +4752,14 @@
         "type": "object",
         "properties": {
           "departments": {
-            "description": "The archer's departments (profile), in their order; empty = none chosen, hence no competitions.",
+            "description": "The archer's departments (profile), in their order; empty = none chosen, hence only the French championships.",
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/DepartmentDto"
             }
           },
           "competitions": {
-            "description": "The departments' competitions in the archer's disciplines (profile) that have not ended yet and touch the requested days, by first day.",
+            "description": "The departments' competitions in the archer's disciplines (profile), with these disciplines' regional and French championships (`championship`), that have not ended yet and touch the requested days, by first day.",
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/CompetitionDto"
@@ -4961,6 +4986,17 @@
               }
             ]
           },
+          "practisesInFrance": {
+            "type": "boolean",
+            "nullable": true,
+            "description": "Whether the archer practises in France (asked when creating a journal); null = not answered yet."
+          },
+          "licenceDepartment": {
+            "type": "string",
+            "nullable": true,
+            "example": "78",
+            "description": "Code of the department where the archer is licensed (see GET /competitions/departments), when practising in France."
+          },
           "departments": {
             "example": [
               "78",
@@ -4984,6 +5020,8 @@
           "disciplines",
           "calendarFont",
           "favoriteIndicator",
+          "practisesInFrance",
+          "licenceDepartment",
           "departments",
           "paraCompetitions"
         ]
@@ -5034,6 +5072,16 @@
                 "$ref": "#/components/schemas/Indicator"
               }
             ]
+          },
+          "practisesInFrance": {
+            "type": "boolean",
+            "description": "Whether the archer practises in France; false also clears `licenceDepartment`."
+          },
+          "licenceDepartment": {
+            "type": "string",
+            "nullable": true,
+            "example": "78",
+            "description": "Department of the licence (code, see GET /competitions/departments; implies `practisesInFrance`, VALIDATION_FAILED with false); null clears it. It does not change `departments`: clients add it there when the archer gives it."
           },
           "departments": {
             "example": [

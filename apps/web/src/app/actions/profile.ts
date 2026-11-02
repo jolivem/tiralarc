@@ -3,6 +3,7 @@
 import type {
   ArcherProfileUpdate,
   CoachAccess,
+  Department,
   FavoriteSiteCreate,
   InvitationCreate,
 } from '@tiralarc/api-client';
@@ -31,6 +32,30 @@ export async function saveProfile(values: ArcherProfileUpdate): Promise<ActionSt
   // The root layout sets the calendars' font from the profile.
   refresh();
   return { notice: 'saved' };
+}
+
+/**
+ * Where the archer practises (France or not, the licence department), the departments whose
+ * competitions they see (`chosen`) and those to choose from: what the journal creation dialog
+ * asks, as it stands.
+ */
+export async function practiceSettings(): Promise<{
+  practisesInFrance: boolean | null;
+  licenceDepartment: string | null;
+  chosen: string[];
+  departments: Department[];
+}> {
+  const api = await getAuthedApi();
+  const [{ data: profile }, { data: departments }] = await Promise.all([
+    api.GET('/api/v1/profile'),
+    api.GET('/api/v1/competitions/departments'),
+  ]);
+  return {
+    practisesInFrance: profile?.practisesInFrance ?? null,
+    licenceDepartment: profile?.licenceDepartment ?? null,
+    chosen: profile?.departments ?? [],
+    departments: departments ?? [],
+  };
 }
 
 /** Adds a guest; the API emails them the invitation. */

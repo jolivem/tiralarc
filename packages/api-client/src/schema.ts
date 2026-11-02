@@ -1352,7 +1352,17 @@ export interface components {
             code: string;
             /** @example Yvelines */
             name: string;
+            /**
+             * @description Its region, to group the departments by (the 13 of metropolitan France; "Outre-mer" for the others).
+             * @example Île-de-France
+             */
+            region: string;
         };
+        /**
+         * @description The individual championship it is, told by its title: NATIONAL (French, listed wherever in France), REGIONAL (of the region of one of the archer's departments, wherever in it), DEPARTMENTAL; null for any other competition.
+         * @enum {string}
+         */
+        ChampionshipLevel: "NATIONAL" | "REGIONAL" | "DEPARTMENTAL";
         /** @enum {string} */
         CompetitionStatus: "SCHEDULED" | "POSTPONED" | "CANCELLED";
         CompetitionDto: {
@@ -1381,6 +1391,8 @@ export interface components {
             discipline: components["schemas"]["Discipline"];
             /** @description A para-archery competition. */
             para: boolean;
+            /** @description The individual championship it is, told by its title: NATIONAL (French, listed wherever in France), REGIONAL (of the region of one of the archer's departments, wherever in it), DEPARTMENTAL; null for any other competition. */
+            championship: components["schemas"]["ChampionshipLevel"] | null;
             /** @description Teams only: no individual ranking. */
             teamOnly: boolean;
             status: components["schemas"]["CompetitionStatus"];
@@ -1398,9 +1410,9 @@ export interface components {
             mandateUrl: string | null;
         };
         CompetitionListDto: {
-            /** @description The archer's departments (profile), in their order; empty = none chosen, hence no competitions. */
+            /** @description The archer's departments (profile), in their order; empty = none chosen, hence only the French championships. */
             departments: components["schemas"]["DepartmentDto"][];
-            /** @description The departments' competitions in the archer's disciplines (profile) that have not ended yet and touch the requested days, by first day. */
+            /** @description The departments' competitions in the archer's disciplines (profile), with these disciplines' regional and French championships (`championship`), that have not ended yet and touch the requested days, by first day. */
             competitions: components["schemas"]["CompetitionDto"][];
             /** @description False when the FFTA website could not be read for some of the disciplines: the list may miss competitions (try again later). */
             complete: boolean;
@@ -1491,6 +1503,13 @@ export interface components {
             calendarFont: string | null;
             /** @description The indicator shown on the home page; null = none. */
             favoriteIndicator: components["schemas"]["Indicator"] | null;
+            /** @description Whether the archer practises in France (asked when creating a journal); null = not answered yet. */
+            practisesInFrance: boolean | null;
+            /**
+             * @description Code of the department where the archer is licensed (see GET /competitions/departments), when practising in France.
+             * @example 78
+             */
+            licenceDepartment: string | null;
             /**
              * @description Department codes (see GET /competitions/departments, at most 5) whose FFTA competitions the calendars show; empty = none.
              * @example [
@@ -1515,6 +1534,13 @@ export interface components {
             calendarFont?: string | null;
             /** @description The indicator shown on the home page; null for none. */
             favoriteIndicator?: components["schemas"]["Indicator"] | null;
+            /** @description Whether the archer practises in France; false also clears `licenceDepartment`. */
+            practisesInFrance?: boolean;
+            /**
+             * @description Department of the licence (code, see GET /competitions/departments; implies `practisesInFrance`, VALIDATION_FAILED with false); null clears it. It does not change `departments`: clients add it there when the archer gives it.
+             * @example 78
+             */
+            licenceDepartment?: string | null;
             /**
              * @description Replaces the departments (codes, see GET /competitions/departments); empty for none.
              * @example [

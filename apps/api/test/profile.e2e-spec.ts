@@ -47,6 +47,8 @@ describe('Profile (e2e)', () => {
       disciplines: [],
       calendarFont: null,
       favoriteIndicator: null,
+      practisesInFrance: null,
+      licenceDepartment: null,
       departments: [],
       paraCompetitions: false,
     });
@@ -72,6 +74,8 @@ describe('Profile (e2e)', () => {
       disciplines: ['INDOOR', 'BEURSAULT', 'RUN_ARCHERY'],
       calendarFont: 'great-vibes',
       favoriteIndicator: 'DURATIONS',
+      practisesInFrance: null,
+      licenceDepartment: null,
       departments: ['2A', '971'],
       paraCompetitions: true,
     });
@@ -119,6 +123,27 @@ describe('Profile (e2e)', () => {
       .send({ calendarFont: 'satisfy' })
       .expect(200);
     expect(first.body).toMatchObject({ disciplines: [], calendarFont: 'satisfy' });
+  });
+
+  it('records where the archer practises', async () => {
+    const patch = (body: object) => http().patch('/api/v1/profile').set(as(otherArcher)).send(body);
+
+    // Licensed in the Yvelines: practising in France; the departments are left as they are.
+    await patch({ departments: ['92', '91'] }).expect(200);
+    const licensed = await patch({ licenceDepartment: '78' }).expect(200);
+    expect(licensed.body).toMatchObject({
+      practisesInFrance: true,
+      licenceDepartment: '78',
+      departments: ['92', '91'],
+    });
+
+    // A licence department means practising in France; a real one.
+    await patch({ practisesInFrance: false, licenceDepartment: '78' }).expect(400);
+    await patch({ licenceDepartment: '20' }).expect(400);
+
+    // Not practising in France: no licence department.
+    const abroad = await patch({ practisesInFrance: false }).expect(200);
+    expect(abroad.body).toMatchObject({ practisesInFrance: false, licenceDepartment: null });
   });
 
   it('invites people by email and lets them accept', async () => {

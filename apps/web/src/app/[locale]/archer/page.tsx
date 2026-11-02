@@ -71,6 +71,8 @@ export default async function ArcherHomePage({ params }: PageProps<'/[locale]/ar
   // The favourite indicator (starred on the Indicators page), over the selected journal.
   const favorite = profile?.favoriteIndicator ?? null;
   const favoriteStats = favorite ? await getStats(selected ?? null) : null;
+  // Practising in France (or not said yet): the FFTA's competitions and rankings show.
+  const ffta = profile?.practisesInFrance !== false;
 
   // The selected journal's events over the months shown: those dated within its period.
   const today = new Date().toISOString().slice(0, 10);
@@ -132,7 +134,12 @@ export default async function ArcherHomePage({ params }: PageProps<'/[locale]/ar
           <>
             <RuledHeading raised>{t('calendar')}</RuledHeading>
             {/* A click opens the whole season. */}
-            <SeasonCalendar journal={selected} today={today} customTypes={customTypes ?? []}>
+            <SeasonCalendar
+              journal={selected}
+              today={today}
+              customTypes={customTypes ?? []}
+              ffta={ffta}
+            >
               <MonthsOverview
                 months={months}
                 today={today}
@@ -151,7 +158,7 @@ export default async function ArcherHomePage({ params }: PageProps<'/[locale]/ar
       <ExportCard
         from={selected?.startDate ?? `${today.slice(0, 7)}-01`}
         to={selected?.endDate ?? today}
-        disciplines={RANKED_DISCIPLINES.filter((d) => profile?.disciplines.includes(d))}
+        disciplines={ffta ? RANKED_DISCIPLINES.filter((d) => profile?.disciplines.includes(d)) : []}
       />
       {/* A blank line at least above the pen rule (on both pages: they stay level). */}
       <Box mt="auto" pt="var(--line)">
@@ -163,7 +170,7 @@ export default async function ArcherHomePage({ params }: PageProps<'/[locale]/ar
   );
 
   // On the right, under the day: the archer's FFTA national rankings, the FFTA competitions
-  // still to plan, then the favourite indicator, its star filled (a click there takes it off
+  // still to plan (both only when practising in France), then the favourite indicator, its star filled (a click there takes it off
   // the home page).
   const right = (
     <Stack gap={0} h="100%">
@@ -172,9 +179,9 @@ export default async function ArcherHomePage({ params }: PageProps<'/[locale]/ar
         <AlignedTop>
           <Box visibleFrom="md">{date}</Box>
         </AlignedTop>
-        <RankingsCard />
+        {ffta && <RankingsCard />}
       </div>
-      <CompetitionsToPlan today={today} />
+      {ffta && <CompetitionsToPlan today={today} />}
       {favorite && favoriteStats && (
         <RuledCardTitles value>
           <FavoriteIndicatorProvider initial={favorite}>

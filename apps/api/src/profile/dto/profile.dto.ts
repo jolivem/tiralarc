@@ -68,6 +68,24 @@ export class ProfileDto {
   favoriteIndicator!: Indicator | null;
 
   @ApiProperty({
+    type: Boolean,
+    nullable: true,
+    description:
+      'Whether the archer practises in France (asked when creating a journal); null = not answered yet.',
+  })
+  practisesInFrance!: boolean | null;
+
+  @ApiProperty({
+    type: String,
+    nullable: true,
+    example: '78',
+    description:
+      'Code of the department where the archer is licensed (see GET /competitions/departments), ' +
+      'when practising in France.',
+  })
+  licenceDepartment!: string | null;
+
+  @ApiProperty({
     type: [String],
     example: ['78', '92'],
     description:
@@ -132,6 +150,27 @@ export class UpdateProfileDto {
   @IsOptional()
   @IsIn(INDICATORS)
   favoriteIndicator?: Indicator | null;
+
+  @ApiPropertyOptional({
+    type: Boolean,
+    description: 'Whether the archer practises in France; false also clears `licenceDepartment`.',
+  })
+  @IsOptional()
+  @IsBoolean()
+  practisesInFrance?: boolean;
+
+  @ApiPropertyOptional({
+    type: String,
+    nullable: true,
+    example: '78',
+    description:
+      'Department of the licence (code, see GET /competitions/departments; implies ' +
+      '`practisesInFrance`, VALIDATION_FAILED with false); null clears it. It does not change ' +
+      '`departments`: clients add it there when the archer gives it.',
+  })
+  @IsOptional()
+  @IsIn(DEPARTMENT_CODES)
+  licenceDepartment?: string | null;
 
   @ApiPropertyOptional({
     type: [String],

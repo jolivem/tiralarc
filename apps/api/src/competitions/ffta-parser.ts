@@ -158,6 +158,42 @@ export function parseCompetitionPage(html: string): FftaPage {
 
 export const competitionUrl = (id: string) => `${ORIGIN}/epreuve/${id}`;
 
+export const CHAMPIONSHIP_LEVELS = ['NATIONAL', 'REGIONAL', 'DEPARTMENTAL'] as const;
+export type ChampionshipLevel = (typeof CHAMPIONSHIP_LEVELS)[number];
+
+/**
+ * The individual championship a competition is, from its title: French ("CHAMPIONNAT DE
+ * FRANCE JEUNE à RIOM"), regional ("CHAMPIONNAT RÉGIONAL SALLE", "… DE LIGUE") or
+ * departmental ("CHAMPIONNAT DÉPARTEMENTAL 68", "CHAMPIONNATDEPARTEMENTAL …", "… CD69"); null
+ * for any other competition, those that qualify for one ("SÉLECTIF CHAMPIONNAT DE FRANCE",
+ * "… QUALIFICATIF AU …") and team ones (clubs' teams, mixed doubles, the D1 / D2 divisions).
+ */
+export function championshipLevel(title: string): ChampionshipLevel | null {
+  const plain = title
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .toUpperCase();
+  if (/SELECTI|QUALIFICATI|EQUIPE|DOUBLE|\bD[12]\b|DIVISION/.test(plain)) return null;
+  if (plain.includes('CHAMPIONNAT DE FRANCE')) return 'NATIONAL';
+  if (/CHAMPIONNAT\s*(REGION|DE LIGUE)/.test(plain)) return 'REGIONAL';
+  if (/CHAMPIONNAT\s*(DEPARTEM|CD\s?\d)/.test(plain)) return 'DEPARTMENTAL';
+  return null;
+}
+
+/**
+ * Whom a championship is for, from its title: YOUTH ("… JEUNE(S) …"), ADULT ("… ADULTE(S) …",
+ * "ELITE", "S1 ET S2", "SENIOR…"); null when it doesn't say (by categories, all ages).
+ */
+export function championshipAge(title: string): 'YOUTH' | 'ADULT' | null {
+  const plain = title
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .toUpperCase();
+  if (/\bJEUNES?\b/.test(plain)) return 'YOUTH';
+  if (/\bADULTES?\b|\bELITE\b|\bS[123]\b|\bSENIORS?\b/.test(plain)) return 'ADULT';
+  return null;
+}
+
 /** What a competition's own page (https://www.ffta.fr/epreuve/{id}) adds to the search's rows. */
 export interface FftaCompetitionDetails {
   place: string | null;
@@ -174,27 +210,12 @@ export function parseCompetitionDetails(html: string): FftaCompetitionDetails {
 }
 
 /**
- * The place on a competition's page (https://www.ffta.fr/epreuve/{id}): "Lieu : <town>" then,
- * when given, the venue, its street and postcode, each in its own paragraph ("FRANCE" left out).
- * "Gymnase de l'Ardente, 13 Rue de Verdun, 78420 CARRIERES SUR SEINE", or the town alone;
+ * The town on a competition's page (https://www.ffta.fr/epreuve/{id}): its "Lieu : <town>"
+ * paragraph ("CARRIERES SUR SEINE"; the venue, street and postcode that follow are left out);
  * null when the page has no place.
  */
 export function parseCompetitionPlace(html: string): string | null {
-  const start = html.search(/<p>\s*Lieu\s*:/);
-  if (start < 0) return null;
-  const block = html.slice(start, html.indexOf('</div>', start) >>> 0);
+  const line = /<p>\s*Lieu\s*:([\s\S]*?)<\/p>/.exec(html)?.[1];
   // Some names come escaped twice ("l&amp;apos;Ardente").
-  const lines = [...block.matchAll(/<p>([\s\S]*?)<\/p>/g)].map((m) => textOf(textOf(m[1]!)));
-  const town = lines.shift()?.replace(/^Lieu\s*:\s*/, '') ?? '';
-  const venue = lines.filter((line) => line && line.toUpperCase() !== 'FRANCE');
-  // "78600 MAISONS LAFFITTE" names the town "MAISONS-LAFFITTE" already.
-  const plain = (text: string) =>
-    text
-      .normalize('NFD')
-      .replace(/\p{Diacritic}/gu, '')
-      .replace(/[^\p{L}\d]+/gu, ' ')
-      .trim()
-      .toUpperCase();
-  if (town && !venue.some((line) => plain(line).includes(plain(town)))) venue.push(town);
-  return venue.join(', ').slice(0, 200) || null;
+  return line ? textOf(textOf(line)).slice(0, 200) || null : null;
 }

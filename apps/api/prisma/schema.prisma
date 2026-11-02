@@ -295,6 +295,11 @@ model ArcherProfile {
   calendarFont      String?      @map("calendar_font") @db.VarChar(30)
   /// The indicator shown on the home page; null = none.
   favoriteIndicator Indicator?   @map("favorite_indicator")
+  /// Whether the archer practises in France (asked when creating a journal); null = not answered.
+  practisesInFrance Boolean?     @map("practises_in_france")
+  /// Code of the department where the archer is licensed (only when practising in France);
+  /// always among `departments`, which can't lose it.
+  licenceDepartment String?      @map("licence_department") @db.VarChar(3)
   /// Array of French department codes ("78", "2A", "971"…, at most 5) whose FFTA competitions
   /// the calendars show; empty = none shown.
   departments       Json

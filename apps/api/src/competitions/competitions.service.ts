@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Discipline } from '../generated/prisma/client.js';
+import { AgeCategory, Discipline } from '../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { ProfileService } from '../profile/profile.service.js';
 import { type Department, DEPARTMENTS, departmentByCode } from './departments.js';
@@ -12,6 +12,9 @@ import type {
 import {
   competitionUrl,
   type FftaCompetition,
+  type ChampionshipLevel,
+  championshipAge,
+  championshipLevel,
   type FftaCompetitionDetails,
 } from './ffta-parser.js';
 import { FftaClient } from './ffta.client.js';
@@ -31,6 +34,14 @@ const FFTA_DISCIPLINES: Record<Discipline, { id: number; para?: number }> = {
   NATURE: { id: 109 },
   RUN_ARCHERY: { id: 116 },
 };
+/** The young archers' categories (their own championships: "… JEUNES"). */
+const YOUTH = new Set<AgeCategory>([
+  AgeCategory.U11,
+  AgeCategory.U13,
+  AgeCategory.U15,
+  AgeCategory.U18,
+  AgeCategory.U21,
+]);
 const PARA_IDS = new Set(Object.values(FFTA_DISCIPLINES).flatMap((d) => (d.para ? [d.para] : [])));
 
 /** A search is read again after this long. */
@@ -42,20 +53,39 @@ const RESULTS_PENDING_MS = 60 * 60 * 1000;
 /** How far ahead the calendar is read. */
 const HORIZON_DAYS = 366;
 
+/**
+ * What one search covers: a department (all its competitions), a region (its championships:
+ * `text` finds them, `level` keeps them) or the whole of France (the French championships).
+ */
+interface Scope {
+  /** Names it in the cache, shared by the archers. */
+  key: string;
+  /** The site's department ids; none = the whole of France. */
+  departmentIds: number[];
+  text?: string;
+  level?: ChampionshipLevel;
+}
+
 interface CachedSearch {
   competitions: FftaCompetition[] | null;
   /** When to read the site again. */
   refreshAt: number;
 }
 
-const toDepartmentDto = (d: Department): DepartmentDto => ({ code: d.code, name: d.name });
+const toDepartmentDto = (d: Department): DepartmentDto => ({
+  code: d.code,
+  name: d.name,
+  region: d.region,
+});
 
 const isoDay = (date: Date) => date.toISOString().slice(0, 10);
 
 /**
- * The FFTA competitions of the archer's departments in their disciplines. The site is read on
- * demand, one search per department and discipline, and kept in memory: archers of one
- * department share it, and a failed reading falls back on the last one.
+ * The FFTA competitions of the archer's departments in their disciplines, with the
+ * championships of these disciplines: their departments', their regions' (wherever in the
+ * region) and the French ones (wherever in France). The site is read on demand, one search per
+ * scope and discipline, and kept in memory: archers of one department share it, and a failed
+ * reading falls back on the last one.
  */
 @Injectable()
 export class CompetitionsService {
@@ -124,8 +154,11 @@ export class CompetitionsService {
 
   async list(userId: string, from?: string, to?: string): Promise<CompetitionListDto> {
     const profile = await this.profiles.get(userId);
+    // Not practising in France: no FFTA competitions, whatever departments were picked.
+    if (profile.practisesInFrance === false) {
+      return { departments: [], competitions: [], complete: true };
+    }
     const departments = profile.departments.flatMap((code) => departmentByCode(code) ?? []);
-    if (departments.length === 0) return { departments: [], competitions: [], complete: true };
 
     // The FFTA id searched → the archer's discipline it shows as.
     const searched = new Map<number, Discipline>();
@@ -139,15 +172,29 @@ export class CompetitionsService {
       if (ffta.para && profile.paraCompetitions) searched.set(ffta.para, shownAs);
     }
 
+    // The departments' competitions (their championships among them), the championships of
+    // their regions, and the French championships.
+    const regions = [...new Set(departments.map((d) => d.region))];
+    const scopes: Scope[] = [
+      ...departments.map((d) => ({ key: d.code, departmentIds: d.fftaIds })),
+      ...regions.map((region) => ({
+        key: `region ${region}`,
+        departmentIds: DEPARTMENTS.filter((d) => d.region === region).flatMap((d) => d.fftaIds),
+        text: 'championnat',
+        level: 'REGIONAL' as const,
+      })),
+      { key: 'France', departmentIds: [], text: 'championnat de france', level: 'NATIONAL' },
+    ];
+
     const today = isoDay(new Date());
     const first = from && from > today ? from : today;
     const [results, dismissals] = await Promise.all([
-      // One search per department and discipline (each shared with the other archers).
+      // One search per scope and discipline (each shared with the other archers).
       Promise.all(
-        departments.flatMap((department) =>
+        scopes.flatMap((scope) =>
           [...searched.keys()].map(async (id) => ({
             id,
-            competitions: await this.search(department, id),
+            competitions: await this.search(scope, id),
           })),
         ),
       ),
@@ -157,16 +204,23 @@ export class CompetitionsService {
       }),
     ]);
     const dismissed = new Set(dismissals.map((d) => d.fftaCompetitionId));
+    // A young archer (U11 to U21) sees the young archers' championships, not the adults';
+    // the others the other way round (all of them while the category is unknown).
+    const ageOf = profile.category && (YOUTH.has(profile.category) ? 'YOUTH' : 'ADULT');
     const seen = new Set<string>();
     const competitions: CompetitionDto[] = [];
     for (const { id, competitions: found } of results) {
       for (const c of found ?? []) {
         if (seen.has(c.id) || c.endDate < first || (to && c.startDate > to)) continue;
         seen.add(c.id);
+        const championship = championshipLevel(c.title);
+        const age = championship && championshipAge(c.title);
+        if (ageOf && age && age !== ageOf) continue;
         competitions.push({
           ...c,
           discipline: searched.get(id)!,
           para: PARA_IDS.has(id),
+          championship,
           url: competitionUrl(c.id),
           dismissed: dismissed.has(c.id),
         });
@@ -182,30 +236,35 @@ export class CompetitionsService {
     };
   }
 
-  /** One department and discipline, from the cache while fresh; null if never read. */
-  private async search(department: Department, discipline: number) {
-    const key = `${department.code}:${discipline}`;
+  /** One scope and discipline, from the cache while fresh; null if never read. */
+  private async search(scope: Scope, discipline: number) {
+    const key = `${scope.key}:${discipline}`;
     const cached = this.cache.get(key);
     if (cached && Date.now() < cached.refreshAt) return cached.competitions;
     // Archers asking at the same time share one reading.
     let reading = this.pending.get(key);
     if (!reading) {
-      reading = this.read(department, discipline, cached).finally(() => this.pending.delete(key));
+      reading = this.read(key, scope, discipline, cached).finally(() => this.pending.delete(key));
       this.pending.set(key, reading);
     }
     return reading;
   }
 
-  private async read(department: Department, discipline: number, cached?: CachedSearch) {
+  private async read(key: string, scope: Scope, discipline: number, cached?: CachedSearch) {
     const now = new Date();
-    const key = `${department.code}:${discipline}`;
     try {
-      const competitions = await this.ffta.search({
-        departmentIds: department.fftaIds,
+      const found = await this.ffta.search({
+        departmentIds: scope.departmentIds,
+        ...(scope.text && { text: scope.text }),
         discipline,
         start: isoDay(now),
         end: isoDay(new Date(now.getTime() + HORIZON_DAYS * 24 * 60 * 60 * 1000)),
       });
+      // The words also find other competitions (those that qualify for a championship, the
+      // team ones, the departmental ones of a region…): only the scope's championships stay.
+      const competitions = scope.level
+        ? found.filter((c) => championshipLevel(c.title) === scope.level)
+        : found;
       this.cache.set(key, { competitions, refreshAt: Date.now() + FRESH_MS });
       return competitions;
     } catch {

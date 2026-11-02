@@ -13,6 +13,14 @@ import { type EventIconComponent, pictureIcon } from './image-icon';
 /** Bow, progression and dumbbell: drawn a little larger than their box. */
 const ICON_SCALE = 1.2;
 
+/** The built-in types' drawings: their icons, also the Instagram card's logo (share-card.ts). */
+export const TYPE_PICTURES = {
+  TRAINING: '/icons/events/training-colour.png',
+  COACHING: '/icons/events/coaching-colour.png',
+  COMPETITION: '/icons/events/competition.svg',
+  STRENGTH: '/icons/events/strength-colour.png',
+} as const satisfies Partial<Record<SessionType, string>>;
+
 export const SESSION_TYPES: Record<
   SessionType,
   {
@@ -25,21 +33,21 @@ export const SESSION_TYPES: Record<
   TRAINING: {
     color: 'teal',
     // Lavender limbs and grip; the space between string and bow stays clear.
-    icon: pictureIcon('/icons/events/training-colour.png', 'TrainingIcon', ICON_SCALE),
+    icon: pictureIcon(TYPE_PICTURES.TRAINING, 'TrainingIcon', ICON_SCALE),
     form: 'sheet',
     photos: true,
   },
   COACHING: {
     color: 'blue',
     // Sky blue inside.
-    icon: pictureIcon('/icons/events/coaching-colour.png', 'CoachingIcon', ICON_SCALE),
+    icon: pictureIcon(TYPE_PICTURES.COACHING, 'CoachingIcon', ICON_SCALE),
     form: 'sheet',
     photos: true,
   },
   COMPETITION: {
     color: 'orange',
     // In its own colours (yellow, red, blue, black, white rings), not the type's.
-    icon: pictureIcon('/icons/events/competition.svg', 'CompetitionIcon'),
+    icon: pictureIcon(TYPE_PICTURES.COMPETITION, 'CompetitionIcon'),
     form: 'sheet',
     photos: true,
   },
@@ -47,7 +55,7 @@ export const SESSION_TYPES: Record<
   STRENGTH: {
     color: 'grape',
     // Pearl grey inside.
-    icon: pictureIcon('/icons/events/strength-colour.png', 'StrengthIcon', ICON_SCALE),
+    icon: pictureIcon(TYPE_PICTURES.STRENGTH, 'StrengthIcon', ICON_SCALE),
     form: 'none',
     photos: false,
   },

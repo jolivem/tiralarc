@@ -13,6 +13,7 @@ import { useId, useState, useTransition } from 'react';
 import { saveProfile } from '@/app/actions/profile';
 import { DISCIPLINE_ORDER } from '@/components/journal/session-types';
 import type { ActionState } from '@/lib/action-state';
+import { departmentOptions, DEPARTMENT_LIST_STYLES } from '@/lib/departments';
 import { ProfileCard, SaveBar } from './list-card';
 import classes from './profile.module.css';
 
@@ -21,8 +22,18 @@ const BOW_TYPES: BowType[] = ['RECURVE', 'COMPOUND', 'BAREBOW', 'LONGBOW', 'HUNT
 /** As many departments as the API takes (`departments` in the archer profile). */
 const MAX_DEPARTMENTS = 5;
 
-/** Sport details: licence, category, bow and practised disciplines. */
-export function ConfigurationCard({ profile }: { profile: ArcherProfile }) {
+/**
+ * Sport details: where the archer practises (France or not, the licence department, first
+ * asked when creating a journal), FFTA licence (in France only), category, bow and practised
+ * disciplines.
+ */
+export function ConfigurationCard({
+  profile,
+  departments,
+}: {
+  profile: ArcherProfile;
+  departments: Department[];
+}) {
   const t = useTranslations();
   /** Ties the names to their fields. */
   const fieldId = useId();
@@ -31,10 +42,14 @@ export function ConfigurationCard({ profile }: { profile: ArcherProfile }) {
     licenceNumber: profile.licenceNumber ?? '',
     category: profile.category,
     bowType: profile.bowType,
+    practisesInFrance: profile.practisesInFrance,
+    licenceDepartment: profile.licenceDepartment,
     disciplines: profile.disciplines,
   });
   /** The values as last saved: "Save" only once something differs. */
   const [saved, setSaved] = useState(() => JSON.stringify(values));
+  // Practising in France: in which department's licence.
+  const complete = !values.practisesInFrance || values.licenceDepartment !== null;
   const dirty = JSON.stringify(values) !== saved;
   const [state, setState] = useState<ActionState>({});
   const [pending, startTransition] = useTransition();
@@ -48,12 +63,18 @@ export function ConfigurationCard({ profile }: { profile: ArcherProfile }) {
       <form
         onSubmit={(e) => {
           e.preventDefault();
-          if (!dirty) return;
+          if (!dirty || !complete) return;
           const snapshot = values;
           startTransition(async () => {
+            const { practisesInFrance, licenceDepartment, ...rest } = snapshot;
             const result = await saveProfile({
-              ...snapshot,
+              ...rest,
               licenceNumber: snapshot.licenceNumber.trim() || null,
+              // Not answered yet: left so.
+              ...(practisesInFrance !== null && {
+                practisesInFrance,
+                licenceDepartment: practisesInFrance ? licenceDepartment : null,
+              }),
             });
             setState(result);
             if (!result.code) setSaved(JSON.stringify(snapshot));
@@ -66,15 +87,52 @@ export function ConfigurationCard({ profile }: { profile: ArcherProfile }) {
             as the longest), so the chosen category and bow show in full.
           */}
           <div className={classes.fieldRows}>
-            <label htmlFor={`${fieldId}-licence`} className={classes.fieldName}>
-              {t('profile.config.licence')}
+            <label htmlFor={`${fieldId}-france`} className={classes.fieldName}>
+              {t('profile.config.inFrance')}
             </label>
-            <TextInput
-              id={`${fieldId}-licence`}
-              value={values.licenceNumber}
-              onChange={(e) => set('licenceNumber', e.currentTarget.value)}
-              maxLength={20}
+            <Select
+              id={`${fieldId}-france`}
+              placeholder={t('profile.config.choose')}
+              data={[
+                { value: 'true', label: t('journals.inFranceYes') },
+                { value: 'false', label: t('journals.inFranceNo') },
+              ]}
+              value={values.practisesInFrance === null ? null : String(values.practisesInFrance)}
+              onChange={(v) => v && set('practisesInFrance', v === 'true')}
+              allowDeselect={false}
             />
+            {values.practisesInFrance && (
+              <>
+                <label htmlFor={`${fieldId}-licence-department`} className={classes.fieldName}>
+                  {t('profile.config.licenceDepartment')}
+                </label>
+                <Select
+                  id={`${fieldId}-licence-department`}
+                  placeholder={t('journals.chooseDepartment')}
+                  data={departmentOptions(departments)}
+                  styles={DEPARTMENT_LIST_STYLES}
+                  value={values.licenceDepartment}
+                  onChange={(v) => set('licenceDepartment', v)}
+                  searchable
+                  allowDeselect={false}
+                  required
+                />
+              </>
+            )}
+            {/* An FFTA licence: only when practising in France (or not said yet). */}
+            {values.practisesInFrance !== false && (
+              <>
+                <label htmlFor={`${fieldId}-licence`} className={classes.fieldName}>
+                  {t('profile.config.licence')}
+                </label>
+                <TextInput
+                  id={`${fieldId}-licence`}
+                  value={values.licenceNumber}
+                  onChange={(e) => set('licenceNumber', e.currentTarget.value)}
+                  maxLength={20}
+                />
+              </>
+            )}
             <label htmlFor={`${fieldId}-category`} className={classes.fieldName}>
               {t('profile.config.category')}
             </label>
@@ -113,7 +171,7 @@ export function ConfigurationCard({ profile }: { profile: ArcherProfile }) {
             state={state}
             savedLabel={t('profile.config.saved')}
             label={t('profile.config.save')}
-            disabled={!dirty}
+            disabled={!dirty || !complete}
             loading={pending}
           />
         </Stack>
@@ -122,7 +180,10 @@ export function ConfigurationCard({ profile }: { profile: ArcherProfile }) {
   );
 }
 
-/** Which FFTA competitions the calendars show: those of up to 5 departments, para ones or not. */
+/**
+ * Which FFTA competitions the calendars show: those of up to 5 departments (grouped by region;
+ * the licence department is added when creating a journal), para ones or not.
+ */
 export function CompetitionsCard({
   profile,
   departments,
@@ -171,7 +232,8 @@ export function CompetitionsCard({
               id={`${fieldId}-departments`}
               // Only while none is chosen.
               placeholder={values.departments.length === 0 ? t('noDepartment') : undefined}
-              data={departments.map((d) => ({ value: d.code, label: `${d.code} - ${d.name}` }))}
+              data={departmentOptions(departments)}
+              styles={DEPARTMENT_LIST_STYLES}
               value={values.departments}
               onChange={(v) => set('departments', v)}
               maxValues={MAX_DEPARTMENTS}

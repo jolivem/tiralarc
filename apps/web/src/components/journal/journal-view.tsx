@@ -34,6 +34,7 @@ import {
   competitionDays,
   CompetitionsModal,
   ownJournal,
+  topChampionship,
 } from './competition-list';
 import { ColoringToolbar, DEFAULT_COLOR } from './coloring-toolbar';
 import { MonthThemeModal, monthTheme } from './month-theme-modal';
@@ -425,12 +426,15 @@ export function JournalView({
                   const heldLabel = t('archer.competitions.dayMark', {
                     names: held.map((c) => c.title).join(', '),
                   });
+                  // A championship's day: its level on the ticket (the highest that day).
+                  const championship = topChampionship(held);
                   return (
                     <div className={classes.dayDots} style={props.style} data-count={day.length}>
                       {held.length > 0 && payload && (
                         // A ticket in the cell's corner: the day's FFTA competitions.
                         <UnstyledButton
                           className={classes.competitionTicket}
+                          data-championship={championship ?? undefined}
                           title={heldLabel}
                           aria-label={heldLabel}
                           onClick={(e) => {
@@ -438,7 +442,9 @@ export function JournalView({
                             setCompetitionDay(payload.day);
                           }}
                         >
-                          {t('archer.competitions.ticket')}
+                          {championship
+                            ? t(`archer.competitions.championshipTickets.${championship}`)
+                            : t('archer.competitions.ticket')}
                         </UnstyledButton>
                       )}
                       {day.map((session) => {
@@ -509,10 +515,17 @@ export function JournalView({
                 const Icon = session ? eventDisplay(session).icon : null;
                 const pending = session ? pendingReason(session, todayDate) : null;
                 if (!session) {
+                  const championship =
+                    (event.payload as EventPayload | undefined)?.competition?.championship ?? null;
                   return (
                     <span className={classes.eventBody}>
-                      <span className={classes.competitionTicketInline}>
-                        {t('archer.competitions.ticket')}
+                      <span
+                        className={classes.competitionTicketInline}
+                        data-championship={championship ?? undefined}
+                      >
+                        {championship
+                          ? t(`archer.competitions.championshipTickets.${championship}`)
+                          : t('archer.competitions.ticket')}
                       </span>
                       {event.title}
                     </span>

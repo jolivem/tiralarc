@@ -41,6 +41,8 @@ function toProfileDto(profile: ArcherProfile | null): ProfileDto {
     disciplines: stored.filter((d): d is Discipline => DISCIPLINES.includes(d as string)),
     calendarFont: profile?.calendarFont ?? null,
     favoriteIndicator: profile?.favoriteIndicator ?? null,
+    practisesInFrance: profile?.practisesInFrance ?? null,
+    licenceDepartment: profile?.licenceDepartment ?? null,
     departments: departments.filter((d): d is string => DEPARTMENT_CODES.includes(d as string)),
     paraCompetitions: profile?.paraCompetitions ?? false,
   };
@@ -59,6 +61,29 @@ function toInvitationDto(i: ProfileInvitation): InvitationDto {
 }
 
 const toSiteDto = (s: FavoriteSite): SiteDto => ({ id: s.id, label: s.label, url: s.url });
+
+/**
+ * Where the archer practises: a licence department means France; not in France, no licence
+ * department. Only the fields to write (none when the PATCH has neither).
+ */
+function practice(
+  practisesInFrance: boolean | undefined,
+  licenceDepartment: string | null | undefined,
+) {
+  if (licenceDepartment && practisesInFrance === false) {
+    throw new ApiException(
+      HttpStatus.BAD_REQUEST,
+      ErrorCode.VALIDATION_FAILED,
+      'A licence department means practising in France',
+    );
+  }
+  if (practisesInFrance === false) return { practisesInFrance, licenceDepartment: null };
+  if (licenceDepartment) return { practisesInFrance: true, licenceDepartment };
+  return {
+    ...(practisesInFrance !== undefined && { practisesInFrance }),
+    ...(licenceDepartment !== undefined && { licenceDepartment }),
+  };
+}
 
 function limitReached(what: string, max: number): ApiException {
   return new ApiException(
@@ -84,10 +109,11 @@ export class ProfileService {
   }
 
   async update(userId: string, dto: UpdateProfileDto): Promise<ProfileDto> {
-    const { licenceNumber, ...rest } = dto;
+    const { licenceNumber, practisesInFrance, licenceDepartment, ...rest } = dto;
     const data = {
       ...rest,
       ...(licenceNumber !== undefined && { licenceNumber: licenceNumber?.trim() || null }),
+      ...practice(practisesInFrance, licenceDepartment),
     };
     const profile = await this.prisma.archerProfile.upsert({
       where: { userId },

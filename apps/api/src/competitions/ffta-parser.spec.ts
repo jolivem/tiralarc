@@ -3,6 +3,8 @@ import { departmentByCode, DEPARTMENTS } from './departments.js';
 import {
   parseCompetitionDetails,
   parseCompetitionPage,
+  championshipAge,
+  championshipLevel,
   parseCompetitionPlace,
   parseFrenchDates,
   textOf,
@@ -106,28 +108,79 @@ describe('parseCompetitionPage', () => {
   });
 });
 
+describe('championshipLevel', () => {
+  // Titles as found on the site for the 2026-2027 season.
+  it('tells the individual French, regional and departmental championships', () => {
+    const levels = {
+      NATIONAL: [
+        'CHAMPIONNAT DE FRANCE JEUNE à LANDERNEAU',
+        'CHAMPIONNAT DE FRANCE ADULTE à YZEURE',
+        'CHAMPIONNAT DE FRANCE ELITE à RIOM',
+        'CHAMPIONNAT DE FRANCE PAR CATEGORIES à SAINT AVERTIN',
+        'Championnat de France à ST GENEVIEVE DES BOIS',
+      ],
+      REGIONAL: [
+        'CHAMPIONNAT RÉGIONAL EN SALLE ADULTES à CAEN',
+        'CHAMPIONNAT REGIONAL JEUNE 18M CVL à TOURS',
+        'CHAMPIONNAT RÉGIONAL DE NORMANDIE à ALENCON',
+        'CHAMPIONNAT DE LIGUE SALLE à METZ',
+      ],
+      DEPARTMENTAL: [
+        'CHAMPIONNAT DÉPARTEMENTAL 68 à COLMAR',
+        'CHAMPIONNATDEPARTEMENTAL TIR A 18M JEUNES à ROUEN',
+        'CHAMPIONNAT DÉPARTEMANTAL à AUCH',
+        'TIR À 18M - NEVERS 2027 - CHAMPIONNAT DÉPARTEMENTAL 58 à NEVERS',
+        'CHAMPIONNAT CD56 DE TIR A 18 M à VANNES',
+      ],
+    };
+    for (const [level, titles] of Object.entries(levels)) {
+      for (const title of titles) expect(championshipLevel(title)).toBe(level);
+    }
+  });
+
+  it('leaves out the qualifying competitions, the team championships and the others', () => {
+    for (const title of [
+      'SÉLECTIF AU CHAMPIONNAT DE FRANCE à LIEVIN',
+      '2 FOIS 18M SELECTIF CHAMPIONNAT DE FRANCE à REZÉ',
+      'CONCOURS SALLE QUALIFICATIF AU CHAMPIONNAT DE FRANCE à BLERIOT PLAGE',
+      'CHAMPIONNAT DE FRANCE PAR EQUIPE DE CLUBS à AMILLY',
+      'CHAMPIONNAT DE FRANCE DOUBLES MIXTES JEUNES à RIOM',
+      '1ERE MANCHE CHAMPIONNAT DE FRANCE DE D1 à A VENIR',
+      'FINALE DU CHAMPIONNAT DE FRANCE D2 à A VENIR',
+      'CHAMPIONNAT RÉGIONAL PAR EQUIPES DE CLUBS à LENS',
+      'CHAMPIONNAT DÉPARTEMENTAL JEUNE PAR EQUIPE à CANDÉ',
+      'TIR À 18M à VILLEPREUX',
+    ]) {
+      expect(championshipLevel(title)).toBeNull();
+    }
+  });
+});
+
+describe('championshipAge', () => {
+  it('tells the young archers’ championships from the adults’', () => {
+    expect(championshipAge('CHAMPIONNAT DE FRANCE JEUNE à LANDERNEAU')).toBe('YOUTH');
+    expect(championshipAge('CHAMPIONNAT DÉPARTEMENTAL 76 JEUNES EN SALLE à ROUEN')).toBe('YOUTH');
+    expect(championshipAge('CHAMPIONNAT DE FRANCE ADULTE à YZEURE')).toBe('ADULT');
+    expect(championshipAge('CHAMPIONNAT DE FRANCE ELITE à RIOM')).toBe('ADULT');
+    expect(championshipAge('CHAMPIONNAT REGIONAL SALLE S1 ET S2 à CAEN')).toBe('ADULT');
+    expect(championshipAge('CHAMPIONNAT DE FRANCE PAR CATEGORIES à SAINT AVERTIN')).toBeNull();
+    expect(championshipAge('CHAMPIONNAT RÉGIONAL 18 MÈTRES à TOURS')).toBeNull();
+  });
+});
+
 describe('parseCompetitionPlace', () => {
   const saved = (id: string) =>
     readFileSync(new URL(`./fixtures/ffta-epreuve-${id}.html`, import.meta.url), 'utf8');
 
-  it('reads the venue, street and postcode, or the town alone', () => {
-    expect(parseCompetitionPlace(saved('26345'))).toBe(
-      "Gymnase de l'Ardente, 13 Rue de Verdun, 78420 CARRIERES SUR SEINE",
-    );
+  it('reads the town only, not the venue nor its address', () => {
+    expect(parseCompetitionPlace(saved('26345'))).toBe('CARRIERES SUR SEINE');
     expect(parseCompetitionPlace(saved('27858'))).toBe('CHENNEVIÈRES-SUR-MARNE');
-    // The town written another way in the postcode line is not repeated.
-    expect(
-      parseCompetitionPlace(
-        '<p>Lieu : <strong>MAISONS-LAFFITTE</strong></p> <p><strong>Gymnase Colbert</strong></p> ' +
-          '<p>3 Avenue Beaumarchais</p> <p>78600 MAISONS LAFFITTE</p> <p>FRANCE</p></div>',
-      ),
-    ).toBe('Gymnase Colbert, 3 Avenue Beaumarchais, 78600 MAISONS LAFFITTE');
-    // A venue without its postcode: the town is added.
     expect(
       parseCompetitionPlace(
         '<p>Lieu : <strong>DRAVEIL</strong></p><p><strong>Stade Pierre Brossolette</strong></p></div>',
       ),
-    ).toBe('Stade Pierre Brossolette, DRAVEIL');
+    ).toBe('DRAVEIL');
+    expect(parseCompetitionPlace('<p>Lieu : <strong> </strong></p>')).toBeNull();
     expect(parseCompetitionPlace('<p>Organisateur : <strong>X</strong></p>')).toBeNull();
   });
 });

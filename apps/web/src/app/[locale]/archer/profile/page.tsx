@@ -16,6 +16,8 @@ const EMPTY_PROFILE = {
   disciplines: [],
   calendarFont: null,
   favoriteIndicator: null,
+  practisesInFrance: null,
+  licenceDepartment: null,
   departments: [],
   paraCompetitions: false,
 };
@@ -50,9 +52,12 @@ export default async function ArcherProfilePage({ params }: PageProps<'/[locale]
       }
       right={
         <Stack gap="md">
-          <ConfigurationCard profile={profile ?? EMPTY_PROFILE} />
+          <ConfigurationCard profile={profile ?? EMPTY_PROFILE} departments={departments ?? []} />
           <PersonalizationCard font={profile?.calendarFont ?? null} />
-          <CompetitionsCard profile={profile ?? EMPTY_PROFILE} departments={departments ?? []} />
+          {/* The FFTA's competitions: only when practising in France (or not said yet). */}
+          {profile?.practisesInFrance !== false && (
+            <CompetitionsCard profile={profile ?? EMPTY_PROFILE} departments={departments ?? []} />
+          )}
         </Stack>
       }
     />

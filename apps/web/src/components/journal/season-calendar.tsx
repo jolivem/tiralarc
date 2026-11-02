@@ -50,15 +50,19 @@ async function eventsOf(startDate: string, endDate: string): Promise<JournalSess
 /**
  * Wraps the home page's months: clicking them opens the whole season of the journal
  * (every month of its period) in a dialog titled with the journal's name. Below the months, the
- * FFTA competitions still to come in the archer's departments (profile), their days outlined.
+ * FFTA competitions still to come in the archer's departments (profile), their days outlined
+ * (none for an archer who doesn't practise in France: `ffta` false).
  */
 export function SeasonCalendar({
   journal,
   today,
   customTypes,
+  ffta = true,
   children,
 }: {
   journal: Pick<Journal, 'title' | 'startDate' | 'endDate'>;
+  /** Whether the archer practises in France: the FFTA competitions show. */
+  ffta?: boolean;
   /** "YYYY-MM-DD", decided by the server so both renders agree. */
   today: string;
   /** The archer's own event types, for the legend above the months. */
@@ -75,7 +79,7 @@ export function SeasonCalendar({
   const [loading, startLoading] = useTransition();
   // The FFTA calendar from today to the end of the season.
   const competitionsFrom = today > journal.startDate ? today : journal.startDate;
-  const withCompetitions = competitionsFrom <= journal.endDate;
+  const withCompetitions = ffta && competitionsFrom <= journal.endDate;
 
   const open = () => {
     setOpened(true);

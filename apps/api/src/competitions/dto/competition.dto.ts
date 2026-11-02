@@ -1,6 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsOptional, Matches } from 'class-validator';
 import { Discipline } from '../../generated/prisma/client.js';
+import { CHAMPIONSHIP_LEVELS, type ChampionshipLevel } from '../ffta-parser.js';
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 const DISCIPLINES = Object.values(Discipline);
@@ -13,6 +14,13 @@ export class DepartmentDto {
 
   @ApiProperty({ example: 'Yvelines' })
   name!: string;
+
+  @ApiProperty({
+    example: 'Île-de-France',
+    description:
+      'Its region, to group the departments by (the 13 of metropolitan France; "Outre-mer" for the others).',
+  })
+  region!: string;
 }
 
 /** A competition of the FFTA calendar (https://www.ffta.fr/competitions). */
@@ -47,6 +55,17 @@ export class CompetitionDto {
   @ApiProperty({ description: 'A para-archery competition.' })
   para!: boolean;
 
+  @ApiProperty({
+    enum: CHAMPIONSHIP_LEVELS,
+    enumName: 'ChampionshipLevel',
+    nullable: true,
+    description:
+      'The individual championship it is, told by its title: NATIONAL (French, listed ' +
+      "wherever in France), REGIONAL (of the region of one of the archer's departments, " +
+      'wherever in it), DEPARTMENTAL; null for any other competition.',
+  })
+  championship!: ChampionshipLevel | null;
+
   @ApiProperty({ description: 'Teams only: no individual ranking.' })
   teamOnly!: boolean;
 
@@ -72,19 +91,21 @@ export class CompetitionDto {
   mandateUrl!: string | null;
 }
 
+/** Empty for an archer who doesn't practise in France (`practisesInFrance` false). */
 export class CompetitionListDto {
   @ApiProperty({
     type: () => [DepartmentDto],
     description:
-      "The archer's departments (profile), in their order; empty = none chosen, hence no " +
-      'competitions.',
+      "The archer's departments (profile), in their order; empty = none chosen, hence only " +
+      'the French championships.',
   })
   departments!: DepartmentDto[];
 
   @ApiProperty({
     type: () => [CompetitionDto],
     description:
-      "The departments' competitions in the archer's disciplines (profile) that have not ended " +
+      "The departments' competitions in the archer's disciplines (profile), with these " +
+      "disciplines' regional and French championships (`championship`), that have not ended " +
       'yet and touch the requested days, by first day.',
   })
   competitions!: CompetitionDto[];

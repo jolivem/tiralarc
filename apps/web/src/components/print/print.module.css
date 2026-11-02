@@ -158,7 +158,9 @@
   flex: 1;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   align-content: space-evenly;
-  gap: 3mm 4mm;
+
+  /* Wide gaps between the columns: months ~33 mm wide, more like squares. */
+  gap: 3mm 14mm;
   min-height: 0;
   font-family: var(--font-calendar, var(--font-hand-upright)), cursive;
 }

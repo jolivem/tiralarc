@@ -51,6 +51,7 @@ export type Department = Schemas['DepartmentDto'];
 export type Competition = Schemas['CompetitionDto'];
 export type CompetitionList = Schemas['CompetitionListDto'];
 export type CompetitionStatus = Schemas['CompetitionDto']['status'];
+export type ChampionshipLevel = NonNullable<Schemas['CompetitionDto']['championship']>;
 export type Ranking = Schemas['RankingDto'];
 export type RankingList = Schemas['RankingListDto'];
 

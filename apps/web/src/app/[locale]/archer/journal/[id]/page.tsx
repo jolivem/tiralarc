@@ -49,6 +49,7 @@ export default async function SessionPage({ params }: PageProps<'/[locale]/arche
         suggestions={suggestions ?? EMPTY_SUGGESTIONS}
         disciplines={profile?.disciplines ?? []}
         title={title}
+        sharePhotos={withPhotos ? (photos ?? []) : undefined}
       >
         {withPhotos && <SessionPhotos sessionId={session.id} photos={photos ?? []} />}
       </SessionForm>

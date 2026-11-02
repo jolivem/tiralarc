@@ -13,8 +13,13 @@ import {
   Stack,
   Text,
 } from '@mantine/core';
-import { IconChevronDown, IconExternalLink, IconPlus } from '@tabler/icons-react';
-import type { Competition, CompetitionList, JournalSessionSummary } from '@tiralarc/api-client';
+import { IconChevronDown, IconExternalLink, IconMedal, IconPlus } from '@tabler/icons-react';
+import type {
+  ChampionshipLevel,
+  Competition,
+  CompetitionList,
+  JournalSessionSummary,
+} from '@tiralarc/api-client';
 import dayjs from 'dayjs';
 import { useFormatter, useTranslations } from 'next-intl';
 import { type ComponentProps, useEffect, useState, useTransition } from 'react';
@@ -31,6 +36,21 @@ import { Link } from '@/i18n/navigation';
 import type { ActionState } from '@/lib/action-state';
 import classes from './journal.module.css';
 import { DISCIPLINE_COLORS } from './session-types';
+
+/** A championship's badge and ticket: gold for France, silver for the region, bronze for the department. */
+export const CHAMPIONSHIP_COLORS: Record<ChampionshipLevel, string> = {
+  NATIONAL: 'yellow',
+  REGIONAL: 'gray',
+  DEPARTMENTAL: 'orange',
+};
+
+/** The highest championship among `competitions` (a day's): French, then regional, then departmental. */
+export function topChampionship(competitions: Competition[]): ChampionshipLevel | null {
+  const levels = competitions.map((c) => c.championship);
+  return (
+    (['NATIONAL', 'REGIONAL', 'DEPARTMENTAL'] as const).find((l) => levels.includes(l)) ?? null
+  );
+}
 
 /** One competition is added at most this many times on one day (as the API allows). */
 const MAX_PER_COMPETITION_DAY = 2;
@@ -110,9 +130,22 @@ function CompetitionItems({
         });
   const dayLabel = (day: string) =>
     format.dateTime(noon(day), { weekday: 'long', day: 'numeric', month: 'long' });
-  /** Its discipline (in the discipline's pastel), para, teams only, postponed / cancelled. */
+  /**
+   * A championship first (French, regional, departmental: a medal's colour), then its
+   * discipline (in the discipline's pastel), para, teams only, postponed / cancelled.
+   */
   const badges = (c: Competition) => (
     <>
+      {c.championship && (
+        <Badge
+          size="sm"
+          variant="filled"
+          color={CHAMPIONSHIP_COLORS[c.championship]}
+          leftSection={<IconMedal size={12} />}
+        >
+          {t(`championships.${c.championship}`)}
+        </Badge>
+      )}
       <Badge size="sm" variant="light" color={DISCIPLINE_COLORS[c.discipline]}>
         {tJournal(`disciplines.${c.discipline}`)}
       </Badge>
