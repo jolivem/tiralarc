@@ -6,6 +6,8 @@ import '../globals.css';
 import { ColorSchemeScript, mantineHtmlProps } from '@mantine/core';
 import type { Metadata } from 'next';
 import {
+  Alex_Brush,
+  Allura,
   Caveat,
   Courgette,
   Dancing_Script,
@@ -13,9 +15,12 @@ import {
   Geist_Mono,
   Great_Vibes,
   Kaushan_Script,
+  Parisienne,
   Patrick_Hand,
   Ribeye,
+  Sacramento,
   Satisfy,
+  Yellowtail,
 } from 'next/font/google';
 import { notFound } from 'next/navigation';
 import { hasLocale, NextIntlClientProvider } from 'next-intl';
@@ -80,7 +85,48 @@ const greatVibes = Great_Vibes({
   weight: '400',
   preload: false,
 });
-const calendarFonts = [dancingScript, satisfy, courgette, kaushanScript, greatVibes];
+const allura = Allura({
+  variable: '--font-cal-allura',
+  subsets: ['latin'],
+  weight: '400',
+  preload: false,
+});
+const alexBrush = Alex_Brush({
+  variable: '--font-cal-alex-brush',
+  subsets: ['latin'],
+  weight: '400',
+  preload: false,
+});
+const sacramento = Sacramento({
+  variable: '--font-cal-sacramento',
+  subsets: ['latin'],
+  weight: '400',
+  preload: false,
+});
+const parisienne = Parisienne({
+  variable: '--font-cal-parisienne',
+  subsets: ['latin'],
+  weight: '400',
+  preload: false,
+});
+const yellowtail = Yellowtail({
+  variable: '--font-cal-yellowtail',
+  subsets: ['latin'],
+  weight: '400',
+  preload: false,
+});
+const calendarFonts = [
+  dancingScript,
+  satisfy,
+  courgette,
+  kaushanScript,
+  greatVibes,
+  allura,
+  alexBrush,
+  sacramento,
+  parisienne,
+  yellowtail,
+];
 
 export function generateStaticParams() {
   return routing.locales.map((locale) => ({ locale }));
@@ -118,10 +164,11 @@ export default async function LocaleLayout({ children, params }: LayoutProps<'/[
     profile,
     journals: {
       own: ownJournals.map(({ id, title }) => ({ id, title })),
-      athletes: athletes.map(({ id, name, journal }) => ({
+      athletes: athletes.map(({ id, name, journal, group }) => ({
         id,
         name,
         journalTitle: journal?.title ?? null,
+        group: group?.name ?? null,
       })),
       selectedId: selected?.id ?? null,
     },

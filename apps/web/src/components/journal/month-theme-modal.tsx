@@ -12,7 +12,7 @@ import {
   Tooltip,
   UnstyledButton,
 } from '@mantine/core';
-import { IconBan, IconBrush } from '@tabler/icons-react';
+import { IconBan } from '@tabler/icons-react';
 import type { Journal } from '@tiralarc/api-client';
 import { useFormatter, useTranslations } from 'next-intl';
 import { useId, useState, useTransition } from 'react';
@@ -29,53 +29,96 @@ export function monthTheme(journal: Journal, month: string): ThemeId | null {
 }
 
 /**
- * Picks the calendar decoration of one month (none, or one of the themes; applied on
- * click, closing the dialog) and the pastel colour its name is coloured in (applied on
- * click; the dialog stays open to compare).
+ * Picks the calendar decoration of one month (none, or one of the themes) and the pastel
+ * colour its name is coloured in (shown at once on the calendar, to compare). Closing the
+ * dialog applies them, once confirmed if that loses the colouring of the current decoration.
  */
 export function MonthThemeModal({
   journal,
   month,
   opened,
   onClose,
+  hasColoring,
   titleColor,
   onTitleColorChange,
-  onStartColoring,
+  onSaveTitle,
+  onDiscardTitle,
+  onThemeChanged,
 }: {
   journal: Journal;
   /** "YYYY-MM" */
   month: string;
   opened: boolean;
   onClose: () => void;
+  /** The current decoration has been coloured (the month's name doesn't count: it stays). */
+  hasColoring: boolean;
   /** The colour of all the name's letters; null when uncoloured, or coloured letter by letter. */
   titleColor: string | null;
-  /** Absent while the name can't be coloured yet (its font is loading). */
+  /** Tries a colour on the name. Absent while it can't be coloured yet (its font is loading). */
   onTitleColorChange?: (color: string | null) => void;
-  /** Closes the dialog and colours letter by letter / area by area; absent while colouring. */
-  onStartColoring?: () => void;
+  onSaveTitle: () => Promise<ActionState>;
+  onDiscardTitle: () => void;
+  onThemeChanged: () => void;
 }) {
   const t = useTranslations('journals');
   const format = useFormatter();
   const [state, setState] = useState<ActionState>({});
   const [pending, startTransition] = useTransition();
+  // The decoration clicked in the list; undefined until then (null is "no decoration").
+  const [picked, setPicked] = useState<ThemeId | null | undefined>(undefined);
+  const [confirming, setConfirming] = useState(false);
   const colorLabel = useId();
   const current = monthTheme(journal, month);
+  const selected = picked === undefined ? current : picked;
   const title = t('monthTheme', {
     month: format.dateTime(new Date(`${month}-15T12:00:00`), { month: 'long', year: 'numeric' }),
   });
 
-  const choose = (theme: ThemeId | null) =>
+  const finish = () => {
+    setPicked(undefined);
+    setConfirming(false);
+    setState({});
+    onClose();
+  };
+  const apply = (theme: ThemeId | null) =>
     startTransition(async () => {
-      const result = await setMonthTheme(journal.id, month, theme);
-      setState(result);
-      if (!result.code) onClose();
+      // The name first: changing the decoration keeps the name's colouring, as saved.
+      const saved = await onSaveTitle();
+      setState(saved);
+      if (saved.code) return;
+      if (theme !== current) {
+        const result = await setMonthTheme(journal.id, month, theme);
+        setState(result);
+        if (result.code) return;
+        onThemeChanged();
+      }
+      finish();
     });
+  const close = () => {
+    if (pending) return;
+    if (state.code) {
+      // The error was shown: closing again gives up rather than trapping the archer here.
+      onDiscardTitle();
+      finish();
+    } else if (selected !== current && hasColoring) setConfirming(true);
+    else apply(selected);
+  };
+  /** The decoration and its colouring stay; the dialog closes as usual (the name's colour too). */
+  const keepDecoration = () => {
+    setPicked(undefined);
+    setConfirming(false);
+    setState({});
+    apply(current);
+  };
 
   return (
     <Modal
       opened={opened}
-      onClose={onClose}
+      onClose={close}
       title={<Text fw={600}>{title}</Text>}
+      // The confirmation above it handles these itself.
+      closeOnEscape={!confirming}
+      closeOnClickOutside={!confirming}
       // At the bottom of the screen, full size, over a light veil: the month's name stays in
       // sight while choosing. (A large top offset would also cap its height and scroll it.)
       yOffset="1rem"
@@ -83,7 +126,7 @@ export function MonthThemeModal({
       overlayProps={{ backgroundOpacity: 0.15 }}
     >
       <Stack gap="md">
-        {/* First the name's colour, then the decoration (which closes the dialog). */}
+        {/* First the name's colour, then the decoration. */}
         <Stack gap={6}>
           <Text size="sm" fw={500} id={colorLabel}>
             {t('titleColor')}
@@ -134,11 +177,11 @@ export function MonthThemeModal({
             <UnstyledButton
               key={id ?? 'none'}
               role="radio"
-              aria-checked={id === current}
+              aria-checked={id === selected}
               className={classes.themeChoice}
-              data-selected={id === current || undefined}
+              data-selected={id === selected || undefined}
               disabled={pending}
-              onClick={() => choose(id)}
+              onClick={() => setPicked(id)}
             >
               <span className={classes.themeThumb}>
                 {id ? (
@@ -155,21 +198,28 @@ export function MonthThemeModal({
           ))}
         </SimpleGrid>
         <FormError state={state} />
-        {onStartColoring && (
+      </Stack>
+      <Modal
+        opened={confirming}
+        onClose={keepDecoration}
+        title={<Text fw={600}>{t('replaceThemeTitle')}</Text>}
+        centered
+        // Above the dialog it opens from.
+        zIndex={300}
+      >
+        <Stack>
+          <Text size="sm">{t('replaceThemeBody')}</Text>
+          <FormError state={state} />
           <Group justify="flex-end">
-            <Button
-              variant="default"
-              leftSection={<IconBrush size={18} />}
-              onClick={() => {
-                onClose();
-                onStartColoring();
-              }}
-            >
-              {t('coloring.start')}
+            <Button variant="default" onClick={keepDecoration}>
+              {t('cancel')}
+            </Button>
+            <Button color="red" loading={pending} onClick={() => apply(selected)}>
+              {t('replaceThemeConfirm')}
             </Button>
           </Group>
-        )}
-      </Stack>
+        </Stack>
+      </Modal>
     </Modal>
   );
 }

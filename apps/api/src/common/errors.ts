@@ -34,6 +34,10 @@ export const ErrorCode = {
   DATE_NOT_PLANNABLE: 'DATE_NOT_PLANNABLE',
   /** An event added from the FFTA calendar (`fftaCompetitionId`) keeps its competition's day. */
   DATE_LOCKED: 'DATE_LOCKED',
+  /** Too many invitations sent in 24 hours, whether or not they were removed since. */
+  DAILY_LIMIT_REACHED: 'DAILY_LIMIT_REACHED',
+  /** A coach's groups have different names. */
+  GROUP_NAME_TAKEN: 'GROUP_NAME_TAKEN',
 } as const;
 
 export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];

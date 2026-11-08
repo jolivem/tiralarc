@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/server';
 import { Fragment, type ReactNode } from 'react';
 import { Paginate } from '@/components/print/paginate';
+import { PrintLegend } from '@/components/print/print-legend';
 import { PrintMonth } from '@/components/print/print-month';
 import { PrintRankings, PrintStats } from '@/components/print/print-parts';
 import { PrintReady } from '@/components/print/print-ready';
@@ -15,6 +16,7 @@ import { exportMonths, parseExportOptions } from '@/lib/export-options';
 
 /**
  * The journal's PDF extract, as Chromium prints it (archer/export/route.ts): a cover, the
+ * legend of its signs, an index of its chapters, the
  * whole period's calendar on one page (its events' colours and their legend), then chapters, each opened by a title page: Indicators (the national rankings and the
  * indicators, if asked for), Journal (each month's calendar, followed by that month's sheets
  * by day if asked for, each with its photos), Sheets (the Sheets section's technique and
@@ -42,6 +44,12 @@ export default async function PrintJournalPage({
   const today = new Date().toISOString().slice(0, 10);
   const day = (date: string) =>
     format.dateTime(new Date(`${date}T12:00:00Z`), { dateStyle: 'long', timeZone: 'UTC' });
+  const withStats = options.rankings.length > 0 || options.indicators.length > 0;
+  const chapters = [
+    ...(withStats ? [{ id: 'chapter-stats', title: tArcher('stats') }] : []),
+    { id: 'chapter-journal', title: tArcher('journal') },
+    { id: 'chapter-sheets', title: tArcher('sheets') },
+  ];
 
   return (
     <main className={classes.document}>
@@ -50,6 +58,19 @@ export default async function PrintJournalPage({
         <div className={classes.coverName}>{user.displayName ?? user.email}</div>
         <div>{t('period', { from: day(options.from), to: day(options.to) })}</div>
         <div className={classes.muted}>{t('generatedOn', { date: day(today) })}</div>
+      </section>
+      <PrintLegend customTypes={data.customTypes} />
+      <section className={classes.page}>
+        <h2 className={classes.heading}>
+          <span className={classes.highlight}>{t('index')}</span>
+        </h2>
+        <ol className={classes.indexList}>
+          {chapters.map(({ id, title }) => (
+            <li key={id}>
+              <a href={`#${id}`}>{title}</a>
+            </li>
+          ))}
+        </ol>
       </section>
       <PrintYear
         title={periodJournal(data.journals, options.from, options.to)?.title ?? null}
@@ -61,9 +82,9 @@ export default async function PrintJournalPage({
         today={today}
       />
 
-      {(options.rankings.length > 0 || options.indicators.length > 0) && (
+      {withStats && (
         <>
-          <ChapterPage title={tArcher('stats')} />
+          <ChapterPage id="chapter-stats" title={tArcher('stats')} />
           {options.rankings.length > 0 && (
             <PrintRankings list={data.rankings} disciplines={options.rankings} />
           )}
@@ -79,7 +100,7 @@ export default async function PrintJournalPage({
         </>
       )}
 
-      <ChapterPage title={tArcher('journal')} />
+      <ChapterPage id="chapter-journal" title={tArcher('journal')} />
       {exportMonths(options.from, options.to).map((month) => (
         <Fragment key={month}>
           <PrintMonth
@@ -107,7 +128,7 @@ export default async function PrintJournalPage({
         The Sheets section (technique and settings sheets, not the events' sheets above):
         empty on the site for now, so its title page only. Its sheets will follow it.
       */}
-      <ChapterPage title={tArcher('sheets')}>
+      <ChapterPage id="chapter-sheets" title={tArcher('sheets')}>
         <p>{tArcher('sheetsIntro')}</p>
         <p className={classes.muted}>{tArcher('comingSoon')}</p>
       </ChapterPage>
@@ -119,9 +140,18 @@ export default async function PrintJournalPage({
 }
 
 /** A chapter's title page: its name in the middle of the page, and a few words under it. */
-function ChapterPage({ title, children }: { title: string; children?: ReactNode }) {
+function ChapterPage({
+  id,
+  title,
+  children,
+}: {
+  /** What the index links to. */
+  id: string;
+  title: string;
+  children?: ReactNode;
+}) {
   return (
-    <section className={`${classes.page} ${classes.chapter}`}>
+    <section id={id} className={`${classes.page} ${classes.chapter}`}>
       <h2 className={classes.chapterTitle}>{title}</h2>
       {children && <div className={classes.chapterNote}>{children}</div>}
     </section>

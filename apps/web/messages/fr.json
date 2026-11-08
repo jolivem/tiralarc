@@ -31,7 +31,7 @@
     }
   },
   "home": {
-    "tagline": "Le carnet de bord des archers",
+    "tagline": "Le carnet des archers",
     "welcomeTitle": "Bienvenue !",
     "welcomeBody": "MyArcheryDiary est votre carnet de tir à l'arc, toujours à portée de main. Comme un vrai carnet posé sur votre bureau, il garde la trace de chaque séance : entraînements, coachings, compétitions et renfo.",
     "faqTitle": "Questions fréquentes",
@@ -144,7 +144,9 @@
     "JOURNAL_OVERLAP": "Cette période chevauche un autre de vos journaux. Deux journaux ne peuvent pas couvrir la même date.",
     "SIGN_IN_REQUIRED": "Connectez-vous pour accepter cette invitation de coach.",
     "DATE_NOT_PLANNABLE": "Un coach planifie uniquement des jours à venir, dans le journal de la saison en cours de l'archer.",
-    "DATE_LOCKED": "Cette compétition vient du calendrier de la FFTA : sa date ne se modifie pas."
+    "DATE_LOCKED": "Cette compétition vient du calendrier de la FFTA : sa date ne se modifie pas.",
+    "DAILY_LIMIT_REACHED": "Vous avez envoyé trop d'invitations aujourd'hui. Réessayez demain.",
+    "GROUP_NAME_TAKEN": "Vous avez déjà un groupe à ce nom."
   },
   "validation": {
     "isEmail": "Adresse email invalide.",
@@ -306,6 +308,8 @@
     "dateFromFfta": "Compétition du calendrier de la FFTA : sa date ne se modifie pas.",
     "results": "Résultats",
     "resultsHint": "Les résultats publiés sur le site de la FFTA (PDF)",
+    "scoreSheet": "Feuille de marque",
+    "scoreSheetHint": "Votre feuille de marque, trouvée sur ianseo (PDF)",
     "resultsPending": "Résultats pas encore publiés sur le site de la FFTA",
     "create": "Créer l'événement",
     "cancel": "Annuler",
@@ -389,7 +393,9 @@
       "GIFT": "Cadeau",
       "HEART": "Cœur",
       "BELL": "Rappel",
-      "PIN": "Lieu"
+      "PIN": "Lieu",
+      "RUN": "Footing",
+      "VISUALIZATION": "Visualisation"
     },
     "photos": {
       "title": "Photos",
@@ -508,10 +514,25 @@
     "theme": "Décor du mois",
     "noTheme": "Sans décor",
     "themes": {
-      "archery": "Tir à l'arc"
+      "archery": "Tir à l'arc",
+      "rentree": "Rentrée",
+      "nouvelan": "Nouvel an",
+      "valentin": "Saint-Valentin",
+      "espace": "Espace",
+      "printemps": "Printemps et abeilles",
+      "cerisier": "Cerisier en fleurs",
+      "fruits": "Fruits",
+      "ete": "Été",
+      "halloween": "Halloween",
+      "automne": "Automne",
+      "noel": "Noël",
+      "hiver": "Hiver"
     },
     "monthTheme": "Décor du mois — {month}",
-    "monthThemeHint": "Chaque mois du journal peut avoir son propre décor autour du calendrier.",
+    "monthThemeHint": "Décor du mois",
+    "replaceThemeTitle": "Changer de décor ?",
+    "replaceThemeBody": "Le coloriage de ce décor sera définitivement perdu pour ce mois. Les couleurs du nom du mois sont conservées.",
+    "replaceThemeConfirm": "Changer de décor",
     "titleColor": "Couleur du nom du mois",
     "noTitleColor": "Sans couleur",
     "pastels": {
@@ -599,22 +620,11 @@
         "en": "English"
       }
     },
-    "sites": {
-      "title": "Sites web préférés",
-      "empty": "Aucun site pour l'instant.",
-      "add": "Ajouter un site",
-      "label": "Nom",
-      "labelPlaceholder": "Ex. : FFTA",
-      "url": "Adresse",
-      "urlPlaceholder": "https://www.ffta.fr",
-      "submit": "Ajouter",
-      "removeLabel": "Supprimer le site {name}",
-      "removeTitle": "Supprimer ce site ?",
-      "removeBody": "Le lien vers « {name} » sera supprimé de votre profil."
-    },
     "config": {
       "title": "Configuration",
       "licence": "N° de licence",
+      "lastName": "Nom",
+      "firstName": "Prénom",
       "category": "Catégorie",
       "bowType": "Arme",
       "disciplines": "Disciplines pratiquées",
@@ -637,7 +647,12 @@
       "satisfy": "Satisfy",
       "courgette": "Courgette",
       "kaushan-script": "Kaushan Script",
-      "great-vibes": "Great Vibes"
+      "great-vibes": "Great Vibes",
+      "allura": "Allura",
+      "alex-brush": "Alex Brush",
+      "sacramento": "Sacramento",
+      "parisienne": "Parisienne",
+      "yellowtail": "Yellowtail"
     },
     "categories": {
       "U11": "U11",
@@ -776,6 +791,23 @@
     "dateReached": "Atteint le {reached}"
   },
   "coach": {
+    "groups": {
+      "add": "Nouveau groupe",
+      "name": "Nom du groupe",
+      "namePlaceholder": "Ex. : Groupe compétition",
+      "create": "Créer",
+      "save": "Enregistrer",
+      "cancel": "Annuler",
+      "renameTitle": "Renommer le groupe",
+      "renameLabel": "Renommer le groupe {name}",
+      "deleteLabel": "Supprimer le groupe {name}",
+      "deleteTitle": "Supprimer ce groupe ?",
+      "deleteBody": "Le groupe « {name} » sera supprimé. Ses archers restent suivis, sans groupe.",
+      "delete": "Supprimer",
+      "none": "Sans groupe",
+      "choose": "Groupe de {name}",
+      "empty": "Aucun archer dans ce groupe."
+    },
     "title": "Mes archers",
     "intro": "Les archers qui vous ont invité comme coach. Vous suivez leur journal de la saison en cours.",
     "emptyBody": "Aucun archer pour l'instant. Un archer vous invite comme coach depuis sa page Profil ; acceptez l'invitation reçue par email en étant connecté.",
@@ -814,6 +846,7 @@
     "coverTitle": "Mon journal d'archer",
     "period": "Du {from} au {to}",
     "generatedOn": "Extrait du {date}",
+    "index": "Index",
     "yearTitle": "Calendrier de l'année",
     "noReview": "Bilan pas encore rempli.",
     "photosOf": "Photos · {type} du {date}",

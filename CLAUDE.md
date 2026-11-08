@@ -42,7 +42,9 @@ the same API — keep it client-agnostic (no cookies, no web-only assumptions in
   `components/journal/new-events.tsx`); calendars and the sheet's margin show a "Coach" stamp until it is completed. Web: the list of
   archers is a card of the Account page (`components/coach/athletes-card.tsx`, where the coach profile's logo
   leads), then `/coach/[archerId]/{journal,journal/[id],stats}` reusing `JournalView` / `SessionForm` (`coach` prop) and
-  read-only `SessionPhotos` / `GoalsCard`. Deleting the invitation ends the access.
+  read-only `SessionPhotos` / `GoalsCard`. Deleting the invitation ends the access. A coach sorts their archers into
+  named groups of their own (`/coach/groups`, `PUT /coach/athletes/{id}/group`, `GROUP_NAME_TAKEN`; on the link,
+  `coachGroupId`, unseen by the archer): sections of the athletes card and of the header's journal menu.
 - Web is bilingual (next-intl, `/fr`, `/en`): every user-facing string goes in `apps/web/messages/{fr,en}.json`;
   use `Link`/`redirect` from `@/i18n/navigation`, not `next/link`/`next/navigation`.
 - UI: Mantine 9 (no Tailwind). Responsive via Mantine props (`cols={{ base: 1, sm: 2 }}`, `hiddenFrom`,
@@ -57,7 +59,7 @@ the same API — keep it client-agnostic (no cookies, no web-only assumptions in
   The home page is an open notebook (`components/notebook/`: two ruled pages, stacked below md); the other
   sections use `SectionPage`, which puts the title above the same notebook (two pages via `left`/`right`, or one
   wide page via `children` for content the fold would cut: calendar, charts). Fonts:
-  `--font-hand` (Caveat, headings) and `--font-calendar` (the calendars' weekdays and day numbers: one of five
+  `--font-hand` (Caveat, headings) and `--font-calendar` (the calendars' weekdays and day numbers: one of ten
   calligraphy fonts, `src/lib/calendar-fonts.ts`, chosen on the Profile page — `calendarFont` in the API's archer
   profile — and set on `<html>` by the root layout; `--font-hand-upright`, Patrick Hand, as fallback). On the
   archer home page every title and the date use that font, in bold (`archer/home.module.css` points `--font-hand`
@@ -77,7 +79,7 @@ the same API — keep it client-agnostic (no cookies, no web-only assumptions in
   white). Adding a theme = image folder + catalogue entry + `journals.themes.<id>` in both message files.
 - Colouring the decoration: `monthThemes[].fills` holds "paint bucket" clicks (band, x, y as fractions, colour);
   the web repaints them on a canvas (`components/journal/coloring.ts`, pure and unit-tested, + `calendar-frame.tsx`).
-  Flood fill stops at dark strokes, so artwork needs closed shapes; changing a month's theme clears its colouring,
+  Flood fill stops at dark strokes, so artwork needs closed shapes; changing a month's theme clears its colouring (the web asks to confirm first),
   except band `title` (the only one allowed without a theme: such a month is stored with `theme: null`): the Journal calendar's heading (`month-title.tsx`), the month's name drawn on a fixed-size
   canvas as hollow letters (`--font-month`, Ribeye, outline only), coloured like the bands (inside letters only), or
   all at once in a pastel from the decoration dialog (`letterSeeds`: one fill per letter, holes of "o" left out,
@@ -186,7 +188,7 @@ the same API — keep it client-agnostic (no cookies, no web-only assumptions in
   `lib/export-options.ts`, unit-tested) downloads `GET /[locale]/archer/export` (route handler), which opens
   `/[locale]/print/journal` in a headless Chromium (`lib/pdf.ts`, `playwright-core`; signed in with the access
   cookie only — refresh tokens are single-use) and prints it A5. That page (no shell: `app-shell.tsx` leaves
-  `/print/` bare; data in `lib/export-data.ts`) is plain paper, no notebook: cover, the whole period's calendar on one page (`print-year.tsx`: titled with the
+  `/print/` bare; data in `lib/export-data.ts`) is plain paper, no notebook: cover, legend (`print-legend.tsx`: colours, symbols, faces), index of the chapters (PDF links), the whole period's calendar on one page (`print-year.tsx`: titled with the
   journal's name, coloured dots per event, the legend at the bottom), rankings, indicators
   (`PrintedCards` context in `stats-cards.tsx`: whole span, no choice bars), then per month the calendar with its
   decoration / colouring (`components/print/print-month.tsx`, reusing `useArtwork` / `ColorableCanvas` /
@@ -201,9 +203,17 @@ the same API — keep it client-agnostic (no cookies, no web-only assumptions in
   day (and photos — the events' sheets), then Fiches: the Sheets section (technique / settings sheets, coming
   soon: title page only for now; not the events' sheets). Dev: `pnpm --filter @tiralarc/web exec playwright-core install chromium-headless-shell`;
   Docker: Alpine's `chromium` (`CHROMIUM_PATH`). `PRINT_BASE_URL` if the server isn't on localhost:`PORT`.
-- Archer profile (`apps/api/src/profile/`, web `components/profile/`): sport details, favourite websites and people
-  invited by email. A plain guest's invitation (public `/invitations/accept`, token used on POST) grants no access;
-  a coach's does (see Coaching).
+- Score sheets (`apps/api/src/score-sheets/`, no ianseo API): during the 7 days after a COMPETITION event, once a day
+  (`ScoreSheetsService`, hourly timer; `scoreSheetCheckedOn`), for archers practising in France with licence, last and
+  first names (profile's Configuration card): `ScoreSheetFinder` reads ianseo.net's competitions of that day (place
+  first), the one whose participants' list (`ENA.pdf`) has the licence and name (the sheets don't print the licence), then
+  the organiser's PDFs named "marque"/"score" (free titles, not all publish them; pure parts unit-tested in
+  `ianseo-parser.ts`). The page(s) go in table `score_sheets` (`hasScoreSheet`, `GET .../score-sheet`, coach too; web:
+  button on the event sheet, route handlers). e2e tests replace `IanseoClient` with `FakeIanseo`.
+- Archer profile (`apps/api/src/profile/`, web `components/profile/`): sport details, favourite websites (API only: the web
+  no longer shows them) and people invited by email. A plain guest's invitation (public `/invitations/accept`, token used on POST) grants no access;
+  a coach's does (see Coaching). Against bots sending mail: at most 20 invitations per archer, and 10 sent per 24 h
+  (`DAILY_LIMIT_REACHED`, table `invitation_sends`: removing an invitation doesn't give that one back).
 - `@mantine/schedule` 9.6.3 leaks some props to the DOM from MonthView / YearView: don't pass `mode="static"`,
   and pass `onTimeSlotClick` / `onAllDaySlotClick` only in day / week views (see `components/journal/journal-view.tsx`).
 - Mantine `Slider`: accessible name goes in `thumbLabel`, not `aria-label`.

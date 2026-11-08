@@ -21,6 +21,7 @@ import {
   ApiOkResponse,
   ApiOperation,
   ApiTags,
+  ApiTooManyRequestsResponse,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
@@ -80,6 +81,7 @@ export class ProfileController {
   @ApiCreatedResponse({ type: InvitationDto })
   @ApiBadRequestResponse({ description: 'CANNOT_INVITE_SELF' })
   @ApiConflictResponse({ description: 'INVITATION_ALREADY_SENT, LIMIT_REACHED' })
+  @ApiTooManyRequestsResponse({ description: 'DAILY_LIMIT_REACHED, TOO_MANY_REQUESTS' })
   invite(
     @CurrentUser() user: AuthenticatedUser,
     @Body() dto: CreateInvitationDto,

@@ -14,7 +14,7 @@ export interface JournalChoices {
   /** The user's own journals (archers), most recent first. */
   own: { id: string; title: string }[];
   /** The archers they coach, with the title of their journal of the season in progress. */
-  athletes: { id: string; name: string; journalTitle: string | null }[];
+  athletes: { id: string; name: string; journalTitle: string | null; group: string | null }[];
   /** The own journal the archer works in (see `getSelectedJournal`). */
   selectedId: string | null;
 }
@@ -23,7 +23,7 @@ export interface JournalChoices {
  * The journal named in the middle of the header: the archer's selected journal, or, in a
  * coach's view, their archer's journal of the season in progress. With more than one journal
  * to choose from, a menu to switch: the user's own journals, then their archers' (those with a
- * journal in progress only).
+ * journal in progress only), by group, those in none last.
  */
 export function JournalMenu({
   choices,
@@ -57,6 +57,13 @@ export function JournalMenu({
   }
 
   const inArcherArea = pathname === '/archer' || pathname.startsWith('/archer/');
+  const groups = [...new Set(athletes.flatMap((a) => (a.group ? [a.group] : [])))].sort((a, b) =>
+    a.localeCompare(b),
+  );
+  const sections = [
+    ...groups.map((group) => ({ label: group, list: athletes.filter((a) => a.group === group) })),
+    { label: t('athletes'), list: athletes.filter((a) => a.group === null) },
+  ].filter((section) => section.list.length > 0);
   return (
     <Menu position="bottom" width={320} withinPortal>
       <Menu.Target>
@@ -89,21 +96,23 @@ export function JournalMenu({
             </Menu.Item>
           );
         })}
-        {athletes.length > 0 && <Menu.Label>{t('athletes')}</Menu.Label>}
-        {athletes.map((a) => (
-          <Menu.Item
-            key={a.id}
-            rightSection={a.id === coachedId ? <IconCheck size={14} /> : undefined}
-            onClick={() => startTransition(() => openAthleteJournal(a.id))}
-          >
-            <Text size="sm" truncate>
-              {a.name}
-            </Text>
-            <Text size="xs" c="dimmed" truncate>
-              {a.journalTitle}
-            </Text>
-          </Menu.Item>
-        ))}
+        {sections.map(({ label: section, list }) => [
+          <Menu.Label key={section}>{section}</Menu.Label>,
+          ...list.map((a) => (
+            <Menu.Item
+              key={a.id}
+              rightSection={a.id === coachedId ? <IconCheck size={14} /> : undefined}
+              onClick={() => startTransition(() => openAthleteJournal(a.id))}
+            >
+              <Text size="sm" truncate>
+                {a.name}
+              </Text>
+              <Text size="xs" c="dimmed" truncate>
+                {a.journalTitle}
+              </Text>
+            </Menu.Item>
+          )),
+        ])}
       </Menu.Dropdown>
     </Menu>
   );

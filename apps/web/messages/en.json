@@ -31,7 +31,7 @@
     }
   },
   "home": {
-    "tagline": "The archer's logbook",
+    "tagline": "The archers' notebook",
     "welcomeTitle": "Welcome!",
     "welcomeBody": "MyArcheryDiary is your archery notebook, always at hand. Like a real notebook lying on your desk, it keeps track of every session: training, coaching, competitions and strength work.",
     "faqTitle": "Frequently asked questions",
@@ -144,7 +144,9 @@
     "JOURNAL_OVERLAP": "This period overlaps another of your journals. Two journals cannot cover the same date.",
     "SIGN_IN_REQUIRED": "Sign in to accept this coach invitation.",
     "DATE_NOT_PLANNABLE": "A coach only plans days to come, within the archer's journal of the current season.",
-    "DATE_LOCKED": "This competition comes from the FFTA calendar: its date can't be changed."
+    "DATE_LOCKED": "This competition comes from the FFTA calendar: its date can't be changed.",
+    "DAILY_LIMIT_REACHED": "You have sent too many invitations today. Try again tomorrow.",
+    "GROUP_NAME_TAKEN": "You already have a group with this name."
   },
   "validation": {
     "isEmail": "Invalid email address.",
@@ -306,6 +308,8 @@
     "dateFromFfta": "Competition of the FFTA calendar: its date can't be changed.",
     "results": "Results",
     "resultsHint": "The results published on the FFTA website (PDF)",
+    "scoreSheet": "Score sheet",
+    "scoreSheetHint": "Your score sheet, found on ianseo (PDF)",
     "resultsPending": "Results not published on the FFTA website yet",
     "create": "Create event",
     "cancel": "Cancel",
@@ -389,7 +393,9 @@
       "GIFT": "Gift",
       "HEART": "Heart",
       "BELL": "Reminder",
-      "PIN": "Place"
+      "PIN": "Place",
+      "RUN": "Running",
+      "VISUALIZATION": "Visualization"
     },
     "photos": {
       "title": "Photos",
@@ -508,10 +514,25 @@
     "theme": "Month decoration",
     "noTheme": "None",
     "themes": {
-      "archery": "Archery"
+      "archery": "Archery",
+      "rentree": "Back to school",
+      "nouvelan": "New Year",
+      "valentin": "Valentine's Day",
+      "espace": "Space",
+      "printemps": "Spring and bees",
+      "cerisier": "Cherry blossom",
+      "fruits": "Fruit",
+      "ete": "Summer",
+      "halloween": "Halloween",
+      "automne": "Autumn",
+      "noel": "Christmas",
+      "hiver": "Winter"
     },
     "monthTheme": "Decoration for {month}",
-    "monthThemeHint": "Each month of the journal can have its own decoration around the calendar.",
+    "monthThemeHint": "Month decoration",
+    "replaceThemeTitle": "Change decoration?",
+    "replaceThemeBody": "The colouring of this decoration will be permanently lost for this month. The colours of the month's name are kept.",
+    "replaceThemeConfirm": "Change decoration",
     "titleColor": "Colour of the month's name",
     "noTitleColor": "No colour",
     "pastels": {
@@ -599,22 +620,11 @@
         "en": "English"
       }
     },
-    "sites": {
-      "title": "Favourite websites",
-      "empty": "No website yet.",
-      "add": "Add a website",
-      "label": "Name",
-      "labelPlaceholder": "E.g. FFTA",
-      "url": "Address",
-      "urlPlaceholder": "https://www.ffta.fr",
-      "submit": "Add",
-      "removeLabel": "Delete website {name}",
-      "removeTitle": "Delete this website?",
-      "removeBody": "The link to “{name}” will be removed from your profile."
-    },
     "config": {
       "title": "Configuration",
       "licence": "Licence number",
+      "lastName": "Last name",
+      "firstName": "First name",
       "category": "Category",
       "bowType": "Bow",
       "disciplines": "Disciplines practised",
@@ -637,7 +647,12 @@
       "satisfy": "Satisfy",
       "courgette": "Courgette",
       "kaushan-script": "Kaushan Script",
-      "great-vibes": "Great Vibes"
+      "great-vibes": "Great Vibes",
+      "allura": "Allura",
+      "alex-brush": "Alex Brush",
+      "sacramento": "Sacramento",
+      "parisienne": "Parisienne",
+      "yellowtail": "Yellowtail"
     },
     "categories": {
       "U11": "U11",
@@ -776,6 +791,23 @@
     "dateReached": "Reached on {reached}"
   },
   "coach": {
+    "groups": {
+      "add": "New group",
+      "name": "Group name",
+      "namePlaceholder": "E.g. Competition group",
+      "create": "Create",
+      "save": "Save",
+      "cancel": "Cancel",
+      "renameTitle": "Rename the group",
+      "renameLabel": "Rename group {name}",
+      "deleteLabel": "Delete group {name}",
+      "deleteTitle": "Delete this group?",
+      "deleteBody": "The group “{name}” will be deleted. Its archers stay followed, in no group.",
+      "delete": "Delete",
+      "none": "No group",
+      "choose": "Group of {name}",
+      "empty": "No archer in this group."
+    },
     "title": "My archers",
     "intro": "The archers who invited you as their coach. You follow their journal of the current season.",
     "emptyBody": "No archers yet. An archer invites you as their coach from their Profile page; accept the emailed invitation while signed in.",
@@ -814,6 +846,7 @@
     "coverTitle": "My archery journal",
     "period": "From {from} to {to}",
     "generatedOn": "Extract of {date}",
+    "index": "Contents",
     "yearTitle": "Year calendar",
     "noReview": "Review not written yet.",
     "photosOf": "Photos · {type} on {date}",

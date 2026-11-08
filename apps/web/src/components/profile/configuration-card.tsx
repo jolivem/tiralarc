@@ -40,6 +40,8 @@ export function ConfigurationCard({
   // Only this card's fields: the Personalisation card saves the others on its own.
   const [values, setValues] = useState({
     licenceNumber: profile.licenceNumber ?? '',
+    lastName: profile.lastName ?? '',
+    firstName: profile.firstName ?? '',
     category: profile.category,
     bowType: profile.bowType,
     practisesInFrance: profile.practisesInFrance,
@@ -59,8 +61,21 @@ export function ConfigurationCard({
   };
 
   return (
-    <ProfileCard title={t('profile.config.title')}>
+    <ProfileCard
+      title={t('profile.config.title')}
+      action={
+        <SaveBar
+          form={`${fieldId}-form`}
+          state={state}
+          savedLabel={t('profile.config.saved')}
+          label={t('profile.config.save')}
+          disabled={!dirty || !complete}
+          loading={pending}
+        />
+      }
+    >
       <form
+        id={`${fieldId}-form`}
         onSubmit={(e) => {
           e.preventDefault();
           if (!dirty || !complete) return;
@@ -70,6 +85,8 @@ export function ConfigurationCard({
             const result = await saveProfile({
               ...rest,
               licenceNumber: snapshot.licenceNumber.trim() || null,
+              lastName: snapshot.lastName.trim() || null,
+              firstName: snapshot.firstName.trim() || null,
               // Not answered yet: left so.
               ...(practisesInFrance !== null && {
                 practisesInFrance,
@@ -131,6 +148,25 @@ export function ConfigurationCard({
                   onChange={(e) => set('licenceNumber', e.currentTarget.value)}
                   maxLength={20}
                 />
+                {/* With the licence, they find the competitions' score sheets. */}
+                <label htmlFor={`${fieldId}-last-name`} className={classes.fieldName}>
+                  {t('profile.config.lastName')}
+                </label>
+                <TextInput
+                  id={`${fieldId}-last-name`}
+                  value={values.lastName}
+                  onChange={(e) => set('lastName', e.currentTarget.value)}
+                  maxLength={60}
+                />
+                <label htmlFor={`${fieldId}-first-name`} className={classes.fieldName}>
+                  {t('profile.config.firstName')}
+                </label>
+                <TextInput
+                  id={`${fieldId}-first-name`}
+                  value={values.firstName}
+                  onChange={(e) => set('firstName', e.currentTarget.value)}
+                  maxLength={60}
+                />
               </>
             )}
             <label htmlFor={`${fieldId}-category`} className={classes.fieldName}>
@@ -167,13 +203,6 @@ export function ConfigurationCard({
               ))}
             </SimpleGrid>
           </Checkbox.Group>
-          <SaveBar
-            state={state}
-            savedLabel={t('profile.config.saved')}
-            label={t('profile.config.save')}
-            disabled={!dirty || !complete}
-            loading={pending}
-          />
         </Stack>
       </form>
     </ProfileCard>
@@ -207,8 +236,21 @@ export function CompetitionsCard({
   };
 
   return (
-    <ProfileCard title={t('title')}>
+    <ProfileCard
+      title={t('title')}
+      action={
+        <SaveBar
+          form={`${fieldId}-form`}
+          state={state}
+          savedLabel={t('saved')}
+          label={t('save')}
+          disabled={!dirty}
+          loading={pending}
+        />
+      }
+    >
       <form
+        id={`${fieldId}-form`}
         onSubmit={(e) => {
           e.preventDefault();
           if (!dirty) return;
@@ -246,13 +288,6 @@ export function CompetitionsCard({
             label={t('para')}
             checked={values.paraCompetitions}
             onChange={(e) => set('paraCompetitions', e.currentTarget.checked)}
-          />
-          <SaveBar
-            state={state}
-            savedLabel={t('saved')}
-            label={t('save')}
-            disabled={!dirty}
-            loading={pending}
           />
         </Stack>
       </form>

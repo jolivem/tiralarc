@@ -8,7 +8,7 @@ import { useState, useTransition } from 'react';
 import { deleteEventType, saveEventType } from '@/app/actions/journal';
 import { FormError } from '@/components/form-feedback';
 import type { ActionState } from '@/lib/action-state';
-import { ColorPicker, EVENT_COLORS, IconPicker } from './event-display';
+import { ColorPicker, EVENT_COLORS, EVENT_ICONS, IconPicker } from './event-display';
 import { SESSION_TYPE_ORDER, SESSION_TYPES } from './session-types';
 
 /**
@@ -23,7 +23,7 @@ export function CustomTypeModal({
 }: {
   /** null = closed, "new" = define one. */
   editing: CustomEventType | 'new' | null;
-  /** The archer's types: the colours of the others are not offered. */
+  /** The archer's types: the colours and pictograms of the others are not offered. */
   customTypes: CustomEventType[];
   onClose: () => void;
   /** After a save: the type's id (to select it). */
@@ -45,6 +45,7 @@ export function CustomTypeModal({
           key={editing === 'new' ? 'new' : editing.id}
           type={editing === 'new' ? null : editing}
           colors={freeColors(customTypes, editing === 'new' ? null : editing.id)}
+          icons={freeIcons(customTypes, editing === 'new' ? null : editing.id)}
           onCancel={onClose}
           onSaved={onSaved}
         />
@@ -66,14 +67,22 @@ function freeColors(customTypes: CustomEventType[], ownId: string | null): Event
   return EVENT_COLORS.filter((color) => !taken.has(color));
 }
 
+/** The pictograms a type can take: none of the archer's other types' (`ownId`, as above). */
+function freeIcons(customTypes: CustomEventType[], ownId: string | null): EventIcon[] {
+  const taken = new Set(customTypes.filter((c) => c.id !== ownId).map((c) => c.icon));
+  return (Object.keys(EVENT_ICONS) as EventIcon[]).filter((icon) => !taken.has(icon));
+}
+
 function CustomTypeForm({
   type,
   colors,
+  icons,
   onCancel,
   onSaved,
 }: {
   type: CustomEventType | null;
   colors: EventColor[];
+  icons: EventIcon[];
   onCancel: () => void;
   onSaved: (id: string) => void;
 }) {
@@ -81,7 +90,10 @@ function CustomTypeForm({
   const [title, setTitle] = useState(type?.title ?? '');
   // A changed type keeps its colour; a new one starts with the first free one.
   const [color, setColor] = useState<EventColor>(type?.color ?? colors[0] ?? 'gray');
-  const [icon, setIcon] = useState<EventIcon>(type?.icon ?? 'STAR');
+  // A new one starts with the star, or the first free pictogram if it is taken.
+  const [icon, setIcon] = useState<EventIcon>(
+    type?.icon ?? (icons.includes('STAR') ? 'STAR' : (icons[0] ?? 'STAR')),
+  );
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [state, setState] = useState<ActionState>({});
   const [pending, startTransition] = useTransition();
@@ -111,7 +123,7 @@ function CustomTypeForm({
         data-autofocus
       />
       <ColorPicker value={color} onChange={setColor} colors={colors} />
-      <IconPicker value={icon} color={color} onChange={setIcon} />
+      <IconPicker value={icon} color={color} onChange={setIcon} icons={icons} />
       {confirmDelete && (
         <Alert color="red" variant="light">
           <Stack gap="sm">

@@ -4,7 +4,6 @@ import type {
   ArcherProfileUpdate,
   CoachAccess,
   Department,
-  FavoriteSiteCreate,
   InvitationCreate,
 } from '@tiralarc/api-client';
 import { refresh } from 'next/cache';
@@ -76,16 +75,6 @@ export async function setCoachAccess(id: string, coachAccess: CoachAccess): Prom
 export async function removeInvitation(id: string): Promise<ActionState> {
   return mutate((client) =>
     client.DELETE('/api/v1/profile/invitations/{id}', { params: { path: { id } } }),
-  );
-}
-
-export async function addSite(input: FavoriteSiteCreate): Promise<ActionState> {
-  return mutate((client) => client.POST('/api/v1/profile/sites', { body: input }));
-}
-
-export async function removeSite(id: string): Promise<ActionState> {
-  return mutate((client) =>
-    client.DELETE('/api/v1/profile/sites/{id}', { params: { path: { id } } }),
   );
 }
 

@@ -42,6 +42,8 @@ describe('Profile (e2e)', () => {
     const empty = await http().get('/api/v1/profile').set(as(archer)).expect(200);
     expect(empty.body).toEqual({
       licenceNumber: null,
+      lastName: null,
+      firstName: null,
       category: null,
       bowType: null,
       disciplines: [],
@@ -58,6 +60,8 @@ describe('Profile (e2e)', () => {
       .set(as(archer))
       .send({
         licenceNumber: ' 0123456A ',
+        lastName: ' Dupré ',
+        firstName: 'Léa',
         category: 'S1',
         bowType: 'RECURVE',
         disciplines: ['INDOOR', 'BEURSAULT', 'RUN_ARCHERY'],
@@ -69,6 +73,8 @@ describe('Profile (e2e)', () => {
       .expect(200);
     expect(saved.body).toEqual({
       licenceNumber: '0123456A',
+      lastName: 'Dupré',
+      firstName: 'Léa',
       category: 'S1',
       bowType: 'RECURVE',
       disciplines: ['INDOOR', 'BEURSAULT', 'RUN_ARCHERY'],
@@ -275,6 +281,39 @@ describe('Profile (e2e)', () => {
       .set(as(archer))
       .expect(204);
     await http().post('/api/v1/invitations/accept').set(as(coach)).send({ token }).expect(400);
+  });
+
+  it('limits the invitations sent in 24 hours, even when they are removed', async () => {
+    const sender = await signUp('p-sender');
+    const invite = (n: number) =>
+      http()
+        .post('/api/v1/profile/invitations')
+        .set(as(sender))
+        .send({ name: `Guest ${n}`, email: `guest-${n}@example.com` });
+
+    for (let n = 0; n < 10; n++) {
+      const invited = await invite(n).expect(201);
+      await http()
+        .delete(`/api/v1/profile/invitations/${invited.body.id}`)
+        .set(as(sender))
+        .expect(204);
+    }
+    const mails = ctx.outbox.length;
+    expect((await invite(10).expect(429)).body.code).toBe('DAILY_LIMIT_REACHED');
+    expect(ctx.outbox).toHaveLength(mails);
+    expect((await http().get('/api/v1/profile/invitations').set(as(sender))).body).toEqual([]);
+
+    // Others keep their own quota, and a day later the sender too.
+    await http()
+      .post('/api/v1/profile/invitations')
+      .set(as(otherArcher))
+      .send({ name: 'Guest', email: 'guest-other@example.com' })
+      .expect(201);
+    await ctx.prisma.invitationSend.updateMany({
+      where: { user: { email: 'p-sender@gmail.com' } },
+      data: { sentAt: new Date(Date.now() - 24 * 60 * 60 * 1000) },
+    });
+    await invite(10).expect(201);
   });
 
   it('manages favourite websites', async () => {

@@ -8,6 +8,18 @@ export type ThemeBand = 'top' | 'bottom' | 'left' | 'right';
  */
 export const THEMES = {
   archery: { ext: 'svg', bands: ['top', 'bottom', 'left', 'right'] },
+  rentree: { ext: 'svg', bands: ['top', 'bottom', 'left', 'right'] },
+  nouvelan: { ext: 'svg', bands: ['top', 'bottom', 'left', 'right'] },
+  valentin: { ext: 'svg', bands: ['top', 'bottom', 'left', 'right'] },
+  espace: { ext: 'svg', bands: ['top', 'bottom', 'left', 'right'] },
+  printemps: { ext: 'svg', bands: ['top', 'bottom', 'left', 'right'] },
+  cerisier: { ext: 'svg', bands: ['top', 'bottom', 'left', 'right'] },
+  fruits: { ext: 'svg', bands: ['top', 'bottom', 'left', 'right'] },
+  ete: { ext: 'svg', bands: ['top', 'bottom', 'left', 'right'] },
+  halloween: { ext: 'svg', bands: ['top', 'bottom', 'left', 'right'] },
+  automne: { ext: 'svg', bands: ['top', 'bottom', 'left', 'right'] },
+  noel: { ext: 'svg', bands: ['top', 'bottom', 'left', 'right'] },
+  hiver: { ext: 'svg', bands: ['top', 'bottom', 'left', 'right'] },
 } as const satisfies Record<string, { ext: string; bands: readonly ThemeBand[] }>;
 
 export type ThemeId = keyof typeof THEMES;

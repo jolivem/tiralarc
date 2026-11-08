@@ -68,6 +68,49 @@ describe('Coaching (e2e)', () => {
     await ctx.app.close();
   });
 
+  it('lets a coach sort their archers into named groups', async () => {
+    const groups = '/api/v1/coach/groups';
+    const created = await http().post(groups).set(as(coach)).send({ name: ' Compétition ' });
+    expect(created.status).toBe(201);
+    expect(created.body).toEqual({ id: expect.any(String), name: 'Compétition' });
+    const id = created.body.id as string;
+    const other = await http().post(groups).set(as(coach)).send({ name: 'Loisir' }).expect(201);
+
+    const same = await http().post(groups).set(as(coach)).send({ name: 'Loisir' }).expect(409);
+    expect(same.body.code).toBe('GROUP_NAME_TAKEN');
+    const taken = await http()
+      .patch(`${groups}/${id}`)
+      .set(as(coach))
+      .send({ name: 'Loisir' })
+      .expect(409);
+    expect(taken.body.code).toBe('GROUP_NAME_TAKEN');
+    await http().post(groups).set(as(coach)).send({ name: '   ' }).expect(400);
+    await http().patch(`${groups}/${id}`).set(as(coach)).send({ name: 'Élite' }).expect(200);
+    expect((await http().get(groups).set(as(coach)).expect(200)).body).toEqual([
+      { id, name: 'Élite' },
+      { id: other.body.id, name: 'Loisir' },
+    ]);
+
+    // Their own: another coach neither sees nor touches them.
+    expect((await http().get(groups).set(as(otherCoach)).expect(200)).body).toEqual([]);
+    await http().patch(`${groups}/${id}`).set(as(otherCoach)).send({ name: 'X' }).expect(404);
+    await http().delete(`${groups}/${id}`).set(as(otherCoach)).expect(404);
+
+    const put = (token: string, groupId: string | null) =>
+      http().put(`${base()}/group`).set(as(token)).send({ groupId });
+    await put(otherCoach, id).expect(404);
+    await put(coach, '00000000-0000-4000-8000-000000000000').expect(404);
+    expect((await put(coach, id).expect(200)).body.group).toEqual({ id, name: 'Élite' });
+    expect((await http().get(base()).set(as(coach)).expect(200)).body.group.id).toBe(id);
+    expect((await put(coach, null).expect(200)).body.group).toBeNull();
+
+    // Deleting a group keeps the archer followed, in none.
+    await put(coach, id).expect(200);
+    await http().delete(`${groups}/${id}`).set(as(coach)).expect(204);
+    expect((await http().get(base()).set(as(coach)).expect(200)).body.group).toBeNull();
+    await http().delete(`${groups}/${other.body.id}`).set(as(coach)).expect(204);
+  });
+
   it('makes the accepting account a coach of the archer', async () => {
     const me = await http().get('/api/v1/users/me').set(as(coach)).expect(200);
     expect(me.body.roles).toEqual(['ARCHER', 'COACH']);

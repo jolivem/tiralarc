@@ -45,6 +45,46 @@ export async function openAthleteJournal(archerId: string): Promise<void> {
   return redirect({ href: `/coach/${archerId}/journal`, locale: await getLocale() });
 }
 
+/** Runs a change to the coach's groups, then shows the page and the header's menu anew. */
+async function changeGroups(
+  call: (
+    api: Awaited<ReturnType<typeof getAuthedApi>>,
+  ) => Promise<{ data?: unknown; error?: unknown; response: Response }>,
+): Promise<ActionState> {
+  const result = await send(call(await getAuthedApi()));
+  if (!result.ok) return result.state;
+  refresh();
+  return {};
+}
+
+export async function createCoachGroup(name: string): Promise<ActionState> {
+  return changeGroups((api) => api.POST('/api/v1/coach/groups', { body: { name } }));
+}
+
+export async function renameCoachGroup(id: string, name: string): Promise<ActionState> {
+  return changeGroups((api) =>
+    api.PATCH('/api/v1/coach/groups/{id}', { params: { path: { id } }, body: { name } }),
+  );
+}
+
+export async function deleteCoachGroup(id: string): Promise<ActionState> {
+  return changeGroups((api) =>
+    api.DELETE('/api/v1/coach/groups/{id}', { params: { path: { id } } }),
+  );
+}
+
+export async function setAthleteGroup(
+  archerId: string,
+  groupId: string | null,
+): Promise<ActionState> {
+  return changeGroups((api) =>
+    api.PUT('/api/v1/coach/athletes/{archerId}/group', {
+      params: { path: { archerId } },
+      body: { groupId },
+    }),
+  );
+}
+
 /** The archer's events between two days, within their journal of the season in progress. */
 export async function listAthleteSessions(
   archerId: string,

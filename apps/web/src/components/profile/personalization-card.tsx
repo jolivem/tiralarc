@@ -2,7 +2,7 @@
 
 import { Select, Stack } from '@mantine/core';
 import { useTranslations } from 'next-intl';
-import { useState, useTransition } from 'react';
+import { useId, useState, useTransition } from 'react';
 import { saveProfile } from '@/app/actions/profile';
 import type { ActionState } from '@/lib/action-state';
 import {
@@ -23,10 +23,24 @@ export function PersonalizationCard({ font }: { font: string | null }) {
   const [saved, setSaved] = useState<CalendarFontId>(value);
   const [state, setState] = useState<ActionState>({});
   const [pending, startTransition] = useTransition();
+  const formId = useId();
 
   return (
-    <ProfileCard title={t('title')}>
+    <ProfileCard
+      title={t('title')}
+      action={
+        <SaveBar
+          form={formId}
+          state={state}
+          savedLabel={t('saved')}
+          label={t('save')}
+          disabled={value === saved}
+          loading={pending}
+        />
+      }
+    >
       <form
+        id={formId}
         onSubmit={(e) => {
           e.preventDefault();
           if (value === saved) return;
@@ -59,13 +73,6 @@ export function PersonalizationCard({ font }: { font: string | null }) {
             )}
             styles={{ input: { fontFamily: calendarFontFamily(value) } }}
             maw={360}
-          />
-          <SaveBar
-            state={state}
-            savedLabel={t('saved')}
-            label={t('save')}
-            disabled={value === saved}
-            loading={pending}
           />
         </Stack>
       </form>

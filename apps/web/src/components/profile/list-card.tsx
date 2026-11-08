@@ -30,6 +30,7 @@ export function ProfileCard({
             fz="1.7rem"
             fw={700}
             lh={1.1}
+            style={{ flexShrink: 0 }}
           >
             {title}
           </Title>
@@ -42,18 +43,21 @@ export function ProfileCard({
 }
 
 /**
- * A profile form's last row: the "Save" button on the right (enabled once something changed),
- * the outcome of the last save written on its left — the confirmation, or the error — on the
- * same row and at most two small lines, so the card keeps its height (the full text in the
- * tooltip).
+ * A profile form's action, at the top right of its card: the "Save" button (enabled once
+ * something changed), the outcome of the last save written on its left — the confirmation, or
+ * the error — on the same row and at most two small lines, so the card keeps its height (the
+ * full text in the tooltip).
  */
 export function SaveBar({
+  form,
   state,
   savedLabel,
   label,
   disabled,
   loading,
 }: {
+  /** The id of the form it submits: the button sits outside it, in the card's heading. */
+  form: string;
   /** The last save's outcome: `notice: 'saved'` or an error `code`. */
   state: ActionState;
   /** The confirmation shown after a save. */
@@ -69,7 +73,7 @@ export function SaveBar({
       ? { color: 'teal', icon: IconCheck, text: savedLabel, role: 'status' }
       : null;
   return (
-    <Group justify="flex-end" gap="sm" wrap="nowrap">
+    <Group justify="flex-end" gap="sm" wrap="nowrap" style={{ minWidth: 0 }}>
       {outcome && (
         <Group gap={4} wrap="nowrap" c={outcome.color} role={outcome.role} style={{ minWidth: 0 }}>
           <outcome.icon size={16} style={{ flexShrink: 0 }} />
@@ -78,7 +82,13 @@ export function SaveBar({
           </Text>
         </Group>
       )}
-      <Button type="submit" disabled={disabled} loading={loading} style={{ flexShrink: 0 }}>
+      <Button
+        type="submit"
+        form={form}
+        disabled={disabled}
+        loading={loading}
+        style={{ flexShrink: 0 }}
+      >
         {label}
       </Button>
     </Group>

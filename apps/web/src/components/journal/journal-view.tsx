@@ -14,7 +14,7 @@ import {
 } from '@mantine/core';
 import { useMediaQuery } from '@mantine/hooks';
 import { Schedule, type ScheduleEventData } from '@mantine/schedule';
-import { IconCalendarMonth, IconPalette, IconPlus } from '@tabler/icons-react';
+import { IconCalendarMonth, IconPlus } from '@tabler/icons-react';
 import type {
   CoachAccess,
   Competition,
@@ -32,6 +32,7 @@ import {
 } from '@/app/actions/coaching';
 import { listCompetitions, listSessions } from '@/app/actions/journal';
 import { useRouter } from '@/i18n/navigation';
+import type { ActionState } from '@/lib/action-state';
 import { CalendarFrame } from './calendar-frame';
 import {
   type CompetitionAdding,
@@ -55,6 +56,8 @@ import {
 import { SESSION_TYPES } from './session-types';
 import { MonthSummary } from './month-summary';
 import { MonthTitle, titleFills, useLettering } from './month-title';
+import { DecorIcon } from './decor-icon';
+import { PaletteIcon } from './palette-icon';
 import { useMonthColoring } from './use-month-coloring';
 
 /**
@@ -209,13 +212,20 @@ export function JournalView({
   const titleColors = new Set(
     coloring.fills.filter((fill) => fill.band === 'title').map((fill) => fill.color),
   );
-  const titleColor = titleColors.size === 1 ? [...titleColors][0]! : null;
-  const colorTitle = (color: string | null) => {
-    if (!lettering) return;
+  // The colour being tried in the dialog, kept only by its "OK"; undefined when none.
+  const [titleTrial, setTitleTrial] = useState<string | null | undefined>(undefined);
+  const titleColor =
+    titleTrial !== undefined ? titleTrial : titleColors.size === 1 ? [...titleColors][0]! : null;
+  const fillsWithTitle = (color: string | null) => {
     const others = coloring.fills.filter((fill) => fill.band !== 'title');
-    coloring.change(color ? [...others, ...titleFills(lettering, color)] : others);
-    // Saved at once: choosing another decoration next must not lose it.
-    coloring.flush();
+    return color && lettering ? [...others, ...titleFills(lettering, color)] : others;
+  };
+  const shownFills = titleTrial === undefined ? coloring.fills : fillsWithTitle(titleTrial);
+  const saveTitle = async (): Promise<ActionState> => {
+    if (titleTrial === undefined) return {};
+    const result = await coloring.replace(fillsWithTitle(titleTrial));
+    if (!result.code) setTitleTrial(undefined);
+    return result;
   };
 
   const range = visibleRange(date, journal);
@@ -376,7 +386,9 @@ export function JournalView({
           <MonthSummary journal={journal} month={month} arrows={monthArrows} readOnly={!!coach} />
         )}
         <Group gap="xs" className={classes.pageActionsEnd}>
-          <EventLegend customTypes={customTypes} />
+          <Box mr={{ base: 0, sm: 'xl' }}>
+            <EventLegend customTypes={customTypes} />
+          </Box>
           {/* The decoration is the archer's own. */}
           {!coach && (
             <Tooltip label={t('journals.theme')}>
@@ -386,7 +398,20 @@ export function JournalView({
                 aria-label={t('journals.theme')}
                 onClick={() => setPickingTheme(true)}
               >
-                <IconPalette size={18} />
+                <DecorIcon />
+              </ActionIcon>
+            </Tooltip>
+          )}
+          {!coach && (
+            <Tooltip label={t('journals.coloring.start')}>
+              <ActionIcon
+                variant="default"
+                size="lg"
+                aria-label={t('journals.coloring.start')}
+                disabled={isColoring}
+                onClick={() => setColoringOn(true)}
+              >
+                <PaletteIcon muted={isColoring} />
               </ActionIcon>
             </Tooltip>
           )}
@@ -432,7 +457,7 @@ export function JournalView({
             <MonthTitle
               label={monthLabel}
               art={lettering}
-              fills={coloring.fills}
+              fills={shownFills}
               tool={isColoring ? tool : null}
               onFillsChange={coloring.change}
               onPrevious={() => setDate(addMonth(date, -1))}
@@ -632,10 +657,13 @@ export function JournalView({
             month={month}
             opened={pickingTheme}
             onClose={() => setPickingTheme(false)}
+            hasColoring={coloring.fills.some((fill) => fill.band !== 'title')}
             titleColor={titleColor}
             // Once the name is drawn (its font loaded).
-            onTitleColorChange={lettering ? colorTitle : undefined}
-            onStartColoring={isColoring ? undefined : () => setColoringOn(true)}
+            onTitleColorChange={lettering ? setTitleTrial : undefined}
+            onSaveTitle={saveTitle}
+            onDiscardTitle={() => setTitleTrial(undefined)}
+            onThemeChanged={coloring.forget}
           />
         )}
         <NewSessionModal

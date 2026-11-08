@@ -1,5 +1,15 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsIn, IsInt, IsOptional, IsString, Matches, Max, MaxLength, Min } from 'class-validator';
+import {
+  IsIn,
+  IsInt,
+  IsOptional,
+  IsString,
+  IsUUID,
+  Matches,
+  Max,
+  MaxLength,
+  Min,
+} from 'class-validator';
 import { CoachAccess, Discipline, SessionType } from '../../generated/prisma/client.js';
 import { JournalDto } from '../../journal/dto/journal.dto.js';
 import { COACH_ACCESSES } from '../../profile/dto/profile.dto.js';
@@ -15,6 +25,36 @@ export const PLANNABLE_TYPES = [
   SessionType.STRENGTH,
 ] as const;
 export type PlannableType = (typeof PLANNABLE_TYPES)[number];
+
+/** A named group of the archers a coach follows. */
+export class CoachGroupDto {
+  @ApiProperty({ format: 'uuid' })
+  id!: string;
+
+  @ApiProperty({ example: 'Groupe compétition', maxLength: 60 })
+  name!: string;
+}
+
+/** POST / PATCH body of a group. */
+export class SaveCoachGroupDto {
+  @ApiProperty({ example: 'Groupe compétition', minLength: 1, maxLength: 60 })
+  @IsString()
+  @Matches(/\S/, { message: 'name must not be blank' })
+  @MaxLength(60)
+  name!: string;
+}
+
+export class SetAthleteGroupDto {
+  @ApiProperty({
+    type: String,
+    format: 'uuid',
+    nullable: true,
+    description: 'One of your groups; null takes the archer out of their group.',
+  })
+  @IsOptional()
+  @IsUUID()
+  groupId!: string | null;
+}
 
 /** An archer who made the user their coach. */
 export class AthleteDto {
@@ -43,6 +83,13 @@ export class AthleteDto {
     description: 'The disciplines the archer practises (their profile), offered when planning.',
   })
   disciplines!: Discipline[];
+
+  @ApiProperty({
+    type: () => CoachGroupDto,
+    nullable: true,
+    description: 'The group the coach put them in; null when in none. The archer never sees it.',
+  })
+  group!: CoachGroupDto | null;
 }
 
 /** The planning fields of a sheet: what a coach may fill in. */

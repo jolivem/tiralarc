@@ -3,12 +3,14 @@
 import { CheckIcon, ColorSwatch, Group, Stack, Text, UnstyledButton } from '@mantine/core';
 import {
   IconBell,
+  IconBrain,
   IconCar,
   IconFlag,
   IconGift,
   IconHeart,
   IconMapPin,
   IconNote,
+  IconRun,
   IconShoppingCart,
   IconStar,
   IconStethoscope,
@@ -49,6 +51,8 @@ export const EVENT_ICONS: Record<EventIcon, typeof IconNote> = {
   HEART: IconHeart,
   BELL: IconBell,
   PIN: IconMapPin,
+  RUN: IconRun,
+  VISUALIZATION: IconBrain,
 };
 
 type DisplayedSession = Pick<JournalSessionSummary, 'type' | 'color' | 'icon' | 'customType'>;
@@ -127,11 +131,14 @@ export function IconPicker({
   value,
   color,
   onChange,
+  icons = Object.keys(EVENT_ICONS) as EventIcon[],
 }: {
   value: EventIcon;
   /** The event's colour, to preview the selected pictogram. */
   color: EventColor;
   onChange: (icon: EventIcon) => void;
+  /** The pictograms offered (default: all of them). */
+  icons?: EventIcon[];
 }) {
   const t = useTranslations('journal');
   return (
@@ -140,7 +147,7 @@ export function IconPicker({
         {t('icon')}
       </Text>
       <Group gap="xs" role="radiogroup" aria-label={t('icon')}>
-        {(Object.keys(EVENT_ICONS) as EventIcon[]).map((icon) => {
+        {icons.map((icon) => {
           const Icon = EVENT_ICONS[icon];
           return (
             <UnstyledButton

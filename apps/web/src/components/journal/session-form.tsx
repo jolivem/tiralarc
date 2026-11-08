@@ -25,6 +25,7 @@ import {
   IconCalendar,
   IconCheck,
   IconDeviceFloppy,
+  IconFileText,
   IconMapPin,
   IconTrash,
   IconTrophy,
@@ -38,7 +39,7 @@ import type {
   SessionPhoto,
   SessionType,
 } from '@tiralarc/api-client';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import {
   createContext,
   type ReactNode,
@@ -211,6 +212,7 @@ export function SessionForm({
   children?: ReactNode;
 }) {
   const t = useTranslations('journal');
+  const locale = useLocale();
   const router = useRouter();
   /** A coach who may not change this event: every field shows, none changes. */
   const readOnly = coach !== undefined && !coach.canEdit;
@@ -330,21 +332,39 @@ export function SessionForm({
   const header = (
     <div className={classes.sheetHeader} data-photos={children ? true : undefined}>
       {title}
-      {showsResults && (
-        <Button
-          component="a"
-          href={resultsUrl ?? undefined}
-          target="_blank"
-          rel="noopener noreferrer"
-          size="md"
-          variant="light"
-          leftSection={<IconTrophy size={20} />}
-          disabled={!resultsUrl}
-          title={resultsUrl ? t('resultsHint') : t('resultsPending')}
-          className={classes.sheetResults}
-        >
-          {t('results')}
-        </Button>
+      {(showsResults || session.hasScoreSheet) && (
+        <Group gap="xs" className={classes.sheetResults}>
+          {showsResults && (
+            <Button
+              component="a"
+              href={resultsUrl ?? undefined}
+              target="_blank"
+              rel="noopener noreferrer"
+              size="md"
+              variant="light"
+              leftSection={<IconTrophy size={20} />}
+              disabled={!resultsUrl}
+              title={resultsUrl ? t('resultsHint') : t('resultsPending')}
+            >
+              {t('results')}
+            </Button>
+          )}
+          {session.hasScoreSheet && (
+            <Button
+              component="a"
+              // A route handler: a plain link, with the locale.
+              href={`/${locale}${coach ? `/coach/${coach.archerId}` : '/archer'}/journal/${session.id}/score-sheet`}
+              target="_blank"
+              rel="noopener noreferrer"
+              size="md"
+              variant="light"
+              leftSection={<IconFileText size={20} />}
+              title={t('scoreSheetHint')}
+            >
+              {t('scoreSheet')}
+            </Button>
+          )}
+        </Group>
       )}
     </div>
   );

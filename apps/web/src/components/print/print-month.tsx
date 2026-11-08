@@ -48,7 +48,8 @@ function PrintBand({
  * blank page before it when needed, lib/pdf.ts): its
  * decoration (bands around the calendar) and its name in hollow letters, both coloured as on
  * the Journal page, then the days with the icons of their events: Monday to Thursday on the
- * left, Friday to Sunday on the right (wider columns), no year. Days of the month outside the
+ * left, Friday to Sunday on the right, same-sized boxes against the fold, the side bands in what
+ * they leave, no year. Days of the month outside the
  * extract are faded. At the bottom right of the right page, the month's summary (its arrows
  * and the archer's satisfaction), as on the Journal page. Laid out once across both pages (the
  * bands run across the fold), then shown through each page's window.
@@ -124,10 +125,11 @@ export function PrintMonth({
   // Both pages show the same spread, the right one shifted by a page's width.
   const spread = (
     <div className={classes.spread}>
+      {band('left', classes.bandLeft)}
+      {band('right', classes.bandRight)}
       {band('top', classes.bandTop)}
       <div className={classes.monthMiddle}>
         <div className={classes.half}>
-          {band('left', classes.bandSide)}
           <div className={classes.monthBody}>
             <div className={classes.monthHeader}>
               {lettering ? (
@@ -148,10 +150,11 @@ export function PrintMonth({
               {Array.from({ length: 4 }, (_, i) => weekday(i))}
             </div>
             <div className={classes.days}>{days([0, 1, 2, 3])}</div>
+            <div className={classes.monthSummaryRow} />
           </div>
         </div>
         <div className={classes.half}>
-          <div className={classes.monthBody}>
+          <div className={`${classes.monthBody} ${classes.threeDays}`}>
             {/* Left blank (no year): as tall as the month's name, the weeks stay level. */}
             <div className={classes.monthHeader} />
             <div className={`${classes.weekdays} ${classes.threeDays}`} aria-hidden>
@@ -166,7 +169,6 @@ export function PrintMonth({
               />
             </div>
           </div>
-          {band('right', classes.bandSide)}
         </div>
       </div>
       {band('bottom', classes.bandBottom)}

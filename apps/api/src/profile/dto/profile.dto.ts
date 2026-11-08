@@ -41,6 +41,16 @@ export class ProfileDto {
   @ApiProperty({ type: String, nullable: true, example: '0123456A' })
   licenceNumber!: string | null;
 
+  @ApiProperty({
+    type: String,
+    nullable: true,
+    description: 'As on the licence: with it, finds the score sheets of competitions.',
+  })
+  lastName!: string | null;
+
+  @ApiProperty({ type: String, nullable: true })
+  firstName!: string | null;
+
   @ApiProperty({ enum: CATEGORIES, enumName: 'AgeCategory', nullable: true })
   category!: AgeCategory | null;
 
@@ -107,6 +117,18 @@ export class UpdateProfileDto {
   @IsString()
   @MaxLength(20)
   licenceNumber?: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true, maxLength: 60 })
+  @IsOptional()
+  @IsString()
+  @MaxLength(60)
+  lastName?: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true, maxLength: 60 })
+  @IsOptional()
+  @IsString()
+  @MaxLength(60)
+  firstName?: string | null;
 
   @ApiPropertyOptional({ enum: CATEGORIES, enumName: 'AgeCategory', nullable: true })
   @IsOptional()

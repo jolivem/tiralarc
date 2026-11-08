@@ -13,6 +13,7 @@ import { JournalModule } from './journal/journal.module.js';
 import { MailModule } from './mail/mail.module.js';
 import { ProfileModule } from './profile/profile.module.js';
 import { PrismaModule } from './prisma/prisma.module.js';
+import { ScoreSheetsModule } from './score-sheets/score-sheets.module.js';
 import { StorageModule } from './storage/storage.module.js';
 import { UsersModule } from './users/users.module.js';
 
@@ -51,6 +52,7 @@ import { UsersModule } from './users/users.module.js';
     ProfileModule,
     CoachingModule,
     CompetitionsModule,
+    ScoreSheetsModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })

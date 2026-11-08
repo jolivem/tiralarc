@@ -10,6 +10,7 @@ import {
   Patch,
   Post,
   Query,
+  StreamableFile,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -20,6 +21,7 @@ import {
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
+  ApiProduces,
   ApiTags,
 } from '@nestjs/swagger';
 import {
@@ -107,6 +109,20 @@ export class JournalController {
     @Param('id', new ParseUUIDPipe()) id: string,
   ): Promise<SessionDto> {
     return this.journal.get(user.id, id);
+  }
+
+  @Get(':id/score-sheet')
+  @ApiOperation({ summary: "The archer's score sheet at this competition (`hasScoreSheet`)" })
+  @ApiProduces('application/pdf')
+  @ApiOkResponse({ schema: { type: 'string', format: 'binary' } })
+  @ApiNotFoundResponse()
+  async scoreSheet(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id', new ParseUUIDPipe()) id: string,
+  ): Promise<StreamableFile> {
+    return new StreamableFile(await this.journal.scoreSheet(user.id, id), {
+      type: 'application/pdf',
+    });
   }
 
   @Patch(':id')

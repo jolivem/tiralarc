@@ -164,11 +164,13 @@ export function ColorableCanvas({
 
   const click = (event: MouseEvent<HTMLCanvasElement>) => {
     if (!tool) return;
-    // The picture is fitted inside the element ("contain"): find the point in the picture itself.
+    // The picture is fitted inside the element ("contain"), centred except the side bands, kept
+    // against the page's margin: find the point in the picture itself.
     const box = event.currentTarget.getBoundingClientRect();
     const scale = Math.min(box.width / art.width, box.height / art.height);
-    const x =
-      (event.clientX - box.left - (box.width - art.width * scale) / 2) / (art.width * scale);
+    const spare = box.width - art.width * scale;
+    const offset = band === 'left' ? 0 : band === 'right' ? spare : spare / 2;
+    const x = (event.clientX - box.left - offset) / (art.width * scale);
     const y =
       (event.clientY - box.top - (box.height - art.height * scale) / 2) / (art.height * scale);
     if (x < 0 || x > 1 || y < 0 || y > 1) return;

@@ -24,6 +24,9 @@ import type {
 } from './dto/profile.dto.js';
 
 export const MAX_INVITATIONS = 20;
+/** Sent in 24 hours: removing an invitation frees a place in `MAX_INVITATIONS`, not this. */
+export const MAX_INVITATIONS_PER_DAY = 10;
+const DAY_MS = 24 * 60 * 60 * 1000;
 export const MAX_SITES = 30;
 
 const DISCIPLINES = Object.values(Discipline) as string[];
@@ -36,6 +39,8 @@ function toProfileDto(profile: ArcherProfile | null): ProfileDto {
   const departments: unknown[] = Array.isArray(profile?.departments) ? profile.departments : [];
   return {
     licenceNumber: profile?.licenceNumber ?? null,
+    lastName: profile?.lastName ?? null,
+    firstName: profile?.firstName ?? null,
     category: profile?.category ?? null,
     bowType: profile?.bowType ?? null,
     disciplines: stored.filter((d): d is Discipline => DISCIPLINES.includes(d as string)),
@@ -109,10 +114,13 @@ export class ProfileService {
   }
 
   async update(userId: string, dto: UpdateProfileDto): Promise<ProfileDto> {
-    const { licenceNumber, practisesInFrance, licenceDepartment, ...rest } = dto;
+    const { licenceNumber, lastName, firstName, practisesInFrance, licenceDepartment, ...rest } =
+      dto;
     const data = {
       ...rest,
       ...(licenceNumber !== undefined && { licenceNumber: licenceNumber?.trim() || null }),
+      ...(lastName !== undefined && { lastName: lastName?.trim() || null }),
+      ...(firstName !== undefined && { firstName: firstName?.trim() || null }),
       ...practice(practisesInFrance, licenceDepartment),
     };
     const profile = await this.prisma.archerProfile.upsert({
@@ -165,15 +173,30 @@ export class ProfileService {
 
     const token = randomBytes(32).toString('base64url');
     const isCoach = dto.isCoach ?? false;
-    const invitation = await this.prisma.profileInvitation.create({
-      data: {
-        userId,
-        name: dto.name.trim(),
-        email,
-        isCoach,
-        coachAccess: isCoach ? (dto.coachAccess ?? CoachAccess.READ) : null,
-        tokenHash: hashToken(token),
-      },
+    const invitation = await this.prisma.$transaction(async (tx) => {
+      // One at a time per account: simultaneous requests can't overrun the quota.
+      await tx.$queryRaw`SELECT id FROM users WHERE id = ${userId} FOR UPDATE`;
+      await tx.invitationSend.deleteMany({
+        where: { userId, sentAt: { lte: new Date(Date.now() - DAY_MS) } },
+      });
+      if ((await tx.invitationSend.count({ where: { userId } })) >= MAX_INVITATIONS_PER_DAY) {
+        throw new ApiException(
+          HttpStatus.TOO_MANY_REQUESTS,
+          ErrorCode.DAILY_LIMIT_REACHED,
+          `At most ${MAX_INVITATIONS_PER_DAY} invitations per 24 hours`,
+        );
+      }
+      await tx.invitationSend.create({ data: { userId } });
+      return tx.profileInvitation.create({
+        data: {
+          userId,
+          name: dto.name.trim(),
+          email,
+          isCoach,
+          coachAccess: isCoach ? (dto.coachAccess ?? CoachAccess.READ) : null,
+          tokenHash: hashToken(token),
+        },
+      });
     });
     try {
       await this.mail.sendInvitation(

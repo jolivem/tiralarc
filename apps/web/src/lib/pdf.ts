@@ -84,8 +84,8 @@ async function faceSpreads(page: Page) {
   );
   if (!kinds.includes('spread')) return;
 
-  const only = (shown: number[]) =>
-    page.evaluate(
+  const only = async (shown: number[]) => {
+    await page.evaluate(
       ([spread, hidden, shown]) => {
         const extract = document.querySelector(`[${spread}]`)!.parentElement!;
         [...extract.children].forEach((part, i) =>
@@ -94,6 +94,13 @@ async function faceSpreads(page: Page) {
       },
       [SPREAD_ATTRIBUTE, HIDDEN_ATTRIBUTE, shown] as const,
     );
+    // A chart that was hidden is drawn again a moment after it shows: printing sooner loses it.
+    await page.waitForFunction(() =>
+      [...document.querySelectorAll('.recharts-responsive-container')]
+        .filter((chart) => chart.getClientRects().length > 0)
+        .every((chart) => chart.querySelector('.recharts-surface')),
+    );
+  };
 
   let pages = 0;
   let run: number[] = [];

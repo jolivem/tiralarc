@@ -350,6 +350,23 @@ export interface paths {
         patch: operations["Journal_update"];
         trace?: never;
     };
+    "/api/v1/journal/sessions/{id}/score-sheet": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The archer's score sheet at this competition (`hasScoreSheet`) */
+        get: operations["Journal_scoreSheet"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/journal/sessions/{id}/seen": {
         parameters: {
             query?: never;
@@ -665,6 +682,41 @@ export interface paths {
         patch: operations["Goals_update"];
         trace?: never;
     };
+    "/api/v1/coach/groups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Your groups of archers, by name */
+        get: operations["CoachGroups_list"];
+        put?: never;
+        post: operations["CoachGroups_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/coach/groups/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete a group; its archers stay followed, in no group */
+        delete: operations["CoachGroups_remove"];
+        options?: never;
+        head?: never;
+        /** Rename a group */
+        patch: operations["CoachGroups_rename"];
+        trace?: never;
+    };
     "/api/v1/coach/athletes": {
         parameters: {
             query?: never;
@@ -691,6 +743,23 @@ export interface paths {
         };
         get: operations["Coaching_get"];
         put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/coach/athletes/{archerId}/group": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Put the archer in one of your groups, or take them out */
+        put: operations["Coaching_setGroup"];
         post?: never;
         delete?: never;
         options?: never;
@@ -776,6 +845,23 @@ export interface paths {
         };
         /** Photos of an event; the URLs are signed and expire after 10 minutes */
         get: operations["Coaching_photos"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/coach/athletes/{archerId}/sessions/{id}/score-sheet": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The archer's score sheet at this competition (`hasScoreSheet`) */
+        get: operations["Coaching_scoreSheet"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1051,7 +1137,7 @@ export interface components {
          * @description `OTHER` events only; null = default pictogram.
          * @enum {string}
          */
-        EventIcon: "NOTE" | "STAR" | "FLAG" | "TOOL" | "CART" | "USERS" | "CAR" | "MEDICAL" | "GIFT" | "HEART" | "BELL" | "PIN";
+        EventIcon: "NOTE" | "STAR" | "FLAG" | "TOOL" | "CART" | "USERS" | "CAR" | "MEDICAL" | "GIFT" | "HEART" | "BELL" | "PIN" | "RUN" | "VISUALIZATION";
         CustomEventTypeDto: {
             /** Format: uuid */
             id: string;
@@ -1262,6 +1348,8 @@ export interface components {
              * @example 26349
              */
             fftaCompetitionId: string | null;
+            /** @description Whether the archer's score sheet was found on ianseo.net (`GET .../score-sheet`). Searched during the week after a competition, for archers practising in France whose licence, last and first names are known. */
+            hasScoreSheet: boolean;
             /** @description The coach who planned the event in the archer's journal; null when the archer created it. That coach may change its planning or delete it while it is still to come. */
             plannedBy: components["schemas"]["PlannerDto"] | null;
             distanceMeters: number | null;
@@ -1493,6 +1581,9 @@ export interface components {
         ProfileDto: {
             /** @example 0123456A */
             licenceNumber: string | null;
+            /** @description As on the licence: with it, finds the score sheets of competitions. */
+            lastName: string | null;
+            firstName: string | null;
             category: components["schemas"]["AgeCategory"] | null;
             bowType: components["schemas"]["BowType"] | null;
             disciplines: components["schemas"]["Discipline"][];
@@ -1523,6 +1614,8 @@ export interface components {
         };
         UpdateProfileDto: {
             licenceNumber?: string | null;
+            lastName?: string | null;
+            firstName?: string | null;
             category?: components["schemas"]["AgeCategory"] | null;
             bowType?: components["schemas"]["BowType"] | null;
             /** @description Replaces the practised disciplines. */
@@ -1672,6 +1765,16 @@ export interface components {
             /** @example 2027-02-06 */
             achievedOn?: string | null;
         };
+        CoachGroupDto: {
+            /** Format: uuid */
+            id: string;
+            /** @example Groupe compétition */
+            name: string;
+        };
+        SaveCoachGroupDto: {
+            /** @example Groupe compétition */
+            name: string;
+        };
         AthleteDto: {
             /**
              * Format: uuid
@@ -1685,6 +1788,15 @@ export interface components {
             journal: components["schemas"]["JournalDto"] | null;
             /** @description The disciplines the archer practises (their profile), offered when planning. */
             disciplines: components["schemas"]["Discipline"][];
+            /** @description The group the coach put them in; null when in none. The archer never sees it. */
+            group: components["schemas"]["CoachGroupDto"] | null;
+        };
+        SetAthleteGroupDto: {
+            /**
+             * Format: uuid
+             * @description One of your groups; null takes the archer out of their group.
+             */
+            groupId: string | null;
         };
         /** @enum {string} */
         PlannableType: "TRAINING" | "COACHING" | "COMPETITION" | "STRENGTH";
@@ -2710,6 +2822,40 @@ export interface operations {
             };
         };
     };
+    Journal_scoreSheet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/pdf": string;
+                };
+            };
+            /** @description Archers only */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     Journal_markSeen: {
         parameters: {
             query?: never;
@@ -3309,6 +3455,13 @@ export interface operations {
                 };
                 content?: never;
             };
+            /** @description DAILY_LIMIT_REACHED, TOO_MANY_REQUESTS */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
         };
     };
     Profile_removeInvitation: {
@@ -3660,6 +3813,118 @@ export interface operations {
             };
         };
     };
+    CoachGroups_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CoachGroupDto"][];
+                };
+            };
+        };
+    };
+    CoachGroups_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SaveCoachGroupDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CoachGroupDto"];
+                };
+            };
+            /** @description GROUP_NAME_TAKEN, LIMIT_REACHED */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CoachGroups_remove: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CoachGroups_rename: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SaveCoachGroupDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CoachGroupDto"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description GROUP_NAME_TAKEN */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     Coaching_list: {
         parameters: {
             query?: never;
@@ -3696,6 +3961,38 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AthleteDto"];
+                };
+            };
+            /** @description Not one of your archers (or not in their current journal) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    Coaching_setGroup: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                archerId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetAthleteGroupDto"];
+            };
+        };
         responses: {
             200: {
                 headers: {
@@ -4003,6 +4300,35 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PhotoDto"][];
+                };
+            };
+            /** @description Not one of your archers (or not in their current journal) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    Coaching_scoreSheet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                archerId: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/pdf": string;
                 };
             };
             /** @description Not one of your archers (or not in their current journal) */

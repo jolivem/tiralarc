@@ -24,6 +24,7 @@ export type Invitation = Schemas['InvitationDto'];
 export type InvitationCreate = Schemas['CreateInvitationDto'];
 export type CoachAccess = NonNullable<Schemas['InvitationDto']['coachAccess']>;
 export type Athlete = Schemas['AthleteDto'];
+export type CoachGroup = Schemas['CoachGroupDto'];
 export type PlannableType = Schemas['PlanSessionDto']['type'];
 export type PlanSession = Schemas['PlanSessionDto'];
 export type PlannedSessionUpdate = Schemas['UpdatePlannedSessionDto'];
@@ -84,7 +85,9 @@ export type ErrorCode =
   | 'DAY_FULL'
   | 'SIGN_IN_REQUIRED'
   | 'DATE_NOT_PLANNABLE'
-  | 'DATE_LOCKED';
+  | 'DATE_LOCKED'
+  | 'DAILY_LIMIT_REACHED'
+  | 'GROUP_NAME_TAKEN';
 
 /** RFC 9457 error body returned by every failing API call. */
 export interface ProblemDetails {

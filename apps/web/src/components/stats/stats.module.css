@@ -117,6 +117,8 @@
 
   & :global(.mantine-AreaChart-root),
   & :global(.mantine-LineChart-root) {
+    /* Their padding inside the page's width: wider than it, Chromium shrinks the whole PDF. */
+    box-sizing: border-box;
     height: 190px !important;
   }
 

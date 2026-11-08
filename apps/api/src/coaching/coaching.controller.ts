@@ -9,7 +9,9 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Put,
   Query,
+  StreamableFile,
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
@@ -21,6 +23,7 @@ import {
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
+  ApiProduces,
   ApiTags,
 } from '@nestjs/swagger';
 import {
@@ -39,10 +42,67 @@ import {
   SessionSummaryDto,
   StatsQuery,
 } from '../journal/dto/journal.dto.js';
-import { AthleteDto, PlanSessionDto, UpdatePlannedSessionDto } from './dto/coaching.dto.js';
+import {
+  AthleteDto,
+  CoachGroupDto,
+  PlanSessionDto,
+  SaveCoachGroupDto,
+  SetAthleteGroupDto,
+  UpdatePlannedSessionDto,
+} from './dto/coaching.dto.js';
 import { CoachingService } from './coaching.service.js';
 
 const ARCHER_ID = 'archerId';
+
+/** The groups a coach sorts their archers into: their own, unseen by the archers. */
+@ApiTags('coaching')
+@ApiBearerAuth()
+@Controller('coach/groups')
+export class CoachGroupsController {
+  constructor(private readonly coaching: CoachingService) {}
+
+  @Get()
+  @ApiOperation({ summary: 'Your groups of archers, by name' })
+  @ApiOkResponse({ type: CoachGroupDto, isArray: true })
+  list(@CurrentUser() user: AuthenticatedUser): Promise<CoachGroupDto[]> {
+    return this.coaching.groups(user.id);
+  }
+
+  @Post()
+  @ApiCreatedResponse({ type: CoachGroupDto })
+  @ApiConflictResponse({ description: 'GROUP_NAME_TAKEN, LIMIT_REACHED' })
+  create(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: SaveCoachGroupDto,
+  ): Promise<CoachGroupDto> {
+    return this.coaching.createGroup(user.id, dto);
+  }
+
+  @Patch(':id')
+  @ApiOperation({ summary: 'Rename a group' })
+  @ApiOkResponse({ type: CoachGroupDto })
+  @ApiConflictResponse({ description: 'GROUP_NAME_TAKEN' })
+  @ApiNotFoundResponse()
+  rename(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() dto: SaveCoachGroupDto,
+  ): Promise<CoachGroupDto> {
+    return this.coaching.renameGroup(user.id, id, dto);
+  }
+
+  @Delete(':id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Delete a group; its archers stay followed, in no group' })
+  @ApiNoContentResponse()
+  @ApiNotFoundResponse()
+  remove(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id', new ParseUUIDPipe()) id: string,
+  ): Promise<void> {
+    return this.coaching.removeGroup(user.id, id);
+  }
+}
 
 /**
  * The coach's view of their archers' journals. No role required: access comes from the
@@ -69,6 +129,17 @@ export class CoachingController {
     @Param(ARCHER_ID, new ParseUUIDPipe()) archerId: string,
   ): Promise<AthleteDto> {
     return this.coaching.athlete(user.id, archerId);
+  }
+
+  @Put(':archerId/group')
+  @ApiOperation({ summary: 'Put the archer in one of your groups, or take them out' })
+  @ApiOkResponse({ type: AthleteDto })
+  setGroup(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param(ARCHER_ID, new ParseUUIDPipe()) archerId: string,
+    @Body() dto: SetAthleteGroupDto,
+  ): Promise<AthleteDto> {
+    return this.coaching.setAthleteGroup(user.id, archerId, dto.groupId ?? null);
   }
 
   @Get(':archerId/sessions')
@@ -171,6 +242,20 @@ export class CoachingController {
     @Param('id', new ParseUUIDPipe()) id: string,
   ): Promise<PhotoDto[]> {
     return this.coaching.sessionPhotos(user.id, archerId, id);
+  }
+
+  @Get(':archerId/sessions/:id/score-sheet')
+  @ApiOperation({ summary: "The archer's score sheet at this competition (`hasScoreSheet`)" })
+  @ApiProduces('application/pdf')
+  @ApiOkResponse({ schema: { type: 'string', format: 'binary' } })
+  async scoreSheet(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param(ARCHER_ID, new ParseUUIDPipe()) archerId: string,
+    @Param('id', new ParseUUIDPipe()) id: string,
+  ): Promise<StreamableFile> {
+    return new StreamableFile(await this.coaching.sessionScoreSheet(user.id, archerId, id), {
+      type: 'application/pdf',
+    });
   }
 
   @Get(':archerId/competitions')

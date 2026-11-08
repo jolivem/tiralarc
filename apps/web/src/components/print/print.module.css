@@ -75,6 +75,94 @@
   font-weight: 600;
 }
 
+/* ------------------------------------------------------- legend and index */
+
+/* print-legend.tsx: each type's colour and symbol, two columns, then the faces. */
+.legendFrame {
+  display: flex;
+  flex-direction: column;
+  gap: 8mm;
+  padding: 5mm;
+  border: 1px solid var(--print-ink);
+  border-radius: 2mm;
+}
+
+.legendTypes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 5mm 6mm;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.legendType {
+  display: flex;
+  align-items: center;
+  gap: 2.5mm;
+  font-size: 11pt;
+
+  & i {
+    flex: none;
+    width: 4mm;
+    height: 4mm;
+    border-radius: 50%;
+  }
+
+  & span {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+.legendFaces {
+  display: flex;
+  justify-content: center;
+  gap: 7mm;
+}
+
+.legendFace {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5mm;
+  margin: 0;
+  font-size: 9pt;
+
+  & span {
+    display: block;
+    width: 15mm;
+    height: 15mm;
+    padding: 1mm;
+    border: 1px solid var(--print-ink);
+  }
+
+  & img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+}
+
+.indexList {
+  margin: 6mm 0 0;
+  padding: 0;
+  font-size: 14pt;
+  list-style: none;
+
+  & li {
+    padding: 3mm 0;
+    border-bottom: 1px solid var(--print-line);
+  }
+
+  & a {
+    display: block;
+    color: inherit;
+    text-decoration: none;
+  }
+}
+
 /* ---------------------------------------------------------- chapter pages */
 
 /* A chapter's title page (Indicators, Journal, Sheets): the name, centred, a note under it. */
@@ -217,8 +305,13 @@
  * `break-before: left`, so lib/pdf.ts shows the blank page before it when needed.
  */
 .month {
+  position: relative;
+  width: 128mm;
   height: var(--page-height);
   overflow: hidden;
+
+  /* Or Chromium sees the spread wider than the page and shrinks the whole document to fit it. */
+  contain: strict;
 }
 
 .blankPage {
@@ -232,10 +325,16 @@
 }
 
 .monthRight .spread {
-  margin-left: -128mm;
+  left: -128mm;
 }
 
 .spread {
+  --day-width: 25.5mm;
+  --band-gap: 2mm;
+
+  position: absolute;
+  top: 0;
+  left: 0;
   display: flex;
   flex-direction: column;
   gap: 2mm;
@@ -243,12 +342,20 @@
   height: 100%;
 }
 
-/* One page's share of the calendar: its side band, if any, and its days' columns. */
+/* One page's share of the calendar, against the fold. */
 .half {
   display: flex;
-  gap: 2mm;
+  justify-content: flex-end;
   width: 128mm;
   min-width: 0;
+
+  /* The days' right outline stays on the page (.day: 1px over its neighbour). */
+  padding-right: 1px;
+
+  & + & {
+    justify-content: flex-start;
+    padding-right: 0;
+  }
 }
 
 /* The month's name on the left page, a blank as tall on the right one. */
@@ -273,9 +380,22 @@
   height: 22mm;
 }
 
-.bandSide {
-  width: 11mm;
+/* The whole page high, in what the days leave on the outer side (the top and bottom are centred). */
+.bandLeft,
+.bandRight {
+  position: absolute;
+  top: 0;
   height: 100%;
+}
+
+.bandLeft {
+  left: 0;
+  width: calc(128mm - var(--band-gap) - 4 * var(--day-width));
+}
+
+.bandRight {
+  right: 0;
+  width: calc(128mm - var(--band-gap) - 3 * var(--day-width));
 }
 
 /* The calendar's two halves, filling what the top and bottom bands leave. */
@@ -287,9 +407,13 @@
 
 .monthBody {
   display: flex;
-  flex: 1;
+  flex: none;
   flex-direction: column;
-  min-width: 0;
+  width: calc(4 * var(--day-width));
+
+  &.threeDays {
+    width: calc(3 * var(--day-width));
+  }
 }
 
 /* The month's name, hollow letters coloured in as on the Journal page. */
@@ -324,10 +448,15 @@
   grid-auto-rows: minmax(0, 1fr);
 }
 
-/* Under the right page's days, at its right: the month's arrows and satisfaction. */
+/*
+ * Under the right page's days, at its right: the month's arrows and satisfaction. As tall, empty,
+ * on the left page: the days are the same height on both.
+ */
 .monthSummaryRow {
   display: flex;
+  flex: none;
   justify-content: flex-end;
+  height: 14mm;
   margin-top: 2mm;
 }
 

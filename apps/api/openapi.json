@@ -1242,6 +1242,49 @@
         ]
       }
     },
+    "/api/v1/journal/sessions/{id}/score-sheet": {
+      "get": {
+        "operationId": "Journal_scoreSheet",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/pdf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Archers only"
+          },
+          "404": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "The archer's score sheet at this competition (`hasScoreSheet`)",
+        "tags": [
+          "journal"
+        ]
+      }
+    },
     "/api/v1/journal/sessions/{id}/seen": {
       "post": {
         "operationId": "Journal_markSeen",
@@ -1937,6 +1980,9 @@
           },
           "409": {
             "description": "INVITATION_ALREADY_SENT, LIMIT_REACHED"
+          },
+          "429": {
+            "description": "DAILY_LIMIT_REACHED, TOO_MANY_REQUESTS"
           }
         },
         "security": [
@@ -2345,6 +2391,155 @@
         ]
       }
     },
+    "/api/v1/coach/groups": {
+      "get": {
+        "operationId": "CoachGroups_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CoachGroupDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Your groups of archers, by name",
+        "tags": [
+          "coaching"
+        ]
+      },
+      "post": {
+        "operationId": "CoachGroups_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveCoachGroupDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CoachGroupDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "GROUP_NAME_TAKEN, LIMIT_REACHED"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "coaching"
+        ]
+      }
+    },
+    "/api/v1/coach/groups/{id}": {
+      "patch": {
+        "operationId": "CoachGroups_rename",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveCoachGroupDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CoachGroupDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": ""
+          },
+          "409": {
+            "description": "GROUP_NAME_TAKEN"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Rename a group",
+        "tags": [
+          "coaching"
+        ]
+      },
+      "delete": {
+        "operationId": "CoachGroups_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "404": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Delete a group; its archers stay followed, in no group",
+        "tags": [
+          "coaching"
+        ]
+      }
+    },
     "/api/v1/coach/athletes": {
       "get": {
         "operationId": "Coaching_list",
@@ -2411,6 +2606,55 @@
             "bearer": []
           }
         ],
+        "tags": [
+          "coaching"
+        ]
+      }
+    },
+    "/api/v1/coach/athletes/{archerId}/group": {
+      "put": {
+        "operationId": "Coaching_setGroup",
+        "parameters": [
+          {
+            "name": "archerId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetAthleteGroupDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AthleteDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not one of your archers (or not in their current journal)"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Put the archer in one of your groups, or take them out",
         "tags": [
           "coaching"
         ]
@@ -2830,6 +3074,54 @@
           }
         ],
         "summary": "Photos of an event; the URLs are signed and expire after 10 minutes",
+        "tags": [
+          "coaching"
+        ]
+      }
+    },
+    "/api/v1/coach/athletes/{archerId}/sessions/{id}/score-sheet": {
+      "get": {
+        "operationId": "Coaching_scoreSheet",
+        "parameters": [
+          {
+            "name": "archerId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/pdf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not one of your archers (or not in their current journal)"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "The archer's score sheet at this competition (`hasScoreSheet`)",
         "tags": [
           "coaching"
         ]
@@ -3570,7 +3862,9 @@
           "GIFT",
           "HEART",
           "BELL",
-          "PIN"
+          "PIN",
+          "RUN",
+          "VISUALIZATION"
         ],
         "description": "`OTHER` events only; null = default pictogram."
       },
@@ -4273,6 +4567,10 @@
             "example": "26349",
             "description": "The FFTA competition it was added from (`CompetitionDto.id`), if any."
           },
+          "hasScoreSheet": {
+            "type": "boolean",
+            "description": "Whether the archer's score sheet was found on ianseo.net (`GET .../score-sheet`). Searched during the week after a competition, for archers practising in France whose licence, last and first names are known."
+          },
           "plannedBy": {
             "nullable": true,
             "description": "The coach who planned the event in the archer's journal; null when the archer created it. That coach may change its planning or delete it while it is still to come.",
@@ -4353,6 +4651,7 @@
           "completed",
           "plannedByCoach",
           "fftaCompetitionId",
+          "hasScoreSheet",
           "plannedBy",
           "distanceMeters",
           "objective",
@@ -4949,6 +5248,15 @@
             "nullable": true,
             "example": "0123456A"
           },
+          "lastName": {
+            "type": "string",
+            "nullable": true,
+            "description": "As on the licence: with it, finds the score sheets of competitions."
+          },
+          "firstName": {
+            "type": "string",
+            "nullable": true
+          },
           "category": {
             "nullable": true,
             "allOf": [
@@ -5015,6 +5323,8 @@
         },
         "required": [
           "licenceNumber",
+          "lastName",
+          "firstName",
           "category",
           "bowType",
           "disciplines",
@@ -5033,6 +5343,16 @@
             "type": "string",
             "nullable": true,
             "maxLength": 20
+          },
+          "lastName": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 60
+          },
+          "firstName": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 60
           },
           "category": {
             "nullable": true,
@@ -5405,6 +5725,38 @@
           }
         }
       },
+      "CoachGroupDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "example": "Groupe compétition",
+            "maxLength": 60
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ]
+      },
+      "SaveCoachGroupDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Groupe compétition",
+            "minLength": 1,
+            "maxLength": 60
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
       "AthleteDto": {
         "type": "object",
         "properties": {
@@ -5440,6 +5792,16 @@
             "items": {
               "$ref": "#/components/schemas/Discipline"
             }
+          },
+          "group": {
+            "nullable": true,
+            "description": "The group the coach put them in; null when in none. The archer never sees it.",
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CoachGroupDto"
+              }
+            ]
           }
         },
         "required": [
@@ -5447,7 +5809,22 @@
           "name",
           "access",
           "journal",
-          "disciplines"
+          "disciplines",
+          "group"
+        ]
+      },
+      "SetAthleteGroupDto": {
+        "type": "object",
+        "properties": {
+          "groupId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true,
+            "description": "One of your groups; null takes the archer out of their group."
+          }
+        },
+        "required": [
+          "groupId"
         ]
       },
       "PlannableType": {

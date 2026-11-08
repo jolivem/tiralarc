@@ -681,8 +681,16 @@
   }
 }
 
+/* The colouring tools (coloring-toolbar.tsx): stay under the header down to the bottom band. */
+.coloringBar {
+  position: sticky;
+  top: calc(var(--app-shell-header-offset, 0px) + var(--mantine-spacing-xs));
+  z-index: 10;
+}
+
 /* Decoration theme around the calendar (calendar-frame.tsx). */
 .frame {
+  position: relative;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   grid-template-areas: 'top' 'content';
@@ -732,17 +740,18 @@
   }
 
   /*
-   * Fixed heights, the artwork fitted inside ("contain"): every month leaves the same room
-   * around the calendar, with or without a decoration (calendar-frame.tsx keeps empty bands).
+   * The frame's full width, to meet the side bands (artwork 2000 x 280): every month leaves the
+   * same room around the calendar, with or without a decoration (calendar-frame.tsx keeps empty
+   * bands).
    */
   &[data-band='top'] {
     grid-area: top;
-    height: min(180px, 25vw);
+    aspect-ratio: 50 / 7;
   }
 
   &[data-band='bottom'] {
     grid-area: bottom;
-    height: min(180px, 25vw);
+    aspect-ratio: 50 / 7;
     display: none;
 
     @media (min-width: $mantine-breakpoint-sm) {
@@ -750,10 +759,15 @@
     }
   }
 
+  /*
+   * From the top band down to the bottom one, whatever the month's number of weeks: out of the
+   * row's sizing (the calendar alone sets its height). Artwork 300 x 2200, drawn for six weeks.
+   */
   &[data-band='left'],
   &[data-band='right'] {
-    align-self: center;
-    max-height: 100%;
+    position: absolute;
+    inset: 0;
+    height: 100%;
     display: none;
 
     @media (min-width: $mantine-breakpoint-lg) {
@@ -761,12 +775,15 @@
     }
   }
 
+  /* Narrower than their column in short months: against the page's margin (see `click`). */
   &[data-band='left'] {
     grid-area: left;
+    object-position: left center;
   }
 
   &[data-band='right'] {
     grid-area: right;
+    object-position: right center;
   }
 }
 
@@ -804,12 +821,19 @@
   }
 }
 
-/* Desktop: the calendar (with its decoration) takes 80% of its base size, in both directions. */
+/*
+ * Desktop: the calendar (with its decoration) takes 80% of its base size, in both directions;
+ * with the side bands, the page's full width, so they sit against its margins.
+ */
 .calendarWidth {
   @media (min-width: $mantine-breakpoint-md) {
     /* An explicit width: with auto margins, a flex child would shrink to its content. */
     width: 80%;
     margin-inline: auto;
+  }
+
+  @media (min-width: $mantine-breakpoint-lg) {
+    width: 100%;
   }
 }
 

@@ -50,6 +50,30 @@ export function useMonthColoring(journal: Journal, month: string, theme: string 
   return {
     fills,
     status,
+    /** Replaces the colouring and saves it at once: done when the server has it. */
+    replace: async (next: ThemeFill[]): Promise<ActionState> => {
+      if (pending.current?.month !== month) flush();
+      if (pending.current) window.clearTimeout(pending.current.timer);
+      pending.current = null;
+      setEdits((all) => ({ ...all, [key]: next }));
+      setHistory({ key, steps: [...steps, fills] });
+      setStatus('saving');
+      const result = await saveMonthColoring(journal.id, month, next);
+      setStatus(result.code ?? 'saved');
+      return result;
+    },
+    /** The month's decoration changed, its colouring is gone: nothing of it may come back. */
+    forget: () => {
+      if (pending.current?.month === month) {
+        window.clearTimeout(pending.current.timer);
+        pending.current = null;
+      }
+      setEdits((all) =>
+        Object.fromEntries(
+          Object.entries(all).filter(([edited]) => !edited.startsWith(`${month}/`)),
+        ),
+      );
+    },
     change: (next: ThemeFill[]) => apply(next, [...steps, fills]),
     canUndo: steps.length > 0,
     undo: () => {

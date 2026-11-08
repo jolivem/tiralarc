@@ -41,6 +41,9 @@ model User {
   journals                Journal[]
   archerProfile           ArcherProfile?
   profileInvitations      ProfileInvitation[]
+  invitationSends         InvitationSend[]
+  /// The groups this user sorts the archers they coach into.
+  coachGroups             CoachGroup[]
   /// The invitations this user accepted as someone's coach.
   coachedArchers          ProfileInvitation[]      @relation("CoachedArchers")
   favoriteSites           FavoriteSite[]
@@ -180,53 +183,67 @@ model Journal {
 /// It shows in the journal whose period covers its date, if any.
 /// An event is a day's entry, without a time; its date is a calendar day (no time zone).
 model JournalSession {
-  id              String      @id @default(uuid()) @db.Char(36)
-  userId          String      @map("user_id") @db.Char(36)
-  type            SessionType
-  date            DateTime    @db.Date
-  durationMinutes Int?        @map("duration_minutes") @db.SmallInt
-  location        String?     @db.VarChar(200)
-  discipline      Discipline?
-  distanceMeters  Int?        @map("distance_meters") @db.SmallInt
-  arrowCount      Int?        @map("arrow_count") @db.SmallInt
-  score           Int?        @db.SmallInt
-  objective       String?     @db.Text
+  id                  String      @id @default(uuid()) @db.Char(36)
+  userId              String      @map("user_id") @db.Char(36)
+  type                SessionType
+  date                DateTime    @db.Date
+  durationMinutes     Int?        @map("duration_minutes") @db.SmallInt
+  location            String?     @db.VarChar(200)
+  discipline          Discipline?
+  distanceMeters      Int?        @map("distance_meters") @db.SmallInt
+  arrowCount          Int?        @map("arrow_count") @db.SmallInt
+  score               Int?        @db.SmallInt
+  objective           String?     @db.Text
   /// Self-assessment, 0–10.
-  satisfaction    Int?        @db.TinyInt
-  technique       Int?        @db.TinyInt
-  description     String?     @db.Text
-  physicalFeeling Feeling?    @map("physical_feeling")
-  mentalFeeling   Feeling?    @map("mental_feeling")
+  satisfaction        Int?        @db.TinyInt
+  technique           Int?        @db.TinyInt
+  description         String?     @db.Text
+  physicalFeeling     Feeling?    @map("physical_feeling")
+  mentalFeeling       Feeling?    @map("mental_feeling")
   /// Up to 3 short strings each.
-  wentWell        Json        @map("went_well")
-  toImprove       Json        @map("to_improve")
-  nextTime        String?     @map("next_time") @db.Text
+  wentWell            Json        @map("went_well")
+  toImprove           Json        @map("to_improve")
+  nextTime            String?     @map("next_time") @db.Text
   /// `OTHER` events only: how the event shows in the calendar (see EVENT_COLORS / EVENT_ICONS).
-  title           String?     @db.VarChar(100)
-  color           String?     @db.VarChar(20)
-  icon            String?     @db.VarChar(20)
+  title               String?     @db.VarChar(100)
+  color               String?     @db.VarChar(20)
+  icon                String?     @db.VarChar(20)
   /// `CUSTOM` events only: their type (title, colour and pictogram come from it).
-  customTypeId    String?     @map("custom_type_id") @db.Char(36)
+  customTypeId        String?     @map("custom_type_id") @db.Char(36)
   /// The coach who planned the event (null = the archer). They may change or delete it while it
   /// is still to come; the archer always can.
-  plannedById     String?     @map("planned_by_id") @db.Char(36)
+  plannedById         String?     @map("planned_by_id") @db.Char(36)
   /// When the archer first opened the sheet of an event their coach planned; null = new to them.
-  seenAt          DateTime?   @map("seen_at") @db.DateTime(3)
+  seenAt              DateTime?   @map("seen_at") @db.DateTime(3)
   /// The FFTA competition it was added from (https://www.ffta.fr/epreuve/{id}); at most
   /// `MAX_PER_COMPETITION_DAY` such events per competition and day.
-  fftaCompetitionId String?   @map("ffta_competition_id") @db.VarChar(20)
-  createdAt       DateTime    @default(now()) @map("created_at") @db.DateTime(3)
-  updatedAt       DateTime    @updatedAt @map("updated_at") @db.DateTime(3)
+  fftaCompetitionId   String?     @map("ffta_competition_id") @db.VarChar(20)
+  /// The last day its score sheet was looked for on ianseo.net (see `ScoreSheet`).
+  scoreSheetCheckedOn DateTime?   @map("score_sheet_checked_on") @db.Date
+  createdAt           DateTime    @default(now()) @map("created_at") @db.DateTime(3)
+  updatedAt           DateTime    @updatedAt @map("updated_at") @db.DateTime(3)
 
   user       User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   customType CustomEventType? @relation(fields: [customTypeId], references: [id], onDelete: SetNull)
   plannedBy  User?            @relation("PlannedSessions", fields: [plannedById], references: [id], onDelete: SetNull)
   photos     SessionPhoto[]
+  scoreSheet ScoreSheet?
 
   @@index([userId, date])
   @@index([customTypeId])
   @@index([plannedById])
   @@map("journal_sessions")
+}
+
+/// The archer's score sheet at a competition: their page(s) of the PDFs published on ianseo.net.
+model ScoreSheet {
+  sessionId String   @id @map("session_id") @db.Char(36)
+  pdf       Bytes    @db.MediumBlob
+  createdAt DateTime @default(now()) @map("created_at") @db.DateTime(3)
+
+  session JournalSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@map("score_sheets")
 }
 
 /// An event type the archer defined (a few at most, see MAX_CUSTOM_TYPES). Deleting one turns its
@@ -287,6 +304,9 @@ model DismissedCompetition {
 model ArcherProfile {
   userId            String       @id @map("user_id") @db.Char(36)
   licenceNumber     String?      @map("licence_number") @db.VarChar(20)
+  /// As on the licence: with it, they find the score sheets on ianseo.net.
+  lastName          String?      @map("last_name") @db.VarChar(60)
+  firstName         String?      @map("first_name") @db.VarChar(60)
   category          AgeCategory?
   bowType           BowType?     @map("bow_type")
   /// Array of `Discipline` values.
@@ -336,28 +356,59 @@ enum CoachAccess {
 /// coach (`isCoach`) who accepts while signed in is linked (`coachId`) and gets `coachAccess` to
 /// the archer's journal of the season in progress (the one whose period covers today).
 model ProfileInvitation {
-  id          String       @id @default(uuid()) @db.Char(36)
-  userId      String       @map("user_id") @db.Char(36)
-  name        String       @db.VarChar(100)
-  email       String       @db.VarChar(255)
-  isCoach     Boolean      @default(false) @map("is_coach")
+  id           String       @id @default(uuid()) @db.Char(36)
+  userId       String       @map("user_id") @db.Char(36)
+  name         String       @db.VarChar(100)
+  email        String       @db.VarChar(255)
+  isCoach      Boolean      @default(false) @map("is_coach")
   /// Coaches only.
-  coachAccess CoachAccess? @map("coach_access")
+  coachAccess  CoachAccess? @map("coach_access")
   /// The account that accepted a coach invitation (whatever its email: the link is the proof).
-  coachId     String?      @map("coach_id") @db.Char(36)
+  coachId      String?      @map("coach_id") @db.Char(36)
+  /// The coach's own group for this archer; null = in none. The archer doesn't see it.
+  coachGroupId String?      @map("coach_group_id") @db.Char(36)
   /// Hash of the token emailed to the guest.
-  tokenHash   String       @unique @map("token_hash") @db.Char(64)
+  tokenHash    String       @unique @map("token_hash") @db.Char(64)
   /// Null while the invitation is pending.
-  acceptedAt  DateTime?    @map("accepted_at") @db.DateTime(3)
-  createdAt   DateTime     @default(now()) @map("created_at") @db.DateTime(3)
+  acceptedAt   DateTime?    @map("accepted_at") @db.DateTime(3)
+  createdAt    DateTime     @default(now()) @map("created_at") @db.DateTime(3)
 
-  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  coach User? @relation("CoachedArchers", fields: [coachId], references: [id], onDelete: Cascade)
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  coach      User?       @relation("CoachedArchers", fields: [coachId], references: [id], onDelete: Cascade)
+  coachGroup CoachGroup? @relation(fields: [coachGroupId], references: [id], onDelete: SetNull)
 
   @@unique([userId, email])
   @@unique([userId, coachId])
   @@index([coachId])
+  @@index([coachGroupId])
   @@map("profile_invitations")
+}
+
+/// A named group of the archers a coach follows. Deleting it leaves its archers in none.
+model CoachGroup {
+  id        String   @id @default(uuid()) @db.Char(36)
+  coachId   String   @map("coach_id") @db.Char(36)
+  name      String   @db.VarChar(60)
+  createdAt DateTime @default(now()) @map("created_at") @db.DateTime(3)
+
+  coach   User                @relation(fields: [coachId], references: [id], onDelete: Cascade)
+  archers ProfileInvitation[]
+
+  @@unique([coachId, name])
+  @@map("coach_groups")
+}
+
+/// One per invitation sent in the last 24 hours (the daily quota): unlike `ProfileInvitation`,
+/// it stays when the invitation is removed.
+model InvitationSend {
+  id     String   @id @default(uuid()) @db.Char(36)
+  userId String   @map("user_id") @db.Char(36)
+  sentAt DateTime @default(now()) @map("sent_at") @db.DateTime(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, sentAt])
+  @@map("invitation_sends")
 }
 
 model FavoriteSite {

@@ -19,7 +19,15 @@ import { JournalService } from '../journal/journal.service.js';
 import { PhotosService } from '../journal/photos.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { ProfileService } from '../profile/profile.service.js';
-import type { AthleteDto, PlanSessionDto, UpdatePlannedSessionDto } from './dto/coaching.dto.js';
+import type {
+  AthleteDto,
+  CoachGroupDto,
+  PlanSessionDto,
+  SaveCoachGroupDto,
+  UpdatePlannedSessionDto,
+} from './dto/coaching.dto.js';
+
+export const MAX_COACH_GROUPS = 30;
 
 const NO_STATS: JournalStatsDto = {
   competitions: [],
@@ -34,7 +42,14 @@ const NO_STATS: JournalStatsDto = {
 /** Today's calendar day (YYYY-MM-DD, UTC, like the DATE columns). */
 const today = () => new Date().toISOString().slice(0, 10);
 
-type Link = ProfileInvitation & { user: { displayName: string | null; email: string } };
+type Link = ProfileInvitation & {
+  user: { displayName: string | null; email: string };
+  coachGroup: CoachGroupDto | null;
+};
+const LINK_DETAILS = {
+  user: { select: { displayName: true, email: true } },
+  coachGroup: { select: { id: true, name: true } },
+} as const;
 
 /**
  * The coach's side of the journal. An archer's coach (the account that accepted their coach
@@ -59,7 +74,7 @@ export class CoachingService {
   async athletes(coachId: string): Promise<AthleteDto[]> {
     const links = await this.prisma.profileInvitation.findMany({
       where: { coachId },
-      include: { user: { select: { displayName: true, email: true } } },
+      include: LINK_DETAILS,
     });
     const athletes = await Promise.all(links.map((link) => this.toAthleteDto(link)));
     return athletes.sort((a, b) => a.name.localeCompare(b.name, 'fr'));
@@ -67,6 +82,83 @@ export class CoachingService {
 
   async athlete(coachId: string, archerId: string): Promise<AthleteDto> {
     return this.toAthleteDto(await this.link(coachId, archerId));
+  }
+
+  // ----------------------------------------------------------------- groups
+
+  async groups(coachId: string): Promise<CoachGroupDto[]> {
+    const groups = await this.prisma.coachGroup.findMany({
+      where: { coachId },
+      select: { id: true, name: true },
+    });
+    return groups.sort((a, b) => a.name.localeCompare(b.name, 'fr'));
+  }
+
+  async createGroup(coachId: string, dto: SaveCoachGroupDto): Promise<CoachGroupDto> {
+    const name = dto.name.trim();
+    if ((await this.prisma.coachGroup.count({ where: { coachId } })) >= MAX_COACH_GROUPS) {
+      throw new ApiException(
+        HttpStatus.CONFLICT,
+        ErrorCode.LIMIT_REACHED,
+        `At most ${MAX_COACH_GROUPS} groups per coach`,
+      );
+    }
+    await this.assertNameFree(coachId, name);
+    return this.prisma.coachGroup.create({
+      data: { coachId, name },
+      select: { id: true, name: true },
+    });
+  }
+
+  async renameGroup(coachId: string, id: string, dto: SaveCoachGroupDto): Promise<CoachGroupDto> {
+    await this.ownGroup(coachId, id);
+    const name = dto.name.trim();
+    await this.assertNameFree(coachId, name, id);
+    return this.prisma.coachGroup.update({
+      where: { id },
+      data: { name },
+      select: { id: true, name: true },
+    });
+  }
+
+  /** Its archers stay followed, in no group. */
+  async removeGroup(coachId: string, id: string): Promise<void> {
+    await this.ownGroup(coachId, id);
+    await this.prisma.coachGroup.delete({ where: { id } });
+  }
+
+  async setAthleteGroup(
+    coachId: string,
+    archerId: string,
+    groupId: string | null,
+  ): Promise<AthleteDto> {
+    const link = await this.link(coachId, archerId);
+    if (groupId) await this.ownGroup(coachId, groupId);
+    const updated = await this.prisma.profileInvitation.update({
+      where: { id: link.id },
+      data: { coachGroupId: groupId },
+      include: LINK_DETAILS,
+    });
+    return this.toAthleteDto(updated);
+  }
+
+  private async ownGroup(coachId: string, id: string): Promise<void> {
+    if (!(await this.prisma.coachGroup.findFirst({ where: { id, coachId } }))) {
+      throw new NotFoundException('Group not found');
+    }
+  }
+
+  private async assertNameFree(coachId: string, name: string, ownId?: string): Promise<void> {
+    const same = await this.prisma.coachGroup.findFirst({
+      where: { coachId, name, ...(ownId && { id: { not: ownId } }) },
+    });
+    if (same) {
+      throw new ApiException(
+        HttpStatus.CONFLICT,
+        ErrorCode.GROUP_NAME_TAKEN,
+        'You already have a group with this name',
+      );
+    }
   }
 
   /** The events of the current journal between two days (clipped to its period). */
@@ -140,6 +232,11 @@ export class CoachingService {
     return this.photos.list(archerId, id);
   }
 
+  async sessionScoreSheet(coachId: string, archerId: string, id: string): Promise<Uint8Array> {
+    await this.session(coachId, archerId, id);
+    return this.journal.scoreSheet(archerId, id);
+  }
+
   async plan(coachId: string, archerId: string, dto: PlanSessionDto): Promise<SessionDto> {
     const link = await this.link(coachId, archerId);
     assertWrite(link);
@@ -201,7 +298,7 @@ export class CoachingService {
   private async link(coachId: string, archerId: string): Promise<Link> {
     const link = await this.prisma.profileInvitation.findFirst({
       where: { userId: archerId, coachId },
-      include: { user: { select: { displayName: true, email: true } } },
+      include: LINK_DETAILS,
     });
     if (!link) throw new NotFoundException('Archer not found');
     return link;
@@ -218,6 +315,7 @@ export class CoachingService {
       access: link.coachAccess ?? CoachAccess.READ,
       journal,
       disciplines: profile.disciplines,
+      group: link.coachGroup,
     };
   }
 }

@@ -4,6 +4,7 @@ import { ActionIcon, Button, CheckIcon, ColorSwatch, Group, Paper, Text } from '
 import { IconArrowBackUp, IconEraser, IconTrash } from '@tabler/icons-react';
 import { useTranslations } from 'next-intl';
 import { type ColoringTool, ERASER } from './calendar-frame';
+import classes from './journal.module.css';
 
 /** Crayon box, in display order. Keys name the colours in the message files. */
 export const PALETTE = {
@@ -48,7 +49,7 @@ export function ColoringToolbar({
 }) {
   const t = useTranslations('journals.coloring');
   return (
-    <Paper withBorder radius="md" p="sm" mb="sm">
+    <Paper withBorder radius="md" p="sm" mb="sm" className={classes.coloringBar}>
       <Group gap="sm" justify="space-between">
         <Group gap={6} role="radiogroup" aria-label={t('colors')}>
           {(Object.keys(PALETTE) as (keyof typeof PALETTE)[]).map((name) => {

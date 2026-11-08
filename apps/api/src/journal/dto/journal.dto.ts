@@ -59,6 +59,8 @@ export const EVENT_ICONS = [
   'HEART',
   'BELL',
   'PIN',
+  'RUN',
+  'VISUALIZATION',
 ] as const;
 export type EventIcon = (typeof EVENT_ICONS)[number];
 
@@ -804,6 +806,14 @@ export class NewEventDto extends SessionSummaryDto {
 
 /** Full session sheet. */
 export class SessionDto extends SessionSummaryDto {
+  @ApiProperty({
+    description:
+      "Whether the archer's score sheet was found on ianseo.net (`GET .../score-sheet`). " +
+      'Searched during the week after a competition, for archers practising in France whose ' +
+      'licence, last and first names are known.',
+  })
+  hasScoreSheet!: boolean;
+
   @ApiProperty({
     type: () => PlannerDto,
     nullable: true,

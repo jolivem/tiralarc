@@ -10,6 +10,7 @@ import type { FftaRankingInfo, FftaRankingRow } from '../src/competitions/ffta-r
 import { AuthProvider } from '../src/generated/prisma/client.js';
 import { MailService, type OutgoingMail } from '../src/mail/mail.service.js';
 import { PrismaService } from '../src/prisma/prisma.service.js';
+import { IanseoClient } from '../src/score-sheets/ianseo.client.js';
 import { StorageService } from '../src/storage/storage.service.js';
 import { configureApp } from '../src/setup.js';
 
@@ -51,6 +52,31 @@ class FakeStorage {
   }
   async signedUrl(key: string) {
     return `https://storage.test/${key}?signature=fake`;
+  }
+}
+
+/** Stand-in for ianseo.net: its pages and files, and what was asked for. */
+export class FakeIanseo {
+  list = '';
+  readonly pages = new Map<number, string>();
+  readonly files = new Map<string, Uint8Array>();
+  readonly requests: string[] = [];
+
+  async tours(year: number) {
+    this.requests.push(`tours:${year}`);
+    return this.list;
+  }
+
+  async details(tourId: number) {
+    this.requests.push(`details:${tourId}`);
+    return this.pages.get(tourId) ?? '';
+  }
+
+  async file(path: string) {
+    this.requests.push(`file:${path}`);
+    const file = this.files.get(path);
+    if (!file) throw new Error(`No file ${path}`);
+    return file;
   }
 }
 
@@ -99,6 +125,7 @@ export interface TestContext {
   /** Every file "stored" by the app, by key. */
   files: Map<string, Buffer>;
   ffta: FakeFfta;
+  ianseo: FakeIanseo;
 }
 
 export async function createTestApp(): Promise<TestContext> {
@@ -110,6 +137,8 @@ export async function createTestApp(): Promise<TestContext> {
     .useClass(FakeStorage)
     .overrideProvider(FftaClient)
     .useClass(FakeFfta)
+    .overrideProvider(IanseoClient)
+    .useClass(FakeIanseo)
     .compile();
 
   const app = moduleRef.createNestApplication<INestApplication<App>>();
@@ -123,7 +152,14 @@ export async function createTestApp(): Promise<TestContext> {
   const prisma = app.get(PrismaService);
   await resetDatabase(prisma);
   const { files } = app.get<FakeStorage>(StorageService);
-  return { app, prisma, outbox, files, ffta: app.get<FakeFfta>(FftaClient) };
+  return {
+    app,
+    prisma,
+    outbox,
+    files,
+    ffta: app.get<FakeFfta>(FftaClient),
+    ianseo: app.get<FakeIanseo>(IanseoClient),
+  };
 }
 
 export async function resetDatabase(prisma: PrismaService): Promise<void> {

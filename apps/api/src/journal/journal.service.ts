@@ -203,10 +203,13 @@ export function toCustomTypeDto(type: CustomEventType): CustomEventTypeDto {
 type SessionRow = JournalSession & {
   customType: CustomEventType | null;
   plannedBy: { id: string; displayName: string | null; email: string } | null;
+  scoreSheet: { sessionId: string } | null;
 };
 const WITH_TYPE = {
   customType: true,
   plannedBy: { select: { id: true, displayName: true, email: true } },
+  // Whether there is one, not the file.
+  scoreSheet: { select: { sessionId: true } },
 } as const;
 
 /** What a coach fills in when planning an event (the fields of a sheet still to come). */
@@ -245,6 +248,7 @@ function toSummary(s: SessionRow): SessionSummaryDto {
 function toDto(s: SessionRow): SessionDto {
   return {
     ...toSummary(s),
+    hasScoreSheet: s.scoreSheet !== null,
     distanceMeters: s.distanceMeters,
     objective: s.objective,
     satisfaction: s.satisfaction,
@@ -608,6 +612,14 @@ export class JournalService {
     return toDto(await this.findOwned(userId, id));
   }
 
+  /** The archer's score sheet at this competition (a PDF), found on ianseo.net. */
+  async scoreSheet(userId: string, id: string): Promise<Uint8Array> {
+    await this.findOwned(userId, id);
+    const sheet = await this.prisma.scoreSheet.findUnique({ where: { sessionId: id } });
+    if (!sheet) throw new NotFoundException('No score sheet for this event');
+    return sheet.pdf;
+  }
+
   /** The events the archer's coach planned that the archer hasn't opened yet, by date. */
   async newEvents(userId: string): Promise<NewEventDto[]> {
     const sessions = await this.prisma.journalSession.findMany({
@@ -658,12 +670,15 @@ export class JournalService {
     // Moved to another day: that day must have room for it.
     if (moved) {
       await this.assertDayHasRoom(userId, toDbDate(date));
+      // Its score sheet was another day's: it is looked for anew.
+      await this.prisma.scoreSheet.deleteMany({ where: { sessionId: id } });
     }
     const session = await this.prisma.journalSession.update({
       where: { id },
       include: WITH_TYPE,
       data: {
         ...rest,
+        ...(moved && { scoreSheetCheckedOn: null }),
         ...(rest.type !== undefined && rest.type !== SessionType.CUSTOM && { customTypeId: null }),
         ...(date !== undefined && { date: toDbDate(date) }),
         ...(location !== undefined && { location: location?.trim() || null }),

@@ -9,6 +9,11 @@ export const CALENDAR_FONTS = {
   courgette: '--font-cal-courgette',
   'kaushan-script': '--font-cal-kaushan-script',
   'great-vibes': '--font-cal-great-vibes',
+  allura: '--font-cal-allura',
+  'alex-brush': '--font-cal-alex-brush',
+  sacramento: '--font-cal-sacramento',
+  parisienne: '--font-cal-parisienne',
+  yellowtail: '--font-cal-yellowtail',
 } as const;
 
 export type CalendarFontId = keyof typeof CALENDAR_FONTS;

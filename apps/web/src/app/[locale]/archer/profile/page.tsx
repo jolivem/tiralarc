@@ -3,7 +3,6 @@ import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { CompetitionsCard, ConfigurationCard } from '@/components/profile/configuration-card';
 import { InvitationsCard } from '@/components/profile/invitations-card';
 import { PersonalizationCard } from '@/components/profile/personalization-card';
-import { SitesCard } from '@/components/profile/sites-card';
 import { SectionPage } from '@/components/section-page';
 import type { Locale } from '@/i18n/routing';
 import { getAuthedApi } from '@/lib/api';
@@ -11,6 +10,8 @@ import { getArcherProfile } from '@/lib/archer-profile';
 
 const EMPTY_PROFILE = {
   licenceNumber: null,
+  lastName: null,
+  firstName: null,
   category: null,
   bowType: null,
   disciplines: [],
@@ -28,17 +29,15 @@ export default async function ArcherProfilePage({ params }: PageProps<'/[locale]
   const t = await getTranslations('archer');
 
   const api = await getAuthedApi();
-  const [profile, { data: invitations }, { data: sites }, { data: departments }] =
-    await Promise.all([
-      // Already read by the root layout (calendar font).
-      getArcherProfile(),
-      api.GET('/api/v1/profile/invitations'),
-      api.GET('/api/v1/profile/sites'),
-      api.GET('/api/v1/competitions/departments'),
-    ]);
+  const [profile, { data: invitations }, { data: departments }] = await Promise.all([
+    // Already read by the root layout (calendar font).
+    getArcherProfile(),
+    api.GET('/api/v1/profile/invitations'),
+    api.GET('/api/v1/competitions/departments'),
+  ]);
 
   return (
-    // Lists on the left page, settings on the right (stacked on phones and tablets).
+    // Stacked on phones and tablets.
     <SectionPage
       title={t('profile')}
       intro={t('profileIntro')}
@@ -47,17 +46,16 @@ export default async function ArcherProfilePage({ params }: PageProps<'/[locale]
       left={
         <Stack gap="md">
           <InvitationsCard invitations={invitations ?? []} />
-          <SitesCard sites={sites ?? []} />
+          {/* The FFTA's competitions: only when practising in France (or not said yet). */}
+          {profile?.practisesInFrance !== false && (
+            <CompetitionsCard profile={profile ?? EMPTY_PROFILE} departments={departments ?? []} />
+          )}
         </Stack>
       }
       right={
         <Stack gap="md">
           <ConfigurationCard profile={profile ?? EMPTY_PROFILE} departments={departments ?? []} />
           <PersonalizationCard font={profile?.calendarFont ?? null} />
-          {/* The FFTA's competitions: only when practising in France (or not said yet). */}
-          {profile?.practisesInFrance !== false && (
-            <CompetitionsCard profile={profile ?? EMPTY_PROFILE} departments={departments ?? []} />
-          )}
         </Stack>
       }
     />
