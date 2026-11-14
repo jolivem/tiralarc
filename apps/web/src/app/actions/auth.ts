@@ -49,11 +49,19 @@ export async function login(_prev: ActionState, formData: FormData): Promise<Act
   return completeSignIn(result.data, safeNext(formData.get('next')));
 }
 
+/**
+ * A new password and its confirmation that differ (sign-up, reset). The form checks it too; this
+ * covers a submission made before the page's script ran.
+ */
+function passwordMismatch(formData: FormData): ActionState | null {
+  return formData.get('password') !== formData.get('passwordConfirm')
+    ? { fieldErrors: { passwordConfirm: ['passwordMismatch'] } }
+    : null;
+}
+
 export async function register(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  // The form checks it too; this covers a submission made before the page's script ran.
-  if (formData.get('password') !== formData.get('passwordConfirm')) {
-    return { fieldErrors: { passwordConfirm: ['passwordMismatch'] } };
-  }
+  const mismatch = passwordMismatch(formData);
+  if (mismatch) return mismatch;
 
   const displayName = String(formData.get('displayName') ?? '').trim();
   const locale = await getLocale();
@@ -112,10 +120,8 @@ export async function forgotPassword(_prev: ActionState, formData: FormData): Pr
 
 /** The emailed link's page: the new password, then signed in (every other session is ended). */
 export async function resetPassword(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  // The form checks it too; this covers a submission made before the page's script ran.
-  if (formData.get('password') !== formData.get('passwordConfirm')) {
-    return { fieldErrors: { passwordConfirm: ['passwordMismatch'] } };
-  }
+  const mismatch = passwordMismatch(formData);
+  if (mismatch) return mismatch;
   const result = await send(
     api.POST('/api/v1/auth/reset-password', {
       body: { token: String(formData.get('token')), password: String(formData.get('password')) },

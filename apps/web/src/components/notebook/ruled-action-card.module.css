@@ -1,5 +1,5 @@
 /*
- * The home page's PDF extract card (export-card.tsx), on the notebook's ruling: the text,
+ * A card of the home notebook (ruled-action-card.tsx), on the notebook's ruling: the text,
  * one line of it per ruled line, with the button on its right.
  */
 .row {

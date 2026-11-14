@@ -11,13 +11,11 @@ import type {
 import dayjs from 'dayjs';
 import { useTranslations } from 'next-intl';
 import { type ReactNode, useState, useTransition } from 'react';
-import { listCompetitions, listSessions } from '@/app/actions/journal';
+import { listCompetitions } from '@/app/actions/journal';
+import { eventsOf } from '@/lib/journal-events';
 import { EventLegendPanel } from './event-legend';
 import { MonthsOverview } from './months-overview';
 import classes from './season-calendar.module.css';
-
-/** The API returns at most this span of events per request. */
-const MAX_RANGE_DAYS = 366;
 
 /** "YYYY-MM" of every month the period touches, in order. */
 function monthsOf(startDate: string, endDate: string): string[] {
@@ -31,22 +29,6 @@ function monthsOf(startDate: string, endDate: string): string[] {
     months.push(month.format('YYYY-MM'));
   }
   return months;
-}
-
-/** The period's events, fetched in spans the API accepts. */
-export async function eventsOf(
-  startDate: string,
-  endDate: string,
-): Promise<JournalSessionSummary[]> {
-  const end = dayjs(endDate);
-  const spans: [string, string][] = [];
-  for (let from = dayjs(startDate); !from.isAfter(end); from = from.add(MAX_RANGE_DAYS, 'day')) {
-    const spanEnd = from.add(MAX_RANGE_DAYS - 1, 'day');
-    const to = spanEnd.isAfter(end) ? end : spanEnd;
-    spans.push([from.format('YYYY-MM-DD'), to.format('YYYY-MM-DD')]);
-  }
-  const results = await Promise.all(spans.map(([from, to]) => listSessions(from, to)));
-  return results.flat();
 }
 
 /**

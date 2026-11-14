@@ -16,6 +16,8 @@ export interface OutgoingMail {
   html: string;
 }
 
+const mailLocale = (locale: string): MailLocale => (locale === 'en' ? 'en' : 'fr');
+
 @Injectable()
 export class MailService {
   private readonly logger = new Logger(MailService.name);
@@ -26,27 +28,20 @@ export class MailService {
   }
 
   async sendEmailVerification(to: string, locale: string, token: string): Promise<void> {
-    const lang: MailLocale = locale === 'en' ? 'en' : 'fr';
-    const link = new URL(`/${lang}/verify-email`, this.config.get('WEB_URL', { infer: true }));
-    link.searchParams.set('token', token);
-    // Development only: the link grants access to the account, it must never reach production logs.
-    // Logged before sending, so it is available even when the SMTP server (Mailpit) is down.
-    if (this.config.get('NODE_ENV', { infer: true }) === 'development') {
-      this.logger.log(`Email verification link for ${to}: ${link.toString()}`);
-    }
-    await this.send({ to, ...verificationEmail(lang, link.toString()) });
+    const lang = mailLocale(locale);
+    const link = this.tokenLink(lang, '/verify-email', token);
+    this.logDevLink('Email verification', to, link);
+    const ttl = this.config.get('EMAIL_VERIFICATION_TTL', { infer: true });
+    await this.send({ to, ...verificationEmail(lang, link, ttl) });
   }
 
   /** "Forgot password": the link to choose a new one, in the user's language. */
   async sendPasswordReset(to: string, locale: string, token: string): Promise<void> {
-    const lang: MailLocale = locale === 'en' ? 'en' : 'fr';
-    const link = new URL(`/${lang}/reset-password`, this.config.get('WEB_URL', { infer: true }));
-    link.searchParams.set('token', token);
-    // Development only, like the verification link: it grants access to the account.
-    if (this.config.get('NODE_ENV', { infer: true }) === 'development') {
-      this.logger.log(`Password reset link for ${to}: ${link.toString()}`);
-    }
-    await this.send({ to, ...passwordResetEmail(lang, link.toString()) });
+    const lang = mailLocale(locale);
+    const link = this.tokenLink(lang, '/reset-password', token);
+    this.logDevLink('Password reset', to, link);
+    const ttl = this.config.get('PASSWORD_RESET_TTL', { infer: true });
+    await this.send({ to, ...passwordResetEmail(lang, link, ttl) });
   }
 
   /** Invitation from an archer to a guest, written in the archer's language. */
@@ -57,13 +52,26 @@ export class MailService {
     token: string,
     isCoach = false,
   ): Promise<void> {
-    const lang: MailLocale = locale === 'en' ? 'en' : 'fr';
-    const link = new URL(
-      `/${lang}/invitations/accept`,
-      this.config.get('WEB_URL', { infer: true }),
-    );
+    const lang = mailLocale(locale);
+    const link = this.tokenLink(lang, '/invitations/accept', token);
+    await this.send({ to, ...invitationEmail(lang, inviter, link, isCoach) });
+  }
+
+  /** A page of the web app (`path`, in `lang`) that receives `token`. */
+  private tokenLink(lang: MailLocale, path: string, token: string): string {
+    const link = new URL(`/${lang}${path}`, this.config.get('WEB_URL', { infer: true }));
     link.searchParams.set('token', token);
-    await this.send({ to, ...invitationEmail(lang, inviter, link.toString(), isCoach) });
+    return link.toString();
+  }
+
+  /**
+   * Development only: such a link grants access to the account, it must never reach production
+   * logs. Logged before sending, so it is available even when the SMTP server (Mailpit) is down.
+   */
+  private logDevLink(what: string, to: string, link: string): void {
+    if (this.config.get('NODE_ENV', { infer: true }) === 'development') {
+      this.logger.log(`${what} link for ${to}: ${link}`);
+    }
   }
 
   /** Overridden in tests to capture outgoing mail. */

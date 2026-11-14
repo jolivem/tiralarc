@@ -81,13 +81,14 @@ export function StepList({
   const t = useTranslations('journal.steps');
   const label = useStepLabel();
   if (steps.length === 0) {
-    return <p className={classes.stepsEmpty}>{readOnly ? '' : t('empty')}</p>;
+    return (
+      <p className={`${classes.ruledText} ${classes.stepsEmpty}`}>{readOnly ? '' : t('empty')}</p>
+    );
   }
   return (
-    <ol className={classes.steps}>
+    <ol className={`${classes.ruledText} ${classes.steps}`}>
       {steps.map((step, i) => (
         // Steps have no id: their place in the list is theirs.
-
         <li key={i}>
           {readOnly ? (
             label(step)
@@ -123,7 +124,8 @@ export function StepDialog({
   step?: SessionStep;
   onClose: () => void;
   onSave: (step: SessionStep) => void;
-  onDelete?: () => void;
+  /** Takes the step off (offered for an existing step only). */
+  onDelete: () => void;
 }) {
   const t = useTranslations('journal.steps');
   return (
@@ -158,7 +160,7 @@ function StepFields({
   isNew: boolean;
   onSave: (step: SessionStep) => void;
   onCancel: () => void;
-  onDelete?: () => void;
+  onDelete: () => void;
 }) {
   const t = useTranslations('journal.steps');
   const [step, setStep] = useState(initial);
@@ -217,7 +219,7 @@ function StepFields({
         maxLength={1000}
       />
       <Group justify="space-between">
-        {!isNew && onDelete ? (
+        {!isNew ? (
           <Button
             variant="subtle"
             color="red"

@@ -1,4 +1,20 @@
-import { invitationEmail } from './templates.js';
+import { invitationEmail, passwordResetEmail, validityOf, verificationEmail } from './templates.js';
+
+describe('link emails', () => {
+  it('say how long their link is valid, from the configured lifetime', () => {
+    expect(verificationEmail('fr', 'https://x.test', 86_400).text).toContain(
+      'Ce lien est valable 24 heures.',
+    );
+    expect(passwordResetEmail('fr', 'https://x.test', 3600).text).toContain(
+      "Ce lien est valable 1 heure et ne sert qu'une fois.",
+    );
+    expect(passwordResetEmail('en', 'https://x.test', 3600).text).toContain(
+      'This link is valid for 1 hour and works once.',
+    );
+    expect(validityOf('en', 86_400)).toBe('24 hours');
+    expect(validityOf('fr', 1800)).toBe('30 minutes');
+  });
+});
 
 describe('invitation emails', () => {
   const link = 'https://tiralarc.test/fr/invitations/accept?token=abc';

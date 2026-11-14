@@ -111,18 +111,18 @@ export class AuthService {
   /** Consumes an email verification token and signs the user in. */
   async verifyEmail(token: string, client: ClientInfo): Promise<TokenPairDto> {
     const now = new Date();
-    const stored = await this.prisma.emailVerificationToken.findUnique({
-      where: { tokenHash: hashToken(token) },
-    });
-    // Conditional update: a token can only be consumed once, even with concurrent requests.
-    const consumed =
-      stored && stored.expiresAt > now
-        ? await this.prisma.emailVerificationToken.updateMany({
-            where: { id: stored.id, usedAt: null },
-            data: { usedAt: now },
-          })
-        : { count: 0 };
-    if (!stored || consumed.count === 0) {
+    const stored = await consumeOnce(
+      await this.prisma.emailVerificationToken.findUnique({
+        where: { tokenHash: hashToken(token) },
+      }),
+      (id) =>
+        this.prisma.emailVerificationToken.updateMany({
+          where: { id, usedAt: null },
+          data: { usedAt: now },
+        }),
+      now,
+    );
+    if (!stored) {
       throw new ApiException(
         HttpStatus.BAD_REQUEST,
         ErrorCode.INVALID_VERIFICATION_TOKEN,
@@ -156,15 +156,11 @@ export class AuthService {
   async forgotPassword(email: string): Promise<void> {
     const user = await this.prisma.user.findUnique({ where: { email: normalizeEmail(email) } });
     if (!user) return;
-    const token = randomBytes(32).toString('base64url');
-    const ttl = this.config.get('PASSWORD_RESET_TTL', { infer: true });
-    await this.prisma.passwordResetToken.create({
-      data: {
-        userId: user.id,
-        tokenHash: hashToken(token),
-        expiresAt: new Date(Date.now() + ttl * 1000),
-      },
-    });
+    const { token, row } = newEmailToken(
+      user.id,
+      this.config.get('PASSWORD_RESET_TTL', { infer: true }),
+    );
+    await this.prisma.passwordResetToken.create({ data: row });
     try {
       await this.mail.sendPasswordReset(user.email, user.locale, token);
     } catch (error) {
@@ -179,18 +175,18 @@ export class AuthService {
    */
   async resetPassword(token: string, password: string, client: ClientInfo): Promise<TokenPairDto> {
     const now = new Date();
-    const stored = await this.prisma.passwordResetToken.findUnique({
-      where: { tokenHash: hashToken(token) },
-    });
-    // Conditional update: a token can only be consumed once, even with concurrent requests.
-    const consumed =
-      stored && stored.expiresAt > now
-        ? await this.prisma.passwordResetToken.updateMany({
-            where: { id: stored.id, usedAt: null },
-            data: { usedAt: now },
-          })
-        : { count: 0 };
-    if (!stored || consumed.count === 0) {
+    const stored = await consumeOnce(
+      await this.prisma.passwordResetToken.findUnique({
+        where: { tokenHash: hashToken(token) },
+      }),
+      (id) =>
+        this.prisma.passwordResetToken.updateMany({
+          where: { id, usedAt: null },
+          data: { usedAt: now },
+        }),
+      now,
+    );
+    if (!stored) {
       throw new ApiException(
         HttpStatus.BAD_REQUEST,
         ErrorCode.INVALID_RESET_TOKEN,
@@ -198,24 +194,27 @@ export class AuthService {
       );
     }
 
+    const { userId } = stored;
     const passwordHash = await argon2.hash(password);
-    const { emailVerifiedAt } = await this.prisma.user.findUniqueOrThrow({
-      where: { id: stored.userId },
-      select: { emailVerifiedAt: true },
-    });
-    const [user] = await this.prisma.$transaction([
+    const [, user] = await this.prisma.$transaction([
+      // Verified now if it wasn't yet (a verified date stays as it was).
+      this.prisma.user.updateMany({
+        where: { id: userId, emailVerifiedAt: null },
+        data: { emailVerifiedAt: now },
+      }),
       this.prisma.user.update({
-        where: { id: stored.userId },
-        data: { passwordHash, ...(emailVerifiedAt ? {} : { emailVerifiedAt: now }) },
+        where: { id: userId },
+        data: { passwordHash },
         include: withRoles,
       }),
       // The other links sent meanwhile can no longer be used.
       this.prisma.passwordResetToken.updateMany({
-        where: { userId: stored.userId, usedAt: null },
+        where: { userId, usedAt: null },
         data: { usedAt: now },
       }),
+      // Every session ends (all token families).
       this.prisma.refreshToken.updateMany({
-        where: { userId: stored.userId, revokedAt: null },
+        where: { userId, revokedAt: null },
         data: { revokedAt: now },
       }),
     ]);
@@ -360,15 +359,11 @@ export class AuthService {
   // ---------------------------------------------------------------- internals
 
   private async sendVerificationEmail(user: { id: string; email: string; locale: string }) {
-    const token = randomBytes(32).toString('base64url');
-    const ttl = this.config.get('EMAIL_VERIFICATION_TTL', { infer: true });
-    await this.prisma.emailVerificationToken.create({
-      data: {
-        userId: user.id,
-        tokenHash: hashToken(token),
-        expiresAt: new Date(Date.now() + ttl * 1000),
-      },
-    });
+    const { token, row } = newEmailToken(
+      user.id,
+      this.config.get('EMAIL_VERIFICATION_TTL', { infer: true }),
+    );
+    await this.prisma.emailVerificationToken.create({ data: row });
     try {
       await this.mail.sendEmailVerification(user.email, user.locale, token);
     } catch (error) {
@@ -423,6 +418,33 @@ function invalidRefreshToken(detail: string): ApiException {
 
 function normalizeEmail(email: string): string {
   return email.trim().toLowerCase();
+}
+
+/** A link's token (emailed) and the row kept for it (only its hash), valid `ttlSeconds`. */
+function newEmailToken(userId: string, ttlSeconds: number) {
+  const token = randomBytes(32).toString('base64url');
+  return {
+    token,
+    row: {
+      userId,
+      tokenHash: hashToken(token),
+      expiresAt: new Date(Date.now() + ttlSeconds * 1000),
+    },
+  };
+}
+
+/**
+ * An emailed link's token, used once: the stored row if it was still valid and this call marked
+ * it used (conditional update: never twice, even with concurrent requests), else null.
+ */
+async function consumeOnce<T extends { id: string; expiresAt: Date }>(
+  stored: T | null,
+  markUsed: (id: string) => Promise<{ count: number }>,
+  now: Date,
+): Promise<T | null> {
+  if (!stored || stored.expiresAt <= now) return null;
+  const { count } = await markUsed(stored.id);
+  return count > 0 ? stored : null;
 }
 
 /** Tokens are 256-bit random values, so a fast hash is sufficient (no need for argon2). */

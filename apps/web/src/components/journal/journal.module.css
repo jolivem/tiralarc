@@ -593,16 +593,13 @@
 
 /*
  * The steps of a training or coaching ("Déroulé de la séance", session-steps.tsx): numbered,
- * one per ruled line (a long one goes on over the next lines), in the archer's font. A click
- * on one opens it; with none, a hint on the first line.
+ * one per ruled line (a long one goes on over the next lines), written like the sheet's free
+ * texts (with `.ruledText`: the archer's font, resting on the lines). A click on one opens it;
+ * with none, a hint on the first line.
  */
 .steps,
 .stepsEmpty {
   margin: 0;
-  padding-top: calc(var(--step, 30px) / 2 - 2px - 0.3em);
-  font-family: var(--font-calendar, var(--font-hand)), 'Segoe Print', cursive;
-  font-size: var(--ruled-font-size, 1.35rem);
-  line-height: var(--step, 30px);
   min-height: var(--step, 30px);
 }
 

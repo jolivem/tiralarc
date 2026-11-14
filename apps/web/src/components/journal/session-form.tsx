@@ -245,6 +245,11 @@ export function SessionForm({
   const [futureDate, setFutureDate] = useState<string | null>(null);
   /** The step open in the step dialog: its index, or a new one. */
   const [editingStep, setEditingStep] = useState<number | 'new' | null>(null);
+  /** The step dialog is done: the sheet's steps become `steps` (saved with the sheet). */
+  const changeSteps = (steps: Values['steps']) => {
+    set('steps', steps);
+    setEditingStep(null);
+  };
 
   const dirty = JSON.stringify(values) !== saved;
   const set = <K extends keyof Values>(key: K, value: Values[K]) => {
@@ -693,7 +698,7 @@ export function SessionForm({
               </Section>
 
               {/* Trainings and coachings: the session's steps, planned ahead too. */}
-              {(values.type === 'TRAINING' || values.type === 'COACHING') && (
+              {SESSION_TYPES[values.type].steps && (
                 <Section
                   title={t('outline')}
                   gap={0}
@@ -711,22 +716,14 @@ export function SessionForm({
                     opened={editingStep !== null}
                     step={typeof editingStep === 'number' ? values.steps[editingStep] : undefined}
                     onClose={() => setEditingStep(null)}
-                    onSave={(step) => {
-                      set(
-                        'steps',
+                    onSave={(step) =>
+                      changeSteps(
                         typeof editingStep === 'number'
                           ? values.steps.map((s, i) => (i === editingStep ? step : s))
                           : [...values.steps, step],
-                      );
-                      setEditingStep(null);
-                    }}
-                    onDelete={() => {
-                      set(
-                        'steps',
-                        values.steps.filter((_, i) => i !== editingStep),
-                      );
-                      setEditingStep(null);
-                    }}
+                      )
+                    }
+                    onDelete={() => changeSteps(values.steps.filter((_, i) => i !== editingStep))}
                   />
                 </Section>
               )}
@@ -981,19 +978,20 @@ function Section({
   locked?: boolean;
   children: ReactNode;
 }) {
+  const heading = (
+    <Title order={2} className={classes.boxTitle}>
+      {title}
+    </Title>
+  );
   return (
     <Stack component="section" gap={gap} mih={mih} className={locked ? classes.locked : undefined}>
       {action ? (
         <Group gap="xs" wrap="nowrap" align="center">
-          <Title order={2} className={classes.boxTitle}>
-            {title}
-          </Title>
+          {heading}
           {action}
         </Group>
       ) : (
-        <Title order={2} className={classes.boxTitle}>
-          {title}
-        </Title>
+        heading
       )}
       {children}
     </Stack>

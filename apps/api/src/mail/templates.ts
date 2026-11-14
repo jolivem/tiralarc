@@ -13,15 +13,16 @@ const copy = {
       intro:
         'Bienvenue sur MyArcheryDiary ! Pour activer votre compte, confirmez votre adresse email :',
       button: 'Confirmer mon email',
-      outro:
-        "Ce lien est valable 24 heures. Si vous n'êtes pas à l'origine de cette inscription, ignorez cet email.",
+      outro: (validity: string) =>
+        `Ce lien est valable ${validity}. Si vous n'êtes pas à l'origine de cette inscription, ignorez cet email.`,
     },
     en: {
       subject: 'Confirm your email address',
       intro:
         'Welcome to MyArcheryDiary! To activate your account, please confirm your email address:',
       button: 'Confirm my email',
-      outro: "This link is valid for 24 hours. If you didn't sign up, you can ignore this email.",
+      outro: (validity: string) =>
+        `This link is valid for ${validity}. If you didn't sign up, you can ignore this email.`,
     },
   },
   passwordReset: {
@@ -30,15 +31,15 @@ const copy = {
       intro:
         'Vous avez demandé à changer le mot de passe de votre compte. Pour en choisir un nouveau :',
       button: 'Choisir un nouveau mot de passe',
-      outro:
-        "Ce lien est valable 1 heure et ne sert qu'une fois. Si vous n'avez rien demandé, ignorez cet email : votre mot de passe reste le même.",
+      outro: (validity: string) =>
+        `Ce lien est valable ${validity} et ne sert qu'une fois. Si vous n'avez rien demandé, ignorez cet email : votre mot de passe reste le même.`,
     },
     en: {
       subject: 'Choose a new password',
       intro: 'You asked to change the password of your account. To choose a new one:',
       button: 'Choose a new password',
-      outro:
-        "This link is valid for 1 hour and works once. If you didn't ask for it, you can ignore this email: your password stays the same.",
+      outro: (validity: string) =>
+        `This link is valid for ${validity} and works once. If you didn't ask for it, you can ignore this email: your password stays the same.`,
     },
   },
   invitation: {
@@ -124,14 +125,33 @@ function linkEmail(
   };
 }
 
-export function verificationEmail(locale: MailLocale, link: string): RenderedMail {
-  const t = copy.verification[locale];
-  return linkEmail(t.subject, t.intro, t.button, t.outro, link);
+/** How long a link stays valid, in words: "24 heures", "1 hour", "30 minutes". */
+export function validityOf(locale: MailLocale, seconds: number): string {
+  const hours = seconds / 3600;
+  const [count, unit] = Number.isInteger(hours)
+    ? [hours, locale === 'fr' ? 'heure' : 'hour']
+    : [Math.round(seconds / 60), 'minute'];
+  return `${count} ${unit}${count > 1 ? 's' : ''}`;
 }
 
-export function passwordResetEmail(locale: MailLocale, link: string): RenderedMail {
+/** `ttlSeconds`: how long the link is valid (said in the email). */
+export function verificationEmail(
+  locale: MailLocale,
+  link: string,
+  ttlSeconds: number,
+): RenderedMail {
+  const t = copy.verification[locale];
+  return linkEmail(t.subject, t.intro, t.button, t.outro(validityOf(locale, ttlSeconds)), link);
+}
+
+/** `ttlSeconds`: how long the link is valid (said in the email). */
+export function passwordResetEmail(
+  locale: MailLocale,
+  link: string,
+  ttlSeconds: number,
+): RenderedMail {
   const t = copy.passwordReset[locale];
-  return linkEmail(t.subject, t.intro, t.button, t.outro, link);
+  return linkEmail(t.subject, t.intro, t.button, t.outro(validityOf(locale, ttlSeconds)), link);
 }
 
 export function invitationEmail(

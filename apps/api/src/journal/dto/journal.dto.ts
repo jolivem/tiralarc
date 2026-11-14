@@ -1,3 +1,4 @@
+import { applyDecorators } from '@nestjs/common';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
@@ -108,6 +109,18 @@ export class SessionStepDto {
   @IsString()
   @MaxLength(1000)
   description!: string;
+}
+
+/** An optional list of session steps in a request (the archer's sheet, a coach's planning). */
+export function StepsProperty(description: string): PropertyDecorator {
+  return applyDecorators(
+    ApiPropertyOptional({ type: () => [SessionStepDto], maxItems: MAX_SESSION_STEPS, description }),
+    IsOptional(),
+    IsArray(),
+    ArrayMaxSize(MAX_SESSION_STEPS),
+    ValidateNested({ each: true }),
+    Type(() => SessionStepDto),
+  );
 }
 
 /** An event type the archer defined: how its events show in the calendars. */
@@ -645,18 +658,10 @@ export class UpdateSessionDto {
   @MaxLength(5000)
   objective?: string | null;
 
-  @ApiPropertyOptional({
-    type: () => [SessionStepDto],
-    maxItems: MAX_SESSION_STEPS,
-    description:
-      'Trainings and coachings: the steps of the session, in order (replaces them). Planned ' +
+  @StepsProperty(
+    'Trainings and coachings: the steps of the session, in order (replaces them). Planned ' +
       'ahead like the objective: not part of the review.',
-  })
-  @IsOptional()
-  @IsArray()
-  @ArrayMaxSize(MAX_SESSION_STEPS)
-  @ValidateNested({ each: true })
-  @Type(() => SessionStepDto)
+  )
   steps?: SessionStepDto[];
 
   @ApiPropertyOptional({
