@@ -114,6 +114,59 @@ describe('Auth — email + password (e2e)', () => {
       .expect(401);
   });
 
+  it('forgot password → link → new password: every session signed out, then signed in', async () => {
+    const before = await http().post('/api/v1/auth/login').send(credentials).expect(200);
+
+    // Unknown addresses: the same answer, and no mail.
+    const sent = ctx.outbox.length;
+    await http()
+      .post('/api/v1/auth/forgot-password')
+      .send({ email: 'nobody@example.com' })
+      .expect(202);
+    expect(ctx.outbox.length).toBe(sent);
+
+    await http()
+      .post('/api/v1/auth/forgot-password')
+      .send({ email: credentials.email })
+      .expect(202);
+    const mail = ctx.outbox.at(-1)!;
+    expect(mail.to).toBe('jane@example.com');
+    expect(mail.subject).toBe('Choose a new password');
+    const token = new URL(
+      /http:\/\/localhost:3000\/en\/reset-password\?token=\S+/.exec(mail.text)![0],
+    ).searchParams.get('token')!;
+
+    const tooShort = await http()
+      .post('/api/v1/auth/reset-password')
+      .send({ token, password: 'short' })
+      .expect(400);
+    expect(tooShort.body.code).toBe('VALIDATION_FAILED');
+
+    const newPassword = 'a brand new passphrase';
+    const reset = await http()
+      .post('/api/v1/auth/reset-password')
+      .send({ token, password: newPassword })
+      .expect(200);
+    expect(reset.body.tokenType).toBe('Bearer');
+    // Single use.
+    const reused = await http()
+      .post('/api/v1/auth/reset-password')
+      .send({ token, password: newPassword })
+      .expect(400);
+    expect(reused.body.code).toBe('INVALID_RESET_TOKEN');
+
+    // The sessions opened before are over; the old password no longer works, the new one does.
+    await http()
+      .post('/api/v1/auth/refresh')
+      .send({ refreshToken: before.body.refreshToken })
+      .expect(401);
+    await http().post('/api/v1/auth/login').send(credentials).expect(401);
+    await http()
+      .post('/api/v1/auth/login')
+      .send({ ...credentials, password: newPassword })
+      .expect(200);
+  });
+
   it('resend-verification does not reveal unknown addresses', async () => {
     const before = ctx.outbox.length;
     await http()

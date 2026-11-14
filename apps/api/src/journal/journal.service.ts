@@ -6,6 +6,7 @@ import {
   type Discipline,
   type Journal,
   type JournalSession,
+  type Prisma,
   SessionType,
 } from '../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service.js';
@@ -25,7 +26,9 @@ import {
   MAX_LIST_ITEMS,
   type NewEventDto,
   type SessionDto,
+  type SessionStepDto,
   type SessionSuggestionsDto,
+  STEP_UNITS,
   type SessionSummaryDto,
   TITLE_BAND,
   type UpdateJournalDto,
@@ -83,6 +86,25 @@ function cleanList(items: string[] | undefined): string[] | undefined {
 
 function asList(value: unknown): string[] {
   return Array.isArray(value) ? value.filter((v): v is string => typeof v === 'string') : [];
+}
+
+/** A session's steps as stored: plain objects, the description trimmed. */
+function cleanSteps(steps: SessionStepDto[]): Prisma.InputJsonArray {
+  return steps.map(({ unit, amount, target, description }) => ({
+    unit,
+    amount,
+    target,
+    description: description.trim(),
+  }));
+}
+
+/** The stored steps (a JSON array; null for sessions without any). */
+function asSteps(value: unknown): SessionStepDto[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter(
+    (v): v is SessionStepDto =>
+      typeof v === 'object' && v !== null && STEP_UNITS.includes((v as SessionStepDto).unit),
+  );
 }
 
 /**
@@ -220,8 +242,21 @@ export interface PlannedFields {
   discipline?: Discipline | null;
   distanceMeters?: number | null;
   objective?: string | null;
+  steps?: SessionStepDto[];
   /** A competition added from the FFTA calendar (see `CreateSessionDto.fftaCompetitionId`). */
   fftaCompetitionId?: string;
+}
+
+/**
+ * An event's place as written on its sheet: a capital first, the rest in lower case
+ * ("SAINT-MALO", "saint-malo" → "Saint-malo"); blank → null. Applied when saving and when
+ * reading back, so places saved before keep the same look.
+ */
+export function placeName(place: string | null | undefined): string | null {
+  const trimmed = place?.trim();
+  if (!trimmed) return null;
+  const lower = trimmed.toLocaleLowerCase('fr');
+  return lower.charAt(0).toLocaleUpperCase('fr') + lower.slice(1);
 }
 
 function toSummary(s: SessionRow): SessionSummaryDto {
@@ -230,7 +265,7 @@ function toSummary(s: SessionRow): SessionSummaryDto {
     type: s.type,
     date: fromDbDate(s.date),
     durationMinutes: s.durationMinutes,
-    location: s.location,
+    location: placeName(s.location),
     discipline: s.discipline,
     score: s.score,
     arrowCount: s.arrowCount,
@@ -251,6 +286,7 @@ function toDto(s: SessionRow): SessionDto {
     hasScoreSheet: s.scoreSheet !== null,
     distanceMeters: s.distanceMeters,
     objective: s.objective,
+    steps: asSteps(s.steps),
     satisfaction: s.satisfaction,
     technique: s.technique,
     physicalFeeling: s.physicalFeeling,
@@ -484,7 +520,11 @@ export class JournalService {
       }),
     ]);
     return {
-      competitions: competitions.map((c) => ({ ...c, date: fromDbDate(c.date) })),
+      competitions: competitions.map((c) => ({
+        ...c,
+        date: fromDbDate(c.date),
+        location: placeName(c.location),
+      })),
       // The query leaves neither field null; checked again for the types.
       scores: scores.flatMap(({ date, discipline, score, ...s }) =>
         discipline && score !== null ? [{ ...s, date: fromDbDate(date), discipline, score }] : [],
@@ -524,7 +564,12 @@ export class JournalService {
       select: { location: true, distanceMeters: true, wentWell: true, toImprove: true },
     });
     return {
-      locations: rank(recent.flatMap((s) => (s.location ? [s.location] : []))),
+      locations: rank(
+        recent.flatMap((s) => {
+          const place = placeName(s.location);
+          return place ? [place] : [];
+        }),
+      ),
       distances: rank(recent.flatMap((s) => (s.distanceMeters !== null ? [s.distanceMeters] : []))),
       wentWell: rank(recent.flatMap((s) => asList(s.wentWell))),
       toImprove: rank(recent.flatMap((s) => asList(s.toImprove))),
@@ -591,6 +636,7 @@ export class JournalService {
         distanceMeters:
           fields.distanceMeters ?? defaultDistance(fftaCompetitionId, fields.discipline),
         objective: fields.objective,
+        ...(fields.steps && { steps: cleanSteps(fields.steps) }),
         wentWell: [],
         toImprove: [],
       },
@@ -649,7 +695,7 @@ export class JournalService {
 
   async update(userId: string, id: string, dto: UpdateSessionDto): Promise<SessionDto> {
     const current = await this.findOwned(userId, id);
-    const { date, wentWell, toImprove, location, title, ...rest } = dto;
+    const { date, wentWell, toImprove, location, title, steps, ...rest } = dto;
     // A custom event gets its type when created: there is no type id to switch to here.
     if (rest.type === SessionType.CUSTOM && current.type !== SessionType.CUSTOM) {
       throw new ApiException(
@@ -681,10 +727,11 @@ export class JournalService {
         ...(moved && { scoreSheetCheckedOn: null }),
         ...(rest.type !== undefined && rest.type !== SessionType.CUSTOM && { customTypeId: null }),
         ...(date !== undefined && { date: toDbDate(date) }),
-        ...(location !== undefined && { location: location?.trim() || null }),
+        ...(location !== undefined && { location: placeName(location) }),
         ...(title !== undefined && { title: title?.trim() || null }),
         ...(wentWell !== undefined && { wentWell: cleanList(wentWell) }),
         ...(toImprove !== undefined && { toImprove: cleanList(toImprove) }),
+        ...(steps !== undefined && { steps: cleanSteps(steps) }),
       },
     });
     return toDto(session);
@@ -743,7 +790,7 @@ export class JournalService {
     given: string | null | undefined,
   ): Promise<string | null> {
     const place = fftaCompetitionId ? await this.competitions.place(fftaCompetitionId) : null;
-    return place ?? (given?.trim() || null);
+    return placeName(place ?? given);
   }
 
   /** At most `MAX_EVENTS_PER_DAY` events on one day of the archer's calendar. */

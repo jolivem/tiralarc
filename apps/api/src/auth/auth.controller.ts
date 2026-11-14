@@ -17,11 +17,13 @@ import { UserAgent } from '../common/decorators/user-agent.decorator.js';
 import { AuthProvider } from '../generated/prisma/client.js';
 import { AuthService } from './auth.service.js';
 import {
+  ForgotPasswordDto,
   LoginDto,
   RefreshTokenDto,
   RegisterDto,
   RegistrationDto,
   ResendVerificationDto,
+  ResetPasswordDto,
   SocialSignInDto,
   TokenPairDto,
   VerifyEmailDto,
@@ -58,6 +60,32 @@ export class AuthController {
   @ApiAcceptedResponse()
   resendVerification(@Body() dto: ResendVerificationDto): Promise<void> {
     return this.auth.resendVerification(dto.email);
+  }
+
+  @Post('forgot-password')
+  @HttpCode(HttpStatus.ACCEPTED)
+  @Throttle({ default: { limit: 3, ttl: 60_000 } })
+  @ApiOperation({ summary: 'Email a link to choose a new password (always 202)' })
+  @ApiAcceptedResponse()
+  forgotPassword(@Body() dto: ForgotPasswordDto): Promise<void> {
+    return this.auth.forgotPassword(dto.email);
+  }
+
+  @Post('reset-password')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Set a new password with the emailed link; signs out every session, then signs in',
+  })
+  @ApiOkResponse({ type: TokenPairDto })
+  @ApiBadRequestResponse({ description: 'INVALID_RESET_TOKEN' })
+  resetPassword(
+    @Body() dto: ResetPasswordDto,
+    @UserAgent() userAgent?: string,
+  ): Promise<TokenPairDto> {
+    return this.auth.resetPassword(dto.token, dto.password, {
+      userAgent,
+      deviceName: dto.deviceName,
+    });
   }
 
   @Post('login')

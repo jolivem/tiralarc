@@ -67,6 +67,49 @@ export type EventIcon = (typeof EVENT_ICONS)[number];
 /** Event types an archer can define. */
 export const MAX_CUSTOM_TYPES = 4;
 
+/** What a session step is measured in. */
+export const STEP_UNITS = ['MINUTES', 'ARROWS'] as const;
+export type StepUnit = (typeof STEP_UNITS)[number];
+/** What the archer shoots at during a step: straw boss (paille), sighting mark (visuel), face (blason). */
+export const STEP_TARGETS = ['STRAW', 'VISUAL', 'FACE'] as const;
+export type StepTarget = (typeof STEP_TARGETS)[number];
+export const MAX_SESSION_STEPS = 20;
+
+/** One step of a training or coaching ("Déroulé de la séance"). */
+export class SessionStepDto {
+  @ApiProperty({ enum: STEP_UNITS, enumName: 'StepUnit', description: 'What `amount` counts.' })
+  @IsIn(STEP_UNITS)
+  unit!: StepUnit;
+
+  @ApiProperty({
+    type: Number,
+    nullable: true,
+    minimum: 1,
+    maximum: 999,
+    description: 'Minutes or arrows, as `unit` says.',
+  })
+  @ValidateIf((_, value) => value !== null)
+  @IsInt()
+  @Min(1)
+  @Max(999)
+  amount!: number | null;
+
+  @ApiProperty({
+    enum: STEP_TARGETS,
+    enumName: 'StepTarget',
+    nullable: true,
+    description: 'Shot at: straw boss (paille), sighting mark (visuel) or target face (blason).',
+  })
+  @ValidateIf((_, value) => value !== null)
+  @IsIn(STEP_TARGETS)
+  target!: StepTarget | null;
+
+  @ApiProperty({ maxLength: 1000, description: 'What to do.' })
+  @IsString()
+  @MaxLength(1000)
+  description!: string;
+}
+
 /** An event type the archer defined: how its events show in the calendars. */
 export class CustomEventTypeDto {
   @ApiProperty({ format: 'uuid' })
@@ -603,6 +646,20 @@ export class UpdateSessionDto {
   objective?: string | null;
 
   @ApiPropertyOptional({
+    type: () => [SessionStepDto],
+    maxItems: MAX_SESSION_STEPS,
+    description:
+      'Trainings and coachings: the steps of the session, in order (replaces them). Planned ' +
+      'ahead like the objective: not part of the review.',
+  })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(MAX_SESSION_STEPS)
+  @ValidateNested({ each: true })
+  @Type(() => SessionStepDto)
+  steps?: SessionStepDto[];
+
+  @ApiPropertyOptional({
     type: Number,
     nullable: true,
     minimum: 0,
@@ -828,6 +885,12 @@ export class SessionDto extends SessionSummaryDto {
 
   @ApiProperty({ type: String, nullable: true })
   objective!: string | null;
+
+  @ApiProperty({
+    type: () => [SessionStepDto],
+    description: 'Trainings and coachings: the steps of the session ("Déroulé de la séance").',
+  })
+  steps!: SessionStepDto[];
 
   @ApiProperty({ type: Number, nullable: true })
   satisfaction!: number | null;

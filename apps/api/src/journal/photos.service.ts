@@ -7,7 +7,7 @@ import { PrismaService } from '../prisma/prisma.service.js';
 import { StorageService } from '../storage/storage.service.js';
 import type { PhotoDto } from './dto/journal.dto.js';
 
-export const MAX_PHOTOS_PER_SESSION = 10;
+export const MAX_PHOTOS_PER_SESSION = 4;
 export const MAX_PHOTO_BYTES = 10 * 1024 * 1024;
 const ACCEPTED_FORMATS = ['jpeg', 'png', 'webp'];
 /** Longest side, in pixels, of the stored image and of its thumbnail. The original is not kept. */

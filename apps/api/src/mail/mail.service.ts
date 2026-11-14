@@ -2,7 +2,12 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { createTransport, type Transporter } from 'nodemailer';
 import type { Env } from '../config/env.js';
-import { invitationEmail, type MailLocale, verificationEmail } from './templates.js';
+import {
+  invitationEmail,
+  type MailLocale,
+  passwordResetEmail,
+  verificationEmail,
+} from './templates.js';
 
 export interface OutgoingMail {
   to: string;
@@ -30,6 +35,18 @@ export class MailService {
       this.logger.log(`Email verification link for ${to}: ${link.toString()}`);
     }
     await this.send({ to, ...verificationEmail(lang, link.toString()) });
+  }
+
+  /** "Forgot password": the link to choose a new one, in the user's language. */
+  async sendPasswordReset(to: string, locale: string, token: string): Promise<void> {
+    const lang: MailLocale = locale === 'en' ? 'en' : 'fr';
+    const link = new URL(`/${lang}/reset-password`, this.config.get('WEB_URL', { infer: true }));
+    link.searchParams.set('token', token);
+    // Development only, like the verification link: it grants access to the account.
+    if (this.config.get('NODE_ENV', { infer: true }) === 'development') {
+      this.logger.log(`Password reset link for ${to}: ${link.toString()}`);
+    }
+    await this.send({ to, ...passwordResetEmail(lang, link.toString()) });
   }
 
   /** Invitation from an archer to a guest, written in the archer's language. */

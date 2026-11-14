@@ -13,3 +13,15 @@
     font-weight: 700;
   }
 }
+
+/* The day, top right of the notebook: navy ink, underlined (a lighter navy on dark paper). */
+.date {
+  color: #1f3a6e;
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 4px;
+
+  @mixin dark {
+    color: #8fb3ea;
+  }
+}

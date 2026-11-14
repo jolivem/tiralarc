@@ -146,6 +146,82 @@ export class AuthService {
     }
   }
 
+  // ---------------------------------------------------------------- forgotten password
+
+  /**
+   * Emails a single-use link to choose a new password. Always succeeds, so it can't be used to
+   * discover which addresses are registered. Accounts made with Google / Apple get one too: it
+   * gives them a password.
+   */
+  async forgotPassword(email: string): Promise<void> {
+    const user = await this.prisma.user.findUnique({ where: { email: normalizeEmail(email) } });
+    if (!user) return;
+    const token = randomBytes(32).toString('base64url');
+    const ttl = this.config.get('PASSWORD_RESET_TTL', { infer: true });
+    await this.prisma.passwordResetToken.create({
+      data: {
+        userId: user.id,
+        tokenHash: hashToken(token),
+        expiresAt: new Date(Date.now() + ttl * 1000),
+      },
+    });
+    try {
+      await this.mail.sendPasswordReset(user.email, user.locale, token);
+    } catch (error) {
+      // Nothing changed: the user can ask for a new link.
+      this.logger.error(`Could not send password reset email to user ${user.id}`, error);
+    }
+  }
+
+  /**
+   * Consumes a "forgot password" token: sets the new password, signs out every session (someone
+   * may know the old one) and signs the user in. Following the link proves the address is theirs.
+   */
+  async resetPassword(token: string, password: string, client: ClientInfo): Promise<TokenPairDto> {
+    const now = new Date();
+    const stored = await this.prisma.passwordResetToken.findUnique({
+      where: { tokenHash: hashToken(token) },
+    });
+    // Conditional update: a token can only be consumed once, even with concurrent requests.
+    const consumed =
+      stored && stored.expiresAt > now
+        ? await this.prisma.passwordResetToken.updateMany({
+            where: { id: stored.id, usedAt: null },
+            data: { usedAt: now },
+          })
+        : { count: 0 };
+    if (!stored || consumed.count === 0) {
+      throw new ApiException(
+        HttpStatus.BAD_REQUEST,
+        ErrorCode.INVALID_RESET_TOKEN,
+        'Invalid or expired password reset token',
+      );
+    }
+
+    const passwordHash = await argon2.hash(password);
+    const { emailVerifiedAt } = await this.prisma.user.findUniqueOrThrow({
+      where: { id: stored.userId },
+      select: { emailVerifiedAt: true },
+    });
+    const [user] = await this.prisma.$transaction([
+      this.prisma.user.update({
+        where: { id: stored.userId },
+        data: { passwordHash, ...(emailVerifiedAt ? {} : { emailVerifiedAt: now }) },
+        include: withRoles,
+      }),
+      // The other links sent meanwhile can no longer be used.
+      this.prisma.passwordResetToken.updateMany({
+        where: { userId: stored.userId, usedAt: null },
+        data: { usedAt: now },
+      }),
+      this.prisma.refreshToken.updateMany({
+        where: { userId: stored.userId, revokedAt: null },
+        data: { revokedAt: now },
+      }),
+    ]);
+    return this.issueTokens(user, randomUUID(), client);
+  }
+
   // ---------------------------------------------------------------- Google / Apple
 
   /**

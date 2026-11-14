@@ -1,5 +1,8 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 import {
+  ArrayMaxSize,
+  IsArray,
   IsIn,
   IsInt,
   IsOptional,
@@ -9,9 +12,10 @@ import {
   Max,
   MaxLength,
   Min,
+  ValidateNested,
 } from 'class-validator';
 import { CoachAccess, Discipline, SessionType } from '../../generated/prisma/client.js';
-import { JournalDto } from '../../journal/dto/journal.dto.js';
+import { JournalDto, MAX_SESSION_STEPS, SessionStepDto } from '../../journal/dto/journal.dto.js';
 import { COACH_ACCESSES } from '../../profile/dto/profile.dto.js';
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
@@ -124,6 +128,18 @@ class PlanningFields {
   @IsString()
   @MaxLength(5000)
   objective?: string | null;
+
+  @ApiPropertyOptional({
+    type: () => [SessionStepDto],
+    maxItems: MAX_SESSION_STEPS,
+    description: 'Trainings and coachings: the steps of the session, in order (replaces them).',
+  })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(MAX_SESSION_STEPS)
+  @ValidateNested({ each: true })
+  @Type(() => SessionStepDto)
+  steps?: SessionStepDto[];
 }
 
 export class PlanSessionDto extends PlanningFields {

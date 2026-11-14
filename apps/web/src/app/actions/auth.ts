@@ -99,6 +99,33 @@ export async function verifyEmail(_prev: ActionState, formData: FormData): Promi
   return completeSignIn(result.data);
 }
 
+/** "Forgot password": the API emails a link (or nothing, for an unknown address: same answer). */
+export async function forgotPassword(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const result = await send(
+    api.POST('/api/v1/auth/forgot-password', {
+      body: { email: String(formData.get('email')) },
+      headers: await clientHeaders(),
+    }),
+  );
+  return result.ok ? { notice: 'sent' } : result.state;
+}
+
+/** The emailed link's page: the new password, then signed in (every other session is ended). */
+export async function resetPassword(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  // The form checks it too; this covers a submission made before the page's script ran.
+  if (formData.get('password') !== formData.get('passwordConfirm')) {
+    return { fieldErrors: { passwordConfirm: ['passwordMismatch'] } };
+  }
+  const result = await send(
+    api.POST('/api/v1/auth/reset-password', {
+      body: { token: String(formData.get('token')), password: String(formData.get('password')) },
+      headers: await clientHeaders(),
+    }),
+  );
+  if (!result.ok) return result.state;
+  return completeSignIn(result.data);
+}
+
 export interface SocialSignInInput {
   provider: 'google' | 'apple';
   idToken: string;

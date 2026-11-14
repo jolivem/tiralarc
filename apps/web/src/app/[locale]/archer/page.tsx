@@ -3,6 +3,7 @@ import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/serve
 import binder from '@/components/binder/binder.module.css';
 import { ExportCard } from '@/components/export/export-card';
 import { FirstJournalPrompt } from '@/components/journal/journal-modal';
+import { CompetitionPlanningCard } from '@/components/journal/competition-planning';
 import { MonthsOverview } from '@/components/journal/months-overview';
 import { NewEvents } from '@/components/journal/new-events';
 import { SeasonCalendar } from '@/components/journal/season-calendar';
@@ -107,7 +108,9 @@ export default async function ArcherHomePage({ params }: PageProps<'/[locale]/ar
   // on the first page when the pages are stacked.
   const date = (
     <HandNote align="end">
-      {format.dateTime(new Date(`${today}T12:00:00`), { dateStyle: 'full' })}
+      <span className={home.date}>
+        {format.dateTime(new Date(`${today}T12:00:00`), { dateStyle: 'full' })}
+      </span>
     </HandNote>
   );
 
@@ -192,6 +195,8 @@ export default async function ArcherHomePage({ params }: PageProps<'/[locale]/ar
         {ffta && <RankingsCard cacheScope={fftaScope} />}
       </div>
       {ffta && <CompetitionsToPlan today={today} cacheScope={fftaScope} />}
+      {/* The FFTA competitions still to come this season, in a dialog. */}
+      {ffta && selected && <CompetitionPlanningCard journal={selected} today={today} />}
       {favorite && favoriteStats && (
         <RuledCardTitles value>
           <FavoriteIndicatorProvider initial={favorite}>

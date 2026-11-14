@@ -22,7 +22,6 @@ import {
   IconLogout,
   IconMoon,
   IconSun,
-  IconTarget,
   IconUserCircle,
   IconUserPlus,
 } from '@tabler/icons-react';
@@ -34,6 +33,7 @@ import { Link, usePathname } from '@/i18n/navigation';
 import { homePathFor, type Profile } from '@/lib/current-user-paths';
 import { type JournalChoices, JournalMenu } from './journal-menu';
 import { LanguageSwitcher } from './language-switcher';
+import { Logo } from './logo';
 import { ARCHER_SECTIONS, coachedArcherOf, coachSections, sectionOf, tabColors } from './sections';
 import classes from './app-shell.module.css';
 
@@ -114,7 +114,7 @@ export function TiralarcShell({ user, children }: { user: ShellUser | null; chil
               className={classes.brand}
               onClick={close}
             >
-              <IconTarget size={26} color="var(--mantine-primary-color-filled)" />
+              <Logo size={26} />
               <Text fw={700} size="lg">
                 MyArcheryDiary
               </Text>

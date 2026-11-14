@@ -6,6 +6,7 @@ import { useFormatter, useTranslations } from 'next-intl';
 import type { CSSProperties, ReactNode } from 'react';
 import { EventIcon } from '@/components/journal/event-display';
 import { FEELING_INK, FEELINGS } from '@/components/journal/feelings';
+import { useStepLabel } from '@/components/journal/session-steps';
 import { DISCIPLINE_COLORS } from '@/components/journal/session-types';
 import { SHEET_ATTRIBUTE } from './markers';
 import classes from './print.module.css';
@@ -68,6 +69,7 @@ export function PrintSheet({ session: s }: { session: JournalSession }) {
   const t = useTranslations();
   const format = useFormatter();
   const number = (value: number) => format.number(value);
+  const stepLabel = useStepLabel();
 
   const fields: [string, ReactNode][] = [];
   if (s.durationMinutes !== null) fields.push([t('journal.duration'), number(s.durationMinutes)]);
@@ -134,6 +136,15 @@ export function PrintSheet({ session: s }: { session: JournalSession }) {
       {s.objective && (
         <Box title={t('journal.objective')}>
           <p className={classes.text}>{s.objective}</p>
+        </Box>
+      )}
+      {s.steps.length > 0 && (
+        <Box title={t('journal.outline')}>
+          <ol className={classes.text}>
+            {s.steps.map((step, i) => (
+              <li key={i}>{stepLabel(step)}</li>
+            ))}
+          </ol>
         </Box>
       )}
       {!s.completed && <p className={`${classes.box} ${classes.muted}`}>{t('export.noReview')}</p>}

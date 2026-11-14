@@ -174,7 +174,16 @@ describe('Coaching (e2e)', () => {
   });
 
   it('plans future events with write access only', async () => {
-    const plan = { type: 'COACHING', date: day(5), location: ' Gymnase ', objective: 'Placement' };
+    const plan = {
+      type: 'COACHING',
+      date: day(5),
+      location: ' Gymnase ',
+      objective: 'Placement',
+      steps: [
+        { unit: 'MINUTES', amount: 15, target: 'STRAW', description: ' Échauffement ' },
+        { unit: 'ARROWS', amount: 36, target: 'FACE', description: '6 volées à 18 m' },
+      ],
+    };
     await http().post(`${base()}/sessions`).set(as(coach)).send(plan).expect(403);
 
     await setAccess('WRITE');
@@ -184,6 +193,11 @@ describe('Coaching (e2e)', () => {
       date: day(5),
       location: 'Gymnase',
       objective: 'Placement',
+      // A planning field: not a review.
+      steps: [
+        { unit: 'MINUTES', amount: 15, target: 'STRAW', description: 'Échauffement' },
+        { unit: 'ARROWS', amount: 36, target: 'FACE', description: '6 volées à 18 m' },
+      ],
       plannedBy: { name: 'Camille Coach' },
       completed: false,
     });

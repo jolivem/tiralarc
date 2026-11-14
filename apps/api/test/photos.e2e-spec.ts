@@ -124,15 +124,15 @@ describe('Event photos (e2e)', () => {
     expect(huge.body.code).toBe('FILE_TOO_LARGE');
 
     const small = await sharp(picture).resize(200).jpeg().toBuffer();
-    for (let i = 0; i < 10; i++) await upload(sessionId, small).expect(201);
-    const eleventh = await upload(sessionId, small).expect(409);
-    expect(eleventh.body.code).toBe('LIMIT_REACHED');
+    for (let i = 0; i < 4; i++) await upload(sessionId, small).expect(201);
+    const fifth = await upload(sessionId, small).expect(409);
+    expect(fifth.body.code).toBe('LIMIT_REACHED');
     // A small picture is not enlarged.
     const list = await http()
       .get(`/api/v1/journal/sessions/${sessionId}/photos`)
       .set(as(archer))
       .expect(200);
-    expect(list.body).toHaveLength(10);
+    expect(list.body).toHaveLength(4);
     expect(list.body[0]).toMatchObject({ width: 200, height: 100 });
   });
 

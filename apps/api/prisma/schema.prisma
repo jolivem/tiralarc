@@ -38,6 +38,7 @@ model User {
   identities              UserIdentity[]
   refreshTokens           RefreshToken[]
   emailVerificationTokens EmailVerificationToken[]
+  passwordResetTokens     PasswordResetToken[]
   journals                Journal[]
   archerProfile           ArcherProfile?
   profileInvitations      ProfileInvitation[]
@@ -100,6 +101,21 @@ model EmailVerificationToken {
 
   @@index([userId])
   @@map("email_verification_tokens")
+}
+
+/// "Forgot password": a single-use link emailed to the account's address (only its hash is kept).
+model PasswordResetToken {
+  id        String    @id @default(uuid()) @db.Char(36)
+  userId    String    @map("user_id") @db.Char(36)
+  tokenHash String    @unique @map("token_hash") @db.Char(64)
+  expiresAt DateTime  @map("expires_at") @db.DateTime(3)
+  usedAt    DateTime? @map("used_at") @db.DateTime(3)
+  createdAt DateTime  @default(now()) @map("created_at") @db.DateTime(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("password_reset_tokens")
 }
 
 /// One row per issued refresh token. Tokens are rotated on every refresh:
@@ -194,6 +210,9 @@ model JournalSession {
   arrowCount          Int?        @map("arrow_count") @db.SmallInt
   score               Int?        @db.SmallInt
   objective           String?     @db.Text
+  /// Trainings and coachings: the session's steps ("Déroulé de la séance"), planned ahead.
+  /// JSON array of { unit: MINUTES | ARROWS, amount, target: STRAW | VISUAL | FACE, description }.
+  steps               Json?
   /// Self-assessment, 0–10.
   satisfaction        Int?        @db.TinyInt
   technique           Int?        @db.TinyInt

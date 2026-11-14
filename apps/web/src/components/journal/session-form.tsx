@@ -66,6 +66,7 @@ import { FEELING_INK, FEELINGS } from './feelings';
 import classes from './journal.module.css';
 import { today, tomorrow } from './new-session-modal';
 import { DISCIPLINE_COLORS, DISCIPLINE_ORDER, SESSION_TYPES } from './session-types';
+import { AddStepButton, MAX_STEPS, StepDialog, StepList } from './session-steps';
 import { ShareButton } from './share-modal';
 
 const DEFAULT_NOTE_COLOR = 'gray';
@@ -104,6 +105,7 @@ function initialValues(s: JournalSession): Values {
     arrowCount: s.arrowCount,
     score: s.score,
     objective: s.objective,
+    steps: s.steps,
     satisfaction: s.satisfaction,
     technique: s.technique,
     description: s.description,
@@ -171,7 +173,16 @@ const planningOf = ({
   discipline,
   distanceMeters,
   objective,
-}: Values) => ({ date, durationMinutes, location, discipline, distanceMeters, objective });
+  steps,
+}: Values) => ({
+  date,
+  durationMinutes,
+  location,
+  discipline,
+  distanceMeters,
+  objective,
+  steps,
+});
 
 /** A coach looking at one of their archers' events. */
 export interface CoachSheet {
@@ -232,6 +243,8 @@ export function SessionForm({
   const [confirmLeave, setConfirmLeave] = useState(false);
   /** A future day picked for an event with a review, waiting for the archer's go-ahead. */
   const [futureDate, setFutureDate] = useState<string | null>(null);
+  /** The step open in the step dialog: its index, or a new one. */
+  const [editingStep, setEditingStep] = useState<number | 'new' | null>(null);
 
   const dirty = JSON.stringify(values) !== saved;
   const set = <K extends keyof Values>(key: K, value: Values[K]) => {
@@ -266,7 +279,7 @@ export function SessionForm({
   const { form } = SESSION_TYPES[values.type];
   const hasSheet = form === 'sheet';
   // An event still to come is planned only (date, duration, place, discipline, distance,
-  // objective): its review (everything else) opens on the day itself.
+  // objective, steps): its review (everything else) opens on the day itself.
   const locked = hasSheet && values.date > today();
   // The archer's own disciplines (Profile page), plus the event's if it is no longer one
   // of them; all of them when the profile lists none.
@@ -679,6 +692,45 @@ export function SessionForm({
                 />
               </Section>
 
+              {/* Trainings and coachings: the session's steps, planned ahead too. */}
+              {(values.type === 'TRAINING' || values.type === 'COACHING') && (
+                <Section
+                  title={t('outline')}
+                  gap={0}
+                  action={
+                    !readOnly && (
+                      <AddStepButton
+                        onClick={() => setEditingStep('new')}
+                        disabled={values.steps.length >= MAX_STEPS}
+                      />
+                    )
+                  }
+                >
+                  <StepList steps={values.steps} onOpen={setEditingStep} readOnly={readOnly} />
+                  <StepDialog
+                    opened={editingStep !== null}
+                    step={typeof editingStep === 'number' ? values.steps[editingStep] : undefined}
+                    onClose={() => setEditingStep(null)}
+                    onSave={(step) => {
+                      set(
+                        'steps',
+                        typeof editingStep === 'number'
+                          ? values.steps.map((s, i) => (i === editingStep ? step : s))
+                          : [...values.steps, step],
+                      );
+                      setEditingStep(null);
+                    }}
+                    onDelete={() => {
+                      set(
+                        'steps',
+                        values.steps.filter((_, i) => i !== editingStep),
+                      );
+                      setEditingStep(null);
+                    }}
+                  />
+                </Section>
+              )}
+
               {locked && (
                 <Text size="sm" c="dimmed" className={classes.fieldHint}>
                   {t('reviewLocked')}
@@ -915,9 +967,12 @@ function Section({
   gap = 'xs',
   mih,
   locked,
+  action,
   children,
 }: {
   title: string;
+  /** Next to the title (e.g. the steps' "+"). */
+  action?: ReactNode;
   /** Between the name and the fields: 0 when they keep to the sheet's lines too. */
   gap?: number | string;
   /** Height kept even when the box shows less (e.g. a list's lines still to come). */
@@ -928,9 +983,18 @@ function Section({
 }) {
   return (
     <Stack component="section" gap={gap} mih={mih} className={locked ? classes.locked : undefined}>
-      <Title order={2} className={classes.boxTitle}>
-        {title}
-      </Title>
+      {action ? (
+        <Group gap="xs" wrap="nowrap" align="center">
+          <Title order={2} className={classes.boxTitle}>
+            {title}
+          </Title>
+          {action}
+        </Group>
+      ) : (
+        <Title order={2} className={classes.boxTitle}>
+          {title}
+        </Title>
+      )}
       {children}
     </Stack>
   );

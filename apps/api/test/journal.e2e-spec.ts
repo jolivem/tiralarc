@@ -100,7 +100,7 @@ describe('Journal (e2e)', () => {
     expect(reviewed.body).toMatchObject({ completed: true });
 
     const sheet = {
-      location: '  Gymnase municipal ',
+      location: '  GYMNASE Municipal ',
       discipline: 'INDOOR',
       distanceMeters: 18,
       durationMinutes: 90,
@@ -714,7 +714,7 @@ describe('Journal (e2e)', () => {
       .set(as(otherArcher))
       .expect(200);
     expect(body).toEqual({
-      locations: ['club', 'Gymnase'],
+      locations: ['Club', 'Gymnase'],
       distances: [18, 70],
       wentWell: ['Placement', 'Visée'],
       toImprove: ['Lâcher'],

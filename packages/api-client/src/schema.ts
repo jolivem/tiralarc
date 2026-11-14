@@ -71,6 +71,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/auth/forgot-password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Email a link to choose a new password (always 202) */
+        post: operations["Auth_forgotPassword"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/reset-password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Set a new password with the emailed link; signs out every session, then signs in */
+        post: operations["Auth_resetPassword"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/login": {
         parameters: {
             query?: never;
@@ -966,6 +1000,18 @@ export interface components {
             /** Format: email */
             email: string;
         };
+        ForgotPasswordDto: {
+            /** Format: email */
+            email: string;
+        };
+        ResetPasswordDto: {
+            /** @description Token from the "forgot password" link. */
+            token: string;
+            /** @description The new password. */
+            password: string;
+            /** @description Human-readable device label (e.g. "Pixel 9", "Firefox on Linux"), shown in session lists. */
+            deviceName?: string;
+        };
         LoginDto: {
             /**
              * Format: email
@@ -1317,6 +1363,26 @@ export interface components {
              */
             fftaCompetitionId?: string;
         };
+        /**
+         * @description What `amount` counts.
+         * @enum {string}
+         */
+        StepUnit: "MINUTES" | "ARROWS";
+        /**
+         * @description Shot at: straw boss (paille), sighting mark (visuel) or target face (blason).
+         * @enum {string}
+         */
+        StepTarget: "STRAW" | "VISUAL" | "FACE";
+        SessionStepDto: {
+            /** @description What `amount` counts. */
+            unit: components["schemas"]["StepUnit"];
+            /** @description Minutes or arrows, as `unit` says. */
+            amount: number | null;
+            /** @description Shot at: straw boss (paille), sighting mark (visuel) or target face (blason). */
+            target: components["schemas"]["StepTarget"] | null;
+            /** @description What to do. */
+            description: string;
+        };
         SessionDto: {
             /** Format: uuid */
             id: string;
@@ -1354,6 +1420,8 @@ export interface components {
             plannedBy: components["schemas"]["PlannerDto"] | null;
             distanceMeters: number | null;
             objective: string | null;
+            /** @description Trainings and coachings: the steps of the session ("Déroulé de la séance"). */
+            steps: components["schemas"]["SessionStepDto"][];
             satisfaction: number | null;
             technique: number | null;
             physicalFeeling: components["schemas"]["Feeling"] | null;
@@ -1375,6 +1443,8 @@ export interface components {
             arrowCount?: number | null;
             score?: number | null;
             objective?: string | null;
+            /** @description Trainings and coachings: the steps of the session, in order (replaces them). Planned ahead like the objective: not part of the review. */
+            steps?: components["schemas"]["SessionStepDto"][];
             /** @description Overall satisfaction. */
             satisfaction?: number | null;
             /** @description Technique self-assessment. */
@@ -1806,6 +1876,8 @@ export interface components {
             discipline?: components["schemas"]["Discipline"] | null;
             distanceMeters?: number | null;
             objective?: string | null;
+            /** @description Trainings and coachings: the steps of the session, in order (replaces them). */
+            steps?: components["schemas"]["SessionStepDto"][];
             type: components["schemas"]["PlannableType"];
             /**
              * @description A day after today, within the archer's journal of the season in progress.
@@ -1824,6 +1896,8 @@ export interface components {
             discipline?: components["schemas"]["Discipline"] | null;
             distanceMeters?: number | null;
             objective?: string | null;
+            /** @description Trainings and coachings: the steps of the session, in order (replaces them). */
+            steps?: components["schemas"]["SessionStepDto"][];
             /**
              * @description A day after today, within the archer's journal of the season in progress.
              * @example 2026-11-04
@@ -2061,6 +2135,57 @@ export interface operations {
         };
         responses: {
             202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    Auth_forgotPassword: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ForgotPasswordDto"];
+            };
+        };
+        responses: {
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    Auth_resetPassword: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResetPasswordDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TokenPairDto"];
+                };
+            };
+            /** @description INVALID_RESET_TOKEN */
+            400: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -3098,7 +3223,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description LIMIT_REACHED (10 photos per event) */
+            /** @description LIMIT_REACHED (4 photos per event) */
             409: {
                 headers: {
                     [name: string]: unknown;

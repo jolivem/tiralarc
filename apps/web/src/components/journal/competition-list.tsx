@@ -161,7 +161,8 @@ function CompetitionItems({
         </Badge>
       )}
       {c.status !== 'SCHEDULED' && (
-        <Badge size="sm" variant="filled" color={c.status === 'CANCELLED' ? 'red' : 'yellow'}>
+        // Postponed or cancelled: in red, both.
+        <Badge size="sm" variant="filled" color="red">
           {t(`status.${c.status}`)}
         </Badge>
       )}

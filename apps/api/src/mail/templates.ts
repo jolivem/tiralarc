@@ -22,6 +22,23 @@ const copy = {
       outro: "This link is valid for 24 hours. If you didn't sign up, you can ignore this email.",
     },
   },
+  passwordReset: {
+    fr: {
+      subject: 'Choisissez un nouveau mot de passe',
+      intro:
+        'Vous avez demandé à changer le mot de passe de votre compte. Pour en choisir un nouveau :',
+      button: 'Choisir un nouveau mot de passe',
+      outro:
+        "Ce lien est valable 1 heure et ne sert qu'une fois. Si vous n'avez rien demandé, ignorez cet email : votre mot de passe reste le même.",
+    },
+    en: {
+      subject: 'Choose a new password',
+      intro: 'You asked to change the password of your account. To choose a new one:',
+      button: 'Choose a new password',
+      outro:
+        "This link is valid for 1 hour and works once. If you didn't ask for it, you can ignore this email: your password stays the same.",
+    },
+  },
   invitation: {
     fr: {
       subject: (inviter: string) => `${inviter} vous invite sur Tiralarc`,
@@ -107,6 +124,11 @@ function linkEmail(
 
 export function verificationEmail(locale: MailLocale, link: string): RenderedMail {
   const t = copy.verification[locale];
+  return linkEmail(t.subject, t.intro, t.button, t.outro, link);
+}
+
+export function passwordResetEmail(locale: MailLocale, link: string): RenderedMail {
+  const t = copy.passwordReset[locale];
   return linkEmail(t.subject, t.intro, t.button, t.outro, link);
 }
 

@@ -332,6 +332,66 @@
         ]
       }
     },
+    "/api/v1/auth/forgot-password": {
+      "post": {
+        "operationId": "Auth_forgotPassword",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ForgotPasswordDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": ""
+          }
+        },
+        "summary": "Email a link to choose a new password (always 202)",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/v1/auth/reset-password": {
+      "post": {
+        "operationId": "Auth_resetPassword",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResetPasswordDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenPairDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "INVALID_RESET_TOKEN"
+          }
+        },
+        "summary": "Set a new password with the emailed link; signs out every session, then signs in",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
     "/api/v1/auth/login": {
       "post": {
         "operationId": "Auth_login",
@@ -1564,7 +1624,7 @@
             "description": ""
           },
           "409": {
-            "description": "LIMIT_REACHED (10 photos per event)"
+            "description": "LIMIT_REACHED (4 photos per event)"
           },
           "413": {
             "description": "FILE_TOO_LARGE"
@@ -3398,6 +3458,42 @@
           "email"
         ]
       },
+      "ForgotPasswordDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email"
+          }
+        },
+        "required": [
+          "email"
+        ]
+      },
+      "ResetPasswordDto": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string",
+            "description": "Token from the \"forgot password\" link."
+          },
+          "password": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128,
+            "description": "The new password."
+          },
+          "deviceName": {
+            "type": "string",
+            "description": "Human-readable device label (e.g. \"Pixel 9\", \"Firefox on Linux\"), shown in session lists.",
+            "maxLength": 100
+          }
+        },
+        "required": [
+          "token",
+          "password"
+        ]
+      },
       "LoginDto": {
         "type": "object",
         "properties": {
@@ -4472,6 +4568,63 @@
           "date"
         ]
       },
+      "StepUnit": {
+        "type": "string",
+        "enum": [
+          "MINUTES",
+          "ARROWS"
+        ],
+        "description": "What `amount` counts."
+      },
+      "StepTarget": {
+        "type": "string",
+        "enum": [
+          "STRAW",
+          "VISUAL",
+          "FACE"
+        ],
+        "description": "Shot at: straw boss (paille), sighting mark (visuel) or target face (blason)."
+      },
+      "SessionStepDto": {
+        "type": "object",
+        "properties": {
+          "unit": {
+            "description": "What `amount` counts.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/StepUnit"
+              }
+            ]
+          },
+          "amount": {
+            "type": "number",
+            "nullable": true,
+            "minimum": 1,
+            "maximum": 999,
+            "description": "Minutes or arrows, as `unit` says."
+          },
+          "target": {
+            "nullable": true,
+            "description": "Shot at: straw boss (paille), sighting mark (visuel) or target face (blason).",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/StepTarget"
+              }
+            ]
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 1000,
+            "description": "What to do."
+          }
+        },
+        "required": [
+          "unit",
+          "amount",
+          "target",
+          "description"
+        ]
+      },
       "SessionDto": {
         "type": "object",
         "properties": {
@@ -4589,6 +4742,13 @@
             "type": "string",
             "nullable": true
           },
+          "steps": {
+            "description": "Trainings and coachings: the steps of the session (\"Déroulé de la séance\").",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SessionStepDto"
+            }
+          },
           "satisfaction": {
             "type": "number",
             "nullable": true
@@ -4655,6 +4815,7 @@
           "plannedBy",
           "distanceMeters",
           "objective",
+          "steps",
           "satisfaction",
           "technique",
           "physicalFeeling",
@@ -4720,6 +4881,14 @@
             "type": "string",
             "nullable": true,
             "maxLength": 5000
+          },
+          "steps": {
+            "maxItems": 20,
+            "description": "Trainings and coachings: the steps of the session, in order (replaces them). Planned ahead like the objective: not part of the review.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SessionStepDto"
+            }
           },
           "satisfaction": {
             "type": "number",
@@ -5869,6 +6038,14 @@
             "nullable": true,
             "maxLength": 5000
           },
+          "steps": {
+            "maxItems": 20,
+            "description": "Trainings and coachings: the steps of the session, in order (replaces them).",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SessionStepDto"
+            }
+          },
           "type": {
             "allOf": [
               {
@@ -5924,6 +6101,14 @@
             "type": "string",
             "nullable": true,
             "maxLength": 5000
+          },
+          "steps": {
+            "maxItems": 20,
+            "description": "Trainings and coachings: the steps of the session, in order (replaces them).",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SessionStepDto"
+            }
           },
           "date": {
             "type": "string",

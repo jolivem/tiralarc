@@ -84,6 +84,32 @@ export class ResendVerificationDto {
   email!: string;
 }
 
+export class ForgotPasswordDto {
+  @ApiProperty({ format: 'email' })
+  @IsEmail()
+  @MaxLength(255)
+  email!: string;
+}
+
+export class ResetPasswordDto {
+  @ApiProperty({ description: 'Token from the "forgot password" link.' })
+  @IsString()
+  @MinLength(1)
+  token!: string;
+
+  @ApiProperty({ minLength: 8, maxLength: 128, description: 'The new password.' })
+  @IsString()
+  @MinLength(8)
+  @MaxLength(128)
+  password!: string;
+
+  @ApiPropertyOptional(deviceNameProperty)
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  deviceName?: string;
+}
+
 export class SocialSignInDto {
   @ApiProperty({
     description:

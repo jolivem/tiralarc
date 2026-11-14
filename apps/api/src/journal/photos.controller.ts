@@ -61,7 +61,7 @@ export class PhotosController {
   @ApiBody({ type: UploadPhotoDto })
   @ApiCreatedResponse({ type: PhotoDto })
   @ApiBadRequestResponse({ description: 'INVALID_IMAGE' })
-  @ApiConflictResponse({ description: 'LIMIT_REACHED (10 photos per event)' })
+  @ApiConflictResponse({ description: 'LIMIT_REACHED (4 photos per event)' })
   @ApiPayloadTooLargeResponse({ description: 'FILE_TOO_LARGE' })
   add(
     @CurrentUser() user: AuthenticatedUser,

@@ -12,7 +12,6 @@ import dayjs from 'dayjs';
 import { useTranslations } from 'next-intl';
 import { type ReactNode, useState, useTransition } from 'react';
 import { listCompetitions, listSessions } from '@/app/actions/journal';
-import { CompetitionListPanel } from './competition-list';
 import { EventLegendPanel } from './event-legend';
 import { MonthsOverview } from './months-overview';
 import classes from './season-calendar.module.css';
@@ -35,7 +34,10 @@ function monthsOf(startDate: string, endDate: string): string[] {
 }
 
 /** The period's events, fetched in spans the API accepts. */
-async function eventsOf(startDate: string, endDate: string): Promise<JournalSessionSummary[]> {
+export async function eventsOf(
+  startDate: string,
+  endDate: string,
+): Promise<JournalSessionSummary[]> {
   const end = dayjs(endDate);
   const spans: [string, string][] = [];
   for (let from = dayjs(startDate); !from.isAfter(end); from = from.add(MAX_RANGE_DAYS, 'day')) {
@@ -49,9 +51,10 @@ async function eventsOf(startDate: string, endDate: string): Promise<JournalSess
 
 /**
  * Wraps the home page's months: clicking them opens the whole season of the journal
- * (every month of its period) in a dialog titled with the journal's name. Below the months, the
- * FFTA competitions still to come in the archer's departments (profile), their days outlined
- * (none for an archer who doesn't practise in France: `ffta` false).
+ * (every month of its period) in a dialog titled with the journal's name, the days of the FFTA
+ * competitions still to come in the archer's departments (profile) outlined (none for an archer
+ * who doesn't practise in France: `ffta` false). Their list is the "Planification Concours"
+ * card's (`competition-planning.tsx`).
  */
 export function SeasonCalendar({
   journal,
@@ -93,10 +96,6 @@ export function SeasonCalendar({
       setCompetitions(list);
     });
   };
-  /** A competition was added: its day now has an event. */
-  const reloadEvents = () =>
-    startLoading(async () => setSessions(await eventsOf(journal.startDate, journal.endDate)));
-
   return (
     <>
       <div
@@ -146,14 +145,6 @@ export function SeasonCalendar({
                 linkToJournal
               />
             </Stack>
-            {competitions !== undefined && (
-              <CompetitionListPanel
-                list={competitions}
-                sessions={sessions}
-                today={today}
-                onAdded={reloadEvents}
-              />
-            )}
           </Stack>
         )}
       </Modal>

@@ -3,7 +3,14 @@
 import { Anchor, Button, PasswordInput, Stack, Text, TextInput } from '@mantine/core';
 import { useTranslations } from 'next-intl';
 import { useActionState, useState } from 'react';
-import { login, register, resendVerification, verifyEmail } from '@/app/actions/auth';
+import {
+  forgotPassword,
+  login,
+  register,
+  resendVerification,
+  resetPassword,
+  verifyEmail,
+} from '@/app/actions/auth';
 import { Link } from '@/i18n/navigation';
 import type { ActionState } from '@/lib/action-state';
 import { FormError, SuccessNotice, useFieldError } from './form-feedback';
@@ -32,13 +39,18 @@ export function LoginForm({ next }: { next?: string }) {
             onChange={(e) => setEmail(e.currentTarget.value)}
             error={fieldError(state, 'email')}
           />
-          <PasswordInput
-            name="password"
-            label={t('common.password')}
-            autoComplete="current-password"
-            required
-            error={fieldError(state, 'password')}
-          />
+          <Stack gap={4}>
+            <PasswordInput
+              name="password"
+              label={t('common.password')}
+              autoComplete="current-password"
+              required
+              error={fieldError(state, 'password')}
+            />
+            <Anchor component={Link} href="/forgot-password" size="sm" ta="end">
+              {t('login.forgotPassword')}
+            </Anchor>
+          </Stack>
           <FormError state={state} />
           {/* The dark leather brown of the home page's sign-up button. */}
           <Button type="submit" loading={pending} fullWidth color="#3f2817">
@@ -157,6 +169,106 @@ export function ResendVerificationForm({ email }: { email: string }) {
         </Button>
         {state.notice === 'resent' && <SuccessNotice>{t('checkEmail.resent')}</SuccessNotice>}
         <FormError state={state} />
+      </Stack>
+    </form>
+  );
+}
+
+/** "Forgot password": the address to send the link to. */
+export function ForgotPasswordForm() {
+  const t = useTranslations();
+  const fieldError = useFieldError();
+  const [state, action, pending] = useActionState(forgotPassword, initial);
+  const [email, setEmail] = useState('');
+
+  return (
+    <Stack gap="lg">
+      <form action={action}>
+        <Stack gap="md">
+          <TextInput
+            name="email"
+            type="email"
+            label={t('common.email')}
+            autoComplete="email"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.currentTarget.value)}
+            error={fieldError(state, 'email')}
+          />
+          {state.notice === 'sent' && (
+            <SuccessNotice>{t('forgotPassword.sent', { email })}</SuccessNotice>
+          )}
+          <FormError state={state} />
+          <Button type="submit" loading={pending} fullWidth>
+            {t(state.notice === 'sent' ? 'forgotPassword.resend' : 'forgotPassword.submit')}
+          </Button>
+        </Stack>
+      </form>
+      <Text size="sm" ta="center">
+        <Anchor component={Link} href="/login">
+          {t('checkEmail.backToLogin')}
+        </Anchor>
+      </Text>
+    </Stack>
+  );
+}
+
+/** The emailed link's page: the new password, twice. */
+export function ResetPasswordForm({ token }: { token: string }) {
+  const t = useTranslations();
+  const fieldError = useFieldError();
+  const tValidation = useTranslations('validation');
+  const [state, action, pending] = useActionState(resetPassword, initial);
+  // Controlled: React resets uncontrolled fields after each submission.
+  const [password, setPassword] = useState('');
+  const [confirm, setConfirm] = useState('');
+  const [checkConfirm, setCheckConfirm] = useState(false);
+  const mismatch = confirm !== password;
+
+  return (
+    <form
+      action={action}
+      onSubmit={(e) => {
+        if (!mismatch) return;
+        e.preventDefault();
+        setCheckConfirm(true);
+      }}
+    >
+      <Stack gap="md">
+        <input type="hidden" name="token" value={token} />
+        <PasswordInput
+          name="password"
+          label={t('register.passwordHint')}
+          autoComplete="new-password"
+          required
+          minLength={8}
+          value={password}
+          onChange={(e) => setPassword(e.currentTarget.value)}
+          error={fieldError(state, 'password')}
+        />
+        <PasswordInput
+          name="passwordConfirm"
+          label={t('register.passwordConfirm')}
+          autoComplete="new-password"
+          required
+          value={confirm}
+          onChange={(e) => setConfirm(e.currentTarget.value)}
+          onBlur={() => setCheckConfirm(confirm !== '')}
+          error={
+            checkConfirm && mismatch
+              ? tValidation('passwordMismatch')
+              : mismatch && fieldError(state, 'passwordConfirm')
+          }
+        />
+        <FormError state={state} />
+        {state.code === 'INVALID_RESET_TOKEN' && (
+          <Anchor component={Link} href="/forgot-password" size="sm" ta="center">
+            {t('resetPassword.newLink')}
+          </Anchor>
+        )}
+        <Button type="submit" loading={pending} fullWidth>
+          {t('resetPassword.submit')}
+        </Button>
       </Stack>
     </form>
   );

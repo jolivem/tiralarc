@@ -47,6 +47,12 @@ const envSchema = z.object({
     .int()
     .positive()
     .default(60 * 60 * 24),
+  /** "Forgot password" link lifetime, in seconds. */
+  PASSWORD_RESET_TTL: z.coerce
+    .number()
+    .int()
+    .positive()
+    .default(60 * 60),
   /**
    * Accepted audiences for Google ID tokens: comma-separated OAuth client IDs
    * (web, Android, iOS). Empty = Google sign-in disabled.

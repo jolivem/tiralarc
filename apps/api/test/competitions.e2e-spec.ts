@@ -290,7 +290,7 @@ describe('Competitions (e2e)', () => {
     const first = await add('26349', 30).expect(201);
     expect(first.body).toMatchObject({
       fftaCompetitionId: '26349',
-      location: 'gymnase Alain Mimoun, 78450 VILLEPREUX',
+      location: 'Gymnase alain mimoun, 78450 villepreux',
       distanceMeters: null,
     });
     // An indoor one is shot at 18 m.

@@ -30,7 +30,7 @@ import { PushPin } from './push-pin';
 import { SheetLockedContext } from './session-form';
 
 /** Same limits as the API (which enforces them). */
-const MAX_PHOTOS = 10;
+const MAX_PHOTOS = 4;
 const MAX_BYTES = 10 * 1024 * 1024;
 /** iOS converts HEIC pictures to JPEG when the input only accepts these types. */
 const ACCEPT = 'image/jpeg,image/png,image/webp';

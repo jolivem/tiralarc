@@ -72,6 +72,8 @@ the same API — keep it client-agnostic (no cookies, no web-only assumptions in
   "Saison" lines sit on a ruled line (`components/notebook/on-ruling.tsx`: `RuledHeading` two lines, `RuledSubtitle`
   / `RuledLine` one, snapped again when content above changes), and the left page's calendar starts level with the
   right page's national ranking (`page-alignment.tsx`: the right page's top is measured, md and up).
+- An event's place (`location`) reads with a capital first, the rest in lower case (`placeName` in
+  `journal.service.ts`, applied when saving and reading back, FFTA places too).
 - Journals: a `Journal` is a named period (title + inclusive start / end days), usually one season. There is no
   link to events: a journal's events are the archer's sessions dated within its period. An archer's journals must
   not overlap (`JOURNAL_OVERLAP`, checked by the API, not the database); deleting a journal keeps its events. The
@@ -99,7 +101,10 @@ the same API — keep it client-agnostic (no cookies, no web-only assumptions in
   names, Informations rows (`FieldRow`, xs fields = one line) and free texts (`RULED_TEXT`) are sized to sit on the
   lines — keep new content on that grid. At most 4 events per day (`DAY_FULL`, checked by the API); the month view
   shows one entry per day with up to 4 icons. Planning vs review: on a future day the sheet only takes date,
-  duration, place, discipline, distance and objective (the rest greyed, `locked` in `SessionForm`, also given to the photos through
+  duration, place, discipline, distance, objective and — trainings / coachings only, under the objective — the
+  steps ("Déroulé de la séance", `steps`: JSON list of { unit MINUTES / ARROWS, amount, target STRAW / VISUAL /
+  FACE, description }, at most 20; "+" by the title → `StepDialog` in `session-steps.tsx`, a click on a step edits
+  it; a planning field, so a coach with WRITE fills it on the events they plan; not part of the review) (the rest greyed, `locked` in `SessionForm`, also given to the photos through
   `SheetLockedContext`: no upload); the API's
   `completed` (derived: any review field filled; always true for strength / other / custom) and the date decide
   the calendars' greying (`pendingReason` in `event-display.tsx`: review missing, or a type without review on a future day).
@@ -124,7 +129,8 @@ the same API — keep it client-agnostic (no cookies, no web-only assumptions in
   editable) and the day it was reached (`achievedOn`; null = not reached — there is no separate boolean). They belong
   to the archer, not to a journal or period.
 - Event photos: files go to S3-compatible storage through `StorageService` (`apps/api/src/storage/`, a local
-  Versity Gateway on :9000 in dev, an in-memory fake in e2e tests); the DB keeps one `SessionPhoto` row. Uploads are
+  Versity Gateway on :9000 in dev, an in-memory fake in e2e tests); the DB keeps one `SessionPhoto` row, at most 4
+  per event (`MAX_PHOTOS_PER_SESSION`, `LIMIT_REACHED`; events that had more keep them). Uploads are
   re-encoded with `sharp` (2000 px + thumbnail, metadata dropped) and read back through 10-minute signed URLs.
   Deleting an event or a journal must also remove the files (`PhotosService.removeFiles`).
 - Instagram share (web only, no Instagram API: it only publishes for business accounts): "Share" in the action bar
@@ -157,7 +163,9 @@ the same API — keep it client-agnostic (no cookies, no web-only assumptions in
   text ("championnat", "championnat de france"; `Scope` in `CompetitionsService`). A U11–U21 archer sees the
   young archers' championships, not the adults' (`championshipAge`), others the other way round. Web: a medal badge,
   and the Journal calendar's ticket says "CF" / "CR" / "CD" (gold / silver / bronze). The home page's season calendar
-  (`season-calendar.tsx`) outlines their days and lists them (`competition-list.tsx`) with "Add to my journal": a
+  (`season-calendar.tsx`) outlines their days; the right page's "Planification Concours" card (under "Mandats publiés !")
+  (`competition-planning.tsx`, "Planifier" button → dialog, today to the journal's end) lists them
+  (`competition-list.tsx`) with "Add to my journal": a
   COMPETITION event (`POST /journal/sessions` takes `location` / `discipline`) whose place is the competition's name,
   linked by `fftaCompetitionId`: one competition at most twice a day (`MAX_PER_COMPETITION_DAY`, `LIMIT_REACHED`),
   other competitions of that day unaffected (only `DAY_FULL` applies). On creation the API takes the place (the town only) from the
@@ -179,7 +187,7 @@ the same API — keep it client-agnostic (no cookies, no web-only assumptions in
   only the archer's own row is kept (12 h, in memory). Web: `components/stats/rankings-card.tsx` on the right page
   of the home notebook, loaded once shown (the pages are big), then kept an hour in the browser like the competitions
   to plan (`lib/browser-cache.ts`, keyed by the archer and the profile settings they depend on; complete readings only); `missing` asks for licence / category / bow. Below
-  it, "Compétitions à planifier" (`CompetitionsToPlan` in `competition-list.tsx`): the next scheduled FFTA
+  it, "Mandats publiés !" (`CompetitionsToPlan` in `competition-list.tsx`): the next scheduled FFTA
   competitions whose invitation (`mandateUrl`) is published, not in the journal yet; their dates and name open the
   Journal page with `?day=YYYY-MM-DD` (that month, the day's `CompetitionsModal` open, where it is added). A black
   cross (confirmed) dismisses one: `PUT/DELETE /competitions/{id}/dismissal` (table `dismissed_competitions`),
@@ -224,5 +232,9 @@ the same API — keep it client-agnostic (no cookies, no web-only assumptions in
 - `pnpm openapi` compiles to `apps/api/dist-openapi/`, safe while `pnpm dev` runs; `pnpm build` is not (it rewrites `apps/api/dist`).
 - Forms posting to Server Actions: keep user input in React state (controlled inputs) — React resets
   uncontrolled fields after each submission, even when the server rejects it.
+- Forgotten password: `POST /auth/forgot-password` (always 202, 3/min) emails a single-use link (table
+  `password_reset_tokens`, `PASSWORD_RESET_TTL` 1 h) to the web's `/reset-password?token=` (token used on POST only, like
+  `/verify-email`); `POST /auth/reset-password` sets the password, revokes every refresh token, marks the email
+  verified and signs in (`INVALID_RESET_TOKEN`). Web: "Mot de passe oublié ?" under the sign-in password → `/forgot-password`.
 - Dev emails land in Mailpit (http://localhost:8025). e2e tests capture mail and fake ID tokens (`apps/api/test/helpers.ts`).
 - TypeScript is pinned to 6.0 (TS 7 is not yet supported by typescript-eslint / tooling).
