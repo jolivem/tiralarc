@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <title>Tiralarc — Maintenance</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --ink: #2b3a55;
+        --rule: #c9d8ec;
+        --margin: #e8a0a0;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        padding: 24px;
+        background: #8a6a4f;
+        font-family: 'Segoe Print', 'Bradley Hand', 'Comic Sans MS', cursive;
+        color: var(--ink);
+      }
+      .leaf {
+        position: relative;
+        width: min(560px, 100%);
+        padding: 60px 32px 60px 72px;
+        background-color: #fffdf6;
+        background-image: repeating-linear-gradient(
+          to bottom,
+          transparent 0 29px,
+          var(--rule) 29px 30px
+        );
+        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+        transform: rotate(-1deg);
+        line-height: 30px;
+      }
+      .leaf::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: 52px;
+        border-left: 2px solid var(--margin);
+      }
+      h1 {
+        margin: 0 0 30px;
+        font-size: 28px;
+        line-height: 60px;
+      }
+      p {
+        margin: 0 0 30px;
+        font-size: 18px;
+      }
+      .en {
+        opacity: 0.75;
+      }
+      .target {
+        font-size: 44px;
+        float: right;
+        line-height: 60px;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="leaf">
+      <span class="target" aria-hidden="true">🎯</span>
+      <h1>Tiralarc fait une pause</h1>
+      <p>
+        Nous mettons le site à jour. Il revient dans quelques minutes : rechargez la page un peu
+        plus tard. Vos données ne sont pas touchées.
+      </p>
+      <p class="en" lang="en">
+        Tiralarc is being updated and will be back in a few minutes. Please reload the page shortly.
+        Your data is safe.
+      </p>
+    </main>
+  </body>
+</html>

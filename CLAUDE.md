@@ -11,6 +11,10 @@ the same API — keep it client-agnostic (no cookies, no web-only assumptions in
 - `pnpm --filter @tiralarc/api test:e2e` — needs MariaDB running
 - `pnpm openapi` — after any API contract change; commit `openapi.json` and `packages/api-client/src/schema.ts`
 - `pnpm --filter @tiralarc/api db:migrate` — after editing `prisma/schema.prisma`
+- Deployment (`deploy/README.md`): `pnpm release` builds the images from main and pushes them to GHCR
+  (tag = `git rev-parse --short=12`); on the VPS `deploy/deploy.sh` pulls, shows the Caddy maintenance page
+  (`deploy/runtime/maintenance.on`), dumps the DB, migrates and starts the new containers. New API env
+  variables go in `deploy/.env.example` too; new `NEXT_PUBLIC_*` in `apps/web/Dockerfile` + `deploy/build.env.example`.
 
 ## Conventions
 
@@ -202,7 +206,7 @@ the same API — keep it client-agnostic (no cookies, no web-only assumptions in
   pages and shows the blank page before a month when needed; Mon–Thu left, Fri–Sun right, no year), each followed by its month's sheets by
   day (and photos — the events' sheets), then Fiches: the Sheets section (technique / settings sheets, coming
   soon: title page only for now; not the events' sheets). Dev: `pnpm --filter @tiralarc/web exec playwright-core install chromium-headless-shell`;
-  Docker: Alpine's `chromium` (`CHROMIUM_PATH`). `PRINT_BASE_URL` if the server isn't on localhost:`PORT`.
+  Docker: Alpine's `chromium` (`CHROMIUM_PATH`). `VPS_WITH_2GB_RAM` (web env, small VPS): one extract printed at a time, lighter Chromium flags. `PRINT_BASE_URL` if the server isn't on localhost:`PORT`.
 - Score sheets (`apps/api/src/score-sheets/`, no ianseo API): during the 7 days after a COMPETITION event, once a day
   (`ScoreSheetsService`, hourly timer; `scoreSheetCheckedOn`), for archers practising in France with licence, last and
   first names (profile's Configuration card): `ScoreSheetFinder` reads ianseo.net's competitions of that day (place

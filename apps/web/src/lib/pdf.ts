@@ -19,13 +19,44 @@ const VIEWPORT = { width: 484, height: 703 };
 const TIMEOUT_MS = 120_000;
 
 /**
+ * `VPS_WITH_2GB_RAM` (1 / true): a small server, where each Chromium takes a few hundred MB
+ * and a full CPU. Extracts are then printed one at a time (the others wait their turn) by a
+ * Chromium started with fewer features.
+ */
+const SMALL_SERVER = ['1', 'true', 'yes'].includes(
+  (process.env.VPS_WITH_2GB_RAM ?? '').trim().toLowerCase(),
+);
+const SMALL_SERVER_ARGS = [
+  // Docker's /dev/shm is 64 MB: shared memory goes to /tmp instead of crashing the tab.
+  '--disable-dev-shm-usage',
+  '--disable-gpu',
+  '--disable-extensions',
+  '--disable-background-networking',
+  '--mute-audio',
+  '--renderer-process-limit=1',
+];
+
+/** The extract being printed, when they go one at a time: the next one waits for it. */
+let printing: Promise<unknown> = Promise.resolve();
+
+/**
  * Prints `path` (a page of this site, e.g. "/fr/print/journal?…") to PDF in a headless
  * Chromium signed in with the user's access token — only that one: the refresh token is
  * single-use and stays with the browser. `CHROMIUM_PATH` names the browser (the Docker
  * image's); otherwise Playwright's own (`playwright-core install chromium-headless-shell`).
  */
-export async function renderPdf(path: string, accessToken: string): Promise<Uint8Array> {
-  const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
+export function renderPdf(path: string, accessToken: string): Promise<Uint8Array> {
+  if (!SMALL_SERVER) return printExtract(path, accessToken);
+  const turn = printing.then(() => printExtract(path, accessToken));
+  printing = turn.catch(() => undefined);
+  return turn;
+}
+
+async function printExtract(path: string, accessToken: string): Promise<Uint8Array> {
+  const browser = await chromium.launch({
+    executablePath: process.env.CHROMIUM_PATH || undefined,
+    args: SMALL_SERVER ? SMALL_SERVER_ARGS : [],
+  });
   try {
     const context = await browser.newContext({
       viewport: VIEWPORT,

@@ -17,6 +17,7 @@
     "db:up": "docker compose -f docker/docker-compose.yml up -d",
     "db:down": "docker compose -f docker/docker-compose.yml down",
     "update:dev": "bash scripts/update.sh",
+    "release": "bash deploy/build.sh",
     "prepare": "husky"
   },
   "devDependencies": {

@@ -1,0 +1,106 @@
+# Production stack, run on the VPS by deploy.sh (see README.md).
+# Variables come from deploy/.env (copied from .env.example); TAG is set by deploy.sh.
+name: tiralarc
+
+services:
+  mariadb:
+    image: mariadb:11.8
+    restart: unless-stopped
+    environment:
+      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD:?}
+      MARIADB_DATABASE: tiralarc
+      MARIADB_USER: tiralarc
+      MARIADB_PASSWORD: ${MARIADB_PASSWORD:?}
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    volumes:
+      - mariadb-data:/var/lib/mysql
+    healthcheck:
+      test: ['CMD', 'healthcheck.sh', '--connect', '--innodb_initialized']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  # Photos: S3-compatible gateway over a local volume. Reached by browsers through Caddy
+  # (s3.<domain>): photos are read back through signed URLs.
+  s3:
+    image: versity/versitygw:latest
+    restart: unless-stopped
+    command: ['posix', '/data']
+    environment:
+      ROOT_ACCESS_KEY: ${S3_ACCESS_KEY:?}
+      ROOT_SECRET_KEY: ${S3_SECRET_KEY:?}
+      VGW_PORT: ':9000'
+    volumes:
+      - s3-data:/data
+
+  api:
+    image: ghcr.io/jolivem/tiralarc-api:${TAG:?}
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      NODE_ENV: production
+      PORT: '3001'
+      DATABASE_URL: mysql://tiralarc:${MARIADB_PASSWORD}@mariadb:3306/tiralarc
+      # Caddy and the Next.js server reach the API over the Docker network.
+      TRUST_PROXY: loopback, uniquelocal
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD', 'wget', '-q', '--spider', 'http://127.0.0.1:3001/api/v1/health']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  web:
+    image: ghcr.io/jolivem/tiralarc-web:${TAG:?}
+    restart: unless-stopped
+    environment:
+      API_URL: http://api:3001
+      # PDF extracts one at a time, lighter Chromium (apps/web/src/lib/pdf.ts).
+      VPS_WITH_2GB_RAM: ${VPS_WITH_2GB_RAM:-}
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD', 'wget', '-q', '--spider', 'http://127.0.0.1:3000/fr']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  # One-off: `docker compose --profile tools run --rm migrate` (prisma migrate deploy).
+  migrate:
+    image: ghcr.io/jolivem/tiralarc-api-migrate:${TAG:?}
+    profiles: [tools]
+    environment:
+      DATABASE_URL: mysql://tiralarc:${MARIADB_PASSWORD}@mariadb:3306/tiralarc
+    depends_on:
+      mariadb:
+        condition: service_healthy
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - '80:80'
+      - '443:443'
+      - '443:443/udp'
+    environment:
+      DOMAIN: ${DOMAIN:?}
+    volumes:
+      # Directories, not single files: git pull replaces files, which a file bind mount wouldn't see.
+      - ./caddy:/etc/caddy:ro
+      - ./maintenance:/srv/maintenance:ro
+      - ./runtime:/srv/runtime:ro
+      - caddy-data:/data
+      - caddy-config:/config
+
+volumes:
+  mariadb-data:
+  s3-data:
+  caddy-data:
+  caddy-config:

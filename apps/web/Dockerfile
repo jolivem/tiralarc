@@ -8,6 +8,13 @@ FROM base AS build
 COPY . .
 RUN pnpm install --frozen-lockfile --filter @tiralarc/web...
 ENV NEXT_TELEMETRY_DISABLED=1
+# Baked into the browser bundle by Next.js (deploy/build.sh passes them from deploy/build.env).
+ARG NEXT_PUBLIC_GOOGLE_CLIENT_ID=
+ARG NEXT_PUBLIC_APPLE_CLIENT_ID=
+ARG NEXT_PUBLIC_APPLE_REDIRECT_URI=
+ENV NEXT_PUBLIC_GOOGLE_CLIENT_ID=$NEXT_PUBLIC_GOOGLE_CLIENT_ID \
+    NEXT_PUBLIC_APPLE_CLIENT_ID=$NEXT_PUBLIC_APPLE_CLIENT_ID \
+    NEXT_PUBLIC_APPLE_REDIRECT_URI=$NEXT_PUBLIC_APPLE_REDIRECT_URI
 RUN pnpm turbo run build --filter=@tiralarc/web
 
 FROM node:22-alpine AS runtime

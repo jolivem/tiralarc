@@ -26,3 +26,8 @@ apps/api/src/generated/
 !.vscode/extensions.json
 .vercel
 *.pem
+
+# deployment (deploy/README.md): VPS settings, dev build settings, state and dumps
+deploy/build.env
+deploy/runtime/
+deploy/backups/

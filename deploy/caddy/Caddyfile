@@ -1,0 +1,55 @@
+# HTTPS (Let's Encrypt, automatic), routing and maintenance mode.
+# Maintenance: while deploy/runtime/maintenance.on exists (deploy.sh maintenance on|off), every request
+# gets a 503 — checked on each request, no reload needed. The same page covers a stopped container.
+
+(maintenance) {
+	header Cache-Control no-store
+	header Retry-After 120
+	handle /api/* {
+		header Content-Type application/problem+json
+		respond `{"type":"about:blank","title":"Service Unavailable","status":503,"code":"MAINTENANCE","detail":"Maintenance in progress, please retry in a few minutes"}` 503
+	}
+	handle {
+		root * /srv/maintenance
+		rewrite * /index.html
+		file_server {
+			status 503
+		}
+	}
+}
+
+{$DOMAIN} {
+	encode zstd gzip
+	# Photo uploads: 10 MB checked by the API, plus the multipart overhead.
+	request_body {
+		max_size 12MB
+	}
+
+	@maintenance file {
+		root /srv/runtime
+		try_files /maintenance.on
+	}
+	handle @maintenance {
+		import maintenance
+	}
+
+	# Same domain as the site: no CORS, and the mobile apps use https://<domain>/api/v1.
+	handle /api/* {
+		reverse_proxy api:3001
+	}
+	handle {
+		reverse_proxy web:3000
+	}
+
+	# A container restarting or down.
+	handle_errors 502 503 504 {
+		import maintenance
+	}
+}
+
+s3.{$DOMAIN} {
+	request_body {
+		max_size 25MB
+	}
+	reverse_proxy s3:9000
+}
