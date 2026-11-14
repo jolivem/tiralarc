@@ -166,7 +166,7 @@ describe('Profile (e2e)', () => {
       status: 'PENDING',
     });
     const mail = ctx.outbox.find((m) => m.to === 'camille@example.com');
-    expect(mail?.subject).toBe('Léa Archère vous invite comme coach sur Tiralarc');
+    expect(mail?.subject).toBe('Léa Archère vous invite comme coach sur MyArcheryDiary');
 
     const again = await http()
       .post('/api/v1/profile/invitations')
@@ -200,7 +200,7 @@ describe('Profile (e2e)', () => {
       .expect(201);
     expect(guest.body).toMatchObject({ isCoach: false, coachAccess: null });
     const guestMail = ctx.outbox.find((m) => m.to === 'dominique@example.com');
-    expect(guestMail?.subject).toBe('Léa Archère invites you to Tiralarc');
+    expect(guestMail?.subject).toBe('Léa Archère invites you to MyArcheryDiary');
     expect(guestMail?.text).toContain('/en/invitations/accept?token=');
     await http()
       .post('/api/v1/profile/invitations')

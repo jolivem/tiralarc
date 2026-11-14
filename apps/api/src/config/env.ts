@@ -40,7 +40,7 @@ const envSchema = z.object({
   WEB_URL: z.url().default('http://localhost:3000'),
   /** SMTP connection string, e.g. smtp://localhost:1025 (Mailpit in dev) or smtps://user:pass@host:465. */
   SMTP_URL: z.string().default('smtp://localhost:1025'),
-  MAIL_FROM: z.string().default('Tiralarc <no-reply@tiralarc.local>'),
+  MAIL_FROM: z.string().default('MyArcheryDiary <no-reply@tiralarc.local>'),
   /** Email verification link lifetime, in seconds. */
   EMAIL_VERIFICATION_TTL: z.coerce
     .number()

@@ -10,14 +10,16 @@ const copy = {
   verification: {
     fr: {
       subject: 'Confirmez votre adresse email',
-      intro: 'Bienvenue sur Tiralarc ! Pour activer votre compte, confirmez votre adresse email :',
+      intro:
+        'Bienvenue sur MyArcheryDiary ! Pour activer votre compte, confirmez votre adresse email :',
       button: 'Confirmer mon email',
       outro:
         "Ce lien est valable 24 heures. Si vous n'êtes pas à l'origine de cette inscription, ignorez cet email.",
     },
     en: {
       subject: 'Confirm your email address',
-      intro: 'Welcome to Tiralarc! To activate your account, please confirm your email address:',
+      intro:
+        'Welcome to MyArcheryDiary! To activate your account, please confirm your email address:',
       button: 'Confirm my email',
       outro: "This link is valid for 24 hours. If you didn't sign up, you can ignore this email.",
     },
@@ -41,50 +43,50 @@ const copy = {
   },
   invitation: {
     fr: {
-      subject: (inviter: string) => `${inviter} vous invite sur Tiralarc`,
+      subject: (inviter: string) => `${inviter} vous invite sur MyArcheryDiary`,
       intro: (inviter: string) =>
-        `${inviter} tient son journal de tir à l'arc sur Tiralarc et vous invite à le découvrir, pour créer votre propre journal. Pour accepter son invitation :`,
+        `${inviter} tient son journal de tir à l'arc sur MyArcheryDiary et vous invite à le découvrir, pour créer votre propre journal. Pour accepter son invitation :`,
       button: "Accepter l'invitation",
       outro: 'Si vous ne connaissez pas cette personne, ignorez cet email.',
       heading: 'Invitation',
-      invites: 'a le plaisir de vous inviter à découvrir Tiralarc',
+      invites: 'a le plaisir de vous inviter à découvrir MyArcheryDiary',
       purpose: "pour y tenir, vous aussi, votre journal de tir à l'arc.",
       howTo: "Acceptez l'invitation, puis créez votre compte pour ouvrir votre premier journal.",
     },
     en: {
-      subject: (inviter: string) => `${inviter} invites you to Tiralarc`,
+      subject: (inviter: string) => `${inviter} invites you to MyArcheryDiary`,
       intro: (inviter: string) =>
-        `${inviter} keeps an archery journal on Tiralarc and invites you to discover it, to keep your own journal. To accept the invitation:`,
+        `${inviter} keeps an archery journal on MyArcheryDiary and invites you to discover it, to keep your own journal. To accept the invitation:`,
       button: 'Accept the invitation',
       outro: "If you don't know this person, you can ignore this email.",
       heading: 'Invitation',
-      invites: 'is pleased to invite you to discover Tiralarc',
+      invites: 'is pleased to invite you to discover MyArcheryDiary',
       purpose: 'to keep your own archery journal there too.',
       howTo: 'Accept the invitation, then create your account to open your first journal.',
     },
   },
   coachInvitation: {
     fr: {
-      subject: (inviter: string) => `${inviter} vous invite comme coach sur Tiralarc`,
+      subject: (inviter: string) => `${inviter} vous invite comme coach sur MyArcheryDiary`,
       intro: (inviter: string) =>
-        `${inviter} tient son journal de tir à l'arc sur Tiralarc et vous invite comme coach, pour suivre son journal de la saison en cours. Connectez-vous (ou créez votre compte), puis acceptez l'invitation :`,
+        `${inviter} tient son journal de tir à l'arc sur MyArcheryDiary et vous invite comme coach, pour suivre son journal de la saison en cours. Connectez-vous (ou créez votre compte), puis acceptez l'invitation :`,
       button: "Accepter l'invitation",
       outro: 'Si vous ne connaissez pas cette personne, ignorez cet email.',
       // The invitation card (HTML version).
       heading: 'Invitation',
       invites: 'a le plaisir de vous inviter à devenir son coach',
-      purpose: "pour suivre son journal de tir à l'arc de la saison en cours sur Tiralarc.",
+      purpose: "pour suivre son journal de tir à l'arc de la saison en cours sur MyArcheryDiary.",
       howTo: "Connectez-vous (ou créez votre compte), puis acceptez l'invitation.",
     },
     en: {
-      subject: (inviter: string) => `${inviter} invites you to Tiralarc as their coach`,
+      subject: (inviter: string) => `${inviter} invites you to MyArcheryDiary as their coach`,
       intro: (inviter: string) =>
-        `${inviter} keeps an archery journal on Tiralarc and invites you as their coach, to follow their journal of the current season. Sign in (or create your account), then accept the invitation:`,
+        `${inviter} keeps an archery journal on MyArcheryDiary and invites you as their coach, to follow their journal of the current season. Sign in (or create your account), then accept the invitation:`,
       button: 'Accept the invitation',
       outro: "If you don't know this person, you can ignore this email.",
       heading: 'Invitation',
       invites: 'is pleased to invite you to become their coach',
-      purpose: 'to follow their archery journal of the current season on Tiralarc.',
+      purpose: 'to follow their archery journal of the current season on MyArcheryDiary.',
       howTo: 'Sign in (or create your account), then accept the invitation.',
     },
   },
@@ -181,7 +183,7 @@ function invitationCard(
 <tr><td style="padding:10px">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1px solid ${GOLD};border-radius:3px">
 <tr><td align="center" style="padding:36px 28px 32px;font-family:${SERIF};color:${INK};text-align:center">
-<p style="margin:0;font-family:${SERIF};font-size:12px;letter-spacing:4px;text-transform:uppercase;color:${GOLD}">Tiralarc</p>
+<p style="margin:0;font-family:${SERIF};font-size:12px;letter-spacing:4px;text-transform:uppercase;color:${GOLD}">MyArcheryDiary</p>
 <h1 style="margin:10px 0 0;font-family:${CALLIGRAPHY};font-size:54px;line-height:1.1;font-weight:400;color:${INK}">${escapeHtml(t.heading)}</h1>
 ${ornament}
 <p style="margin:0;font-family:${CALLIGRAPHY};font-size:40px;line-height:1.2;color:${INK}">${name}</p>
