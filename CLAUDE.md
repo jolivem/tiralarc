@@ -16,6 +16,7 @@ the same API — keep it client-agnostic (no cookies, no web-only assumptions in
   (`deploy/runtime/maintenance.on`), dumps the DB, migrates and starts the new containers. New API env
   variables go in `deploy/.env.example` too; new `NEXT_PUBLIC_*` in `apps/web/Dockerfile` + `deploy/build.env.example`.
   Data: `deploy/backup.sh` / `restore.sh` (`--local` on the dev machine) archive / replace the DB + photos.
+  Manual compose commands on the VPS: `deploy/dc …` (sets `TAG` from `runtime/current-tag`).
 
 ## Conventions
 

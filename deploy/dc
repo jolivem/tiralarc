@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# docker compose on the production stack, at the version online: the compose file needs TAG, which
+# deploy.sh records in runtime/current-tag. Any docker compose command, from any directory:
+#
+#   deploy/dc ps
+#   deploy/dc logs -f --tail 100 api web
+#   deploy/dc up -d                      # after editing deploy/.env
+#   deploy/dc exec mariadb sh -c 'mariadb -uroot -p"$MARIADB_ROOT_PASSWORD" tiralarc'
+#
+# TAG=<tag> deploy/dc … targets another version.
+set -euo pipefail
+
+DEPLOY_DIR=$(cd "$(dirname "$0")" && pwd)
+if [ -z "${TAG:-}" ]; then
+  TAG=$(cat "$DEPLOY_DIR/runtime/current-tag" 2>/dev/null) || {
+    echo "Nothing deployed yet (deploy/runtime/current-tag is missing): run deploy/deploy.sh first." >&2
+    exit 1
+  }
+fi
+export TAG
+exec docker compose -f "$DEPLOY_DIR/docker-compose.prod.yml" "$@"

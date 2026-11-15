@@ -10,6 +10,7 @@ deploy/
   backup.sh                 VPS ou poste de dev (--local) : base + photos dans une archive de backups/
   restore.sh                VPS ou poste de dev (--local) : remet une archive de backup.sh à la place des données
   docker-compose.prod.yml   MariaDB, Versity (photos), API, web, Caddy, migrate
+  dc                        VPS : docker compose sur cette pile, à la version en ligne (TAG lu dans runtime/)
   caddy/Caddyfile           HTTPS automatique, routage, maintenance
   maintenance/index.html    page affichée pendant la maintenance (503)
   .env.example              réglages de production → deploy/.env sur le VPS
@@ -60,9 +61,9 @@ cat runtime/current-tag runtime/previous-tag
 
   ```bash
   ./deploy.sh maintenance on
-  docker compose -f docker-compose.prod.yml stop api web
+  ./dc stop api web
   gunzip -c backups/tiralarc-<date>-<ancienne version>.sql.gz |
-    docker compose -f docker-compose.prod.yml exec -T mariadb sh -c 'exec mariadb -uroot -p"$MARIADB_ROOT_PASSWORD"'
+    ./dc exec -T mariadb sh -c 'exec mariadb -uroot -p"$MARIADB_ROOT_PASSWORD"'
   ./deploy.sh --no-pull $(cat runtime/previous-tag)
   ```
 
@@ -84,7 +85,7 @@ cat runtime/current-tag runtime/previous-tag
    il n'y a pas de Mailpit en production.
 6. Premier déploiement : `deploy/deploy.sh`. Ensuite, inscris-toi sur le site et confirme l'e-mail, puis donne-toi
    le rôle admin :
-   `docker compose -f deploy/docker-compose.prod.yml run --rm --no-deps api node dist/cli/make-admin.js <email>`.
+   `deploy/dc run --rm --no-deps api node dist/cli/make-admin.js <email>`.
 
 Sur le poste de dev, une seule fois : `docker login ghcr.io -u jolivem` avec un token `write:packages`. Si le
 site propose la connexion Google / Apple, copier aussi `build.env.example` en `deploy/build.env` et le remplir.
@@ -94,10 +95,16 @@ Pour un serveur ARM (Hetzner CAX) : `pnpm release --platform linux/arm64`, qui d
 
 ```bash
 cd /opt/tiralarc/deploy
-docker compose -f docker-compose.prod.yml ps
-docker compose -f docker-compose.prod.yml logs -f --tail 100 api web
-docker compose -f docker-compose.prod.yml exec mariadb sh -c 'mariadb -uroot -p"$MARIADB_ROOT_PASSWORD" tiralarc'
+./dc ps
+./dc logs -f --tail 100 api web
+./dc logs caddy | grep -i -E "certificate obtained|error"
+./dc up -d             # après une modification de .env : recrée les conteneurs concernés
+./dc exec mariadb sh -c 'mariadb -uroot -p"$MARIADB_ROOT_PASSWORD" tiralarc'
 ```
+
+`dc` est `docker compose -f docker-compose.prod.yml` avec `TAG` (la version des images, exigée par le compose)
+pris dans `runtime/current-tag`, écrit par `deploy.sh` : un `docker compose` direct échoue sur « required
+variable TAG is missing a value ». `TAG=<version> ./dc …` vise une autre version.
 
 ## Données : sauvegarde et restauration
 

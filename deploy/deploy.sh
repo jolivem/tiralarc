@@ -79,7 +79,7 @@ compose --profile tools pull --quiet api web migrate ||
 DUMP=
 on_error() {
   printf '\n\033[1;31m✗   Deployment of %s failed: the maintenance page stays up.\033[0m\n' "$TAG" >&2
-  echo "    Logs:             docker compose -f $DEPLOY_DIR/docker-compose.prod.yml logs --tail 100" >&2
+  echo "    Logs:             $DEPLOY_DIR/dc logs --tail 100" >&2
   [ "$PREVIOUS" = none ] || echo "    Previous version: $0 $PREVIOUS" >&2
   [ -z "$DUMP" ] || echo "    Database dump:    $DEPLOY_DIR/$DUMP (taken before the migrations)" >&2
   echo "    Reopen the site:  $0 maintenance off" >&2
