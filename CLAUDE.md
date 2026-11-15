@@ -15,6 +15,7 @@ the same API — keep it client-agnostic (no cookies, no web-only assumptions in
   (tag = `git rev-parse --short=12`); on the VPS `deploy/deploy.sh` pulls, shows the Caddy maintenance page
   (`deploy/runtime/maintenance.on`), dumps the DB, migrates and starts the new containers. New API env
   variables go in `deploy/.env.example` too; new `NEXT_PUBLIC_*` in `apps/web/Dockerfile` + `deploy/build.env.example`.
+  Data: `deploy/backup.sh` / `restore.sh` (`--local` on the dev machine) archive / replace the DB + photos.
 
 ## Conventions
 
