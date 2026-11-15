@@ -7,13 +7,15 @@ clone ce dépôt pour le compose, la config Caddy et la page de maintenance, pui
 deploy/
   build.sh                  poste de dev : vérifie, construit et pousse les images (pnpm release)
   deploy.sh                 VPS : pull, maintenance, dump, migrations, nouveaux conteneurs
+  backup.sh                 VPS ou poste de dev (--local) : base + photos dans une archive de backups/
+  restore.sh                VPS ou poste de dev (--local) : remet une archive de backup.sh à la place des données
   docker-compose.prod.yml   MariaDB, Versity (photos), API, web, Caddy, migrate
   caddy/Caddyfile           HTTPS automatique, routage, maintenance
   maintenance/index.html    page affichée pendant la maintenance (503)
   .env.example              réglages de production → deploy/.env sur le VPS
   build.env.example         client IDs Google / Apple du site → deploy/build.env sur le poste de dev
   runtime/                  (VPS, non versionné) current-tag, previous-tag, maintenance.on
-  backups/                  (VPS, non versionné) dumps de la base, gardés 14 jours
+  backups/                  (non versionné) dumps de deploy.sh (14 jours), archives de backup.sh (7 jours)
 ```
 
 Une version porte le nom de son commit : les 12 premiers caractères du hash (`git rev-parse --short=12`), par
@@ -97,5 +99,38 @@ docker compose -f docker-compose.prod.yml logs -f --tail 100 api web
 docker compose -f docker-compose.prod.yml exec mariadb sh -c 'mariadb -uroot -p"$MARIADB_ROOT_PASSWORD" tiralarc'
 ```
 
-Les dumps et le volume des photos (`tiralarc_s3-data`) ne restent que sur le VPS. Pense aux sauvegardes Hetzner,
-ou copie `backups/` et le volume des photos ailleurs.
+## Données : sauvegarde et restauration
+
+`backup.sh` met la base (dump cohérent, le site reste en ligne) et les photos (copiées par l'API S3 avec rclone,
+dans un conteneur jetable) dans une seule archive : `backups/tiralarc-data-<date>.tar`. `restore.sh <archive>`
+la remet à la place des données actuelles, après confirmation. Sur le VPS, il sauvegarde d'abord les données
+actuelles, affiche la page de maintenance, arrête l'API et le site, restaure, applique les migrations de la
+version en ligne (une archive plus ancienne rattrape le schéma), puis redémarre tout. Les photos absentes de
+l'archive sont supprimées. Sur le poste de dev, ajouter `--local` (conteneurs de `pnpm db:up`).
+
+**Envoyer les données du poste de dev sur le VPS** (une fois, après un premier `deploy.sh`) :
+
+```bash
+# poste de dev
+deploy/backup.sh --local
+scp deploy/backups/tiralarc-data-<date>.tar <vps>:/opt/tiralarc/deploy/backups/
+# VPS
+/opt/tiralarc/deploy/restore.sh /opt/tiralarc/deploy/backups/tiralarc-data-<date>.tar
+```
+
+**Sauvegarde quotidienne** sur le VPS (`crontab -e`, utilisateur du groupe `docker`) :
+
+```
+30 3 * * * /opt/tiralarc/deploy/backup.sh >>/opt/tiralarc/deploy/backups/backup.log 2>&1
+```
+
+Ces archives restent **sur le VPS** : elles protègent d'une erreur, pas de la perte du serveur. Rapatrie-les
+régulièrement ailleurs, par exemple depuis le poste de dev :
+
+```bash
+rsync -av <vps>:/opt/tiralarc/deploy/backups/ ~/tiralarc-backups/
+```
+
+Pour récupérer les données de production sur le poste de dev : la même archive, puis
+`deploy/restore.sh --local <archive>` (et `pnpm --filter @tiralarc/api exec prisma migrate deploy` si le code
+local est plus récent).
