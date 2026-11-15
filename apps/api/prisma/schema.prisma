@@ -49,6 +49,8 @@ model User {
   coachedArchers          ProfileInvitation[]      @relation("CoachedArchers")
   favoriteSites           FavoriteSite[]
   dismissedCompetitions   DismissedCompetition[]
+  /// What they thought of the app (one a day at most).
+  appReviews              AppReview[]
   sessionPhotos           SessionPhoto[]
   goals                   Goal[]
   journalSessions         JournalSession[]
@@ -169,6 +171,22 @@ enum Feeling {
   EXHAUSTED
 }
 
+/// The sky during an outdoor session.
+enum Sky {
+  SUNNY
+  PARTLY_CLOUDY
+  CLOUDY
+  RAINY
+}
+
+/// The wind during an outdoor session.
+enum Wind {
+  CALM
+  LIGHT
+  MODERATE
+  STRONG
+}
+
 /// An archer's journal: a named period, typically one season (e.g. school year 2026-2027).
 /// Its events are the archer's sessions dated within the period (both days inclusive); there is no
 /// link between the two tables. An archer's journals do not overlap (enforced by the API).
@@ -211,8 +229,13 @@ model JournalSession {
   score               Int?        @db.SmallInt
   objective           String?     @db.Text
   /// Trainings and coachings: the session's steps ("Déroulé de la séance"), planned ahead.
-  /// JSON array of { unit: MINUTES | ARROWS, amount, target: STRAW | VISUAL | FACE, description }.
+  /// JSON array of { unit: MINUTES | ARROWS, amount, target: STRAW | VISUAL | FACE, description,
+  /// done } (`done`: ticked once the day has come; absent in older rows = false).
   steps               Json?
+  /// Outdoor sessions: the weather, noted with the review (not part of `completed`).
+  sky                 Sky?
+  wind                Wind?
+  temperatureC        Int?        @map("temperature_c") @db.TinyInt
   /// Self-assessment, 0–10.
   satisfaction        Int?        @db.TinyInt
   technique           Int?        @db.TinyInt
@@ -307,6 +330,47 @@ enum BowType {
 
 /// An FFTA competition the archer will not take part in: left out of the home page's competitions
 /// to plan (the calendars still show it).
+enum ReviewStatus {
+  PENDING
+  PUBLISHED
+  REFUSED
+}
+
+/// A user's review of the app: stars and a comment, sent to REVIEWS_EMAIL with a link to
+/// publish or refuse it (`moderationTokenHash`: SHA-256 of the link's token, used once);
+/// published ones show on the visitors' home page under the author's first name.
+model AppReview {
+  id                  String       @id @default(uuid()) @db.Char(36)
+  userId              String       @map("user_id") @db.Char(36)
+  /// 1 to 5.
+  stars               Int          @db.TinyInt
+  comment             String       @db.Text
+  /// As shown: the first name and the initial of the last ("Camille D."), taken when written.
+  authorName          String       @map("author_name") @db.VarChar(100)
+  status              ReviewStatus @default(PENDING)
+  moderationTokenHash String       @unique @map("moderation_token_hash") @db.Char(64)
+  createdAt           DateTime     @default(now()) @map("created_at") @db.DateTime(3)
+  decidedAt           DateTime?    @map("decided_at") @db.DateTime(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([status, decidedAt])
+  @@map("app_reviews")
+}
+
+/// A French town's coordinates, as api-adresse.data.gouv.fr gave them (GeocoderService): towns
+/// of the FFTA competitions and archers' home towns, looked up once. `key`: department code (or
+/// none) and the town's name, normalised. No coordinates: the town was not found.
+model GeocodedPlace {
+  key       String   @id @db.VarChar(160)
+  latitude  Float?
+  longitude Float?
+  createdAt DateTime @default(now()) @map("created_at") @db.DateTime(3)
+
+  @@map("geocoded_places")
+}
+
 model DismissedCompetition {
   userId            String   @map("user_id") @db.Char(36)
   /// https://www.ffta.fr/epreuve/{id}
@@ -344,6 +408,12 @@ model ArcherProfile {
   departments       Json
   /// Also show the para-archery competitions (indoor and outdoor) of the departments.
   paraCompetitions  Boolean      @default(false) @map("para_competitions")
+  /// Where the archer sets off from (their club's or home town): the competitions map measures
+  /// the distance to travel from it. Its coordinates are looked up when it is saved (null: not
+  /// found, or none).
+  homeTown          String?      @map("home_town") @db.VarChar(100)
+  homeLatitude      Float?       @map("home_latitude")
+  homeLongitude     Float?       @map("home_longitude")
   createdAt         DateTime     @default(now()) @map("created_at") @db.DateTime(3)
   updatedAt         DateTime     @updatedAt @map("updated_at") @db.DateTime(3)
 
@@ -361,6 +431,8 @@ enum Indicator {
   COMPETITIONS
   PHYSICAL_FEELINGS
   MENTAL_FEELINGS
+  /// Average per arrow, by distance (score / arrows of the scored sessions).
+  ARROW_AVERAGES
 }
 
 /// What an archer's coach may do in the journal of the season in progress.

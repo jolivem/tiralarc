@@ -10,6 +10,7 @@ import {
   EventsCard,
   FeelingsCard,
   ScoresCard,
+  ArrowAveragesCard,
 } from '@/components/stats/stats-cards';
 import type { Locale } from '@/i18n/routing';
 import { getAuthedApi } from '@/lib/api';
@@ -58,6 +59,7 @@ export default async function CoachStatsPage({
           <ArrowsCard period={span} arrowsByDay={stats.arrowsByDay} today={today} />
           <DurationsCard period={span} durationsByDay={stats.durationsByDay} today={today} />
           <ScoresCard period={span} scores={stats.scores} today={today} />
+          <ArrowAveragesCard period={span} scores={stats.scores} today={today} />
           <EventsCard period={span} eventsByDay={stats.eventsByDay} today={today} />
           <CompetitionsCard competitions={stats.competitions} />
           <FeelingsCard

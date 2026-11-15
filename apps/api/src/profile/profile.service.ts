@@ -10,6 +10,7 @@ import {
   type FavoriteSite,
   type ProfileInvitation,
 } from '../generated/prisma/client.js';
+import { GeocoderService } from '../geocoding/geocoder.service.js';
 import { MailService } from '../mail/mail.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import type {
@@ -50,6 +51,9 @@ function toProfileDto(profile: ArcherProfile | null): ProfileDto {
     licenceDepartment: profile?.licenceDepartment ?? null,
     departments: departments.filter((d): d is string => DEPARTMENT_CODES.includes(d as string)),
     paraCompetitions: profile?.paraCompetitions ?? false,
+    homeTown: profile?.homeTown ?? null,
+    homeLatitude: profile?.homeLatitude ?? null,
+    homeLongitude: profile?.homeLongitude ?? null,
   };
 }
 
@@ -106,6 +110,7 @@ export class ProfileService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly mail: MailService,
+    private readonly geocoder: GeocoderService,
   ) {}
 
   /** An archer who never saved anything has an empty profile. */
@@ -114,10 +119,25 @@ export class ProfileService {
   }
 
   async update(userId: string, dto: UpdateProfileDto): Promise<ProfileDto> {
-    const { licenceNumber, lastName, firstName, practisesInFrance, licenceDepartment, ...rest } =
-      dto;
+    const {
+      licenceNumber,
+      lastName,
+      firstName,
+      practisesInFrance,
+      licenceDepartment,
+      homeTown,
+      ...rest
+    } = dto;
+    // The home town's coordinates, looked up now (the competitions map measures from them).
+    const town = homeTown === undefined ? undefined : homeTown?.trim() || null;
+    const home = town ? await this.geocoder.locate(town) : null;
     const data = {
       ...rest,
+      ...(town !== undefined && {
+        homeTown: town,
+        homeLatitude: home?.latitude ?? null,
+        homeLongitude: home?.longitude ?? null,
+      }),
       ...(licenceNumber !== undefined && { licenceNumber: licenceNumber?.trim() || null }),
       ...(lastName !== undefined && { lastName: lastName?.trim() || null }),
       ...(firstName !== undefined && { firstName: firstName?.trim() || null }),

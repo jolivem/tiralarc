@@ -13,6 +13,8 @@ const wording: ShareWording = {
   rating: (v) => `${v}/10`,
   meters: (v) => `${v} m`,
   minutes: (v) => `${v} min`,
+  weather: ({ sky, wind, temperatureC }) =>
+    [sky, wind, temperatureC].filter((v) => v !== null).join(' '),
 };
 
 const session = {
@@ -47,6 +49,26 @@ describe('filledRows', () => {
       { field: 'satisfaction', label: 'satisfaction', text: '7/10', rating: 7 },
       { field: 'physical', label: 'physical', text: 'great', feeling: 'GREAT' },
       { field: 'wentWell', label: 'wentWell', items: ['Placement'], bullet: 'well' },
+    ]);
+  });
+
+  it('gives the weather after the score, with what was noted for its drawings', () => {
+    const outdoor = { ...session, sky: 'RAINY', wind: null, temperatureC: 9 } as JournalSession;
+    const rows = filledRows(outdoor, wording);
+    expect(rows.map((row) => row.field).slice(5, 8)).toEqual(['score', 'weather', 'objective']);
+    expect(rows.find((row) => row.field === 'weather')).toEqual({
+      field: 'weather',
+      label: 'weather',
+      text: 'RAINY 9',
+      weather: { sky: 'RAINY', wind: null, temperatureC: 9 },
+    });
+    // Its line on the card: the label, then the drawings (`weather`).
+    expect(cardLines(rows.slice(6, 7), 40, measure)).toEqual([
+      {
+        label: 'weather : ',
+        text: 'RAINY 9',
+        weather: { sky: 'RAINY', wind: null, temperatureC: 9 },
+      },
     ]);
   });
 });

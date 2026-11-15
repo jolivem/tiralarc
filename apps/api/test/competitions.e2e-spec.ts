@@ -73,6 +73,8 @@ describe('Competitions (e2e)', () => {
     ctx.ffta.results.set('79:102', [competition('4', 20)]);
     ctx.ffta.results.set('79:109', [competition('5', 300)]);
     ctx.ffta.results.set('79:118', [competition('6', 10)]);
+    // Its town on the map, looked up within the department searched.
+    ctx.address.towns.set('78|VILLEPREUX', { latitude: 48.83, longitude: 2.0 });
     await setProfile({
       departments: ['78'],
       disciplines: ['INDOOR', 'TAE_INTERNATIONAL', 'NATURE'],
@@ -90,7 +92,11 @@ describe('Competitions (e2e)', () => {
       championship: null,
       url: 'https://www.ffta.fr/epreuve/4',
       dismissed: false,
+      latitude: 48.83,
+      longitude: 2.0,
     });
+    // One town, looked up once for all its competitions.
+    expect(ctx.address.lookups).toEqual(['78|VILLEPREUX']);
     expect(
       departmentSearches()
         .map((s) => s.discipline)
@@ -104,6 +110,22 @@ describe('Competitions (e2e)', () => {
     // Read once: the site is not asked again (three disciplines, in the department, its region
     // and France, for the championships).
     expect(ctx.ffta.searches).toHaveLength(9);
+  });
+
+  it("places the archer's home town, for the distance to travel", async () => {
+    ctx.address.towns.set('|Rennes', { latitude: 48.11, longitude: -1.68 });
+    const { body } = await setProfile({ homeTown: ' Rennes ' });
+    expect(body).toMatchObject({ homeTown: 'Rennes', homeLatitude: 48.11, homeLongitude: -1.68 });
+    // A town that can't be found: kept, without coordinates; none clears it all.
+    expect((await setProfile({ homeTown: 'Nulle-part' })).body).toMatchObject({
+      homeTown: 'Nulle-part',
+      homeLatitude: null,
+    });
+    expect((await setProfile({ homeTown: null })).body).toMatchObject({
+      homeTown: null,
+      homeLatitude: null,
+      homeLongitude: null,
+    });
   });
 
   it('adds the para competitions when asked to', async () => {

@@ -16,6 +16,25 @@ describe('link emails', () => {
   });
 });
 
+describe('verification email', () => {
+  it('is laid out as a page of the notebook, the link escaped', () => {
+    const link = 'https://tiralarc.test/fr/verify-email?token=a&b';
+    const mail = verificationEmail('fr', link, 86_400);
+    expect(mail.subject).toBe('Confirmez votre adresse email');
+    expect(mail.html).toContain('<!doctype html>');
+    expect(mail.html).toContain('Caveat');
+    // Leather cover, red elastic band, ruled paper.
+    expect(mail.html).toContain('#7a5539');
+    expect(mail.html).toContain('#c62828');
+    expect(mail.html).toContain('repeating-linear-gradient');
+    expect(mail.html).toContain('Bienvenue !');
+    expect(mail.html).toContain('href="https://tiralarc.test/fr/verify-email?token=a&#38;b"');
+    expect(mail.html).toContain('Ce lien est valable 24 heures.');
+    expect(mail.text).toContain(link);
+    expect(verificationEmail('en', link, 86_400).html).toContain('Your archery diary is waiting');
+  });
+});
+
 describe('invitation emails', () => {
   const link = 'https://tiralarc.test/fr/invitations/accept?token=abc';
 

@@ -38,6 +38,7 @@ import {
   SESSION_TYPE_ORDER,
   SESSION_TYPES,
 } from '@/components/journal/session-types';
+import { arrowAverages } from '@/lib/arrow-averages';
 import { CHART_CHROME, disciplineColor, monthTicks, type Period, toTime } from './chart-utils';
 import { FavoriteStar } from './favorite';
 import classes from './stats.module.css';
@@ -824,6 +825,149 @@ export function ScoresCard({
                   <Text key={d} size="sm">
                     <span className={classes.swatch} style={{ background: disciplineColor(d) }} />
                     {t(`journal.disciplines.${d}`)}
+                  </Text>
+                ))}
+              </Group>
+            </>
+          )}
+        </>
+      )}
+    </StatsCard>
+  );
+}
+
+/** The averages' axis: whole points from this low, up to 10. */
+const AVERAGE_FLOOR_STEP = 1;
+
+/**
+ * The average per arrow, by distance (`lib/arrow-averages.ts`: target archery sessions with a
+ * score, their arrows and distance), for the events of a type chosen in the card: each
+ * distance's average over the period up to today (all the points over all the arrows), its
+ * sessions, arrows and best session; then each session's average on a chart, one line per
+ * distance. More telling than raw scores, which depend on how many arrows were shot.
+ */
+export function ArrowAveragesCard({
+  period,
+  scores: allScores,
+  today,
+}: {
+  period: Period;
+  scores: ScoreStat[];
+  today: string;
+}) {
+  const t = useTranslations();
+  const format = useFormatter();
+  const { day, month } = useDates();
+  // All the scored types at first: an average is worth comparing across them.
+  const [type, setType] = useState<ScoreType>('all');
+  const shown = untilToday(period, today);
+  /** "9,15": two decimals, as archers compare averages. */
+  const points = (value: number) =>
+    format.number(value, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+  const all = arrowAverages(allScores);
+  const distances = arrowAverages(
+    allScores.filter(
+      (s) =>
+        (type === 'all' || s.type === type) && s.date >= shown.startDate && s.date <= shown.endDate,
+    ),
+  );
+  /** A distance's colour: its rank among the distances ever averaged, stable across choices. */
+  const colorOf = (distance: number) =>
+    `var(--series-${(all.findIndex((d) => d.distance === distance) % 8) + 1})`;
+  const series = distances.map(({ distance }) => ({
+    name: String(distance),
+    label: t('stats.averages.distance', { distance }),
+    color: colorOf(distance),
+  }));
+  const rows = new Map<number, Record<string, number>>();
+  for (const { distance, points: sessions } of distances) {
+    for (const p of sessions) {
+      const time = toTime(p.date);
+      rows.set(time, { ...rows.get(time), time, [String(distance)]: p.average });
+    }
+  }
+  const data = [...rows.values()].sort((a, b) => (a.time ?? 0) - (b.time ?? 0));
+  const lowest = Math.min(...distances.flatMap((d) => d.points.map((p) => p.average)));
+  const low = Math.max(0, Math.floor(lowest / AVERAGE_FLOOR_STEP) * AVERAGE_FLOOR_STEP - 1);
+  const axis = withToday(
+    monthTicks(shown.startDate, shown.endDate),
+    month,
+    shown,
+    today,
+    t('stats.todayShort'),
+  );
+
+  return (
+    <StatsCard title={t('stats.averages.title')} indicator="ARROW_AVERAGES">
+      {all.length === 0 ? (
+        <Empty>{t('stats.averages.none')}</Empty>
+      ) : (
+        <>
+          <ChoiceBar
+            value={type}
+            onChange={setType}
+            label={t('stats.scoreTypes.label')}
+            data={SCORE_TYPES.map((value) => ({
+              value,
+              label: (
+                <span title={t(`stats.scoreTypes.${value}`)}>
+                  <span aria-hidden>{t(`stats.scoreTypes.short.${value}`)}</span>
+                  <span className={classes.srOnly}>{t(`stats.scoreTypes.${value}`)}</span>
+                </span>
+              ),
+            }))}
+            width={320}
+            size="xs"
+          />
+          {distances.length === 0 ? (
+            <Empty>{t('stats.averages.noneOfType')}</Empty>
+          ) : (
+            <>
+              <LineChart
+                {...CHART_CHROME}
+                data={data}
+                dataKey="time"
+                series={series}
+                curveType="linear"
+                connectNulls
+                dotProps={{ r: 4, strokeWidth: 2, stroke: 'var(--mantine-color-body)' }}
+                activeDotProps={{ r: 6, strokeWidth: 2, stroke: 'var(--mantine-color-body)' }}
+                valueFormatter={points}
+                yAxisProps={{
+                  domain: [low, 10],
+                  tickCount: 10 - low + 1,
+                  allowDecimals: false,
+                  // Whole points on the axis; the tooltip keeps two decimals.
+                  tickFormatter: (value: number) => format.number(value),
+                }}
+                xAxisProps={{
+                  type: 'number',
+                  scale: 'time',
+                  domain: [toTime(shown.startDate), toTime(shown.endDate)],
+                  ticks: axis.ticks,
+                  tickFormatter: axis.tickFormatter,
+                }}
+                referenceLines={referenceToday(shown, today)}
+                tooltipProps={{
+                  content: ({ label, payload }) => (
+                    <ChartTooltip
+                      label={label === undefined ? undefined : day(Number(label))}
+                      payload={payload}
+                      series={series}
+                      valueFormatter={points}
+                    />
+                  ),
+                }}
+              />
+              {/* Under the chart, each distance in its colour with its average over the period. */}
+              <Group gap="lg" justify="center">
+                {distances.map((d) => (
+                  <Text key={d.distance} size="sm">
+                    <span className={classes.swatch} style={{ background: colorOf(d.distance) }} />
+                    <strong>{t('stats.averages.distance', { distance: d.distance })}</strong>
+                    {' · '}
+                    <strong>{points(d.average)}</strong> {t('stats.averages.perArrow')}
                   </Text>
                 ))}
               </Group>

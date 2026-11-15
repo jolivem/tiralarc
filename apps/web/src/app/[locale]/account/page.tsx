@@ -18,8 +18,10 @@ import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/serve
 import { AthletesCard } from '@/components/coach/athletes-card';
 import { JournalsCard } from '@/components/journal/journals-card';
 import { ActionIconLink } from '@/components/links';
+import { ReviewCard } from '@/components/reviews/review-card';
 import { redirect } from '@/i18n/navigation';
 import type { Locale } from '@/i18n/routing';
+import { getAuthedApi } from '@/lib/api';
 import { getAthletes } from '@/lib/coaching';
 import { getCurrentUser } from '@/lib/current-user';
 import { getJournals, getSelectedJournal } from '@/lib/journals';
@@ -44,10 +46,12 @@ export default async function AccountPage({ params }: PageProps<'/[locale]/accou
 
   // Journals are an archer's: coaches who are not archers don't see the card.
   const isArcher = user.roles.includes('ARCHER');
-  const [journals, selected, athletes] = await Promise.all([
+  const [journals, selected, athletes, { data: reviews }] = await Promise.all([
     isArcher ? getJournals() : [],
     isArcher ? getSelectedJournal() : null,
     user.roles.includes('COACH') ? getAthletes() : null,
+    // When the next review of the app may be written (one a day).
+    (await getAuthedApi()).GET('/api/v1/reviews/mine'),
   ]);
 
   const name = user.displayName ?? user.email;
@@ -122,6 +126,8 @@ export default async function AccountPage({ params }: PageProps<'/[locale]/accou
         {isArcher && <JournalsCard journals={journals} selectedId={selected?.id ?? null} />}
         {/* Coaches only: the archers who invited them, and their journals. */}
         {athletes && <AthletesCard athletes={athletes} />}
+        {/* Rate the app: approved by email before it shows on the home page. */}
+        <ReviewCard nextAllowedAt={reviews?.nextAllowedAt ?? null} />
       </Stack>
     </Container>
   );

@@ -89,6 +89,18 @@ export class CompetitionDto {
     description: 'The organiser\'s invitation ("mandat", PDF), once published.',
   })
   mandateUrl!: string | null;
+
+  @ApiProperty({
+    type: Number,
+    nullable: true,
+    description:
+      "Latitude of its town (`city`; the clients' map), as the French address service gives it; " +
+      'null when the town could not be found.',
+  })
+  latitude!: number | null;
+
+  @ApiProperty({ type: Number, nullable: true, description: "Its town's longitude." })
+  longitude!: number | null;
 }
 
 /** Empty for an archer who doesn't practise in France (`practisesInFrance` false). */

@@ -53,6 +53,9 @@ describe('Profile (e2e)', () => {
       licenceDepartment: null,
       departments: [],
       paraCompetitions: false,
+      homeTown: null,
+      homeLatitude: null,
+      homeLongitude: null,
     });
 
     const saved = await http()
@@ -84,6 +87,9 @@ describe('Profile (e2e)', () => {
       licenceDepartment: null,
       departments: ['2A', '971'],
       paraCompetitions: true,
+      homeTown: null,
+      homeLatitude: null,
+      homeLongitude: null,
     });
 
     // Partial update; null clears a field.

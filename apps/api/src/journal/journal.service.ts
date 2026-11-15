@@ -90,21 +90,24 @@ function asList(value: unknown): string[] {
 
 /** A session's steps as stored: plain objects, the description trimmed. */
 function cleanSteps(steps: SessionStepDto[]): Prisma.InputJsonArray {
-  return steps.map(({ unit, amount, target, description }) => ({
+  return steps.map(({ unit, amount, target, description, done }) => ({
     unit,
     amount,
     target,
     description: description.trim(),
+    done: done === true,
   }));
 }
 
-/** The stored steps (a JSON array; null for sessions without any). */
+/** The stored steps (a JSON array; null for sessions without any); `done` false when absent. */
 function asSteps(value: unknown): SessionStepDto[] {
   if (!Array.isArray(value)) return [];
-  return value.filter(
-    (v): v is SessionStepDto =>
-      typeof v === 'object' && v !== null && STEP_UNITS.includes((v as SessionStepDto).unit),
-  );
+  return value
+    .filter(
+      (v): v is SessionStepDto =>
+        typeof v === 'object' && v !== null && STEP_UNITS.includes((v as SessionStepDto).unit),
+    )
+    .map((step) => ({ ...step, done: step.done === true }));
 }
 
 /**
@@ -291,6 +294,9 @@ function toDto(s: SessionRow): SessionDto {
     technique: s.technique,
     physicalFeeling: s.physicalFeeling,
     mentalFeeling: s.mentalFeeling,
+    sky: s.sky,
+    wind: s.wind,
+    temperatureC: s.temperatureC,
     wentWell: asList(s.wentWell),
     toImprove: asList(s.toImprove),
     nextTime: s.nextTime,
@@ -486,7 +492,15 @@ export class JournalService {
           discipline: { not: null },
         },
         orderBy: [{ date: 'asc' }, { createdAt: 'asc' }],
-        select: { id: true, date: true, type: true, discipline: true, score: true },
+        select: {
+          id: true,
+          date: true,
+          type: true,
+          discipline: true,
+          score: true,
+          arrowCount: true,
+          distanceMeters: true,
+        },
       }),
       this.prisma.journalSession.groupBy({
         by: ['date'],
@@ -637,6 +651,40 @@ export class JournalService {
           fields.distanceMeters ?? defaultDistance(fftaCompetitionId, fields.discipline),
         objective: fields.objective,
         ...(fields.steps && { steps: cleanSteps(fields.steps) }),
+        wentWell: [],
+        toImprove: [],
+      },
+      include: WITH_TYPE,
+    });
+    return toDto(session);
+  }
+
+  /**
+   * "Do this session again": a new training or coaching on `day`, with the same planning
+   * (duration, place, discipline, distance, objective, steps — none ticked); no review.
+   */
+  async copy(userId: string, id: string, day: string): Promise<SessionDto> {
+    const source = await this.findOwned(userId, id);
+    if (source.type !== SessionType.TRAINING && source.type !== SessionType.COACHING) {
+      throw new ApiException(
+        HttpStatus.BAD_REQUEST,
+        ErrorCode.VALIDATION_FAILED,
+        'Only a training or a coaching can be copied',
+      );
+    }
+    const date = toDbDate(day);
+    await this.assertDayHasRoom(userId, date);
+    const session = await this.prisma.journalSession.create({
+      data: {
+        userId,
+        type: source.type,
+        date,
+        durationMinutes: source.durationMinutes,
+        location: source.location,
+        discipline: source.discipline,
+        distanceMeters: source.distanceMeters,
+        objective: source.objective,
+        steps: cleanSteps(asSteps(source.steps).map((step) => ({ ...step, done: false }))),
         wentWell: [],
         toImprove: [],
       },

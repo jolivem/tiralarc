@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { AgeCategory, Discipline } from '../generated/prisma/client.js';
+import { GeocoderService, placeKey } from '../geocoding/geocoder.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { ProfileService } from '../profile/profile.service.js';
 import { type Department, DEPARTMENTS, departmentByCode } from './departments.js';
@@ -100,6 +101,7 @@ export class CompetitionsService {
     private readonly ffta: FftaClient,
     private readonly profiles: ProfileService,
     private readonly prisma: PrismaService,
+    private readonly geocoder: GeocoderService,
   ) {}
 
   /**
@@ -194,6 +196,8 @@ export class CompetitionsService {
         scopes.flatMap((scope) =>
           [...searched.keys()].map(async (id) => ({
             id,
+            // A department's search: its towns are in it (same-named towns told apart).
+            department: departments.find((d) => d.code === scope.key)?.code ?? null,
             competitions: await this.search(scope, id),
           })),
         ),
@@ -208,24 +212,40 @@ export class CompetitionsService {
     // the others the other way round (all of them while the category is unknown).
     const ageOf = profile.category && (YOUTH.has(profile.category) ? 'YOUTH' : 'ADULT');
     const seen = new Set<string>();
-    const competitions: CompetitionDto[] = [];
-    for (const { id, competitions: found } of results) {
+    const kept: {
+      competition: Omit<CompetitionDto, 'latitude' | 'longitude'>;
+      department: string | null;
+    }[] = [];
+    for (const { id, department, competitions: found } of results) {
       for (const c of found ?? []) {
         if (seen.has(c.id) || c.endDate < first || (to && c.startDate > to)) continue;
         seen.add(c.id);
         const championship = championshipLevel(c.title);
         const age = championship && championshipAge(c.title);
         if (ageOf && age && age !== ageOf) continue;
-        competitions.push({
-          ...c,
-          discipline: searched.get(id)!,
-          para: PARA_IDS.has(id),
-          championship,
-          url: competitionUrl(c.id),
-          dismissed: dismissed.has(c.id),
+        kept.push({
+          department,
+          competition: {
+            ...c,
+            discipline: searched.get(id)!,
+            para: PARA_IDS.has(id),
+            championship,
+            url: competitionUrl(c.id),
+            dismissed: dismissed.has(c.id),
+          },
         });
       }
     }
+    // Their towns on the map: looked up once each (then kept), within their department when known.
+    const located = await this.geocoder.locateAll(
+      kept.flatMap(({ competition, department }) =>
+        competition.city ? [{ city: competition.city, department }] : [],
+      ),
+    );
+    const competitions: CompetitionDto[] = kept.map(({ competition, department }) => {
+      const at = competition.city ? located.get(placeKey(competition.city, department)) : null;
+      return { ...competition, latitude: at?.latitude ?? null, longitude: at?.longitude ?? null };
+    });
     competitions.sort(
       (a, b) => a.startDate.localeCompare(b.startDate) || a.title.localeCompare(b.title),
     );

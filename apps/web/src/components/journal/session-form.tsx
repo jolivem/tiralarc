@@ -18,6 +18,7 @@ import {
   Textarea,
   TextInput,
   Title,
+  UnstyledButton,
 } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
 import {
@@ -38,6 +39,8 @@ import type {
   JournalSuggestions,
   SessionPhoto,
   SessionType,
+  Sky,
+  Wind,
 } from '@tiralarc/api-client';
 import { useLocale, useTranslations } from 'next-intl';
 import {
@@ -66,10 +69,15 @@ import { FEELING_INK, FEELINGS } from './feelings';
 import classes from './journal.module.css';
 import { today, tomorrow } from './new-session-modal';
 import { DISCIPLINE_COLORS, DISCIPLINE_ORDER, SESSION_TYPES } from './session-types';
-import { AddStepButton, MAX_STEPS, StepDialog, StepList } from './session-steps';
+import { AddStepButton, MAX_STEPS, StepDialog, StepList, useStepsTotal } from './session-steps';
+import { SessionAgainButton } from './session-again';
+import { SkyIcon, Windsock } from './weather-icons';
 import { ShareButton } from './share-modal';
 
 const DEFAULT_NOTE_COLOR = 'gray';
+/** The weather of an outdoor session, in the order offered. */
+const SKIES: readonly Sky[] = ['SUNNY', 'PARTLY_CLOUDY', 'CLOUDY', 'RAINY'];
+const WINDS: readonly Wind[] = ['CALM', 'LIGHT', 'MODERATE', 'STRONG'];
 /** The distances offered as one-tap chips (others are typed in the field). */
 const QUICK_DISTANCES = [18, 50, 70];
 /**
@@ -111,6 +119,9 @@ function initialValues(s: JournalSession): Values {
     description: s.description,
     physicalFeeling: s.physicalFeeling,
     mentalFeeling: s.mentalFeeling,
+    sky: s.sky,
+    wind: s.wind,
+    temperatureC: s.temperatureC,
     wentWell: pad(s.wentWell),
     toImprove: pad(s.toImprove),
     nextTime: s.nextTime,
@@ -129,6 +140,10 @@ const NO_REVIEW = {
   description: null,
   physicalFeeling: null,
   mentalFeeling: null,
+  // The weather is noted on the day too.
+  sky: null,
+  wind: null,
+  temperatureC: null,
   wentWell: Array<string>(LIST_LINES).fill(''),
   toImprove: Array<string>(LIST_LINES).fill(''),
   nextTime: null,
@@ -223,6 +238,7 @@ export function SessionForm({
   children?: ReactNode;
 }) {
   const t = useTranslations('journal');
+  const stepsTotal = useStepsTotal();
   const locale = useLocale();
   const router = useRouter();
   /** A coach who may not change this event: every field shows, none changes. */
@@ -415,6 +431,10 @@ export function SessionForm({
             >
               {t('delete')}
             </Button>
+            {/* The archer's own training or coaching (as saved): again, on another day. */}
+            {!coach && (savedValues.type === 'TRAINING' || savedValues.type === 'COACHING') && (
+              <SessionAgainButton sessionId={session.id} dirty={dirty} />
+            )}
             {plannedBy}
           </Group>
         )}
@@ -615,6 +635,52 @@ export function SessionForm({
                         allowDecimal={false}
                       />
                     </FieldRow>
+                    {/* Outdoors: the weather, which often explains a score. */}
+                    {values.discipline !== null && values.discipline !== 'INDOOR' && (
+                      <>
+                        <FieldRow label={t('weather.sky')} locked={locked}>
+                          <IconChoices
+                            label={t('weather.sky')}
+                            options={SKIES}
+                            value={values.sky}
+                            onChange={(v) => set('sky', v)}
+                            optionLabel={(v) => t(`weather.skies.${v}`)}
+                            icon={(v) => <SkyIcon sky={v} />}
+                            disabled={locked || readOnly}
+                          />
+                        </FieldRow>
+                        <FieldRow label={t('weather.wind')} locked={locked}>
+                          <IconChoices
+                            label={t('weather.wind')}
+                            options={WINDS}
+                            value={values.wind}
+                            onChange={(v) => set('wind', v)}
+                            optionLabel={(v) => t(`weather.winds.${v}`)}
+                            icon={(v) => <Windsock wind={v} />}
+                            disabled={locked || readOnly}
+                          />
+                        </FieldRow>
+                        <FieldRow
+                          id={`${fieldId}-temperature`}
+                          label={t('weather.temperature')}
+                          locked={locked}
+                        >
+                          <NumberInput
+                            id={`${fieldId}-temperature`}
+                            size="xs"
+                            disabled={locked}
+                            maw={NUMBER_WIDTH}
+                            value={values.temperatureC ?? ''}
+                            onChange={(v) => set('temperatureC', toNumber(v))}
+                            readOnly={readOnly}
+                            min={-30}
+                            max={50}
+                            allowDecimal={false}
+                            suffix=" °C"
+                          />
+                        </FieldRow>
+                      </>
+                    )}
                   </>
                 )}
                 {form === 'note' && (
@@ -684,7 +750,8 @@ export function SessionForm({
 
           {hasSheet && (
             <>
-              <Section title={t('objective')} gap={0}>
+              {/* A blank line more between the Informations (and photos) and the objective. */}
+              <Section title={t('objective')} gap={0} blankLineAbove>
                 <Textarea
                   {...RULED_TEXT}
                   aria-label={t('objective')}
@@ -700,7 +767,12 @@ export function SessionForm({
               {/* Trainings and coachings: the session's steps, planned ahead too. */}
               {SESSION_TYPES[values.type].steps && (
                 <Section
-                  title={t('outline')}
+                  // The planned minutes / arrows in brackets by the title.
+                  title={
+                    stepsTotal(values.steps)
+                      ? `${t('outline')} (${stepsTotal(values.steps)})`
+                      : t('outline')
+                  }
                   gap={0}
                   action={
                     !readOnly && (
@@ -711,7 +783,24 @@ export function SessionForm({
                     )
                   }
                 >
-                  <StepList steps={values.steps} onOpen={setEditingStep} readOnly={readOnly} />
+                  <StepList
+                    steps={values.steps}
+                    onOpen={setEditingStep}
+                    onChange={(steps) => set('steps', steps)}
+                    // The archer ticks what was done, once the day has come.
+                    onToggle={
+                      !coach && !locked
+                        ? (index) =>
+                            set(
+                              'steps',
+                              values.steps.map((s, i) =>
+                                i === index ? { ...s, done: !s.done } : s,
+                              ),
+                            )
+                        : undefined
+                    }
+                    readOnly={readOnly}
+                  />
                   <StepDialog
                     opened={editingStep !== null}
                     step={typeof editingStep === 'number' ? values.steps[editingStep] : undefined}
@@ -958,6 +1047,48 @@ function FieldRow({
   );
 }
 
+/**
+ * One choice among a few, as drawings on the field's line (the weather): a tap picks one, a
+ * second tap on it takes it off. Each says what it is in its tooltip and to screen readers.
+ */
+function IconChoices<T extends string>({
+  label,
+  options,
+  value,
+  onChange,
+  optionLabel,
+  icon,
+  disabled,
+}: {
+  label: string;
+  options: readonly T[];
+  value: T | null;
+  onChange: (value: T | null) => void;
+  optionLabel: (value: T) => string;
+  icon: (value: T) => ReactNode;
+  disabled?: boolean;
+}) {
+  return (
+    <Group role="radiogroup" aria-label={label} gap={4} wrap="nowrap">
+      {options.map((option) => (
+        <UnstyledButton
+          key={option}
+          role="radio"
+          aria-checked={option === value}
+          aria-label={optionLabel(option)}
+          title={optionLabel(option)}
+          className={classes.iconChoice}
+          data-checked={option === value || undefined}
+          disabled={disabled}
+          onClick={() => onChange(option === value ? null : option)}
+        >
+          {icon(option)}
+        </UnstyledButton>
+      ))}
+    </Group>
+  );
+}
+
 /** A box of the sheet, unframed: its name on a ruled line, its fields below. */
 function Section({
   title,
@@ -965,11 +1096,17 @@ function Section({
   mih,
   locked,
   action,
+  blankLineAbove = false,
   children,
 }: {
   title: string;
   /** Next to the title (e.g. the steps' "+"). */
   action?: ReactNode;
+  /**
+   * One more blank ruled line above the box (inside it: RuledStack sets the boxes' margins to
+   * put them on the lines).
+   */
+  blankLineAbove?: boolean;
   /** Between the name and the fields: 0 when they keep to the sheet's lines too. */
   gap?: number | string;
   /** Height kept even when the box shows less (e.g. a list's lines still to come). */
@@ -984,7 +1121,13 @@ function Section({
     </Title>
   );
   return (
-    <Stack component="section" gap={gap} mih={mih} className={locked ? classes.locked : undefined}>
+    <Stack
+      component="section"
+      gap={gap}
+      mih={mih}
+      pt={blankLineAbove ? 'var(--step)' : undefined}
+      className={locked ? classes.locked : undefined}
+    >
       {action ? (
         <Group gap="xs" wrap="nowrap" align="center">
           {heading}

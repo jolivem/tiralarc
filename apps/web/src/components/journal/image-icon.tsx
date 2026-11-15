@@ -53,7 +53,8 @@ export function pictureIcon(src: string, name: string, scale = 1): EventIconComp
         aria-hidden
         width={typeof size === 'number' ? size : undefined}
         height={typeof size === 'number' ? size : undefined}
-        className={className}
+        // `event-picture`: haloed in dark mode (globals.css), its black outlines kept visible.
+        className={className ? `event-picture ${className}` : 'event-picture'}
         style={{
           display: 'inline-block',
           flexShrink: 0,

@@ -41,6 +41,8 @@ const envSchema = z.object({
   /** SMTP connection string, e.g. smtp://localhost:1025 (Mailpit in dev) or smtps://user:pass@host:465. */
   SMTP_URL: z.string().default('smtp://localhost:1025'),
   MAIL_FROM: z.string().default('MyArcheryDiary <no-reply@tiralarc.local>'),
+  /** Where users' reviews of the app are sent for approval before they show on the home page. */
+  REVIEWS_EMAIL: z.email().default('feedback@myarcherydiary.com'),
   /** Email verification link lifetime, in seconds. */
   EMAIL_VERIFICATION_TTL: z.coerce
     .number()

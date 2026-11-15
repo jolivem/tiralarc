@@ -571,6 +571,15 @@
   }
 }
 
+/* The weather's line: the sky, the windsock, the temperature, side by side (print-sheet.tsx). */
+.weather {
+  display: inline-flex;
+  gap: 2mm;
+  align-items: center;
+  /* The pole in the text's ink. */
+  color: inherit;
+}
+
 .text {
   margin: 0;
   white-space: pre-wrap;

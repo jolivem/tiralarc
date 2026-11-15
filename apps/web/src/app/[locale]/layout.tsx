@@ -4,10 +4,11 @@ import '@mantine/dates/styles.css';
 import '@mantine/schedule/styles.css';
 import '../globals.css';
 import { ColorSchemeScript, mantineHtmlProps } from '@mantine/core';
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import {
   Alex_Brush,
   Allura,
+  Atkinson_Hyperlegible,
   Caveat,
   Courgette,
   Dancing_Script,
@@ -17,6 +18,7 @@ import {
   Kaushan_Script,
   Parisienne,
   Patrick_Hand,
+  Permanent_Marker,
   Ribeye,
   Sacramento,
   Satisfy,
@@ -115,8 +117,23 @@ const yellowtail = Yellowtail({
   weight: '400',
   preload: false,
 });
+/** Marker pen on a whiteboard: the season summary (stats/season-board.tsx). Loaded when shown. */
+const permanentMarker = Permanent_Marker({
+  variable: '--font-marker',
+  subsets: ['latin'],
+  weight: '400',
+  preload: false,
+});
+/** The plain one, for whom the calligraphy is hard to read (bold too: the home page's titles). */
+const atkinson = Atkinson_Hyperlegible({
+  variable: '--font-cal-atkinson',
+  subsets: ['latin'],
+  weight: ['400', '700'],
+  preload: false,
+});
 const calendarFonts = [
   dancingScript,
+  atkinson,
   satisfy,
   courgette,
   kaushanScript,
@@ -135,8 +152,16 @@ export function generateStaticParams() {
 export async function generateMetadata({ params }: LayoutProps<'/[locale]'>): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale: locale as 'fr' | 'en', namespace: 'home' });
-  return { title: 'MyArcheryDiary', description: t('tagline') };
+  return {
+    title: 'MyArcheryDiary',
+    description: t('tagline'),
+    // Added to an iPhone's home screen (manifest.ts for the others): opens on its own.
+    appleWebApp: { capable: true, title: 'ArcheryDiary', statusBarStyle: 'default' },
+  };
 }
+
+/** The browser's bar in the notebook's leather (installed app, Android). */
+export const viewport: Viewport = { themeColor: '#7a5539' };
 
 export default async function LocaleLayout({ children, params }: LayoutProps<'/[locale]'>) {
   const { locale } = await params;
@@ -177,7 +202,15 @@ export default async function LocaleLayout({ children, params }: LayoutProps<'/[
   return (
     <html
       lang={locale}
-      className={[geistSans, geistMono, caveat, patrickHand, ribeye, ...calendarFonts]
+      className={[
+        geistSans,
+        geistMono,
+        caveat,
+        patrickHand,
+        ribeye,
+        permanentMarker,
+        ...calendarFonts,
+      ]
         .map((font) => font.variable)
         .join(' ')}
       style={fontStyle}

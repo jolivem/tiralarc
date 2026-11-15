@@ -1,0 +1,99 @@
+/*
+ * Users' reviews on the visitors' home page (reviews-strip.tsx): sticky notes in a row on the
+ * desk, a little askew, scrolling sideways with a visible scrollbar.
+ */
+.strip {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mantine-spacing-sm);
+}
+
+.stripHeader {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  align-items: baseline;
+  justify-content: center;
+}
+
+.stripTitle {
+  margin: 0;
+  font-family: var(--font-hand), 'Segoe Print', cursive;
+  font-size: 2rem;
+  font-weight: 700;
+}
+
+.average {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  color: var(--mantine-color-dimmed);
+  font-size: var(--mantine-font-size-sm);
+}
+
+.row {
+  display: flex;
+  gap: 26px;
+  margin: 0;
+  padding: 22px 8px 18px;
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  list-style: none;
+  scrollbar-color: #a08a70 transparent;
+  scrollbar-width: thin;
+
+  &:focus-visible {
+    outline: 2px solid var(--mantine-primary-color-filled);
+    outline-offset: 2px;
+  }
+}
+
+.note {
+  --note: #fff6b8;
+
+  display: flex;
+  flex: 0 0 260px;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px 18px 14px;
+  color: #2f3a4a;
+  background: var(--note);
+  box-shadow:
+    0 1px 1px rgb(0 0 0 / 0.12),
+    0 10px 16px -10px rgb(0 0 0 / 0.45);
+  transform: rotate(-1deg);
+  scroll-snap-align: start;
+
+  &[data-tint='1'] {
+    --note: #ffe0ec;
+
+    transform: rotate(1.2deg);
+  }
+
+  &[data-tint='2'] {
+    --note: #dff1ff;
+
+    transform: rotate(-0.6deg);
+  }
+
+  &[data-tint='3'] {
+    --note: #e3f7df;
+
+    transform: rotate(0.8deg);
+  }
+}
+
+.comment {
+  margin: 0;
+  font-family: var(--font-hand), 'Segoe Print', cursive;
+  font-size: 1.3rem;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.author {
+  margin: auto 0 0;
+  color: #5c636a;
+  font-size: var(--mantine-font-size-xs);
+}

@@ -26,6 +26,7 @@ const INDICATOR_TITLES = {
   PHYSICAL_FEELINGS: 'feelings.physical.title',
   MENTAL_FEELINGS: 'feelings.mental.title',
   COMPETITIONS: 'competitions',
+  ARROW_AVERAGES: 'averages.title',
 } as const satisfies Record<Indicator, string>;
 
 /**

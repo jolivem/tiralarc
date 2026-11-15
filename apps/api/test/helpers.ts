@@ -6,6 +6,7 @@ import { type ExternalIdentity, IdTokenVerifier } from '../src/auth/id-token-ver
 import { ApiException, ErrorCode } from '../src/common/errors.js';
 import type { FftaCompetition, FftaCompetitionDetails } from '../src/competitions/ffta-parser.js';
 import { FftaClient, type FftaSearch } from '../src/competitions/ffta.client.js';
+import { AddressClient, type Coordinates } from '../src/geocoding/address.client.js';
 import type { FftaRankingInfo, FftaRankingRow } from '../src/competitions/ffta-rankings.js';
 import { AuthProvider } from '../src/generated/prisma/client.js';
 import { MailService, type OutgoingMail } from '../src/mail/mail.service.js';
@@ -117,6 +118,20 @@ export class FakeFfta {
   }
 }
 
+/**
+ * Stand-in for the French address service: each town's coordinates by "<department>|<name>"
+ * (department empty when none was given); others are not found. `lookups`: what was asked.
+ */
+export class FakeAddress {
+  readonly towns = new Map<string, Coordinates>();
+  readonly lookups: string[] = [];
+  async municipality(city: string, department?: string): Promise<Coordinates | null> {
+    const key = `${department ?? ''}|${city}`;
+    this.lookups.push(key);
+    return this.towns.get(key) ?? null;
+  }
+}
+
 export interface TestContext {
   app: INestApplication<App>;
   prisma: PrismaService;
@@ -126,6 +141,7 @@ export interface TestContext {
   files: Map<string, Buffer>;
   ffta: FakeFfta;
   ianseo: FakeIanseo;
+  address: FakeAddress;
 }
 
 export async function createTestApp(): Promise<TestContext> {
@@ -139,6 +155,8 @@ export async function createTestApp(): Promise<TestContext> {
     .useClass(FakeFfta)
     .overrideProvider(IanseoClient)
     .useClass(FakeIanseo)
+    .overrideProvider(AddressClient)
+    .useClass(FakeAddress)
     .compile();
 
   const app = moduleRef.createNestApplication<INestApplication<App>>();
@@ -159,12 +177,15 @@ export async function createTestApp(): Promise<TestContext> {
     files,
     ffta: app.get<FakeFfta>(FftaClient),
     ianseo: app.get<FakeIanseo>(IanseoClient),
+    address: app.get<FakeAddress>(AddressClient),
   };
 }
 
 export async function resetDatabase(prisma: PrismaService): Promise<void> {
   // Child tables cascade from users.
   await prisma.user.deleteMany();
+  // Towns looked up by another test's fake address service.
+  await prisma.geocodedPlace.deleteMany();
 }
 
 /**

@@ -39,6 +39,8 @@ export const ErrorCode = {
   DAILY_LIMIT_REACHED: 'DAILY_LIMIT_REACHED',
   /** A coach's groups have different names. */
   GROUP_NAME_TAKEN: 'GROUP_NAME_TAKEN',
+  /** A review's moderation link is unknown, or the review was already published or refused. */
+  INVALID_REVIEW_TOKEN: 'INVALID_REVIEW_TOKEN',
 } as const;
 
 export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];

@@ -3,6 +3,7 @@
 import type { Indicator, JournalStats } from '@tiralarc/api-client';
 import type { Period } from './chart-utils';
 import {
+  ArrowAveragesCard,
   ArrowsCard,
   CompetitionsCard,
   DurationsCard,
@@ -53,6 +54,8 @@ function Card({
       return <DurationsCard period={period} durationsByDay={stats.durationsByDay} today={today} />;
     case 'SCORES':
       return <ScoresCard period={period} scores={stats.scores} today={today} />;
+    case 'ARROW_AVERAGES':
+      return <ArrowAveragesCard period={period} scores={stats.scores} today={today} />;
     case 'EVENTS':
       return <EventsCard period={period} eventsByDay={stats.eventsByDay} today={today} />;
     case 'COMPETITIONS':

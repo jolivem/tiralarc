@@ -1,6 +1,6 @@
 'use client';
 
-import { Button, Divider, Stack } from '@mantine/core';
+import { Button, Divider, Stack, useComputedColorScheme } from '@mantine/core';
 import { IconBrandApple } from '@tabler/icons-react';
 import { useLocale, useTranslations } from 'next-intl';
 import { useEffect, useEffectEvent, useRef, useState, useTransition } from 'react';
@@ -83,6 +83,8 @@ function GoogleButton({
 }) {
   const container = useRef<HTMLDivElement>(null);
   const locale = useLocale();
+  // Google's own dark button in dark mode (its light one sits in a white block there).
+  const dark = useComputedColorScheme('light') === 'dark';
   const handleCredential = useEffectEvent(onToken);
 
   useEffect(() => {
@@ -97,8 +99,9 @@ function GoogleButton({
           nonce,
           callback: ({ credential }) => handleCredential({ idToken: credential, nonce }),
         });
+        container.current.replaceChildren();
         google.accounts.id.renderButton(container.current, {
-          theme: 'outline',
+          theme: dark ? 'filled_black' : 'outline',
           size: 'large',
           text: 'continue_with',
           width: 320,
@@ -109,9 +112,13 @@ function GoogleButton({
     return () => {
       cancelled = true;
     };
-  }, [clientId, locale]);
+  }, [clientId, locale, dark]);
 
-  return <div ref={container} style={{ minHeight: 40 }} />;
+  return (
+    // Google's frame is a light page: in a dark page the browser would paint it opaque white
+    // around the button unless its container is light too.
+    <div ref={container} style={{ minHeight: 40, colorScheme: 'light' }} />
+  );
 }
 
 // ------------------------------------------------------------------ Apple

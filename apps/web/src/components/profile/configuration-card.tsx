@@ -217,7 +217,7 @@ export function CompetitionsCard({
   profile,
   departments,
 }: {
-  profile: Pick<ArcherProfile, 'departments' | 'paraCompetitions'>;
+  profile: Pick<ArcherProfile, 'departments' | 'paraCompetitions' | 'homeTown' | 'homeLatitude'>;
   departments: Department[];
 }) {
   const t = useTranslations('profile.competitions');
@@ -225,7 +225,10 @@ export function CompetitionsCard({
   const [values, setValues] = useState({
     departments: profile.departments,
     paraCompetitions: profile.paraCompetitions,
+    homeTown: profile.homeTown ?? '',
   });
+  /** Whether the saved town was found on the map (the API looks it up when saving). */
+  const [found, setFound] = useState(profile.homeLatitude !== null);
   const [saved, setSaved] = useState(() => JSON.stringify(values));
   const dirty = JSON.stringify(values) !== saved;
   const [state, setState] = useState<ActionState>({});
@@ -256,9 +259,15 @@ export function CompetitionsCard({
           if (!dirty) return;
           const snapshot = values;
           startTransition(async () => {
-            const result = await saveProfile(snapshot);
+            const result = await saveProfile({
+              ...snapshot,
+              homeTown: snapshot.homeTown.trim() || null,
+            });
             setState(result);
-            if (!result.code) setSaved(JSON.stringify(snapshot));
+            if (!result.code) {
+              setSaved(JSON.stringify(snapshot));
+              setFound(result.homeFound ?? false);
+            }
           });
         }}
       >
@@ -266,6 +275,21 @@ export function CompetitionsCard({
           <Text size="sm" c="dimmed">
             {t('hint', { max: MAX_DEPARTMENTS })}
           </Text>
+          {/* Where the competitions map measures the distance to travel from. */}
+          <div className={classes.fieldRows}>
+            <label htmlFor={`${fieldId}-home`} className={classes.fieldName}>
+              {t('homeTown')}
+            </label>
+            <TextInput
+              id={`${fieldId}-home`}
+              value={values.homeTown}
+              onChange={(e) => set('homeTown', e.currentTarget.value)}
+              placeholder={t('homeTownPlaceholder')}
+              description={t('homeTownHint')}
+              error={values.homeTown.trim() && !dirty && !found ? t('homeTownNotFound') : undefined}
+              maxLength={100}
+            />
+          </div>
           <div className={classes.fieldRows}>
             <label htmlFor={`${fieldId}-departments`} className={classes.fieldName}>
               {t('departments')}

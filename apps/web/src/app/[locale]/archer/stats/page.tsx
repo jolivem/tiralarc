@@ -1,11 +1,15 @@
-import { SimpleGrid, Stack } from '@mantine/core';
+import { Group, SimpleGrid, Stack } from '@mantine/core';
 import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/server';
+import { SeasonBoardButton } from '@/components/stats/season-board';
+import { seasonSummary } from '@/lib/season-summary';
 import { SectionPage } from '@/components/section-page';
 import { ALL_TIME } from '@/components/stats/chart-utils';
 import { FavoriteIndicatorProvider } from '@/components/stats/favorite';
 import { GoalsCard } from '@/components/stats/goals-card';
 import { PeriodSelect } from '@/components/stats/period-select';
+import { RankingsCard } from '@/components/stats/rankings-card';
 import {
+  ArrowAveragesCard,
   ArrowsCard,
   CompetitionsCard,
   DurationsCard,
@@ -16,6 +20,7 @@ import {
 import type { Locale } from '@/i18n/routing';
 import { getAuthedApi } from '@/lib/api';
 import { getArcherProfile } from '@/lib/archer-profile';
+import { getCurrentUser } from '@/lib/current-user';
 import { getJournals, getSelectedJournal } from '@/lib/journals';
 import { getStats } from '@/lib/stats';
 
@@ -39,11 +44,22 @@ export default async function ArcherStatsPage({
   const journal =
     period === ALL_TIME ? null : (journals.find((j) => j.id === period) ?? selected ?? null);
 
-  const [{ stats, span, today }, { data: goals }, profile] = await Promise.all([
+  const [{ stats, span, today }, { data: goals }, profile, user] = await Promise.all([
     getStats(journal),
     // Goals are the archer's, whatever the period shown.
     (await getAuthedApi()).GET('/api/v1/goals'),
     getArcherProfile(),
+    getCurrentUser(),
+  ]);
+  // The national rankings, only when practising in France (or not said yet); kept an hour in the
+  // browser, read again once anything they depend on changes.
+  const ffta = profile?.practisesInFrance !== false;
+  const rankingsScope = JSON.stringify([
+    user?.id,
+    profile?.licenceNumber,
+    profile?.category,
+    profile?.bowType,
+    profile?.disciplines,
   ]);
   // Noon, so the calendar day is the same in every time zone.
   const day = (date: string) =>
@@ -57,13 +73,25 @@ export default async function ArcherStatsPage({
           ? t('journals.period', { start: day(journal.startDate), end: day(journal.endDate) })
           : t('stats.allTimeIntro')
       }
-      actions={<PeriodSelect journals={journals} value={journal?.id ?? ALL_TIME} />}
+      actions={
+        <Group gap="sm">
+          {/* A journal's period: its season summary, on a whiteboard in a window. */}
+          {journal && (
+            <SeasonBoardButton
+              journal={journal}
+              summary={seasonSummary(stats, goals ?? [], journal.startDate, journal.endDate)}
+            />
+          )}
+          <PeriodSelect journals={journals} value={journal?.id ?? ALL_TIME} />
+        </Group>
+      }
       squared
     >
       {/* One wide page, so the charts keep their width. */}
       <FavoriteIndicatorProvider initial={profile?.favoriteIndicator ?? null}>
         <Stack gap="lg">
           <GoalsCard goals={goals ?? []} today={today} />
+          {ffta && <RankingsCard cacheScope={rankingsScope} />}
           {/*
             Side by side on large screens, one above the other below; the two cards of a row
             as high as each other (the taller one, in whole squares).
@@ -72,6 +100,7 @@ export default async function ArcherStatsPage({
             <ArrowsCard period={span} arrowsByDay={stats.arrowsByDay} today={today} />
             <DurationsCard period={span} durationsByDay={stats.durationsByDay} today={today} />
             <ScoresCard period={span} scores={stats.scores} today={today} />
+            <ArrowAveragesCard period={span} scores={stats.scores} today={today} />
             <EventsCard period={span} eventsByDay={stats.eventsByDay} today={today} />
             <CompetitionsCard competitions={stats.competitions} />
             <FeelingsCard

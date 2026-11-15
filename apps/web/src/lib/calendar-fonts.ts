@@ -5,6 +5,10 @@
  */
 export const CALENDAR_FONTS = {
   'dancing-script': '--font-cal-dancing-script',
+  // Simpler, easier to read: an upright handwriting (the notebook's own fallback, always
+  // loaded), and a plain font drawn for legibility.
+  'patrick-hand': '--font-hand-upright',
+  atkinson: '--font-cal-atkinson',
   satisfy: '--font-cal-satisfy',
   courgette: '--font-cal-courgette',
   'kaushan-script': '--font-cal-kaushan-script',
@@ -25,5 +29,6 @@ export function calendarFont(id: string | null | undefined): CalendarFontId {
   return id && id in CALENDAR_FONTS ? (id as CalendarFontId) : DEFAULT_CALENDAR_FONT;
 }
 
-/** `font-family` value of a calendar font. */
-export const calendarFontFamily = (id: CalendarFontId) => `var(${CALENDAR_FONTS[id]}), cursive`;
+/** `font-family` value of a calendar font (the plain one falls back on a sans-serif). */
+export const calendarFontFamily = (id: CalendarFontId) =>
+  `var(${CALENDAR_FONTS[id]}), ${id === 'atkinson' ? 'sans-serif' : 'cursive'}`;

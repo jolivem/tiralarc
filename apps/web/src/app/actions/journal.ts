@@ -205,6 +205,18 @@ export async function createSession(input: {
   return redirect({ href: `/archer/journal/${result.data.id}`, locale: await getLocale() });
 }
 
+/** "Do this session again" on `date`: the new sheet opens (same planning, no review). */
+export async function copySession(id: string, date: string): Promise<ActionState> {
+  const result = await send(
+    (await getAuthedApi()).POST('/api/v1/journal/sessions/{id}/copy', {
+      params: { path: { id } },
+      body: { date },
+    }),
+  );
+  if (!result.ok) return result.state;
+  return redirect({ href: `/archer/journal/${result.data.id}`, locale: await getLocale() });
+}
+
 /** Defines (no id) or changes one of the archer's event types; the new one's id comes back. */
 export async function saveEventType(
   id: string | null,

@@ -4,7 +4,7 @@ import { ARCHER_SECTIONS, tabColors } from '@/components/sections';
 import classes from './cover.module.css';
 
 /**
- * The closed notebook on the desk: leather cover with the site's name, tagline and bow in
+ * The closed notebook on the desk: leather cover with the site's name and tagline in
  * relief, divider tabs and ribbon; `children` go on the raised panel at the bottom
  * (`wide` when they are a form).
  */
@@ -24,11 +24,11 @@ export async function NotebookCover({ children, wide }: { children: ReactNode; w
           />
         ))}
       </span>
-      <h1 className={`${classes.coverTitle} ${classes.emboss}`}>MyArcheryDiary</h1>
+      <h1 className={`${classes.coverTitle} ${classes.emboss}`}>
+        <span className={classes.coverTitlePart}>MyArchery</span>
+        <span className={`${classes.coverTitlePart} ${classes.coverTitleEnd}`}>Diary</span>
+      </h1>
       <p className={`${classes.coverTagline} ${classes.emboss}`}>{t('tagline')}</p>
-      <span className={classes.coverArt} aria-hidden>
-        <span className={classes.coverArtStrokes} />
-      </span>
       <div className={classes.label}>{children}</div>
     </div>
   );

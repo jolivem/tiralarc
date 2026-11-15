@@ -8,14 +8,14 @@ import { useEffect, useState } from 'react';
 import { listRankings } from '@/app/actions/rankings';
 import { DISCIPLINE_COLORS } from '@/components/journal/session-types';
 import { AnchorLink } from '@/components/links';
-import { RuledHeading, RuledSubtitle } from '@/components/notebook/on-ruling';
 import { readCached, writeCached } from '@/lib/browser-cache';
+import { SquaredCard, StatsCardTitle } from './stats-cards';
 import classes from './stats.module.css';
 
 /**
  * The archer's places in the FFTA national rankings of their category and bow, one per
- * discipline (outdoor: per distance), this season and the one before, on the right page of
- * the home notebook. Loaded once shown (the FFTA website can be slow), then kept an hour in
+ * discipline (outdoor: per distance), this season and the one before: a card of the
+ * Indicators page, under the goals. Loaded once shown (the FFTA website can be slow), then kept an hour in
  * the browser (`cacheScope`: the archer and the settings the rankings depend on).
  */
 export function RankingsCard({ cacheScope }: { cacheScope: string }) {
@@ -74,8 +74,7 @@ export function RankingsCard({ cacheScope }: { cacheScope: string }) {
       <Stack gap={0}>
         {seasons.map(({ season, rankings }) => (
           <Stack key={season} gap="xs">
-            {/* On a line: this season's right under the heading. */}
-            <RuledSubtitle>{t('season', { season })}</RuledSubtitle>
+            <Text fw={600}>{t('season', { season })}</Text>
             {rankings.length === 0 && (
               <Text size="sm" c="dimmed">
                 {list.complete ? t('none') : t('unavailable')}
@@ -126,10 +125,11 @@ export function RankingsCard({ cacheScope }: { cacheScope: string }) {
   );
 
   return (
-    <section>
-      {/* A line higher, level with the calendar's heading on the left page. */}
-      <RuledHeading raised>{t('title')}</RuledHeading>
-      {body()}
-    </section>
+    <SquaredCard>
+      <Stack gap="md">
+        <StatsCardTitle>{t('title')}</StatsCardTitle>
+        {body()}
+      </Stack>
+    </SquaredCard>
   );
 }

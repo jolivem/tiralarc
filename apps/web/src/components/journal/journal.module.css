@@ -313,6 +313,35 @@
   line-height: 1.2;
 }
 
+/* The regularity card (regularity-card.tsx): a blank ruled line under it. */
+.regularity {
+  padding-bottom: var(--step, 30px);
+}
+
+/* Its lines: one figure per ruled line. */
+.regularityLine {
+  margin: 0;
+  padding-inline: 6px;
+  font-size: var(--mantine-font-size-md);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/*
+ * Its figures, in the date's blue ink; a line height of their own, so the bigger size keeps the
+ * line one ruled line high (the next figure on the very next line).
+ */
+.figureInk {
+  color: #1f3a6e;
+  font-size: 1.15em;
+  line-height: 1;
+
+  @mixin dark {
+    color: #8fb3ea;
+  }
+}
+
 .newEventText {
   min-width: 0;
   overflow: hidden;
@@ -603,20 +632,101 @@
   min-height: var(--step, 30px);
 }
 
+/* Numbered by hand (session-steps.tsx), so the arrows can go before the numbers. */
 .steps {
-  /* Room for "12 – ". */
-  padding-inline-start: 2.2em;
+  padding: 0;
   font-weight: 400;
+  list-style: none;
+}
 
-  /* The numbers in bold followed by a dash ("1 – "), the steps' text plain. */
-  & li::marker {
-    content: counter(list-item) ' – ';
-    font-weight: 700;
-  }
+/* "1 – " in bold, the step's text plain. */
+.stepNumber {
+  font-weight: 700;
 }
 
 .stepsEmpty {
   color: var(--mantine-color-dimmed);
+}
+
+/* A step: its text, its tick box, then its arrows (session-steps.tsx), on the ruled line. */
+.stepItem {
+  /* Side by side; the number stays the list's marker. */
+  & > * {
+    vertical-align: middle;
+  }
+}
+
+/* Right of the step's text; done: a green tick (the box filled green, or the tick alone). */
+.stepCheck {
+  display: inline-block;
+  margin-inline-start: 8px;
+  color: var(--mantine-color-green-filled);
+}
+
+.stepText {
+  display: inline;
+}
+
+/*
+ * The arrows, before the number, faint until the line is hovered (always shown on touch
+ * screens); a missing one keeps its room (.stepMoveBlank), so the numbers line up.
+ */
+.stepMoves {
+  display: inline-flex;
+  gap: 2px;
+  margin-inline-end: 6px;
+  opacity: 0.45;
+
+  .stepItem:hover &,
+  .stepItem:focus-within & {
+    opacity: 1;
+  }
+
+  @media (hover: none) {
+    opacity: 1;
+  }
+}
+
+/* As wide as an arrow (ActionIcon size xs). */
+.stepMoveBlank {
+  display: inline-block;
+  width: var(--ai-size-xs, 18px);
+}
+
+/*
+ * A weather drawing to pick (session-form.tsx, IconChoices): on the field's line, framed once
+ * chosen; the others fainter while one is chosen.
+ */
+.iconChoice {
+  display: inline-flex;
+  padding: 1px;
+  border: 1.5px solid transparent;
+  border-radius: var(--mantine-radius-sm);
+  color: var(--paper-ink, var(--mantine-color-text));
+  line-height: 0;
+
+  &:hover:not(:disabled) {
+    background: var(--mantine-color-default-hover);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--mantine-primary-color-filled);
+    outline-offset: 1px;
+  }
+
+  &[data-checked] {
+    border-color: var(--mantine-primary-color-filled);
+    background: var(--mantine-primary-color-light);
+  }
+
+  [role='radiogroup']:has([data-checked]) &:not([data-checked]) {
+    opacity: 0.45;
+  }
+
+  &:disabled {
+    cursor: default;
+    opacity: 0.4;
+  }
 }
 
 .stepButton {
@@ -1322,6 +1432,44 @@
   }
 }
 
+/*
+ * The season calendar's months (months-overview.tsx, `pastel`): one pastel per month of the
+ * year, light enough for the dots and today's highlight to stay clear; a faint wash in dark mode.
+ */
+.pastel {
+  --tint-1: #e3eefb;
+  --tint-2: #eee5fb;
+  --tint-3: #e1f4e8;
+  --tint-4: #fde7ef;
+  --tint-5: #edf6da;
+  --tint-6: #fff5d3;
+  --tint-7: #ffe8d6;
+  --tint-8: #fbe1dc;
+  --tint-9: #f2e9d8;
+  --tint-10: #fde3cb;
+  --tint-11: #e5ebef;
+  --tint-12: #def2f3;
+}
+
+.pastelMonth {
+  padding: var(--mantine-spacing-xs);
+  border-radius: var(--mantine-radius-md);
+  background: var(--month-tint);
+
+  @mixin dark {
+    background: color-mix(in srgb, var(--month-tint) 14%, transparent);
+  }
+
+  /* A link keeps its tint on hover, a shade deeper. */
+  &.monthLink:hover {
+    background: color-mix(in srgb, var(--month-tint) 88%, #000);
+
+    @mixin dark {
+      background: color-mix(in srgb, var(--month-tint) 22%, transparent);
+    }
+  }
+}
+
 .monthName {
   font-size: 1.4rem;
   line-height: 1.2;
@@ -1397,10 +1545,68 @@
   min-width: 0;
 }
 
+/* A competition picked on the map (competitions-map.tsx): marked in the list a moment. */
+.competitionItem[data-highlighted] {
+  border-radius: var(--mantine-radius-sm);
+  background: color-mix(in srgb, var(--mantine-color-orange-filled) 14%, transparent);
+  box-shadow: inset 4px 0 0 var(--mantine-color-orange-filled);
+  transition: background 300ms ease;
+}
+
+/* The competitions map, above their list: rounded, its legend under it. */
+.competitionsMapFrame {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.competitionsMap {
+  height: 340px;
+  border: 1px solid var(--mantine-color-default-border);
+  border-radius: var(--mantine-radius-md);
+  overflow: hidden;
+  /* Under the dialog's own layers. */
+  z-index: 0;
+
+  @media (max-width: $mantine-breakpoint-sm) {
+    height: 260px;
+  }
+}
+
+.competitionsMapLegend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  font-size: var(--mantine-font-size-xs);
+
+  & i {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    margin-inline-end: 4px;
+    border: 1.5px solid #fff;
+    border-radius: 50%;
+    box-shadow: 0 0 0 1px rgb(0 0 0 / 0.2);
+    vertical-align: -1px;
+  }
+}
+
+.competitionsMapHint {
+  color: var(--mantine-color-dimmed);
+}
+
 /* The home page's competitions to plan: a black cross in each row's top right corner. */
 .competitionItem[data-dismissable] {
   position: relative;
   padding-inline-end: 30px;
+  /* Rows clearly set apart, in the page's ink, the last one closed too. */
+  border-top: 1.5px solid
+    color-mix(in srgb, var(--paper-ink, var(--mantine-color-text)) 45%, transparent);
+
+  &:last-child {
+    border-bottom: 1.5px solid
+      color-mix(in srgb, var(--paper-ink, var(--mantine-color-text)) 45%, transparent);
+  }
 }
 
 .competitionDismiss {

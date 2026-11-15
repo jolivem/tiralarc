@@ -31,6 +31,7 @@ import {
 import { Roles } from '../common/decorators/roles.decorator.js';
 import { Role } from '../generated/prisma/client.js';
 import {
+  CopySessionDto,
   CreateSessionDto,
   JournalStatsDto,
   ListSessionsQuery,
@@ -135,6 +136,22 @@ export class JournalController {
     @Body() dto: UpdateSessionDto,
   ): Promise<SessionDto> {
     return this.journal.update(user.id, id, dto);
+  }
+
+  @Post(':id/copy')
+  @ApiOperation({
+    summary:
+      'Do a training or coaching again: a new one on `date` with the same planning (duration, place, discipline, distance, objective, steps), without review',
+  })
+  @ApiCreatedResponse({ type: SessionDto })
+  @ApiNotFoundResponse()
+  @ApiConflictResponse({ description: 'DAY_FULL: that day already has 4 events' })
+  copy(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() dto: CopySessionDto,
+  ): Promise<SessionDto> {
+    return this.journal.copy(user.id, id, dto.date);
   }
 
   @Post(':id/seen')

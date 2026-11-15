@@ -8,6 +8,7 @@ import { useTranslations } from 'next-intl';
 import { useState, useTransition } from 'react';
 import { listCompetitions } from '@/app/actions/journal';
 import { RuledActionCard } from '@/components/notebook/ruled-action-card';
+import type { LatLng } from '@/lib/geo';
 import { eventsOf } from '@/lib/journal-events';
 import { CompetitionListPanel } from './competition-list';
 import classes from './season-calendar.module.css';
@@ -22,10 +23,13 @@ import classes from './season-calendar.module.css';
 export function CompetitionPlanningCard({
   journal,
   today,
+  home = null,
 }: {
   journal: Pick<Journal, 'startDate' | 'endDate'>;
   /** "YYYY-MM-DD", decided by the server so both renders agree. */
   today: string;
+  /** The profile's starting town, for the map's distances to travel (null: none, or not found). */
+  home?: (LatLng & { name: string }) | null;
 }) {
   const t = useTranslations('archer.competitions');
   const tArcher = useTranslations('archer');
@@ -58,6 +62,8 @@ export function CompetitionPlanningCard({
     <RuledActionCard
       title={t('planningTitle')}
       intro={t('planningIntro')}
+      // A line higher, close under the published invitations.
+      raised
       action={
         <Button
           variant="light"
@@ -93,6 +99,7 @@ export function CompetitionPlanningCard({
               sessions={sessions}
               today={today}
               onAdded={() => startLoading(loadEvents)}
+              home={home}
             />
           </Stack>
         )}

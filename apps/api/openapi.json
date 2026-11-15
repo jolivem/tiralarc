@@ -1345,6 +1345,61 @@
         ]
       }
     },
+    "/api/v1/journal/sessions/{id}/copy": {
+      "post": {
+        "operationId": "Journal_copy",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CopySessionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Archers only"
+          },
+          "404": {
+            "description": ""
+          },
+          "409": {
+            "description": "DAY_FULL: that day already has 4 events"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Do a training or coaching again: a new one on `date` with the same planning (duration, place, discipline, distance, objective, steps), without review",
+        "tags": [
+          "journal"
+        ]
+      }
+    },
     "/api/v1/journal/sessions/{id}/seen": {
       "post": {
         "operationId": "Journal_markSeen",
@@ -3328,6 +3383,155 @@
           "coaching"
         ]
       }
+    },
+    "/api/v1/reviews": {
+      "get": {
+        "operationId": "Reviews_published",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PublicReviewDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "The published reviews of the app, the latest first (visitors' home page)",
+        "tags": [
+          "reviews"
+        ]
+      },
+      "post": {
+        "operationId": "Reviews_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateReviewDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyReviewsDto"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "DAILY_LIMIT_REACHED: one review a day"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Rate the app and comment on it (one review a day): emailed for approval before it shows on the home page",
+        "tags": [
+          "reviews"
+        ]
+      }
+    },
+    "/api/v1/reviews/mine": {
+      "get": {
+        "operationId": "Reviews_mine",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyReviewsDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "reviews"
+        ]
+      }
+    },
+    "/api/v1/reviews/moderation": {
+      "get": {
+        "operationId": "Reviews_forModeration",
+        "parameters": [
+          {
+            "name": "token",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewModerationDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "INVALID_REVIEW_TOKEN"
+          }
+        },
+        "summary": "The review an emailed moderation link is about (doesn't decide)",
+        "tags": [
+          "reviews"
+        ]
+      },
+      "post": {
+        "operationId": "Reviews_moderate",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModerateReviewDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "409": {
+            "description": "INVALID_REVIEW_TOKEN: unknown, or already decided"
+          }
+        },
+        "summary": "Publish or refuse a pending review (the emailed link, once)",
+        "tags": [
+          "reviews"
+        ]
+      }
     }
   },
   "info": {
@@ -4185,6 +4389,16 @@
           },
           "score": {
             "type": "number"
+          },
+          "arrowCount": {
+            "type": "number",
+            "nullable": true,
+            "description": "Arrows shot: with the score, the average per arrow."
+          },
+          "distanceMeters": {
+            "type": "number",
+            "nullable": true,
+            "description": "Shooting distance, in metres."
           }
         },
         "required": [
@@ -4192,7 +4406,9 @@
           "date",
           "type",
           "discipline",
-          "score"
+          "score",
+          "arrowCount",
+          "distanceMeters"
         ]
       },
       "EventsByDayDto": {
@@ -4616,6 +4832,11 @@
             "type": "string",
             "maxLength": 1000,
             "description": "What to do."
+          },
+          "done": {
+            "type": "boolean",
+            "default": false,
+            "description": "Ticked by the archer once the day has come: the step was done. Absent = false; always present in responses."
           }
         },
         "required": [
@@ -4624,6 +4845,26 @@
           "target",
           "description"
         ]
+      },
+      "Sky": {
+        "type": "string",
+        "enum": [
+          "SUNNY",
+          "PARTLY_CLOUDY",
+          "CLOUDY",
+          "RAINY"
+        ],
+        "description": "Outdoor sessions."
+      },
+      "Wind": {
+        "type": "string",
+        "enum": [
+          "CALM",
+          "LIGHT",
+          "MODERATE",
+          "STRONG"
+        ],
+        "description": "Outdoor sessions."
       },
       "SessionDto": {
         "type": "object",
@@ -4773,6 +5014,29 @@
               }
             ]
           },
+          "sky": {
+            "nullable": true,
+            "description": "Outdoor sessions.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Sky"
+              }
+            ]
+          },
+          "wind": {
+            "nullable": true,
+            "description": "Outdoor sessions.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Wind"
+              }
+            ]
+          },
+          "temperatureC": {
+            "type": "number",
+            "nullable": true,
+            "description": "Outdoor sessions, in °C."
+          },
           "wentWell": {
             "type": "array",
             "items": {
@@ -4820,6 +5084,9 @@
           "technique",
           "physicalFeeling",
           "mentalFeeling",
+          "sky",
+          "wind",
+          "temperatureC",
           "wentWell",
           "toImprove",
           "nextTime",
@@ -4925,6 +5192,31 @@
               }
             ]
           },
+          "sky": {
+            "nullable": true,
+            "description": "Outdoor sessions: the sky. Not part of `completed`.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Sky"
+              }
+            ]
+          },
+          "wind": {
+            "nullable": true,
+            "description": "Outdoor sessions: the wind. Not part of `completed`.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Wind"
+              }
+            ]
+          },
+          "temperatureC": {
+            "type": "number",
+            "nullable": true,
+            "minimum": -30,
+            "maximum": 50,
+            "description": "Outdoor sessions: the temperature, in °C. Not part of `completed`."
+          },
           "wentWell": {
             "maxItems": 3,
             "description": "What went well (≤ 3 lines).",
@@ -4970,6 +5262,19 @@
             ]
           }
         }
+      },
+      "CopySessionDto": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "example": "2026-10-10",
+            "description": "Local date (YYYY-MM-DD) of the new session."
+          }
+        },
+        "required": [
+          "date"
+        ]
       },
       "CreateCustomEventTypeDto": {
         "type": "object",
@@ -5197,6 +5502,16 @@
             "format": "uri",
             "nullable": true,
             "description": "The organiser's invitation (\"mandat\", PDF), once published."
+          },
+          "latitude": {
+            "type": "number",
+            "nullable": true,
+            "description": "Latitude of its town (`city`; the clients' map), as the French address service gives it; null when the town could not be found."
+          },
+          "longitude": {
+            "type": "number",
+            "nullable": true,
+            "description": "Its town's longitude."
           }
         },
         "required": [
@@ -5213,7 +5528,9 @@
           "status",
           "url",
           "dismissed",
-          "mandateUrl"
+          "mandateUrl",
+          "latitude",
+          "longitude"
         ]
       },
       "CompetitionListDto": {
@@ -5405,7 +5722,8 @@
           "EVENTS",
           "COMPETITIONS",
           "PHYSICAL_FEELINGS",
-          "MENTAL_FEELINGS"
+          "MENTAL_FEELINGS",
+          "ARROW_AVERAGES"
         ],
         "description": "The indicator shown on the home page; null = none."
       },
@@ -5488,6 +5806,22 @@
           "paraCompetitions": {
             "type": "boolean",
             "description": "Also show the para-archery competitions (indoor and outdoor target archery)."
+          },
+          "homeTown": {
+            "type": "string",
+            "nullable": true,
+            "example": "Rennes",
+            "description": "Where the archer sets off from (their club's or home town, in France): the competitions map measures the distance to travel from it."
+          },
+          "homeLatitude": {
+            "type": "number",
+            "nullable": true,
+            "description": "`homeTown`'s latitude (null: no town, or not found)."
+          },
+          "homeLongitude": {
+            "type": "number",
+            "nullable": true,
+            "description": "`homeTown`'s longitude."
           }
         },
         "required": [
@@ -5502,7 +5836,10 @@
           "practisesInFrance",
           "licenceDepartment",
           "departments",
-          "paraCompetitions"
+          "paraCompetitions",
+          "homeTown",
+          "homeLatitude",
+          "homeLongitude"
         ]
       },
       "UpdateProfileDto": {
@@ -5586,6 +5923,12 @@
           },
           "paraCompetitions": {
             "type": "boolean"
+          },
+          "homeTown": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 100,
+            "description": "Town the archer sets off from; its coordinates are looked up when saved."
           }
         }
       },
@@ -6116,6 +6459,193 @@
             "description": "A day after today, within the archer's journal of the season in progress."
           }
         }
+      },
+      "PublicReviewDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "stars": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "comment": {
+            "type": "string"
+          },
+          "authorName": {
+            "type": "string",
+            "example": "Camille D.",
+            "description": "First name and initial of the last."
+          },
+          "date": {
+            "type": "string",
+            "example": "2026-11-15",
+            "description": "The day it was written (YYYY-MM-DD)."
+          }
+        },
+        "required": [
+          "id",
+          "stars",
+          "comment",
+          "authorName",
+          "date"
+        ]
+      },
+      "ReviewStatus": {
+        "type": "string",
+        "enum": [
+          "PENDING",
+          "PUBLISHED",
+          "REFUSED"
+        ]
+      },
+      "MyReviewDto": {
+        "type": "object",
+        "properties": {
+          "stars": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "comment": {
+            "type": "string"
+          },
+          "status": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ReviewStatus"
+              }
+            ]
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "stars",
+          "comment",
+          "status",
+          "createdAt"
+        ]
+      },
+      "MyReviewsDto": {
+        "type": "object",
+        "properties": {
+          "last": {
+            "nullable": true,
+            "description": "The latest one, if any.",
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/MyReviewDto"
+              }
+            ]
+          },
+          "nextAllowedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "description": "When the next review may be written (one a day); null: now."
+          }
+        },
+        "required": [
+          "last",
+          "nextAllowedAt"
+        ]
+      },
+      "CreateReviewDto": {
+        "type": "object",
+        "properties": {
+          "stars": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 5,
+            "description": "Stars given to the app."
+          },
+          "comment": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000,
+            "description": "What the user thinks of the app."
+          }
+        },
+        "required": [
+          "stars",
+          "comment"
+        ]
+      },
+      "ReviewModerationDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "stars": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "comment": {
+            "type": "string"
+          },
+          "authorName": {
+            "type": "string",
+            "example": "Camille D.",
+            "description": "First name and initial of the last."
+          },
+          "date": {
+            "type": "string",
+            "example": "2026-11-15",
+            "description": "The day it was written (YYYY-MM-DD)."
+          },
+          "status": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ReviewStatus"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "stars",
+          "comment",
+          "authorName",
+          "date",
+          "status"
+        ]
+      },
+      "ReviewDecision": {
+        "type": "string",
+        "enum": [
+          "PUBLISH",
+          "REFUSE"
+        ]
+      },
+      "ModerateReviewDto": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string",
+            "description": "The token of the emailed moderation link."
+          },
+          "decision": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ReviewDecision"
+              }
+            ]
+          }
+        },
+        "required": [
+          "token",
+          "decision"
+        ]
       }
     }
   }

@@ -11,8 +11,11 @@ export function RuledActionCard({
   title,
   intro,
   action,
+  raised = false,
   children,
 }: {
+  /** Its heading a line higher (over the last line of what comes before). */
+  raised?: boolean;
   title: ReactNode;
   intro: ReactNode;
   action: ReactNode;
@@ -22,7 +25,7 @@ export function RuledActionCard({
   return (
     <section>
       <RuledStack>
-        <RuledHeading>{title}</RuledHeading>
+        <RuledHeading raised={raised}>{title}</RuledHeading>
         <div className={classes.row}>
           <p className={classes.intro}>{intro}</p>
           <div className={classes.action}>{action}</div>

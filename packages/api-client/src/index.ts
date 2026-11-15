@@ -47,6 +47,11 @@ export type SessionPhoto = Schemas['PhotoDto'];
 export type SessionType = Schemas['SessionDto']['type'];
 export type Discipline = NonNullable<Schemas['SessionDto']['discipline']>;
 export type Feeling = NonNullable<Schemas['SessionDto']['physicalFeeling']>;
+/** A user's review of the app, as published on the home page. */
+export type PublicReview = Schemas['PublicReviewDto'];
+/** Outdoor sessions' weather. */
+export type Sky = NonNullable<Schemas['SessionDto']['sky']>;
+export type Wind = NonNullable<Schemas['SessionDto']['wind']>;
 export type Indicator = NonNullable<Schemas['ProfileDto']['favoriteIndicator']>;
 export type Department = Schemas['DepartmentDto'];
 export type Competition = Schemas['CompetitionDto'];
@@ -88,7 +93,8 @@ export type ErrorCode =
   | 'DATE_NOT_PLANNABLE'
   | 'DATE_LOCKED'
   | 'DAILY_LIMIT_REACHED'
-  | 'GROUP_NAME_TAKEN';
+  | 'GROUP_NAME_TAKEN'
+  | 'INVALID_REVIEW_TOKEN';
 
 /** RFC 9457 error body returned by every failing API call. */
 export interface ProblemDetails {

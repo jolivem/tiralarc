@@ -2,6 +2,62 @@
  * Visitors' home page, below the closed notebook (components/notebook/cover.tsx): the FAQ.
  */
 
+/* The tagline, at the top: large, in handwriting. */
+.hook {
+  margin: 0 0 var(--mantine-spacing-sm);
+  font-family: var(--font-hand), 'Segoe Print', cursive;
+  font-size: clamp(2.2rem, 6vw, 3.4rem);
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+/*
+ * The closed notebook in the middle, two prints on either side (from desktops up); below md,
+ * the notebook first, then the four prints two by two (the sides melt into the grid).
+ */
+.showcase {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 44px 28px;
+  align-items: center;
+
+  @media (min-width: $mantine-breakpoint-md) {
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    gap: 40px;
+  }
+}
+
+.showcaseCover {
+  grid-column: 1 / -1;
+  order: -1;
+
+  @media (min-width: $mantine-breakpoint-md) {
+    grid-column: 2;
+    grid-row: 1;
+    order: 0;
+    width: 460px;
+  }
+}
+
+.showcaseSide {
+  display: contents;
+
+  @media (min-width: $mantine-breakpoint-md) {
+    display: flex;
+    flex-direction: column;
+    gap: 52px;
+    grid-row: 1;
+
+    &[data-side='left'] {
+      grid-column: 1;
+    }
+
+    &[data-side='right'] {
+      grid-column: 3;
+    }
+  }
+}
+
 /*
  * FAQ, below the notebook: a plain sheet torn out of a spiral notebook, cut out by a
  * mask in three bands: along the top, the row of holes the spiral went through, each
@@ -14,7 +70,7 @@
 
   /* A sheet narrower than the notebook's column, from tablets up. */
   @media (min-width: $mantine-breakpoint-sm) {
-    width: 80%;
+    width: min(80%, 760px);
     margin-inline: auto;
   }
 }

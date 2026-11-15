@@ -8,6 +8,7 @@ import { EventIcon } from '@/components/journal/event-display';
 import { FEELING_INK, FEELINGS } from '@/components/journal/feelings';
 import { useStepLabel } from '@/components/journal/session-steps';
 import { DISCIPLINE_COLORS } from '@/components/journal/session-types';
+import { SkyIcon, Windsock } from '@/components/journal/weather-icons';
 import { SHEET_ATTRIBUTE } from './markers';
 import classes from './print.module.css';
 
@@ -85,6 +86,25 @@ export function PrintSheet({ session: s }: { session: JournalSession }) {
   if (s.distanceMeters !== null) fields.push([t('journal.distance'), number(s.distanceMeters)]);
   if (s.arrowCount !== null) fields.push([t('journal.arrows'), number(s.arrowCount)]);
   if (s.score !== null) fields.push([t('journal.score'), number(s.score)]);
+  // Outdoors: the sky's and the windsock's drawings, then the temperature.
+  if (s.sky !== null || s.wind !== null || s.temperatureC !== null) {
+    fields.push([
+      t('journal.share.labels.weather'),
+      <span key="weather" className={classes.weather}>
+        {s.sky && (
+          <span title={t(`journal.weather.skies.${s.sky}`)}>
+            <SkyIcon sky={s.sky} size={26} />
+          </span>
+        )}
+        {s.wind && (
+          <span title={t(`journal.share.winds.${s.wind}`)}>
+            <Windsock wind={s.wind} size={26} />
+          </span>
+        )}
+        {s.temperatureC !== null && <span>{number(s.temperatureC)} °C</span>}
+      </span>,
+    ]);
+  }
 
   const wentWell = s.wentWell.filter((line) => line.trim());
   const toImprove = s.toImprove.filter((line) => line.trim());

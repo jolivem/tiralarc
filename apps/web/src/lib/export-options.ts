@@ -34,6 +34,7 @@ export const INDICATORS: readonly Indicator[] = [
   'ARROWS',
   'DURATIONS',
   'SCORES',
+  'ARROW_AVERAGES',
   'EVENTS',
   'PHYSICAL_FEELINGS',
   'MENTAL_FEELINGS',

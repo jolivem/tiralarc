@@ -18,7 +18,7 @@ import {
   ValidateIf,
   ValidateNested,
 } from 'class-validator';
-import { Discipline, Feeling, SessionType } from '../../generated/prisma/client.js';
+import { Discipline, Feeling, SessionType, Sky, Wind } from '../../generated/prisma/client.js';
 
 const DATE = /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/;
 export const MONTH = /^\d{4}-(0[1-9]|1[0-2])$/;
@@ -27,6 +27,8 @@ const THEME = /^[a-z0-9-]{1,30}$/;
 const SESSION_TYPES = Object.values(SessionType);
 const DISCIPLINES = Object.values(Discipline);
 const FEELINGS = Object.values(Feeling);
+const SKIES = Object.values(Sky);
+const WINDS = Object.values(Wind);
 
 /** Calendar colours an `OTHER` event can take (palette names; clients pick the shades). */
 export const EVENT_COLORS = [
@@ -109,6 +111,16 @@ export class SessionStepDto {
   @IsString()
   @MaxLength(1000)
   description!: string;
+
+  @ApiPropertyOptional({
+    default: false,
+    description:
+      'Ticked by the archer once the day has come: the step was done. Absent = false; always ' +
+      'present in responses.',
+  })
+  @IsOptional()
+  @IsBoolean()
+  done?: boolean;
 }
 
 /** An optional list of session steps in a request (the archer's sheet, a coach's planning). */
@@ -437,6 +449,16 @@ export class ScoreStatDto {
 
   @ApiProperty()
   score!: number;
+
+  @ApiProperty({
+    type: Number,
+    nullable: true,
+    description: 'Arrows shot: with the score, the average per arrow.',
+  })
+  arrowCount!: number | null;
+
+  @ApiProperty({ type: Number, nullable: true, description: 'Shooting distance, in metres.' })
+  distanceMeters!: number | null;
 }
 
 export class EventsByDayDto {
@@ -707,6 +729,39 @@ export class UpdateSessionDto {
   mentalFeeling?: Feeling | null;
 
   @ApiPropertyOptional({
+    enum: SKIES,
+    enumName: 'Sky',
+    nullable: true,
+    description: 'Outdoor sessions: the sky. Not part of `completed`.',
+  })
+  @IsOptional()
+  @IsIn(SKIES)
+  sky?: Sky | null;
+
+  @ApiPropertyOptional({
+    enum: WINDS,
+    enumName: 'Wind',
+    nullable: true,
+    description: 'Outdoor sessions: the wind. Not part of `completed`.',
+  })
+  @IsOptional()
+  @IsIn(WINDS)
+  wind?: Wind | null;
+
+  @ApiPropertyOptional({
+    type: Number,
+    nullable: true,
+    minimum: -30,
+    maximum: 50,
+    description: 'Outdoor sessions: the temperature, in °C. Not part of `completed`.',
+  })
+  @IsOptional()
+  @IsInt()
+  @Min(-30)
+  @Max(50)
+  temperatureC?: number | null;
+
+  @ApiPropertyOptional({
     type: [String],
     maxItems: MAX_LIST_ITEMS,
     description: 'What went well (≤ 3 lines).',
@@ -909,6 +964,15 @@ export class SessionDto extends SessionSummaryDto {
   @ApiProperty({ enum: FEELINGS, enumName: 'Feeling', nullable: true })
   mentalFeeling!: Feeling | null;
 
+  @ApiProperty({ enum: SKIES, enumName: 'Sky', nullable: true, description: 'Outdoor sessions.' })
+  sky!: Sky | null;
+
+  @ApiProperty({ enum: WINDS, enumName: 'Wind', nullable: true, description: 'Outdoor sessions.' })
+  wind!: Wind | null;
+
+  @ApiProperty({ type: Number, nullable: true, description: 'Outdoor sessions, in °C.' })
+  temperatureC!: number | null;
+
   @ApiProperty({ type: [String] })
   wentWell!: string[];
 
@@ -920,6 +984,16 @@ export class SessionDto extends SessionSummaryDto {
 
   @ApiProperty({ format: 'date-time' })
   updatedAt!: Date;
+}
+
+/** POST body of `/journal/sessions/{id}/copy`. */
+export class CopySessionDto {
+  @ApiProperty({
+    example: '2026-10-10',
+    description: 'Local date (YYYY-MM-DD) of the new session.',
+  })
+  @Matches(DATE, { message: 'date must be YYYY-MM-DD' })
+  date!: string;
 }
 
 /** Values the archer already entered, most frequent first, to speed up repetitive input. */

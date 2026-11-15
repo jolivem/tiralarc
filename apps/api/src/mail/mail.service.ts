@@ -6,6 +6,7 @@ import {
   invitationEmail,
   type MailLocale,
   passwordResetEmail,
+  reviewModerationEmail,
   verificationEmail,
 } from './templates.js';
 
@@ -55,6 +56,22 @@ export class MailService {
     const lang = mailLocale(locale);
     const link = this.tokenLink(lang, '/invitations/accept', token);
     await this.send({ to, ...invitationEmail(lang, inviter, link, isCoach) });
+  }
+
+  /**
+   * A user's review of the app, to the moderators (REVIEWS_EMAIL, in French): its stars, comment
+   * and author, with the link to the page that publishes or refuses it.
+   */
+  async sendReviewForModeration(
+    review: { stars: number; comment: string; authorName: string; email: string },
+    token: string,
+  ): Promise<void> {
+    const link = this.tokenLink('fr', '/reviews/moderate', token);
+    this.logDevLink('Review moderation', review.email, link);
+    await this.send({
+      to: this.config.get('REVIEWS_EMAIL', { infer: true }),
+      ...reviewModerationEmail(review, link),
+    });
   }
 
   /** A page of the web app (`path`, in `lang`) that receives `token`. */

@@ -66,14 +66,17 @@ the same API — keep it client-agnostic (no cookies, no web-only assumptions in
   sections use `SectionPage`, which puts the title above the same notebook (two pages via `left`/`right`, or one
   wide page via `children` for content the fold would cut: calendar, charts). Fonts:
   `--font-hand` (Caveat, headings) and `--font-calendar` (the calendars' weekdays and day numbers: one of ten
-  calligraphy fonts, `src/lib/calendar-fonts.ts`, chosen on the Profile page — `calendarFont` in the API's archer
+  calligraphy fonts or two simpler ones — Patrick Hand, Atkinson Hyperlegible —, `src/lib/calendar-fonts.ts`, chosen on the Profile page — `calendarFont` in the API's archer
   profile — and set on `<html>` by the root layout; `--font-hand-upright`, Patrick Hand, as fallback). On the
   archer home page every title and the date use that font, in bold (`archer/home.module.css` points `--font-hand`
   to `--font-calendar`). The selected
-  journal's title is centred in the header. On the home notebook every title, the months' names and the rankings'
-  "Saison" lines sit on a ruled line (`components/notebook/on-ruling.tsx`: `RuledHeading` two lines, `RuledSubtitle`
+  journal's title is centred in the header. On the home notebook every title and the months' names
+  sit on a ruled line (`components/notebook/on-ruling.tsx`: `RuledHeading` two lines, `RuledSubtitle`
   / `RuledLine` one, snapped again when content above changes), and the left page's calendar starts level with the
-  right page's national ranking (`page-alignment.tsx`: the right page's top is measured, md and up).
+  right page's first heading, "Régularité" (`regularity-card.tsx`, `lib/regularity.ts`: events noted / days since the
+  journal began, weeks in a row with 2+ sessions; `raised`; `page-alignment.tsx`: the right page's top is measured, md and up).
+  Left page: "À compléter" (`to-complete.tsx`: past events without review) under "Événements proposés"; the date (and its
+  pen) opens the new-event dialog on today (`today-entry.tsx`).
 - An event's place (`location`) reads with a capital first, the rest in lower case (`placeName` in
   `journal.service.ts`, applied when saving and reading back, FFTA places too).
 - Journals: a `Journal` is a named period (title + inclusive start / end days), usually one season. There is no
@@ -105,8 +108,13 @@ the same API — keep it client-agnostic (no cookies, no web-only assumptions in
   shows one entry per day with up to 4 icons. Planning vs review: on a future day the sheet only takes date,
   duration, place, discipline, distance, objective and — trainings / coachings only, under the objective — the
   steps ("Déroulé de la séance", `steps`: JSON list of { unit MINUTES / ARROWS, amount, target STRAW / VISUAL /
-  FACE, description }, at most 20; "+" by the title → `StepDialog` in `session-steps.tsx`, a click on a step edits
-  it; a planning field, so a coach with WRITE fills it on the events they plan; not part of the review) (the rest greyed, `locked` in `SessionForm`, also given to the photos through
+  FACE, description, done }, at most 20; "+" by the title → `StepDialog` in `session-steps.tsx`, a click on a step edits
+  it, arrows move it, a total line follows (`stepTotals` / `moveStep`, unit-tested); a planning field, so a coach with
+  WRITE fills it on the events they plan; not part of the review; from the day on the archer ticks each step `done`)
+  (outdoor disciplines — all but INDOOR — also note `sky` / `wind` / `temperatureC` with the review, not counted in
+  `completed`; picked as drawings, `weather-icons.tsx`: `SkyIcon`, and `Windsock` raised by the wind's force — SVG text
+  (`skySvg` / `windsockSvg`), so the same drawings go in the PDF sheet and, as images, on the Instagram card ("Météo" field); "Refaire cette séance", `session-again.tsx` → `POST /journal/sessions/{id}/copy` {date}: a new training /
+  coaching with the same planning, steps unticked) (the rest greyed, `locked` in `SessionForm`, also given to the photos through
   `SheetLockedContext`: no upload); the API's
   `completed` (derived: any review field filled; always true for strength / other / custom) and the date decide
   the calendars' greying (`pendingReason` in `event-display.tsx`: review missing, or a type without review on a future day).
@@ -124,6 +132,13 @@ the same API — keep it client-agnostic (no cookies, no web-only assumptions in
   on the axis (`withToday`), with a centred choice bar (`ChoiceBar`) on top; the web draws them with
   `@mantine/charts` (`components/stats/`). Chart colours are CSS variables in `stats.module.css` (light + dark sets
   checked for colour-blind separation); a discipline keeps its colour slot (`disciplineColor`).
+  `scores` carry `arrowCount` / `distanceMeters`: the "Moyenne par flèche" card (`ArrowAveragesCard`, `lib/arrow-averages.ts`:
+  points / arrows by distance, indoor and TAE only, indicator `ARROW_AVERAGES`). A journal's season summary:
+  "Bilan de saison" on the Indicators page (a journal's period) opens it in a window (`stats/season-board.tsx`, no page of
+  its own; `lib/season-summary.ts`, unit-tested): a whiteboard — figures in marker (`--font-marker`, Permanent Marker),
+  papers under magnets (best scores, averages per arrow and their progression, goals reached), the tray below with its
+  Instagram card (`SeasonShareButton`, `season-actions.tsx`): the same whiteboard drawn on a canvas (`board-card.ts`,
+  ticked figures and papers); not printable.
   A star on each card (goals aside) picks the favourite indicator (`favoriteIndicator` in the API's archer
   profile, `components/stats/favorite.tsx`), shown on the right page of the archer home notebook
   (`lib/stats.ts` loads the figures for both pages).
@@ -138,8 +153,8 @@ the same API — keep it client-agnostic (no cookies, no web-only assumptions in
 - Instagram share (web only, no Instagram API: it only publishes for business accounts): "Share" in the action bar
   of the archer's own training / coaching / competition sheet once its day has come (saved first;
   `components/journal/share-modal.tsx`). The archer ticks fields (`share-card.ts`, pure parts unit-tested: a
-  1080×1350 card: a ruled leaf torn off a spiral notebook (left side), leaning left on black, pinned at the top (`drawPin`, also the
-  photos' pin: `push-pin.tsx`), in the archer's calendar font (`--font-calendar`); the type's drawing top right (`TYPE_PICTURES`), place → score in
+  1080×1350 card: a ruled leaf torn off a spiral notebook (left side), leaning left on black, no pin (`drawPin` is
+  only the photos' pin now: `push-pin.tsx`), in the archer's calendar font (`--font-calendar`); the type's drawing top right (`TYPE_PICTURES`), place → score in
   two columns, ratings as bars, the two feelings' faces side by side, as the two lists
   (`pairing`), signed with the site's host; the caption is only the
   heading, the site's link and hashtags) and up to 9 photos (read as JPEG through
@@ -165,9 +180,13 @@ the same API — keep it client-agnostic (no cookies, no web-only assumptions in
   text ("championnat", "championnat de france"; `Scope` in `CompetitionsService`). A U11–U21 archer sees the
   young archers' championships, not the adults' (`championshipAge`), others the other way round. Web: a medal badge,
   and the Journal calendar's ticket says "CF" / "CR" / "CD" (gold / silver / bronze). The home page's season calendar
-  (`season-calendar.tsx`) outlines their days; the right page's "Planification Concours" card (under "Mandats publiés !")
+  (`season-calendar.tsx`) outlines their days; the right page's "Planification Concours" card (under "Mandats publiés")
   (`competition-planning.tsx`, "Planifier" button → dialog, today to the journal's end) lists them
-  (`competition-list.tsx`) with "Add to my journal": a
+  (`competition-list.tsx`) under their map (`competitions-map.tsx`, Leaflet + OpenStreetMap tiles: one point per town,
+  the profile's `homeTown` in blue; hover = names and km as the crow flies, `lib/geo.ts`; click = the list scrolls to it).
+  Coordinates: `CompetitionDto.latitude/longitude` and the profile's `homeLatitude/homeLongitude`, from
+  api-adresse.data.gouv.fr (`geocoding/`: `AddressClient`, `GeocoderService` kept in table `geocoded_places`; the town
+  within the searched department, else anywhere; e2e tests use `FakeAddress`). The list offers "Add to my journal": a
   COMPETITION event (`POST /journal/sessions` takes `location` / `discipline`) whose place is the competition's name,
   linked by `fftaCompetitionId`: one competition at most twice a day (`MAX_PER_COMPETITION_DAY`, `LIMIT_REACHED`),
   other competitions of that day unaffected (only `DAY_FULL` applies). On creation the API takes the place (the town only) from the
@@ -186,10 +205,10 @@ the same API — keep it client-agnostic (no cookies, no web-only assumptions in
   categories); the archer's are those of their profile's bow and category, either sex, no scratch, in their
   disciplines (no ranking for Beursault / Run Archery), this season and the one before (then also one category
   younger: they may have moved up since). Each ranking page lists every archer with their licence:
-  only the archer's own row is kept (12 h, in memory). Web: `components/stats/rankings-card.tsx` on the right page
-  of the home notebook, loaded once shown (the pages are big), then kept an hour in the browser like the competitions
-  to plan (`lib/browser-cache.ts`, keyed by the archer and the profile settings they depend on; complete readings only); `missing` asks for licence / category / bow. Below
-  it, "Mandats publiés !" (`CompetitionsToPlan` in `competition-list.tsx`): the next scheduled FFTA
+  only the archer's own row is kept (12 h, in memory). Web: `components/stats/rankings-card.tsx`, a card of the
+  Indicators page under the goals, loaded once shown (the pages are big), then kept an hour in the browser like the competitions
+  to plan (`lib/browser-cache.ts`, keyed by the archer and the profile settings they depend on; complete readings only); `missing` asks for licence / category / bow. On
+  the home notebook's right page, under "Régularité", "Mandats publiés" (`CompetitionsToPlan` in `competition-list.tsx`): the next scheduled FFTA
   competitions whose invitation (`mandateUrl`) is published, not in the journal yet; their dates and name open the
   Journal page with `?day=YYYY-MM-DD` (that month, the day's `CompetitionsModal` open, where it is added). A black
   cross (confirmed) dismisses one: `PUT/DELETE /competitions/{id}/dismissal` (table `dismissed_competitions`),
@@ -234,9 +253,17 @@ the same API — keep it client-agnostic (no cookies, no web-only assumptions in
 - `pnpm openapi` compiles to `apps/api/dist-openapi/`, safe while `pnpm dev` runs; `pnpm build` is not (it rewrites `apps/api/dist`).
 - Forms posting to Server Actions: keep user input in React state (controlled inputs) — React resets
   uncontrolled fields after each submission, even when the server rejects it.
+- Reviews of the app (`apps/api/src/reviews/`, table `app_reviews`): any signed-in user rates it (1–5 stars, a comment)
+  from the Account page (`components/reviews/review-card.tsx`), one a day (`DAILY_LIMIT_REACHED`; `GET /reviews/mine` gives
+  `nextAllowedAt`). Each is emailed to `REVIEWS_EMAIL` (feedback@myarcherydiary.com) with a link to the public page
+  `/[locale]/reviews/moderate?token=` (shows it; the token is used on POST only, once: `INVALID_REVIEW_TOKEN`), which
+  publishes or refuses it. Published ones (`GET /reviews`, public: first name + initial, never the email) show under the
+  visitors' FAQ as sticky notes in a row scrolling sideways (`reviews-strip.tsx`), with the average.
+- Visitors' home page: the tagline, the closed notebook between four square previews (`components/home/preview-print.tsx`,
+  screenshots in `public/home/` with a made-up season; a click enlarges one in a window), the FAQ, then the reviews.
 - Forgotten password: `POST /auth/forgot-password` (always 202, 3/min) emails a single-use link (table
   `password_reset_tokens`, `PASSWORD_RESET_TTL` 1 h) to the web's `/reset-password?token=` (token used on POST only, like
   `/verify-email`); `POST /auth/reset-password` sets the password, revokes every refresh token, marks the email
-  verified and signs in (`INVALID_RESET_TOKEN`). Web: "Mot de passe oublié ?" under the sign-in password → `/forgot-password`.
+  verified and signs in (`INVALID_RESET_TOKEN`). Web: "Mot de passe oublié ?" under the sign-in button → `/forgot-password`.
 - Dev emails land in Mailpit (http://localhost:8025). e2e tests capture mail and fake ID tokens (`apps/api/test/helpers.ts`).
 - TypeScript is pinned to 6.0 (TS 7 is not yet supported by typescript-eslint / tooling).

@@ -69,6 +69,85 @@ describe('Journal (e2e)', () => {
     }
   });
 
+  it('ticks steps, notes the weather and does a training again', async () => {
+    const sessions = '/api/v1/journal/sessions';
+    const created = await http()
+      .post(sessions)
+      .set(as(archer))
+      .send({ type: 'TRAINING', date: '2026-10-05', location: 'Stade', discipline: 'TAE_NATIONAL' })
+      .expect(201);
+    const id = created.body.id as string;
+    const filled = await http()
+      .patch(`${sessions}/${id}`)
+      .set(as(archer))
+      .send({
+        durationMinutes: 90,
+        distanceMeters: 70,
+        objective: 'Régularité',
+        steps: [
+          { unit: 'MINUTES', amount: 15, target: 'STRAW', description: 'Échauffement', done: true },
+          // Without `done`: not ticked.
+          { unit: 'ARROWS', amount: 36, target: 'FACE', description: 'Volées' },
+        ],
+        sky: 'PARTLY_CLOUDY',
+        wind: 'STRONG',
+        temperatureC: -2,
+      })
+      .expect(200);
+    expect(filled.body).toMatchObject({
+      steps: [{ done: true }, { done: false }],
+      sky: 'PARTLY_CLOUDY',
+      wind: 'STRONG',
+      temperatureC: -2,
+      // The weather alone is no review.
+      completed: false,
+    });
+    await http().patch(`${sessions}/${id}`).set(as(archer)).send({ wind: 'GALE' }).expect(400);
+
+    // Again on another day: the same planning, nothing ticked, no review nor weather.
+    const copy = await http()
+      .post(`${sessions}/${id}/copy`)
+      .set(as(archer))
+      .send({ date: '2026-10-12' })
+      .expect(201);
+    expect(copy.body).toMatchObject({
+      type: 'TRAINING',
+      date: '2026-10-12',
+      durationMinutes: 90,
+      location: 'Stade',
+      discipline: 'TAE_NATIONAL',
+      distanceMeters: 70,
+      objective: 'Régularité',
+      steps: [
+        { amount: 15, description: 'Échauffement', done: false },
+        { amount: 36, description: 'Volées', done: false },
+      ],
+      sky: null,
+      wind: null,
+      temperatureC: null,
+    });
+    expect(copy.body.id).not.toBe(id);
+    // Someone else's session is not found; only trainings and coachings are copied.
+    await http()
+      .post(`${sessions}/${id}/copy`)
+      .set(as(otherArcher))
+      .send({ date: '2026-10-12' })
+      .expect(404);
+    const other = await http()
+      .post(sessions)
+      .set(as(archer))
+      .send({ type: 'OTHER', date: '2026-10-05' })
+      .expect(201);
+    await http()
+      .post(`${sessions}/${other.body.id}/copy`)
+      .set(as(archer))
+      .send({ date: '2026-10-12' })
+      .expect(400);
+    for (const s of [id, copy.body.id, other.body.id]) {
+      await http().delete(`${sessions}/${s}`).set(as(archer)).expect(204);
+    }
+  });
+
   it('creates, fills, lists, reads and deletes a session', async () => {
     const created = await http()
       .post('/api/v1/journal/sessions')
@@ -610,7 +689,12 @@ describe('Journal (e2e)', () => {
       durationMinutes: 90,
     });
     await add('COACHING', '2026-10-20', {}); // no arrows recorded: not a data point
-    const coached = await add('COACHING', '2026-10-21', { discipline: 'INDOOR', score: 270 });
+    const coached = await add('COACHING', '2026-10-21', {
+      discipline: 'INDOOR',
+      score: 270,
+      arrowCount: 30,
+      distanceMeters: 18,
+    });
     const trained = await add('TRAINING', '2026-10-28', { discipline: 'FIELD', score: 310 });
     // After the period asked for below.
     await add('COMPETITION', '2027-10-10', { arrowCount: 72, score: 600 });
@@ -639,13 +723,39 @@ describe('Journal (e2e)', () => {
         },
       ],
       // Scored events of the three reviewed types, with a discipline (the 800 has none).
+      // With their arrows and distance: the average per arrow by distance.
       scores: [
-        { id: coached, date: '2026-10-21', type: 'COACHING', discipline: 'INDOOR', score: 270 },
-        { id: trained, date: '2026-10-28', type: 'TRAINING', discipline: 'FIELD', score: 310 },
-        { id: second, date: '2026-11-07', type: 'COMPETITION', discipline: 'INDOOR', score: 540 },
+        {
+          id: coached,
+          date: '2026-10-21',
+          type: 'COACHING',
+          discipline: 'INDOOR',
+          score: 270,
+          arrowCount: 30,
+          distanceMeters: 18,
+        },
+        {
+          id: trained,
+          date: '2026-10-28',
+          type: 'TRAINING',
+          discipline: 'FIELD',
+          score: 310,
+          arrowCount: null,
+          distanceMeters: null,
+        },
+        {
+          id: second,
+          date: '2026-11-07',
+          type: 'COMPETITION',
+          discipline: 'INDOOR',
+          score: 540,
+          arrowCount: 60,
+          distanceMeters: null,
+        },
       ],
       arrowsByDay: [
         { date: '2026-10-14', arrows: 120 },
+        { date: '2026-10-21', arrows: 30 },
         { date: '2026-11-07', arrows: 150 },
       ],
       // Minutes per day, all types of events together.

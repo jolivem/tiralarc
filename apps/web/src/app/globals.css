@@ -2,3 +2,14 @@
 body {
   min-height: 100dvh;
 }
+
+/*
+ * Dark mode: the event types' drawings (image-icon.tsx, black outlines, own colours) get a thin
+ * light halo, else the bow's fine strokes vanish on the dark paper. Not on paper (the PDF).
+ */
+@media screen {
+  [data-mantine-color-scheme='dark'] .event-picture {
+    filter: drop-shadow(0 0 0.6px rgb(255 255 255 / 0.95))
+      drop-shadow(0 0 1.2px rgb(255 255 255 / 0.55));
+  }
+}

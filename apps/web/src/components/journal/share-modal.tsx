@@ -34,6 +34,7 @@ import {
   type ShareField,
   type ShareRow,
 } from './share-card';
+import { skySvg, weatherImageUrl, windsockSvg } from './weather-icons';
 
 /** Instagram's carousel takes 10 pictures: the card, then 9 photos at most. */
 const MAX_SHARED_PHOTOS = 9;
@@ -41,9 +42,10 @@ const JPEG_QUALITY = 0.92;
 /** The types whose sheets are shared (session-form.tsx). */
 type SharedType = 'TRAINING' | 'COACHING' | 'COMPETITION';
 
-type Status = 'idle' | 'shared' | 'downloaded' | 'copied' | 'error';
+export type ShareStatus = 'idle' | 'shared' | 'downloaded' | 'copied' | 'error';
+type Status = ShareStatus;
 
-const toJpeg = (canvas: HTMLCanvasElement, name: string) =>
+export const toJpeg = (canvas: HTMLCanvasElement, name: string) =>
   new Promise<File>((resolve, reject) =>
     canvas.toBlob(
       (blob) => (blob ? resolve(new File([blob], name, { type: 'image/jpeg' })) : reject()),
@@ -68,7 +70,7 @@ async function photoFile(url: string, name: string): Promise<File> {
 
 /** The card's drawings (public/icons/…), each loaded once; null if it can't be. */
 const images = new Map<string, Promise<HTMLImageElement | null>>();
-function loadImage(src: string) {
+export function loadImage(src: string) {
   let image = images.get(src);
   if (!image) {
     const element = new Image();
@@ -95,7 +97,21 @@ const feelingFaces = async () => {
   >;
 };
 
-function download(file: File) {
+/**
+ * The card's font: the archer's (Profile page, set on <html> as --font-calendar; Caveat without
+ * one), loaded first (else the canvas would draw a fallback font).
+ */
+export async function cardFont(): Promise<string> {
+  const style = getComputedStyle(document.documentElement);
+  const font =
+    style.getPropertyValue('--font-calendar').trim() ||
+    style.getPropertyValue('--font-hand').trim();
+  await document.fonts.load(`700 48px ${font}`).catch(() => undefined);
+  await document.fonts.load(`400 48px ${font}`).catch(() => undefined);
+  return font;
+}
+
+export function download(file: File) {
   const url = URL.createObjectURL(file);
   Object.assign(document.createElement('a'), { href: url, download: file.name }).click();
   setTimeout(() => URL.revokeObjectURL(url), 10_000);
@@ -145,6 +161,14 @@ export function ShareButton({
         rating: (value) => t('rating', { value }),
         meters: (value) => t('meters', { value }),
         minutes: (value) => t('minutes', { value }),
+        weather: ({ sky, wind, temperatureC }) =>
+          [
+            sky && tJournal(`weather.skies.${sky}`),
+            wind && t(`winds.${wind}`),
+            temperatureC !== null && `${temperatureC} °C`,
+          ]
+            .filter(Boolean)
+            .join(' · '),
       }),
     [session, t, tJournal, format],
   );
@@ -193,17 +217,28 @@ export function ShareButton({
     if (!canvas || !ctx) return;
     let current = true;
     void (async () => {
-      // The archer's font (Profile page, set on <html> as --font-calendar; Caveat without
-      // one), loaded first (else a fallback font).
-      const style = getComputedStyle(document.documentElement);
-      const font =
-        style.getPropertyValue('--font-calendar').trim() ||
-        style.getPropertyValue('--font-hand').trim();
-      await document.fonts.load(`700 48px ${font}`).catch(() => undefined);
-      await document.fonts.load(`400 48px ${font}`).catch(() => undefined);
-      const [faces, logo] = await Promise.all([feelingFaces(), loadImage(picture)]);
+      const font = await cardFont();
+      // The weather's drawings, when it is on the card (the pole in the card's ink).
+      const shownWeather = cardRows.find((row) => row.weather)?.weather;
+      const [faces, logo, sky, wind] = await Promise.all([
+        feelingFaces(),
+        loadImage(picture),
+        shownWeather?.sky ? loadImage(weatherImageUrl(skySvg(shownWeather.sky))) : null,
+        shownWeather?.wind
+          ? loadImage(weatherImageUrl(windsockSvg(shownWeather.wind, '#27313f')))
+          : null,
+      ]);
       if (!current) return;
-      drawCard(ctx, { title, date, rows: cardRows, font, faces, logo, site: window.location.host });
+      drawCard(ctx, {
+        title,
+        date,
+        rows: cardRows,
+        font,
+        faces,
+        logo,
+        site: window.location.host,
+        weather: { sky, wind },
+      });
       const file = await toJpeg(canvas, `tiralarc-${session.date}-0.jpg`);
       if (current) setDrawn({ key: shownKey, file });
     })();

@@ -108,6 +108,26 @@ export class ProfileDto {
     description: 'Also show the para-archery competitions (indoor and outdoor target archery).',
   })
   paraCompetitions!: boolean;
+
+  @ApiProperty({
+    type: String,
+    nullable: true,
+    example: 'Rennes',
+    description:
+      "Where the archer sets off from (their club's or home town, in France): the competitions " +
+      'map measures the distance to travel from it.',
+  })
+  homeTown!: string | null;
+
+  @ApiProperty({
+    type: Number,
+    nullable: true,
+    description: "`homeTown`'s latitude (null: no town, or not found).",
+  })
+  homeLatitude!: number | null;
+
+  @ApiProperty({ type: Number, nullable: true, description: "`homeTown`'s longitude." })
+  homeLongitude!: number | null;
 }
 
 /** PATCH body: every field optional; `null` clears a field. */
@@ -212,6 +232,17 @@ export class UpdateProfileDto {
   @IsOptional()
   @IsBoolean()
   paraCompetitions?: boolean;
+
+  @ApiPropertyOptional({
+    type: String,
+    nullable: true,
+    maxLength: 100,
+    description: 'Town the archer sets off from; its coordinates are looked up when saved.',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  homeTown?: string | null;
 }
 
 export class CreateInvitationDto {

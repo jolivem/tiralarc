@@ -25,12 +25,15 @@ async function mutate(
   return {};
 }
 
-export async function saveProfile(values: ArcherProfileUpdate): Promise<ActionState> {
+/** `homeFound`: whether the home town (if any) was found on the map, as saved. */
+export async function saveProfile(
+  values: ArcherProfileUpdate,
+): Promise<ActionState & { homeFound?: boolean }> {
   const result = await send((await getAuthedApi()).PATCH('/api/v1/profile', { body: values }));
   if (!result.ok) return result.state;
   // The root layout sets the calendars' font from the profile.
   refresh();
-  return { notice: 'saved' };
+  return { notice: 'saved', homeFound: result.data.homeLatitude !== null };
 }
 
 /**

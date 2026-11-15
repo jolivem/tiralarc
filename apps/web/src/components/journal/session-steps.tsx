@@ -3,6 +3,7 @@
 import {
   ActionIcon,
   Button,
+  Checkbox,
   Group,
   Modal,
   NumberInput,
@@ -12,7 +13,13 @@ import {
   Textarea,
   UnstyledButton,
 } from '@mantine/core';
-import { IconPlus, IconTrash } from '@tabler/icons-react';
+import {
+  IconCheck,
+  IconChevronDown,
+  IconChevronUp,
+  IconPlus,
+  IconTrash,
+} from '@tabler/icons-react';
 import type { JournalSession } from '@tiralarc/api-client';
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
@@ -27,7 +34,13 @@ const TARGETS: StepTarget[] = ['STRAW', 'VISUAL', 'FACE'];
 /** As many as the API takes. */
 export const MAX_STEPS = 20;
 
-const EMPTY: SessionStep = { unit: 'MINUTES', amount: null, target: null, description: '' };
+const EMPTY: SessionStep = {
+  unit: 'MINUTES',
+  amount: null,
+  target: null,
+  description: '',
+  done: false,
+};
 
 /** "15 min · Paille — Échauffement": a step written on one line of the sheet (or more). */
 export function useStepLabel() {
@@ -65,17 +78,60 @@ export function AddStepButton({ onClick, disabled }: { onClick: () => void; disa
   );
 }
 
+/** The steps' planned minutes and arrows, added up (steps without an amount left out). */
+export function stepTotals(steps: SessionStep[]): { minutes: number; arrows: number } {
+  let minutes = 0;
+  let arrows = 0;
+  for (const step of steps) {
+    if (step.amount === null) continue;
+    if (step.unit === 'MINUTES') minutes += step.amount;
+    else arrows += step.amount;
+  }
+  return { minutes, arrows };
+}
+
+/** "45 min · 72 flèches": the steps' total, worded; '' when none has an amount. */
+export function useStepsTotal() {
+  const t = useTranslations('journal.steps');
+  return (steps: SessionStep[]) => {
+    const { minutes, arrows } = stepTotals(steps);
+    return [
+      minutes > 0 && t('minutes', { count: minutes }),
+      arrows > 0 && t('arrows', { count: arrows }),
+    ]
+      .filter(Boolean)
+      .join(' · ');
+  };
+}
+
+/** `steps` with the one at `index` moved by `by` places (-1 up, 1 down); unchanged at an end. */
+export function moveStep(steps: SessionStep[], index: number, by: -1 | 1): SessionStep[] {
+  const target = index + by;
+  if (target < 0 || target >= steps.length) return steps;
+  const moved = [...steps];
+  [moved[index], moved[target]] = [moved[target]!, moved[index]!];
+  return moved;
+}
+
 /**
- * The session's steps, one per ruled line (a long one goes on over the next lines), in order.
- * A click on one opens it in the step dialog, unless `readOnly`.
+ * The session's steps, one per ruled line (a long one goes on over the next lines), in order
+ * (their total is by the box's title: `useStepsTotal`). Unless `readOnly`: a click on one opens it in the step
+ * dialog, arrows move it up or down. With `onToggle` (the archer, once the day has come), a box
+ * before each step ticks it as done; a ticked one shows so to anyone.
  */
 export function StepList({
   steps,
   onOpen,
+  onChange,
+  onToggle,
   readOnly,
 }: {
   steps: SessionStep[];
   onOpen: (index: number) => void;
+  /** The steps in their new order. */
+  onChange: (steps: SessionStep[]) => void;
+  /** Ticks (or unticks) the step at that index. */
+  onToggle?: (index: number) => void;
   readOnly?: boolean;
 }) {
   const t = useTranslations('journal.steps');
@@ -85,25 +141,79 @@ export function StepList({
       <p className={`${classes.ruledText} ${classes.stepsEmpty}`}>{readOnly ? '' : t('empty')}</p>
     );
   }
+  /** An arrow moving the step at `i`; only where it can (none up for the first, down for the last). */
+  const move = (i: number, by: -1 | 1) => {
+    const hint = t(by < 0 ? 'moveUp' : 'moveDown', { step: i + 1 });
+    if (i + by < 0 || i + by >= steps.length) {
+      // Its place kept, empty: the numbers stay in line.
+      return <span className={classes.stepMoveBlank} aria-hidden />;
+    }
+    const Icon = by < 0 ? IconChevronUp : IconChevronDown;
+    return (
+      <ActionIcon
+        variant="subtle"
+        color="gray"
+        size="xs"
+        onClick={() => onChange(moveStep(steps, i, by))}
+        aria-label={hint}
+        title={hint}
+      >
+        <Icon size={14} />
+      </ActionIcon>
+    );
+  };
+
   return (
-    <ol className={`${classes.ruledText} ${classes.steps}`}>
-      {steps.map((step, i) => (
-        // Steps have no id: their place in the list is theirs.
-        <li key={i}>
-          {readOnly ? (
-            label(step)
-          ) : (
-            <UnstyledButton
-              className={classes.stepButton}
-              onClick={() => onOpen(i)}
-              title={t('edit')}
-            >
-              {label(step)}
-            </UnstyledButton>
-          )}
-        </li>
-      ))}
-    </ol>
+    <>
+      <ol className={`${classes.ruledText} ${classes.steps}`}>
+        {steps.map((step, i) => (
+          // Steps have no id: their place in the list is theirs.
+          <li key={i} className={classes.stepItem}>
+            {/* Before the number: the arrows that can move it (not for a coach who only reads). */}
+            {!readOnly && steps.length > 1 && (
+              <span className={classes.stepMoves}>
+                {move(i, -1)}
+                {move(i, 1)}
+              </span>
+            )}
+            <span className={classes.stepNumber} aria-hidden>
+              {i + 1} –{' '}
+            </span>
+            {readOnly ? (
+              <span className={classes.stepText}>{label(step)}</span>
+            ) : (
+              <UnstyledButton
+                className={`${classes.stepButton} ${classes.stepText}`}
+                onClick={() => onOpen(i)}
+                title={t('edit')}
+              >
+                {label(step)}
+              </UnstyledButton>
+            )}
+            {/* Right of the step: its box (a green tick once done), or the tick alone. */}
+            {onToggle ? (
+              <Checkbox
+                size="xs"
+                color="green"
+                className={classes.stepCheck}
+                checked={step.done === true}
+                onChange={() => onToggle(i)}
+                aria-label={t('done', { step: i + 1 })}
+              />
+            ) : (
+              step.done && (
+                <IconCheck
+                  size={18}
+                  stroke={2.5}
+                  className={classes.stepCheck}
+                  aria-label={t('doneMark')}
+                />
+              )
+            )}
+          </li>
+        ))}
+      </ol>
+    </>
   );
 }
 

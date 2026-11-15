@@ -1,4 +1,4 @@
-import type { Discipline, Feeling, JournalSession } from '@tiralarc/api-client';
+import type { Discipline, Feeling, JournalSession, Sky, Wind } from '@tiralarc/api-client';
 
 /** What an event's Instagram summary can show, in the sheet's order (share-modal.tsx). */
 export const SHARE_FIELDS = [
@@ -9,6 +9,7 @@ export const SHARE_FIELDS = [
   'duration',
   'arrows',
   'score',
+  'weather',
   'objective',
   'satisfaction',
   'technique',
@@ -29,12 +30,25 @@ export const DEFAULT_SHARE_FIELDS: ShareField[] = [
   'distance',
   'arrows',
   'score',
+  'weather',
 ];
 
-/** One field of the summary: a value on the label's line, or a list below it. */
-export interface ShareRow {
-  field: ShareField;
+/** An outdoor session's weather, as noted on its sheet (at least one of the three). */
+export interface ShareWeather {
+  sky: Sky | null;
+  wind: Wind | null;
+  temperatureC: number | null;
+}
+
+/**
+ * One field of the summary: a value on the label's line, or a list below it. `F`: the field's
+ * key (a session's `ShareField`, or another card's own, e.g. the season summary's).
+ */
+export interface ShareRow<F extends string = ShareField> {
+  field: F;
   label: string;
+  /** Goes two side by side like a short value (a session's are known by their field). */
+  short?: boolean;
   text?: string;
   items?: string[];
   /** The list's bullet: what went well, or what is to improve. */
@@ -43,6 +57,8 @@ export interface ShareRow {
   feeling?: Feeling;
   /** A rating (0–10): a bar on the card (`text` gives it in the caption). */
   rating?: number;
+  /** The weather: its drawings and temperature on the card (`text` words it). */
+  weather?: ShareWeather;
 }
 
 /** How the dialog words the values (translations, date format). */
@@ -54,11 +70,16 @@ export interface ShareWording {
   rating: (value: number) => string;
   meters: (value: number) => string;
   minutes: (value: number) => string;
+  /** "Éclaircies · vent fort · 12 °C" (what was noted). */
+  weather: (weather: ShareWeather) => string;
 }
 
 /** The fields the event has filled (the date always), worded, in `SHARE_FIELDS` order. */
 export function filledRows(session: JournalSession, w: ShareWording): ShareRow[] {
   const lines = (items: string[]) => items.map((line) => line.trim()).filter(Boolean);
+  const { sky = null, wind = null, temperatureC = null } = session;
+  const weather: ShareWeather | null =
+    sky !== null || wind !== null || temperatureC !== null ? { sky, wind, temperatureC } : null;
   const values: Record<ShareField, string | string[] | null> = {
     date: w.date(session.date),
     location: session.location,
@@ -67,6 +88,7 @@ export function filledRows(session: JournalSession, w: ShareWording): ShareRow[]
     duration: session.durationMinutes === null ? null : w.minutes(session.durationMinutes),
     arrows: session.arrowCount === null ? null : String(session.arrowCount),
     score: session.score === null ? null : String(session.score),
+    weather: weather && w.weather(weather),
     objective: session.objective,
     satisfaction: session.satisfaction === null ? null : w.rating(session.satisfaction),
     technique: session.technique === null ? null : w.rating(session.technique),
@@ -93,6 +115,7 @@ export function filledRows(session: JournalSession, w: ShareWording): ShareRow[]
     if (feeling) return [{ field, label, text: value as string, feeling }];
     const rating = ratings[field];
     if (rating != null) return [{ field, label, text: value as string, rating }];
+    if (field === 'weather' && weather) return [{ field, label, text: value as string, weather }];
     if (typeof value === 'string') return [{ field, label, text: value.trim() }];
     return [{ field, label, items: value, bullet: field === 'wentWell' ? 'well' : 'improve' }];
   });
@@ -117,6 +140,7 @@ interface Cell {
   indent?: boolean;
   feeling?: Feeling;
   rating?: number;
+  weather?: ShareWeather;
 }
 
 /** The sheet's Informations: short values, two side by side at the top of the card. */
@@ -129,8 +153,11 @@ const SHORT_FIELDS: ShareField[] = [
   'score',
 ];
 
+/** Any card's row (a session's or another's): the drawing only needs its words. */
+type AnyRow = ShareRow<string>;
+
 /** A field's label then its value, wrapped `width` wide: one cell of the two columns. */
-function cellLines(row: ShareRow, width: number, measure: (text: string) => number) {
+function cellLines(row: AnyRow, width: number, measure: (text: string) => number) {
   const label = `${row.label} : `;
   return wrapText(row.text ?? '', width - measure(label), width, measure).map((text, i) =>
     i === 0 ? { label, text } : { text },
@@ -164,12 +191,14 @@ export function wrapText(
 }
 
 /** A field's lines `width` wide: its label, then its value, face, bar or list. */
-function rowLines(row: ShareRow, width: number, measure: (text: string) => number): Cell[] {
+function rowLines(row: AnyRow, width: number, measure: (text: string) => number): Cell[] {
   const label = `${row.label} : `;
   // The face, on the label's line (its name if the drawing is missing).
   if (row.feeling) return [{ label, text: row.text ?? '', feeling: row.feeling }];
   // A rating: its bar, on the label's line.
   if (row.rating !== undefined) return [{ label, text: row.text ?? '', rating: row.rating }];
+  // The weather: its drawings and temperature, on the label's line.
+  if (row.weather) return [{ label, text: row.text ?? '', weather: row.weather }];
   if (row.items) {
     const indent = measure('mm');
     const bullet = row.bullet ?? 'well';
@@ -195,9 +224,9 @@ function rowLines(row: ShareRow, width: number, measure: (text: string) => numbe
  * What goes two side by side: the short fields (left to right, then down), the two feelings,
  * the two lists. Ratings and texts take the whole width.
  */
-function pairing(row: ShareRow | undefined) {
+function pairing(row: AnyRow | undefined) {
   if (!row) return null;
-  if (SHORT_FIELDS.includes(row.field)) return 'short';
+  if (row.short ?? (SHORT_FIELDS as readonly string[]).includes(row.field)) return 'short';
   if (row.feeling) return 'feeling';
   return row.items ? 'list' : null;
 }
@@ -208,18 +237,18 @@ function pairing(row: ShareRow | undefined) {
  * after another otherwise.
  */
 export function cardLines(
-  rows: ShareRow[],
+  rows: readonly AnyRow[],
   width: number,
   measure: (text: string) => number,
 ): CardLine[] {
   const column = (width - columnGap(measure)) / 2;
   const lines: CardLine[] = [];
   for (let i = 0; i < rows.length; i++) {
-    const row = rows[i] as ShareRow;
+    const row = rows[i] as AnyRow;
     const kind = pairing(row);
     if (kind && pairing(rows[i + 1]) === kind) {
       const left = rowLines(row, column, measure);
-      const right = rowLines(rows[++i] as ShareRow, column, measure);
+      const right = rowLines(rows[++i] as AnyRow, column, measure);
       for (let line = 0; line < Math.max(left.length, right.length); line++) {
         lines.push({ ...(left[line] ?? { text: '' }), ...(right[line] && { right: right[line] }) });
       }
@@ -330,6 +359,7 @@ function ratingInk(value: number): string {
  * `font` is the CSS family of the
  * archer's calligraphy font (Profile page), already loaded; `faces` the feelings' drawings (loaded), each
  * drawn on its pastel as on the sheet; `logo` the type's drawing, top right. Ratings are bars.
+ * The weather: the sky's and the windsock's drawings (`weather`, loaded), then the temperature.
  */
 export function drawCard(
   ctx: CanvasRenderingContext2D,
@@ -341,14 +371,16 @@ export function drawCard(
     faces,
     logo,
     site,
+    weather = {},
   }: {
     title: string;
     date: string | null;
-    rows: ShareRow[];
+    rows: readonly AnyRow[];
     font: string;
     logo: CanvasImageSource | null;
     site: string;
     faces: Partial<Record<Feeling, { image: CanvasImageSource; color: string }>>;
+    weather?: { sky?: CanvasImageSource | null; wind?: CanvasImageSource | null };
   },
 ) {
   // The desk, then the leaf torn off the spiral notebook, its shadow on the desk.
@@ -481,6 +513,35 @@ export function drawCard(
         ctx.drawImage(face.image, x + radius - side / 2, centerY - side / 2, side, side);
         return x + 2 * radius;
       }
+      if (part.weather) {
+        // The sky, the windsock (each a little taller than the writing, centred on the line's
+        // middle), then the temperature; the words when a drawing can't be shown.
+        const side = size * 1.25;
+        const top = baseline - size * 0.35 - side / 2;
+        const drawings = [
+          part.weather.sky && weather.sky,
+          part.weather.wind && weather.wind,
+        ].filter((image): image is CanvasImageSource => Boolean(image));
+        const missing = (part.weather.sky && !weather.sky) || (part.weather.wind && !weather.wind);
+        if (missing) {
+          ctx.font = `400 ${size}px ${font}`;
+          ctx.fillStyle = INK;
+          ctx.fillText(part.text, x, baseline);
+          return x + ctx.measureText(part.text).width;
+        }
+        for (const image of drawings) {
+          ctx.drawImage(image, x, top, side, side);
+          x += side + size * 0.25;
+        }
+        if (part.weather.temperatureC !== null) {
+          ctx.font = `400 ${size}px ${font}`;
+          ctx.fillStyle = INK;
+          const degrees = `${part.weather.temperatureC} °C`;
+          ctx.fillText(degrees, x, baseline);
+          x += ctx.measureText(degrees).width;
+        }
+        return x;
+      }
       ctx.font = `400 ${size}px ${font}`;
       ctx.fillStyle = INK;
       ctx.fillText(part.text, x, baseline);
@@ -519,15 +580,11 @@ export function drawCard(
   ctx.textAlign = 'right';
   ctx.fillText(`Tiralarc · ${site}`, TEXT_RIGHT, CARD_HEIGHT - 50, TEXT_RIGHT - TEXT_X);
   ctx.textAlign = 'left';
-  drawPin(ctx, CARD_WIDTH / 2, PIN_Y);
   ctx.restore();
 }
 
-/** Where the push pin goes into the leaf: at its top, in the middle. */
-const PIN_Y = 92;
-
 /**
- * A red push pin stuck in slanted, its head up and to the left of where it goes in, so the
+ * A red push pin (the sheet's photos, push-pin.tsx; no longer on the Instagram card) stuck in slanted, its head up and to the left of where it goes in, so the
  * start of its needle shows: the pin's shadow cast on the paper (down to the right), the
  * needle, the collar, then the domed head lit from the top left. `x`, `y`: the needle's
  * point in the paper.

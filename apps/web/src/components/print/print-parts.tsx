@@ -6,6 +6,7 @@ import { useFormatter, useTranslations } from 'next-intl';
 import { Fragment } from 'react';
 import { DISCIPLINE_COLORS } from '@/components/journal/session-types';
 import {
+  ArrowAveragesCard,
   ArrowsCard,
   CompetitionsCard,
   DurationsCard,
@@ -117,6 +118,8 @@ export function PrintStats({
         );
       case 'SCORES':
         return <ScoresCard period={period} scores={stats.scores} today={today} />;
+      case 'ARROW_AVERAGES':
+        return <ArrowAveragesCard period={period} scores={stats.scores} today={today} />;
       case 'EVENTS':
         return <EventsCard period={period} eventsByDay={stats.eventsByDay} today={today} />;
       case 'PHYSICAL_FEELINGS':

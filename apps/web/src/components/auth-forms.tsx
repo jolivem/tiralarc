@@ -66,23 +66,23 @@ export function LoginForm({ next }: { next?: string }) {
             onChange={(e) => setEmail(e.currentTarget.value)}
             error={fieldError(state, 'email')}
           />
+          <PasswordInput
+            name="password"
+            label={t('common.password')}
+            autoComplete="current-password"
+            required
+            error={fieldError(state, 'password')}
+          />
+          <FormError state={state} />
           <Stack gap={4}>
-            <PasswordInput
-              name="password"
-              label={t('common.password')}
-              autoComplete="current-password"
-              required
-              error={fieldError(state, 'password')}
-            />
-            <Anchor component={Link} href="/forgot-password" size="sm" ta="end">
+            {/* The dark leather brown of the home page's sign-up button. */}
+            <Button type="submit" loading={pending} fullWidth color="#3f2817">
+              {t('login.submit')}
+            </Button>
+            <Anchor component={Link} href="/forgot-password" size="xs" ta="center">
               {t('login.forgotPassword')}
             </Anchor>
           </Stack>
-          <FormError state={state} />
-          {/* The dark leather brown of the home page's sign-up button. */}
-          <Button type="submit" loading={pending} fullWidth color="#3f2817">
-            {t('login.submit')}
-          </Button>
         </Stack>
       </form>
       {state.code === 'EMAIL_NOT_VERIFIED' && <ResendVerificationForm email={email} />}

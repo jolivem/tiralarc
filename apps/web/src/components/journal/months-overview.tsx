@@ -4,6 +4,7 @@ import { SimpleGrid, type SimpleGridProps, Text, UnstyledButton } from '@mantine
 import type { Competition, JournalSessionSummary } from '@tiralarc/api-client';
 import dayjs from 'dayjs';
 import { useFormatter, useTranslations } from 'next-intl';
+import type { CSSProperties } from 'react';
 import { Link } from '@/i18n/navigation';
 import { RuledLine } from '@/components/notebook/on-ruling';
 import { competitionDays } from './competition-list';
@@ -29,7 +30,10 @@ export function MonthsOverview({
   linkToJournal = false,
   onPick,
   ruled = false,
+  pastel = false,
 }: {
+  /** Each month on its own pastel background, by its month of the year (season calendar). */
+  pastel?: boolean;
   /** A click on a month ("YYYY-MM") picks it. */
   onPick?: (month: string) => void;
   /** The months' names on the notebook page's lines (home page). */
@@ -76,9 +80,18 @@ export function MonthsOverview({
   );
 
   return (
-    <SimpleGrid cols={cols} spacing="xl" className={classes.overview}>
+    <SimpleGrid
+      cols={cols}
+      spacing="xl"
+      className={`${classes.overview} ${pastel ? classes.pastel : ''}`}
+    >
       {months.map((month) => {
         const first = dayjs(`${month}-01`);
+        // Its tint (journal.module.css: --tint-1 … --tint-12).
+        const tint = pastel
+          ? ({ '--month-tint': `var(--tint-${Number(month.slice(5))})` } as CSSProperties)
+          : undefined;
+        const tinted = pastel ? classes.pastelMonth : '';
         // Empty cells before the 1st, so it falls under its weekday.
         const offset = (first.day() + 6) % 7;
         const name = format.dateTime(first.hour(12).toDate(), { month: 'long', year: 'numeric' });
@@ -143,7 +156,8 @@ export function MonthsOverview({
           return (
             <UnstyledButton
               key={month}
-              className={classes.monthLink}
+              className={`${classes.monthLink} ${tinted}`}
+              style={tint}
               aria-label={tArcher('openMonth', { month: name })}
               title={tArcher('openMonth', { month: name })}
               onClick={() => onPick(month)}
@@ -156,14 +170,17 @@ export function MonthsOverview({
           <Link
             key={month}
             href={{ pathname: '/archer/journal', query: { month } }}
-            className={classes.monthLink}
+            className={`${classes.monthLink} ${tinted}`}
+            style={tint}
             aria-label={tArcher('openMonth', { month: name })}
             title={tArcher('openMonth', { month: name })}
           >
             {content}
           </Link>
         ) : (
-          <div key={month}>{content}</div>
+          <div key={month} className={tinted || undefined} style={tint}>
+            {content}
+          </div>
         );
       })}
     </SimpleGrid>

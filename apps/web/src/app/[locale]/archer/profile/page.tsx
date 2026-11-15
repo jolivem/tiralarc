@@ -21,6 +21,9 @@ const EMPTY_PROFILE = {
   licenceDepartment: null,
   departments: [],
   paraCompetitions: false,
+  homeTown: null,
+  homeLatitude: null,
+  homeLongitude: null,
 };
 
 export default async function ArcherProfilePage({ params }: PageProps<'/[locale]/archer/profile'>) {

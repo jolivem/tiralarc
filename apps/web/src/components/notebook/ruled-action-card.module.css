@@ -17,7 +17,6 @@
   margin: 0;
   color: var(--mantine-color-dimmed);
   font-size: var(--mantine-font-size-sm);
-  font-style: italic;
   line-height: var(--step);
 }
 

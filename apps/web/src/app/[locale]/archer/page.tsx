@@ -7,6 +7,9 @@ import { CompetitionPlanningCard } from '@/components/journal/competition-planni
 import { MonthsOverview } from '@/components/journal/months-overview';
 import { NewEvents } from '@/components/journal/new-events';
 import { SeasonCalendar } from '@/components/journal/season-calendar';
+import { RegularityCard } from '@/components/journal/regularity-card';
+import { TodayEntry } from '@/components/journal/today-entry';
+import { ToComplete } from '@/components/journal/to-complete';
 import { HandHeading, HandNote, Notebook } from '@/components/notebook/notebook';
 import { RuledHeading, RuledPenRule } from '@/components/notebook/on-ruling';
 import { AlignedSpacer, AlignedTop, PageAlignment } from '@/components/notebook/page-alignment';
@@ -14,7 +17,6 @@ import { SectionCard } from '@/components/section-card';
 import type { Locale } from '@/i18n/routing';
 import { FavoriteIndicatorProvider } from '@/components/stats/favorite';
 import { IndicatorCard } from '@/components/stats/favorite-card';
-import { RankingsCard } from '@/components/stats/rankings-card';
 import { RuledCardTitles } from '@/components/stats/stats-cards';
 import { CompetitionsToPlan } from '@/components/journal/competition-list';
 import { getAuthedApi } from '@/lib/api';
@@ -103,14 +105,28 @@ export default async function ArcherHomePage({ params }: PageProps<'/[locale]/ar
           await getAuthedApi()
         ).GET('/api/v1/journal/sessions', { params: { query: { from, to } } })
       : { data: undefined };
+  // The selected journal's events up to today: its regularity, and (those before today) the
+  // reviews still to write.
+  const pastTo = selected && selected.endDate < today ? selected.endDate : today;
+  const { data: seasonSessions } =
+    selected && selected.startDate <= pastTo
+      ? await api.GET('/api/v1/journal/sessions', {
+          params: { query: { from: selected.startDate, to: pastTo } },
+        })
+      : { data: undefined };
+  const pastSessions = (seasonSessions ?? []).filter((s) => s.date < today);
 
   // The day, in the notebook's top right corner: on the right page from desktops up,
-  // on the first page when the pages are stacked.
+  // on the first page when the pages are stacked. A click on it (or its pen) notes an event today.
   const date = (
     <HandNote align="end">
-      <span className={home.date}>
-        {format.dateTime(new Date(`${today}T12:00:00`), { dateStyle: 'full' })}
-      </span>
+      <TodayEntry
+        label={format.dateTime(new Date(`${today}T12:00:00`), { dateStyle: 'full' })}
+        today={today}
+        journal={selected ?? null}
+        customTypes={customTypes ?? []}
+        className={home.date}
+      />
     </HandNote>
   );
 
@@ -167,6 +183,7 @@ export default async function ArcherHomePage({ params }: PageProps<'/[locale]/ar
         )}
       </div>
       <NewEvents events={newEvents ?? []} hasPlanningCoach={hasPlanningCoach} />
+      <ToComplete sessions={pastSessions} />
       {/* The PDF extract, over the selected journal's period at first. */}
       <ExportCard
         from={selected?.startDate ?? `${today.slice(0, 7)}-01`}
@@ -182,21 +199,45 @@ export default async function ArcherHomePage({ params }: PageProps<'/[locale]/ar
     </Stack>
   );
 
-  // On the right, under the day: the archer's FFTA national rankings, the FFTA competitions
-  // still to plan (both only when practising in France), then the favourite indicator, its star filled (a click there takes it off
+  // On the right, under the day: the FFTA competitions still to plan (only when practising in
+  // France; the national rankings are on the Indicators page), then the favourite indicator, its star filled (a click there takes it off
   // the home page).
   const right = (
     <Stack gap={0} h="100%">
-      {/* The national ranking's heading right under the day. */}
+      {/* The first heading right under the day, level with the calendar's. */}
       <div>
         <AlignedTop>
           <Box visibleFrom="md">{date}</Box>
         </AlignedTop>
-        {ffta && <RankingsCard cacheScope={fftaScope} />}
+        {selected ? (
+          <RegularityCard
+            sessions={seasonSessions ?? []}
+            startDate={selected.startDate}
+            today={today}
+            raised
+          />
+        ) : (
+          ffta && <CompetitionsToPlan today={today} cacheScope={fftaScope} raised />
+        )}
       </div>
-      {ffta && <CompetitionsToPlan today={today} cacheScope={fftaScope} />}
+      {selected && ffta && <CompetitionsToPlan today={today} cacheScope={fftaScope} />}
       {/* The FFTA competitions still to come this season, in a dialog. */}
-      {ffta && selected && <CompetitionPlanningCard journal={selected} today={today} />}
+      {ffta && selected && (
+        <CompetitionPlanningCard
+          journal={selected}
+          today={today}
+          // The starting town (Profile page), for the map's distances to travel.
+          home={
+            profile?.homeTown && profile.homeLatitude !== null && profile.homeLongitude !== null
+              ? {
+                  name: profile.homeTown,
+                  latitude: profile.homeLatitude,
+                  longitude: profile.homeLongitude,
+                }
+              : null
+          }
+        />
+      )}
       {favorite && favoriteStats && (
         <RuledCardTitles value>
           <FavoriteIndicatorProvider initial={favorite}>

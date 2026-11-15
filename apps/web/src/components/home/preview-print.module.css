@@ -1,0 +1,80 @@
+/*
+ * A glance inside the notebook (preview-print.tsx): a square screenshot laid on the desk like a
+ * print (a white border, a little askew), held by a strip of tape, its caption handwritten below.
+ */
+.print {
+  position: relative;
+  margin: 0;
+  padding: 10px 10px 6px;
+  background: #fff;
+  box-shadow:
+    0 1px 2px rgb(0 0 0 / 0.15),
+    0 14px 24px -14px rgb(0 0 0 / 0.5);
+  transform: rotate(var(--tilt, 0deg));
+  transition: transform 150ms ease;
+
+  /* The strip of tape across the top. */
+  &::before {
+    content: '';
+    position: absolute;
+    top: -12px;
+    left: 50%;
+    width: 110px;
+    height: 26px;
+    translate: -50% 0;
+    rotate: -3deg;
+    background: rgb(255 255 255 / 0.55);
+    box-shadow: 0 1px 2px rgb(0 0 0 / 0.12);
+    backdrop-filter: blur(1px);
+  }
+
+  &:hover {
+    transform: rotate(0deg) scale(1.02);
+  }
+
+  @mixin dark {
+    background: #f1ece2;
+  }
+}
+
+.open {
+  display: block;
+  width: 100%;
+  cursor: zoom-in;
+
+  &:focus-visible {
+    outline: 2px solid var(--mantine-primary-color-filled);
+    outline-offset: 2px;
+  }
+}
+
+/* Square: the screenshot's top shown (its headings and first figures). */
+.image {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1;
+  object-fit: cover;
+  object-position: top center;
+}
+
+.caption {
+  padding-top: 6px;
+  color: #2f3a4a;
+  font-family: var(--font-hand), 'Segoe Print', cursive;
+  font-size: 1.25rem;
+  line-height: 1.2;
+  text-align: center;
+}
+
+.modalTitle {
+  font-family: var(--font-hand), 'Segoe Print', cursive;
+  font-size: 1.6rem;
+  font-weight: 700;
+}
+
+.full {
+  display: block;
+  width: 100%;
+  height: auto;
+}

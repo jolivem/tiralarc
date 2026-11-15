@@ -125,6 +125,7 @@ export function SeasonCalendar({
                 competitions={competitions?.competitions}
                 cols={{ base: 1, xs: 2, md: 3, lg: 4 }}
                 linkToJournal
+                pastel
               />
             </Stack>
           </Stack>

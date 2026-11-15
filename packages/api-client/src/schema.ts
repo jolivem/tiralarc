@@ -401,6 +401,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/journal/sessions/{id}/copy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Do a training or coaching again: a new one on `date` with the same planning (duration, place, discipline, distance, objective, steps), without review */
+        post: operations["Journal_copy"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/journal/sessions/{id}/seen": {
         parameters: {
             query?: never;
@@ -954,6 +971,58 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/reviews": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The published reviews of the app, the latest first (visitors' home page) */
+        get: operations["Reviews_published"];
+        put?: never;
+        /** Rate the app and comment on it (one review a day): emailed for approval before it shows on the home page */
+        post: operations["Reviews_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/reviews/mine": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["Reviews_mine"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/reviews/moderation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The review an emailed moderation link is about (doesn't decide) */
+        get: operations["Reviews_forModeration"];
+        put?: never;
+        /** Publish or refuse a pending review (the emailed link, once) */
+        post: operations["Reviews_moderate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1251,6 +1320,10 @@ export interface components {
             type: components["schemas"]["SessionType"];
             discipline: components["schemas"]["Discipline"];
             score: number;
+            /** @description Arrows shot: with the score, the average per arrow. */
+            arrowCount: number | null;
+            /** @description Shooting distance, in metres. */
+            distanceMeters: number | null;
         };
         EventsByDayDto: {
             /** @example 2026-10-03 */
@@ -1382,7 +1455,22 @@ export interface components {
             target: components["schemas"]["StepTarget"] | null;
             /** @description What to do. */
             description: string;
+            /**
+             * @description Ticked by the archer once the day has come: the step was done. Absent = false; always present in responses.
+             * @default false
+             */
+            done: boolean;
         };
+        /**
+         * @description Outdoor sessions.
+         * @enum {string}
+         */
+        Sky: "SUNNY" | "PARTLY_CLOUDY" | "CLOUDY" | "RAINY";
+        /**
+         * @description Outdoor sessions.
+         * @enum {string}
+         */
+        Wind: "CALM" | "LIGHT" | "MODERATE" | "STRONG";
         SessionDto: {
             /** Format: uuid */
             id: string;
@@ -1426,6 +1514,12 @@ export interface components {
             technique: number | null;
             physicalFeeling: components["schemas"]["Feeling"] | null;
             mentalFeeling: components["schemas"]["Feeling"] | null;
+            /** @description Outdoor sessions. */
+            sky: components["schemas"]["Sky"] | null;
+            /** @description Outdoor sessions. */
+            wind: components["schemas"]["Wind"] | null;
+            /** @description Outdoor sessions, in °C. */
+            temperatureC: number | null;
             wentWell: string[];
             toImprove: string[];
             nextTime: string | null;
@@ -1452,6 +1546,12 @@ export interface components {
             description?: string | null;
             physicalFeeling?: components["schemas"]["Feeling"] | null;
             mentalFeeling?: components["schemas"]["Feeling"] | null;
+            /** @description Outdoor sessions: the sky. Not part of `completed`. */
+            sky?: components["schemas"]["Sky"] | null;
+            /** @description Outdoor sessions: the wind. Not part of `completed`. */
+            wind?: components["schemas"]["Wind"] | null;
+            /** @description Outdoor sessions: the temperature, in °C. Not part of `completed`. */
+            temperatureC?: number | null;
             /** @description What went well (≤ 3 lines). */
             wentWell?: string[];
             /** @description What to improve (≤ 3 lines). */
@@ -1462,6 +1562,13 @@ export interface components {
             title?: string | null;
             color?: components["schemas"]["EventColor"] | null;
             icon?: components["schemas"]["EventIcon"] | null;
+        };
+        CopySessionDto: {
+            /**
+             * @description Local date (YYYY-MM-DD) of the new session.
+             * @example 2026-10-10
+             */
+            date: string;
         };
         CreateCustomEventTypeDto: {
             /** @example Kiné */
@@ -1566,6 +1673,10 @@ export interface components {
              * @description The organiser's invitation ("mandat", PDF), once published.
              */
             mandateUrl: string | null;
+            /** @description Latitude of its town (`city`; the clients' map), as the French address service gives it; null when the town could not be found. */
+            latitude: number | null;
+            /** @description Its town's longitude. */
+            longitude: number | null;
         };
         CompetitionListDto: {
             /** @description The archer's departments (profile), in their order; empty = none chosen, hence only the French championships. */
@@ -1647,7 +1758,7 @@ export interface components {
          * @description The indicator shown on the home page; null = none.
          * @enum {string}
          */
-        Indicator: "ARROWS" | "DURATIONS" | "SCORES" | "EVENTS" | "COMPETITIONS" | "PHYSICAL_FEELINGS" | "MENTAL_FEELINGS";
+        Indicator: "ARROWS" | "DURATIONS" | "SCORES" | "EVENTS" | "COMPETITIONS" | "PHYSICAL_FEELINGS" | "MENTAL_FEELINGS" | "ARROW_AVERAGES";
         ProfileDto: {
             /** @example 0123456A */
             licenceNumber: string | null;
@@ -1681,6 +1792,15 @@ export interface components {
             departments: string[];
             /** @description Also show the para-archery competitions (indoor and outdoor target archery). */
             paraCompetitions: boolean;
+            /**
+             * @description Where the archer sets off from (their club's or home town, in France): the competitions map measures the distance to travel from it.
+             * @example Rennes
+             */
+            homeTown: string | null;
+            /** @description `homeTown`'s latitude (null: no town, or not found). */
+            homeLatitude: number | null;
+            /** @description `homeTown`'s longitude. */
+            homeLongitude: number | null;
         };
         UpdateProfileDto: {
             licenceNumber?: string | null;
@@ -1713,6 +1833,8 @@ export interface components {
              */
             departments?: string[];
             paraCompetitions?: boolean;
+            /** @description Town the archer sets off from; its coordinates are looked up when saved. */
+            homeTown?: string | null;
         };
         /**
          * @description Coaches only. What the coach may do in the archer's journal of the season in progress (the one whose period covers today): READ = see all of it, plus the indicators and goals; WRITE = READ, and plan future trainings, coachings, competitions and strength sessions.
@@ -1903,6 +2025,70 @@ export interface components {
              * @example 2026-11-04
              */
             date?: string;
+        };
+        PublicReviewDto: {
+            /** Format: uuid */
+            id: string;
+            stars: number;
+            comment: string;
+            /**
+             * @description First name and initial of the last.
+             * @example Camille D.
+             */
+            authorName: string;
+            /**
+             * @description The day it was written (YYYY-MM-DD).
+             * @example 2026-11-15
+             */
+            date: string;
+        };
+        /** @enum {string} */
+        ReviewStatus: "PENDING" | "PUBLISHED" | "REFUSED";
+        MyReviewDto: {
+            stars: number;
+            comment: string;
+            status: components["schemas"]["ReviewStatus"];
+            /** Format: date-time */
+            createdAt: string;
+        };
+        MyReviewsDto: {
+            /** @description The latest one, if any. */
+            last: components["schemas"]["MyReviewDto"] | null;
+            /**
+             * Format: date-time
+             * @description When the next review may be written (one a day); null: now.
+             */
+            nextAllowedAt: string | null;
+        };
+        CreateReviewDto: {
+            /** @description Stars given to the app. */
+            stars: number;
+            /** @description What the user thinks of the app. */
+            comment: string;
+        };
+        ReviewModerationDto: {
+            /** Format: uuid */
+            id: string;
+            stars: number;
+            comment: string;
+            /**
+             * @description First name and initial of the last.
+             * @example Camille D.
+             */
+            authorName: string;
+            /**
+             * @description The day it was written (YYYY-MM-DD).
+             * @example 2026-11-15
+             */
+            date: string;
+            status: components["schemas"]["ReviewStatus"];
+        };
+        /** @enum {string} */
+        ReviewDecision: "PUBLISH" | "REFUSE";
+        ModerateReviewDto: {
+            /** @description The token of the emailed moderation link. */
+            token: string;
+            decision: components["schemas"]["ReviewDecision"];
         };
     };
     responses: never;
@@ -2974,6 +3160,51 @@ export interface operations {
                 content?: never;
             };
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    Journal_copy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CopySessionDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionDto"];
+                };
+            };
+            /** @description Archers only */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description DAY_FULL: that day already has 4 events */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -4547,6 +4778,130 @@ export interface operations {
             };
             /** @description Not one of your archers (or not in their current journal) */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    Reviews_published: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicReviewDto"][];
+                };
+            };
+        };
+    };
+    Reviews_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateReviewDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyReviewsDto"];
+                };
+            };
+            /** @description DAILY_LIMIT_REACHED: one review a day */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    Reviews_mine: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyReviewsDto"];
+                };
+            };
+        };
+    };
+    Reviews_forModeration: {
+        parameters: {
+            query: {
+                token: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReviewModerationDto"];
+                };
+            };
+            /** @description INVALID_REVIEW_TOKEN */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    Reviews_moderate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ModerateReviewDto"];
+            };
+        };
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description INVALID_REVIEW_TOKEN: unknown, or already decided */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

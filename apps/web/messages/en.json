@@ -32,7 +32,20 @@
   },
   "home": {
     "tagline": "The archers' notebook",
-    "welcomeTitle": "Welcome!",
+    "hook": "The archery notebook that follows your progress",
+    "preview": {
+      "title": "A glance inside the notebook",
+      "open": "Enlarge: {name}",
+      "close": "Close",
+      "home": "Home: the season at a glance",
+      "homeAlt": "The notebook's home page: two months' calendar, regularity and average per arrow.",
+      "journal": "The journal: a calendar to decorate",
+      "journalAlt": "November's calendar decorated with an autumn theme, with each day's sessions.",
+      "sheet": "The session sheet",
+      "sheetAlt": "A training sheet: information, goal, outline, self-assessment and feelings.",
+      "stats": "The indicators: your progress in figures",
+      "statsAlt": "The indicators page: goals, cumulative arrows and time, scores and average per arrow."
+    },
     "welcomeBody": "MyArcheryDiary is your archery notebook, always at hand. Like a real notebook lying on your desk, it keeps track of every session: training, coaching, competitions and strength work.",
     "faqTitle": "Frequently asked questions",
     "faq": {
@@ -42,7 +55,7 @@
       },
       "start": {
         "question": "How do I get started?",
-        "answer": "Create an account with your email, Google or Apple, then open your first journal. All that is left is to write down your sessions."
+        "answer": "Create an account with your email or Google, then open your first journal. All that is left is to write down your sessions."
       },
       "journal": {
         "question": "What is a journal?",
@@ -50,19 +63,27 @@
       },
       "events": {
         "question": "What can I write down?",
-        "answer": "Training, coaching, competitions and strength work, plus four types of your own. Each event has its sheet: scores, arrow count, feelings, photos…"
+        "answer": "Training, coaching, competitions and strength work, plus four types of your own. Each event has its sheet: scores, arrow count, self-assessment, feelings, photos, and the weather when shooting outdoors."
       },
       "planning": {
         "question": "Can I plan my sessions ahead?",
-        "answer": "Yes: for a day to come, note the duration, place, discipline, distance and objective. The review is filled in once the session is over."
+        "answer": "Yes: for a day to come, note the duration, place, discipline, distance, goal and the session's outline, step by step. On the day, tick the steps done, then fill in the review. “Do this session again” creates a new one with the same programme, and your coach can suggest some too."
+      },
+      "competitions": {
+        "question": "How do I find competitions?",
+        "answer": "Choose your departments on the Profile page: the FFTA competitions of your disciplines show in your calendars, with the published invitations on the home page. The “Competition planning” window also shows them on a map, with the distance from your starting town; one click adds them to your journal, and their results open from the sheet once published."
       },
       "progress": {
         "question": "Where can I see my progress?",
-        "answer": "The Stats page shows your scores, arrow volume and physical and mental feelings, next to the goals you set yourself."
+        "answer": "The Stats page shows your scores, your average per arrow at each distance, your arrow volume and your feelings, next to the goals you set yourself. The home page follows your regularity, and the “Season summary” sums up a whole season."
+      },
+      "share": {
+        "question": "Can I share my season?",
+        "answer": "Yes: each past session and your season summary can be posted on Instagram as a card, and “Journal publication” gathers calendars, indicators and sheets in a PDF to print or keep."
       },
       "devices": {
         "question": "On which devices?",
-        "answer": "Phone, tablet or computer, in your browser, in French or English."
+        "answer": "Phone, tablet or computer, in your browser, in French or English. You can also add it to your phone's home screen and open it like an app."
       }
     },
     "ctaTitle": "Ready to open your notebook?",
@@ -162,7 +183,8 @@
     "DATE_NOT_PLANNABLE": "A coach only plans days to come, within the archer's journal of the current season.",
     "DATE_LOCKED": "This competition comes from the FFTA calendar: its date can't be changed.",
     "DAILY_LIMIT_REACHED": "You have sent too many invitations today. Try again tomorrow.",
-    "GROUP_NAME_TAKEN": "You already have a group with this name."
+    "GROUP_NAME_TAKEN": "You already have a group with this name.",
+    "INVALID_REVIEW_TOKEN": "This link matches no pending review: it may already have been published or refused."
   },
   "validation": {
     "isEmail": "Invalid email address.",
@@ -184,6 +206,13 @@
     "rolesHint": "Everyone is an archer. The Coach profile is added when an archer invites you as their coach, for as long as the invitation stands."
   },
   "archer": {
+    "addToday": "Note an event today",
+    "regularity": {
+      "title": "Regularity",
+      "events": "<strong>{events}</strong> {events, plural, one {event noted} other {events noted}} in <strong>{days}</strong> {days, plural, one {day} other {days}} of the season",
+      "streak": "<strong>{weeks}</strong> {weeks, plural, one {week} other {weeks in a row}} with at least {sessions} sessions",
+      "noStreak": "Do {sessions} sessions this week to start a streak"
+    },
     "home": "Home",
     "journal": "Journal",
     "sheets": "Sheets",
@@ -206,6 +235,14 @@
     "competitions": {
       "title": "Upcoming competitions · {departments}",
       "planningTitle": "Competition planning",
+      "map": {
+        "label": "Map of the upcoming competitions",
+        "km": "{km} km",
+        "home": "Start: {town}",
+        "legendCompetition": "Competition",
+        "legendChampionship": "Championship",
+        "noHome": "Give your starting town (Profile page) to see the distances."
+      },
       "planningIntro": "The FFTA competitions still to come this season in your departments and disciplines, to add to your journal.",
       "plan": "Plan",
       "noDepartment": "Choose your departments on the Profile page to see the upcoming FFTA competitions in your disciplines here.",
@@ -215,14 +252,14 @@
       "source": "From the FFTA calendar.",
       "dayMark": "Competitions: {names}",
       "dayTitle": "FFTA competitions on {date}",
-      "toPlan": "Invitations published!",
+      "toPlan": "Invitations published",
       "dismiss": "I won't take part in “{title}”",
       "dismissTitle": "Not taking part in this competition?",
       "dismissBody": "“{title}” will leave your competitions to plan. It stays in the monthly and yearly calendars.",
       "dismissCancel": "Cancel",
       "dismissConfirm": "Remove from the list",
       "toPlanLoading": "Loading the competitions",
-      "toPlanNone": "No FFTA competition with a published invitation to plan in the coming months (departments and disciplines of the Profile page).",
+      "toPlanNone": "No new invitation published in your chosen departments",
       "ticket": "FFTA",
       "championships": {
         "NATIONAL": "French championship",
@@ -342,6 +379,28 @@
     "score": "Score",
     "objective": "Session goal",
     "outline": "Session outline",
+    "weather": {
+      "sky": "Sky",
+      "wind": "Wind",
+      "temperature": "Temperature",
+      "skies": {
+        "SUNNY": "Sunny",
+        "PARTLY_CLOUDY": "Sunny spells",
+        "CLOUDY": "Cloudy",
+        "RAINY": "Rain"
+      },
+      "winds": { "CALM": "None", "LIGHT": "Light", "MODERATE": "Moderate", "STRONG": "Strong" }
+    },
+    "again": {
+      "button": "Do this session again",
+      "hint": "A new sheet with the same place, distance, goal and outline.",
+      "title": "Do this session again",
+      "body": "A new sheet takes this one's duration, place, discipline, distance, goal and outline, without review. Pick its day:",
+      "date": "Day of the new session",
+      "cancel": "Cancel",
+      "confirm": "Create the session",
+      "saveFirst": "Save your changes first"
+    },
     "steps": {
       "add": "Add a step",
       "edit": "Edit this step",
@@ -358,6 +417,10 @@
       "descriptionPlaceholder": "E.g. warm-up, anchor work…",
       "minutes": "{count} min",
       "arrows": "{count, plural, one {# arrow} other {# arrows}}",
+      "moveUp": "Move step {step} up",
+      "moveDown": "Move step {step} down",
+      "done": "Step {step} done",
+      "doneMark": "Done",
       "addConfirm": "Add",
       "save": "Done",
       "cancel": "Cancel",
@@ -472,6 +535,12 @@
       "rating": "{value}/10",
       "meters": "{value} m",
       "minutes": "{value} min",
+      "winds": {
+        "CALM": "no wind",
+        "LIGHT": "light wind",
+        "MODERATE": "moderate wind",
+        "STRONG": "strong wind"
+      },
       "copy": "Copy the caption",
       "download": "Download the pictures",
       "share": "Share…",
@@ -491,6 +560,7 @@
         "duration": "Duration",
         "arrows": "Arrows",
         "score": "Score",
+        "weather": "Weather",
         "objective": "Objective",
         "satisfaction": "Satisfaction",
         "technique": "Technique",
@@ -517,6 +587,10 @@
     "newEvents": {
       "title": "Proposed events",
       "empty": "No new proposed event."
+    },
+    "pendingReviews": {
+      "title": "To complete",
+      "others": "{count, plural, one {and # more in the Journal} other {and # more in the Journal}}"
     }
   },
   "journals": {
@@ -530,7 +604,7 @@
     "inFranceYes": "Yes",
     "inFranceNo": "No",
     "licenceDepartment": "Department of your licence",
-    "licenceDepartmentHint": "Its FFTA competitions will show in your calendars. You can change it in your profile's Configuration.",
+    "licenceDepartmentHint": "You can change it in your profile's Configuration.",
     "chooseDepartment": "Choose a department",
     "startDate": "Start date",
     "endDate": "End date",
@@ -547,7 +621,7 @@
     "deleteBody": "The journal “{title}” will be permanently deleted.",
     "deleteSessions": "{count, plural, one {Its event is kept: it will show again in a journal covering its date.} other {Its # events are kept: they will show again in a journal covering their dates.}}",
     "noneTitle": "Create your first journal",
-    "noneBody": "Your events show in one journal per season. Create one to get started.",
+    "noneBody": "Choose your journal's title and period to get started.",
     "edit": "Edit journal",
     "editHint": "Events follow their dates: those falling outside the period no longer show in this journal, but are not deleted.",
     "save": "Save",
@@ -685,6 +759,8 @@
     },
     "calendarFonts": {
       "dancing-script": "Dancing Script",
+      "patrick-hand": "Patrick Hand (simple, handwritten)",
+      "atkinson": "Atkinson (simple, very legible)",
       "satisfy": "Satisfy",
       "courgette": "Courgette",
       "kaushan-script": "Kaushan Script",
@@ -719,6 +795,10 @@
       "departments": "Departments",
       "noDepartment": "None (don't show competitions)",
       "para": "Include para-archery competitions (indoor and outdoor)",
+      "homeTown": "Starting town",
+      "homeTownPlaceholder": "E.g. Rennes",
+      "homeTownHint": "Your club's or your home town: the competitions map gives the distance to travel from it.",
+      "homeTownNotFound": "Town not found on the map: check its spelling.",
       "save": "Save",
       "saved": "Preferences saved."
     },
@@ -737,6 +817,70 @@
       "signIn": "Sign in",
       "register": "Create an account"
     }
+  },
+  "reviews": {
+    "title": "Rate the app",
+    "intro": "Your opinion counts: give a rating and tell us what you think of MyArcheryDiary.",
+    "stars": "Rating",
+    "starsValue": "{count, plural, one {# star} other {# stars}}",
+    "levels": {
+      "1": "Disappointing",
+      "2": "Fair",
+      "3": "Good",
+      "4": "Very good",
+      "5": "Excellent"
+    },
+    "comment": "Your comment",
+    "commentPlaceholder": "What you like, what you miss…",
+    "moderated": "It may be published on the site's home page, with your first name, once approved.",
+    "send": "Send",
+    "thanks": "Thank you for your review!",
+    "nextAt": "You can give a new review from {date}.",
+    "publicTitle": "What archers say",
+    "average": "{average} / 5 · {count, plural, one {# review} other {# reviews}}",
+    "rowLabel": "Users' reviews (scroll sideways)",
+    "moderation": {
+      "title": "Review to approve",
+      "invalid": "This link matches no review.",
+      "publish": "Publish on the home page",
+      "refuse": "Refuse",
+      "published": "Review published: it shows on the home page.",
+      "refused": "Review refused: it won't be published.",
+      "alreadyPublished": "This review is already published.",
+      "alreadyRefused": "This review was already refused."
+    }
+  },
+  "season": {
+    "title": "Season summary",
+    "titleOf": "Summary · {title}",
+    "open": "Season summary",
+    "close": "Close the summary",
+    "events": "Events",
+    "types": {
+      "TRAINING": "{count, plural, one {# training} other {# trainings}}",
+      "COACHING": "{count, plural, one {# coaching} other {# coachings}}",
+      "COMPETITION": "{count, plural, one {# competition} other {# competitions}}",
+      "STRENGTH": "{count, plural, one {# strength session} other {# strength sessions}}"
+    },
+    "arrows": "Arrows shot",
+    "time": "Time practising",
+    "hoursValue": "{hours} h {minutes}",
+    "activeDays": "Days practising",
+    "bestScores": "Best competition scores",
+    "noBestScores": "No competition score this season.",
+    "averages": "Average per arrow",
+    "noAverages": "No average: it takes indoor or outdoor target sessions with a score, a number of arrows and a distance.",
+    "distance": "{distance} m",
+    "perArrow": "pts / arrow",
+    "bestSession": "best session: {best}",
+    "progression": "{first} → {last} ({delta})",
+    "progressionHint": "Average of the first half of the sessions, then of the second",
+    "goals": "Goals reached",
+    "noGoalsReached": "No goal reached this season.",
+    "reached": "Reached",
+    "goalsOpen": "{count, plural, one {# goal still open} other {# goals still open}}",
+    "shareIntro": "A summary card with the ticked information. The caption is copied when you share: paste it in Instagram.",
+    "cardArrows": "Arrows"
   },
   "stats": {
     "competitions": "Competitions",
@@ -781,6 +925,13 @@
     "scores": "Scores by discipline",
     "noScores": "No training, coaching or competition with both a score and a discipline yet.",
     "noScoresOfType": "No score with a discipline for this type of event up to today.",
+    "averages": {
+      "title": "Average per arrow",
+      "none": "No average yet: it is worked out from indoor and outdoor target sessions with a score, a number of arrows and a distance.",
+      "noneOfType": "No average for this type of event up to today.",
+      "distance": "{distance} m",
+      "perArrow": "pts / arrow"
+    },
     "scoreTypes": {
       "label": "Events shown",
       "COMPETITION": "Competitions",
@@ -870,7 +1021,7 @@
   },
   "export": {
     "button": "PDF extract",
-    "title": "PDF extract",
+    "title": "Journal publication",
     "cardIntro": "Keep a paper record of your season: calendars, sheets, indicators and rankings gathered in an A5 notebook, to print, archive or share.",
     "intro": "An A5 PDF file: the whole period's calendar on one page, each month's calendar with its decoration and colours, and the parts chosen below.",
     "periodLabel": "Period",

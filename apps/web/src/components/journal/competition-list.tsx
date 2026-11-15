@@ -35,6 +35,7 @@ import { RuledHeading } from '@/components/notebook/on-ruling';
 import { Link } from '@/i18n/navigation';
 import type { ActionState } from '@/lib/action-state';
 import { readCached, updateCached, writeCached } from '@/lib/browser-cache';
+import { CompetitionsMap } from './competitions-map';
 import classes from './journal.module.css';
 import { DISCIPLINE_COLORS } from './session-types';
 
@@ -102,7 +103,13 @@ function CompetitionItems({
   onAdded,
   openIn,
   onDismiss,
+  anchors = false,
+  highlighted = null,
 }: {
+  /** Each row reachable by its id (`competition-<id>`): the map scrolls the list to it. */
+  anchors?: boolean;
+  /** The row picked on the map, marked. */
+  highlighted?: string | null;
   /** A black cross in each row's top right corner: "I won't take part" (asked by the caller). */
   onDismiss?: (competition: Competition) => void;
   competitions: Competition[];
@@ -202,8 +209,11 @@ function CompetitionItems({
           return (
             <li
               key={c.id}
+              // Reached from the map: the list scrolls here and marks it a moment.
+              id={anchors ? `competition-${c.id}` : undefined}
               className={classes.competitionItem}
               data-dismissable={onDismiss ? true : undefined}
+              data-highlighted={highlighted === c.id || undefined}
             >
               {onDismiss && (
                 <CloseButton
@@ -320,20 +330,33 @@ function CompetitionItems({
   );
 }
 
-/** The season calendar's list: the upcoming FFTA competitions of the archer's departments. */
+/**
+ * The competition planning's list: the upcoming FFTA competitions of the archer's departments,
+ * under their map (`CompetitionsMap`; the distance to travel from `home`, the profile's
+ * starting town). A click on a point scrolls the list to its competition and marks it.
+ */
 export function CompetitionListPanel({
   list,
   sessions,
   today,
   onAdded,
+  home = null,
 }: {
   /** Null: the API could not be reached. */
   list: CompetitionList | null;
   sessions: JournalSessionSummary[];
   today: string;
   onAdded: () => void;
+  home?: ComponentProps<typeof CompetitionsMap>['home'];
 }) {
   const t = useTranslations('archer.competitions');
+  const [highlighted, setHighlighted] = useState<string | null>(null);
+  const pick = (competition: Competition) => {
+    setHighlighted(competition.id);
+    document
+      .getElementById(`competition-${competition.id}`)
+      ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  };
 
   if (!list) return <FormError state={{ code: 'NETWORK_ERROR' }} />;
   if (list.departments.length === 0) {
@@ -374,12 +397,22 @@ export function CompetitionListPanel({
           {t('empty')}
         </Text>
       ) : (
-        <CompetitionItems
-          competitions={list.competitions}
-          sessions={sessions}
-          adding={ownJournal(today)}
-          onAdded={onAdded}
-        />
+        <>
+          <CompetitionsMap
+            // Postponed and cancelled ones stay off the map (they only show in the list).
+            competitions={list.competitions.filter((c) => c.status === 'SCHEDULED')}
+            home={home}
+            onPick={pick}
+          />
+          <CompetitionItems
+            competitions={list.competitions}
+            sessions={sessions}
+            adding={ownJournal(today)}
+            onAdded={onAdded}
+            anchors
+            highlighted={highlighted}
+          />
+        </>
       )}
     </Stack>
   );
@@ -397,7 +430,16 @@ const TO_PLAN_COUNT = 5;
  * is kept an hour in the browser (`cacheScope`: the archer and the settings it depends on);
  * the journal's events, which decide what is still to plan, are read each time.
  */
-export function CompetitionsToPlan({ today, cacheScope }: { today: string; cacheScope: string }) {
+export function CompetitionsToPlan({
+  today,
+  cacheScope,
+  raised = false,
+}: {
+  today: string;
+  cacheScope: string;
+  /** Its heading a line higher: first under the day, level with the left page's calendar. */
+  raised?: boolean;
+}) {
   const t = useTranslations('archer.competitions');
   const [loaded, setLoaded] = useState<{
     list: CompetitionList | null;
@@ -501,7 +543,7 @@ export function CompetitionsToPlan({ today, cacheScope }: { today: string; cache
 
   return (
     <section>
-      <RuledHeading>{t('toPlan')}</RuledHeading>
+      <RuledHeading raised={raised}>{t('toPlan')}</RuledHeading>
       {/* Room under the heading (written on its box's last line) before the list. */}
       <Box mt="md">{body()}</Box>
       <Modal

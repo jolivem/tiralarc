@@ -137,7 +137,7 @@
   }
 }
 
-/* Name, drawing and tagline pressed into the leather: lit from the top left. */
+/* Name and tagline pressed into the leather: lit from the top left. */
 .emboss {
   color: var(--emboss);
   text-shadow:
@@ -145,36 +145,31 @@
     2px 2px 2px rgb(0 0 0 / 0.55);
 }
 
-/*
- * The bow drawing, pressed in the same way: its strokes (public/cover/bow.png, black on
- * transparent) cut a mask in a leather-coloured block; the wrapper casts the relief's
- * light and shadow (a filter on the masked block itself would be masked away).
- */
-.coverArt {
-  filter: drop-shadow(-1px -1px 0.5px rgb(255 255 255 / 0.22))
-    drop-shadow(2px 2px 1.5px rgb(0 0 0 / 0.55));
-}
-
-.coverArtStrokes {
-  display: block;
-  width: 120px;
-  aspect-ratio: 350 / 600;
-  background: var(--emboss);
-  mask: url('/cover/bow.png') center / contain no-repeat;
-
-  @media (min-width: $mantine-breakpoint-sm) {
-    width: 140px;
-  }
-}
-
 .coverTitle {
   margin: 0;
   font-family: var(--font-month), Georgia, serif;
-  font-size: clamp(1.6rem, 7vw, 2.3rem);
+  font-size: clamp(1.5rem, 6vw, 2rem);
   font-weight: 400;
   line-height: 1.15;
   text-align: center;
-  overflow-wrap: anywhere;
+}
+
+/*
+ * "MyArchery" and "Diary", each kept whole: one line when the cover has room, else two
+ * ("Diary" under "MyArchery") — never broken inside a word.
+ */
+.coverTitlePart {
+  display: inline-block;
+  white-space: nowrap;
+}
+
+/* Phones: always two lines. */
+.coverTitleEnd {
+  display: block;
+
+  @media (min-width: $mantine-breakpoint-sm) {
+    display: inline-block;
+  }
 }
 
 .coverTagline {
