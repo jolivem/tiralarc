@@ -70,9 +70,23 @@ export function useArtwork(src: string): Artwork | null {
 
   useEffect(() => {
     let cancelled = false;
+    void readArtwork(src).then((read) => {
+      if (!cancelled && read) setArt(read);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [src]);
+
+  return art;
+}
+
+/** A decoration image read as line art (scaled down to `MAX_WORK_SIZE`); null if unreadable. */
+export function readArtwork(src: string): Promise<Artwork | null> {
+  return new Promise((resolve) => {
     const image = new Image();
+    image.onerror = () => resolve(null);
     image.onload = () => {
-      if (cancelled) return;
       const scale = Math.min(1, MAX_WORK_SIZE / Math.max(image.naturalWidth, image.naturalHeight));
       const width = Math.max(1, Math.round(image.naturalWidth * scale));
       const height = Math.max(1, Math.round(image.naturalHeight * scale));
@@ -80,17 +94,12 @@ export function useArtwork(src: string): Artwork | null {
         '2d',
         { willReadFrequently: true },
       );
-      if (!context) return;
+      if (!context) return resolve(null);
       context.drawImage(image, 0, 0, width, height);
-      setArt(toArtwork(context.getImageData(0, 0, width, height).data, width, height));
+      resolve(toArtwork(context.getImageData(0, 0, width, height).data, width, height));
     };
     image.src = src;
-    return () => {
-      cancelled = true;
-    };
-  }, [src]);
-
-  return art;
+  });
 }
 
 /** One band: the plain image until its pixels are read, then a canvas with the colouring. */

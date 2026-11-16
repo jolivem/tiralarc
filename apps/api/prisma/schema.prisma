@@ -56,6 +56,8 @@ model User {
   journalSessions         JournalSession[]
   /// Events this user planned in their archers' journals, as their coach.
   plannedSessions         JournalSession[]         @relation("PlannedSessions")
+  /// What this user wrote, as a coach, on their archers' events.
+  sessionComments         SessionComment[]
   customEventTypes        CustomEventType[]
 
   @@map("users")
@@ -270,11 +272,32 @@ model JournalSession {
   plannedBy  User?            @relation("PlannedSessions", fields: [plannedById], references: [id], onDelete: SetNull)
   photos     SessionPhoto[]
   scoreSheet ScoreSheet?
+  comments   SessionComment[]
 
   @@index([userId, date])
   @@index([customTypeId])
   @@index([plannedById])
   @@map("journal_sessions")
+}
+
+/// A comment the archer's coach left on one of their events (at most `MAX_COMMENTS_PER_SESSION`),
+/// shown at the bottom of its sheet. Only its author changes or deletes it.
+model SessionComment {
+  id        String    @id @default(uuid()) @db.Char(36)
+  sessionId String    @map("session_id") @db.Char(36)
+  coachId   String    @map("coach_id") @db.Char(36)
+  text      String    @db.Text
+  /// When the archer first opened the sheet after it was written (or changed); null = new to them.
+  seenAt    DateTime? @map("seen_at") @db.DateTime(3)
+  createdAt DateTime  @default(now()) @map("created_at") @db.DateTime(3)
+  updatedAt DateTime  @updatedAt @map("updated_at") @db.DateTime(3)
+
+  session JournalSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  coach   User           @relation(fields: [coachId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId, createdAt])
+  @@index([coachId])
+  @@map("session_comments")
 }
 
 /// The archer's score sheet at a competition: their page(s) of the PDFs published on ianseo.net.

@@ -43,6 +43,8 @@ const envSchema = z.object({
   MAIL_FROM: z.string().default('MyArcheryDiary <no-reply@tiralarc.local>'),
   /** Where users' reviews of the app are sent for approval before they show on the home page. */
   REVIEWS_EMAIL: z.email().default('feedback@myarcherydiary.com'),
+  /** Told when a page of the FFTA website is no longer read as expected (its layout changed). */
+  ALERTS_EMAIL: z.email().default('feedback@myarcherydiary.com'),
   /** Email verification link lifetime, in seconds. */
   EMAIL_VERIFICATION_TTL: z.coerce
     .number()

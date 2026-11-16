@@ -19,6 +19,8 @@ export const SHARE_FIELDS = [
   'wentWell',
   'toImprove',
   'nextTime',
+  // The coach's comments on the event (not on the sheet itself): the archer's choice to show.
+  'coachComment',
 ] as const;
 export type ShareField = (typeof SHARE_FIELDS)[number];
 
@@ -72,6 +74,8 @@ export interface ShareWording {
   minutes: (value: number) => string;
   /** "Éclaircies · vent fort · 12 °C" (what was noted). */
   weather: (weather: ShareWeather) => string;
+  /** The coach's comments on the event, one per line; none = no such field. */
+  coachComment?: string | null;
 }
 
 /** The fields the event has filled (the date always), worded, in `SHARE_FIELDS` order. */
@@ -98,6 +102,7 @@ export function filledRows(session: JournalSession, w: ShareWording): ShareRow[]
     wentWell: lines(session.wentWell),
     toImprove: lines(session.toImprove),
     nextTime: session.nextTime,
+    coachComment: w.coachComment ?? null,
   };
   const feelings: Partial<Record<ShareField, Feeling | null>> = {
     physical: session.physicalFeeling,

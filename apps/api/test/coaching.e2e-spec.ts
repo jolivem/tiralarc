@@ -366,6 +366,74 @@ describe('Coaching (e2e)', () => {
     expect((await plan().expect(409)).body.code).toBe('LIMIT_REACHED');
   });
 
+  it("lets the archer's coaches comment on an event, new to the archer until they open it", async () => {
+    const sessionId = (
+      await http()
+        .post('/api/v1/journal/sessions')
+        .set(as(archer))
+        .send({ type: 'TRAINING', date: day(-2) })
+        .expect(201)
+    ).body.id as string;
+    const comments = `${base()}/sessions/${sessionId}/comments`;
+    // Read-only access is enough: a comment changes nothing of the sheet.
+    await setAccess('READ');
+    const added = await http()
+      .post(comments)
+      .set(as(coach))
+      .send({ text: '  Belle régularité, garde ce placement.  ' })
+      .expect(201);
+    expect(added.body).toMatchObject({
+      text: 'Belle régularité, garde ce placement.',
+      coach: { name: 'Camille Coach' },
+      isNew: true,
+      mine: true,
+    });
+    expect((await http().post(comments).set(as(coach)).send({ text: '   ' })).status).toBe(400);
+    // Someone who doesn't coach the archer gets nothing.
+    await http().post(comments).set(as(otherCoach)).send({ text: 'Hello' }).expect(404);
+
+    // The archer sees it, and the home page lists the event until its sheet is opened.
+    const own = await http()
+      .get(`/api/v1/journal/sessions/${sessionId}/comments`)
+      .set(as(archer))
+      .expect(200);
+    expect(own.body).toEqual([expect.objectContaining({ isNew: true, mine: false })]);
+    const news = await http()
+      .get('/api/v1/journal/sessions/new-comments')
+      .set(as(archer))
+      .expect(200);
+    expect(news.body).toEqual([
+      expect.objectContaining({
+        id: sessionId,
+        newComments: 1,
+        coach: expect.objectContaining({ name: 'Camille Coach' }),
+      }),
+    ]);
+    await http().post(`/api/v1/journal/sessions/${sessionId}/seen`).set(as(archer)).expect(204);
+    expect(
+      (await http().get('/api/v1/journal/sessions/new-comments').set(as(archer)).expect(200)).body,
+    ).toEqual([]);
+
+    // Changed by its author: new again.
+    const commentId = added.body.id as string;
+    const changed = await http()
+      .patch(`${comments}/${commentId}`)
+      .set(as(coach))
+      .send({ text: 'Belle régularité !' })
+      .expect(200);
+    expect(changed.body).toMatchObject({ text: 'Belle régularité !', isNew: true });
+    expect(
+      (await http().get('/api/v1/journal/sessions/new-comments').set(as(archer)).expect(200)).body,
+    ).toHaveLength(1);
+
+    await http().delete(`${comments}/${commentId}`).set(as(coach)).expect(204);
+    expect((await http().get(comments).set(as(coach)).expect(200)).body).toEqual([]);
+    expect(
+      (await http().get('/api/v1/journal/sessions/new-comments').set(as(archer)).expect(200)).body,
+    ).toEqual([]);
+    await setAccess('WRITE');
+  });
+
   it('ends with the invitation', async () => {
     await http().delete(`/api/v1/profile/invitations/${invitationId}`).set(as(archer)).expect(204);
     await http().get(base()).set(as(coach)).expect(404);

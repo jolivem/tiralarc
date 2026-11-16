@@ -55,6 +55,7 @@ export default async function ArcherHomePage({ params }: PageProps<'/[locale]/ar
     profile,
     { data: customTypes },
     { data: newEvents },
+    { data: newComments },
     { data: invitations },
   ] = await Promise.all([
     getCurrentUser(),
@@ -65,6 +66,8 @@ export default async function ArcherHomePage({ params }: PageProps<'/[locale]/ar
     api.GET('/api/v1/journal/event-types'),
     // Planned by the coach, not opened yet.
     api.GET('/api/v1/journal/sessions/new'),
+    // The coach's comments not read yet ("Nouveau commentaire", same list).
+    api.GET('/api/v1/journal/sessions/new-comments'),
     // Whether a coach (who accepted, with planning access) can propose events.
     api.GET('/api/v1/profile/invitations'),
   ]);
@@ -182,7 +185,11 @@ export default async function ArcherHomePage({ params }: PageProps<'/[locale]/ar
           <Text c="dimmed">{tJournals('noneBody')}</Text>
         )}
       </div>
-      <NewEvents events={newEvents ?? []} hasPlanningCoach={hasPlanningCoach} />
+      <NewEvents
+        events={newEvents ?? []}
+        comments={newComments ?? []}
+        hasPlanningCoach={hasPlanningCoach}
+      />
       <ToComplete sessions={pastSessions} />
       {/* The PDF extract, over the selected journal's period at first. */}
       <ExportCard

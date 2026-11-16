@@ -16,7 +16,7 @@ const STAR_ICONS = { empty: IconStar, half: IconStarHalfFilled, full: IconStarFi
  * The displayed month's satisfaction: what the server has, plus the archer's clicks, saved a
  * moment after the last one (and when leaving).
  */
-function useMonthSatisfaction(journal: Journal, month: string) {
+export function useMonthSatisfaction(journal: Journal, month: string) {
   // Clicks since the page loaded, by month: moving to another month and back keeps them.
   const [edits, setEdits] = useState<Record<string, MonthStars | null>>({});
   const pending = useRef<{ month: string; stars: MonthStars | null; timer: number } | null>(null);
@@ -46,30 +46,12 @@ function useMonthSatisfaction(journal: Journal, month: string) {
   return { stars, change };
 }
 
-/**
- * The displayed month at a glance, centred at the top of the page: the arrows shot in it and the
- * archer's overall satisfaction (5 stars, by halves). Read-only for a coach.
- */
-export function MonthSummary({
-  journal,
-  month,
-  arrows,
-  readOnly,
-}: {
-  journal: Journal;
-  /** "YYYY-MM". */
-  month: string;
-  arrows: number;
-  readOnly?: boolean;
-}) {
-  const { stars, change } = useMonthSatisfaction(journal, month);
-  return <MonthSummaryCard arrows={arrows} stars={stars} onStar={readOnly ? undefined : change} />;
-}
-
 /** The month summary's drawings (masks): the PDF waits for them as pictures (`print`). */
 const DRAWINGS = ['quiver', 'arrow', 'target'].map((name) => `/month-summary/${name}.png`);
 
 /**
+ * The displayed month at a glance, centred at the top of the Journal page (its satisfaction from
+ * `useMonthSatisfaction`, read-only for a coach), and on the month's Instagram board.
  * The month summary's card: the month's arrows and its satisfaction stars, a click on a star
  * changing it (`onStar`; read-only without). `print`: on the PDF's month (print-month.tsx),
  * laid out as on a tablet whatever the paper's width.

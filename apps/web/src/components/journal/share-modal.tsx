@@ -130,6 +130,7 @@ export function ShareButton({
   title,
   photos,
   disabled,
+  coachComment = null,
 }: {
   session: JournalSession;
   /** The event's type (or custom title), the card's heading. */
@@ -137,6 +138,8 @@ export function ShareButton({
   photos: SessionPhoto[];
   /** Unsaved changes: the summary would show the sheet as it was. */
   disabled: boolean;
+  /** The coach's comments on the event: a field the archer may tick (not ticked at first). */
+  coachComment?: string | null;
 }) {
   const t = useTranslations('journal.share');
   const tJournal = useTranslations('journal');
@@ -169,8 +172,9 @@ export function ShareButton({
           ]
             .filter(Boolean)
             .join(' · '),
+        coachComment,
       }),
-    [session, t, tJournal, format],
+    [session, t, tJournal, format, coachComment],
   );
   const [fields, setFields] = useState<ShareField[]>(DEFAULT_SHARE_FIELDS);
   const [photoIds, setPhotoIds] = useState(() =>

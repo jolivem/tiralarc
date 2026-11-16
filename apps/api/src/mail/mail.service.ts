@@ -4,6 +4,7 @@ import { createTransport, type Transporter } from 'nodemailer';
 import type { Env } from '../config/env.js';
 import {
   invitationEmail,
+  layoutAlertEmail,
   type MailLocale,
   passwordResetEmail,
   reviewModerationEmail,
@@ -71,6 +72,22 @@ export class MailService {
     await this.send({
       to: this.config.get('REVIEWS_EMAIL', { infer: true }),
       ...reviewModerationEmail(review, link),
+    });
+  }
+
+  /**
+   * To ALERTS_EMAIL (in French): a page of the FFTA website no longer reads as expected
+   * (`FftaWatch`).
+   */
+  async sendLayoutAlert(alert: {
+    page: string;
+    url: string;
+    problem: string;
+    failures: number;
+  }): Promise<void> {
+    await this.send({
+      to: this.config.get('ALERTS_EMAIL', { infer: true }),
+      ...layoutAlertEmail({ site: 'FFTA', ...alert }),
     });
   }
 

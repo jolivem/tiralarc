@@ -35,7 +35,9 @@ import {
   CreateSessionDto,
   JournalStatsDto,
   ListSessionsQuery,
+  NewCommentEventDto,
   NewEventDto,
+  SessionCommentDto,
   SessionDto,
   SessionSuggestionsDto,
   SessionSummaryDto,
@@ -92,6 +94,17 @@ export class JournalController {
     return this.journal.newEvents(user.id);
   }
 
+  /** Declared before ':id' so "new-comments" isn't parsed as an id. */
+  @Get('new-comments')
+  @ApiOperation({
+    summary:
+      "Events with comments from the archer's coach the archer hasn't read yet (opening the sheet reads them)",
+  })
+  @ApiOkResponse({ type: NewCommentEventDto, isArray: true })
+  newComments(@CurrentUser() user: AuthenticatedUser): Promise<NewCommentEventDto[]> {
+    return this.journal.newComments(user.id);
+  }
+
   @Post()
   @ApiCreatedResponse({ type: SessionDto })
   @ApiConflictResponse({ description: 'DAY_FULL: that day already has 4 events' })
@@ -110,6 +123,17 @@ export class JournalController {
     @Param('id', new ParseUUIDPipe()) id: string,
   ): Promise<SessionDto> {
     return this.journal.get(user.id, id);
+  }
+
+  @Get(':id/comments')
+  @ApiOperation({ summary: "The comments the archer's coach left on the event, oldest first" })
+  @ApiOkResponse({ type: SessionCommentDto, isArray: true })
+  @ApiNotFoundResponse()
+  comments(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id', new ParseUUIDPipe()) id: string,
+  ): Promise<SessionCommentDto[]> {
+    return this.journal.comments(user.id, id, user.id);
   }
 
   @Get(':id/score-sheet')
@@ -158,7 +182,7 @@ export class JournalController {
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({
     summary:
-      'Tell that the archer opened the sheet (clients call it when they show it): a coach-planned event is then no longer new',
+      "Tell that the archer opened the sheet (clients call it when they show it): a coach-planned event is then no longer new, nor are its coach's comments",
   })
   @ApiNoContentResponse()
   @ApiNotFoundResponse()

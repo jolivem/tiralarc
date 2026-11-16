@@ -37,6 +37,7 @@ import type {
   JournalSession,
   JournalSessionUpdate,
   JournalSuggestions,
+  SessionComment,
   SessionPhoto,
   SessionType,
   Sky,
@@ -73,6 +74,7 @@ import { AddStepButton, MAX_STEPS, StepDialog, StepList, useStepsTotal } from '.
 import { SessionAgainButton } from './session-again';
 import { SkyIcon, Windsock } from './weather-icons';
 import { ShareButton } from './share-modal';
+import { CoachComments } from './coach-comments';
 
 const DEFAULT_NOTE_COLOR = 'gray';
 /** The weather of an outdoor session, in the order offered. */
@@ -223,9 +225,12 @@ export function SessionForm({
   title,
   coach,
   sharePhotos,
+  comments = [],
   children,
 }: {
   session: JournalSession;
+  /** The coach's comments, at the bottom of the sheet (`GET .../comments`). */
+  comments?: SessionComment[];
   /** The event's photos, offered with its Instagram summary (the archer's own sheet only). */
   sharePhotos?: SessionPhoto[];
   suggestions: JournalSuggestions;
@@ -243,8 +248,10 @@ export function SessionForm({
   const router = useRouter();
   /** A coach who may not change this event: every field shows, none changes. */
   const readOnly = coach !== undefined && !coach.canEdit;
-  // The archer now has an event their coach planned in front of them: no longer new (home page).
-  const unseenByArcher = !coach && session.plannedBy !== null;
+  // The archer now has an event their coach planned, or their coach's new comments, in front of
+  // them: no longer new (home page).
+  const unseenByArcher =
+    !coach && (session.plannedBy !== null || comments.some((comment) => comment.isNew));
   useEffect(() => {
     if (unseenByArcher) void markSessionSeen(session.id);
   }, [unseenByArcher, session.id]);
@@ -444,6 +451,7 @@ export function SessionForm({
             title={t(`types.${savedValues.type}`)}
             photos={sharePhotos}
             disabled={dirty}
+            coachComment={comments.map((comment) => comment.text).join('\n') || null}
           />
         )}
         <Group gap="sm" wrap="nowrap">
@@ -935,6 +943,11 @@ export function SessionForm({
             </>
           )}
         </RuledStack>
+        <CoachComments
+          sessionId={session.id}
+          comments={comments}
+          coach={coach && { archerId: coach.archerId }}
+        />
       </LooseLeaf>
 
       <Modal

@@ -1,4 +1,4 @@
-import { HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
 import { ApiException, ErrorCode } from '../common/errors.js';
 import { CompetitionsService } from '../competitions/competitions.service.js';
 import {
@@ -7,6 +7,7 @@ import {
   type Journal,
   type JournalSession,
   type Prisma,
+  type SessionComment,
   SessionType,
 } from '../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service.js';
@@ -24,7 +25,9 @@ import {
   type MonthSatisfactionDto,
   type MonthThemeDto,
   MAX_LIST_ITEMS,
+  type NewCommentEventDto,
   type NewEventDto,
+  type SessionCommentDto,
   type SessionDto,
   type SessionStepDto,
   type SessionSuggestionsDto,
@@ -236,6 +239,42 @@ const WITH_TYPE = {
   // Whether there is one, not the file.
   scoreSheet: { select: { sessionId: true } },
 } as const;
+
+/** Comments a coach (or the archer's coaches together) may leave on one event. */
+export const MAX_COMMENTS = 20;
+
+const COMMENT_AUTHOR = {
+  coach: { select: { id: true, displayName: true, email: true } },
+} as const;
+type CommentRow = SessionComment & {
+  coach: { id: string; displayName: string | null; email: string };
+};
+
+const authorOf = (user: { id: string; displayName: string | null; email: string }) => ({
+  id: user.id,
+  name: user.displayName ?? user.email,
+});
+
+function toCommentDto(c: CommentRow, viewerId: string): SessionCommentDto {
+  return {
+    id: c.id,
+    coach: authorOf(c.coach),
+    text: c.text,
+    createdAt: c.createdAt.toISOString(),
+    updatedAt: c.updatedAt.toISOString(),
+    isNew: c.seenAt === null,
+    mine: c.coachId === viewerId,
+  };
+}
+
+/** A comment as kept: trimmed, never blank. */
+function commentText(text: string): string {
+  const trimmed = text.trim();
+  if (!trimmed) {
+    throw new ApiException(HttpStatus.BAD_REQUEST, ErrorCode.VALIDATION_FAILED, 'Empty comment');
+  }
+  return trimmed;
+}
 
 /** What a coach fills in when planning an event (the fields of a sheet still to come). */
 export interface PlannedFields {
@@ -732,13 +771,115 @@ export class JournalService {
     );
   }
 
-  /** The archer opened the event's sheet: it is no longer new to them. Idempotent. */
+  /**
+   * The archer opened the event's sheet: it is no longer new to them, nor are its coach's
+   * comments. Idempotent.
+   */
   async markSeen(userId: string, id: string): Promise<void> {
     await this.findOwned(userId, id);
-    await this.prisma.journalSession.updateMany({
-      where: { id, seenAt: null },
-      data: { seenAt: new Date() },
+    const now = new Date();
+    await this.prisma.$transaction([
+      this.prisma.journalSession.updateMany({ where: { id, seenAt: null }, data: { seenAt: now } }),
+      this.prisma.sessionComment.updateMany({
+        where: { sessionId: id, seenAt: null },
+        data: { seenAt: now },
+      }),
+    ]);
+  }
+
+  // ------------------------------------------------------------- comments
+
+  /**
+   * The coach's comments on one of the archer's events, oldest first. `viewerId`: who asks
+   * (`mine`); the coach's access is checked by the caller.
+   */
+  async comments(userId: string, id: string, viewerId: string): Promise<SessionCommentDto[]> {
+    await this.findOwned(userId, id);
+    const comments = await this.prisma.sessionComment.findMany({
+      where: { sessionId: id },
+      orderBy: { createdAt: 'asc' },
+      include: COMMENT_AUTHOR,
     });
+    return comments.map((c) => toCommentDto(c, viewerId));
+  }
+
+  /** The archer's events with comments they haven't read yet, by date. */
+  async newComments(userId: string): Promise<NewCommentEventDto[]> {
+    const sessions = await this.prisma.journalSession.findMany({
+      where: { userId, comments: { some: { seenAt: null } } },
+      orderBy: [{ date: 'asc' }, { createdAt: 'asc' }],
+      include: {
+        ...WITH_TYPE,
+        comments: {
+          where: { seenAt: null },
+          orderBy: { updatedAt: 'desc' },
+          include: COMMENT_AUTHOR,
+        },
+      },
+    });
+    return sessions.map((s) => {
+      const latest = s.comments[0]!;
+      return Object.assign(toSummary(s), {
+        newComments: s.comments.length,
+        coach: authorOf(latest.coach),
+      });
+    });
+  }
+
+  /** A coach's comment on the archer's event (their access checked by the caller). */
+  async addComment(
+    userId: string,
+    id: string,
+    coachId: string,
+    text: string,
+  ): Promise<SessionCommentDto> {
+    await this.findOwned(userId, id);
+    if ((await this.prisma.sessionComment.count({ where: { sessionId: id } })) >= MAX_COMMENTS) {
+      throw new ApiException(
+        HttpStatus.CONFLICT,
+        ErrorCode.LIMIT_REACHED,
+        `At most ${MAX_COMMENTS} comments per event`,
+      );
+    }
+    const comment = await this.prisma.sessionComment.create({
+      data: { sessionId: id, coachId, text: commentText(text) },
+      include: COMMENT_AUTHOR,
+    });
+    return toCommentDto(comment, coachId);
+  }
+
+  /** Its author changes it: new again to the archer. */
+  async updateComment(
+    userId: string,
+    id: string,
+    commentId: string,
+    coachId: string,
+    text: string,
+  ): Promise<SessionCommentDto> {
+    await this.findOwnComment(userId, id, commentId, coachId);
+    const comment = await this.prisma.sessionComment.update({
+      where: { id: commentId },
+      data: { text: commentText(text), seenAt: null },
+      include: COMMENT_AUTHOR,
+    });
+    return toCommentDto(comment, coachId);
+  }
+
+  async removeComment(userId: string, id: string, commentId: string, coachId: string) {
+    await this.findOwnComment(userId, id, commentId, coachId);
+    await this.prisma.sessionComment.delete({ where: { id: commentId } });
+  }
+
+  /** A comment of this event; another coach's can't be changed. */
+  private async findOwnComment(userId: string, id: string, commentId: string, coachId: string) {
+    await this.findOwned(userId, id);
+    const comment = await this.prisma.sessionComment.findFirst({
+      where: { id: commentId, sessionId: id },
+    });
+    if (!comment) throw new NotFoundException('Comment not found');
+    if (comment.coachId !== coachId) {
+      throw new ForbiddenException('Only the comments you wrote can be changed');
+    }
   }
 
   async update(userId: string, id: string, dto: UpdateSessionDto): Promise<SessionDto> {

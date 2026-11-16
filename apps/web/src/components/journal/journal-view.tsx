@@ -54,7 +54,8 @@ import {
   today,
 } from './new-session-modal';
 import { SESSION_TYPES } from './session-types';
-import { MonthSummary } from './month-summary';
+import { MonthShareButton } from './month-share';
+import { MonthSummaryCard, useMonthSatisfaction } from './month-summary';
 import { MonthTitle, titleFills, useLettering } from './month-title';
 import { DecorIcon } from './decor-icon';
 import { PaletteIcon } from './palette-icon';
@@ -334,6 +335,7 @@ export function JournalView({
   };
   // The loaded events are the displayed month's (within the journal).
   const monthArrows = sessions.reduce((sum, session) => sum + (session.arrowCount ?? 0), 0);
+  const satisfaction = useMonthSatisfaction(journal, month);
 
   // The season dialog: every month of the journal with its events (read on each opening);
   // a click on one shows it here.
@@ -383,7 +385,28 @@ export function JournalView({
           </Tooltip>
         </Group>
         {range && (
-          <MonthSummary journal={journal} month={month} arrows={monthArrows} readOnly={!!coach} />
+          <div className={classes.monthCentre}>
+            {/* The archer's own month, on Instagram: a blackboard written in chalk. */}
+            {!coach && (
+              <MonthShareButton
+                month={month}
+                monthName={monthName}
+                monthLabel={monthLabel}
+                journalTitle={journal.title}
+                fills={coloring.fills}
+                lettering={lettering}
+                sessions={sessions}
+                arrows={monthArrows}
+                stars={satisfaction.stars}
+                today={todayDate}
+              />
+            )}
+            <MonthSummaryCard
+              arrows={monthArrows}
+              stars={satisfaction.stars}
+              onStar={coach ? undefined : satisfaction.change}
+            />
+          </div>
         )}
         <Group gap="xs" className={classes.pageActionsEnd}>
           <Box mr={{ base: 0, sm: 'xl' }}>

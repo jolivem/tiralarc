@@ -15,6 +15,7 @@ import {
   Max,
   MaxLength,
   Min,
+  MinLength,
   ValidateIf,
   ValidateNested,
 } from 'class-validator';
@@ -919,6 +920,51 @@ export class PlannerDto {
 export class NewEventDto extends SessionSummaryDto {
   @ApiProperty({ type: () => PlannerDto })
   plannedBy!: PlannerDto;
+}
+
+/** A coach's comment on one of their archer's events (bottom of its sheet). */
+export class SessionCommentDto {
+  @ApiProperty({ format: 'uuid' })
+  id!: string;
+
+  @ApiProperty({ type: () => PlannerDto, description: 'The coach who wrote it.' })
+  coach!: PlannerDto;
+
+  @ApiProperty()
+  text!: string;
+
+  @ApiProperty({ format: 'date-time' })
+  createdAt!: string;
+
+  @ApiProperty({ format: 'date-time', description: 'Last change (= `createdAt` when none).' })
+  updatedAt!: string;
+
+  @ApiProperty({
+    description:
+      'Not seen by the archer yet: written (or changed) since they last opened the sheet. Opening it (`POST /journal/sessions/{id}/seen`) clears it.',
+  })
+  isNew!: boolean;
+
+  @ApiProperty({ description: 'Written by the one asking: only its author changes or deletes it.' })
+  mine!: boolean;
+}
+
+/** What a coach writes on an event. */
+export class SaveSessionCommentDto {
+  @ApiProperty({ minLength: 1, maxLength: 2000 })
+  @IsString()
+  @MinLength(1)
+  @MaxLength(2000)
+  text!: string;
+}
+
+/** An event with comments from the archer's coach the archer hasn't read yet. */
+export class NewCommentEventDto extends SessionSummaryDto {
+  @ApiProperty({ description: 'Comments not read yet.' })
+  newComments!: number;
+
+  @ApiProperty({ type: () => PlannerDto, description: 'The author of the latest one.' })
+  coach!: PlannerDto;
 }
 
 /** Full session sheet. */

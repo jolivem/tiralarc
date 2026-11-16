@@ -154,6 +154,39 @@ export function reviewModerationEmail(
   };
 }
 
+/**
+ * To the site's team (in French): a page of an outside website (the FFTA's) is no longer read as
+ * expected — its layout or address changed —, what went wrong, and where.
+ */
+export function layoutAlertEmail(alert: {
+  site: string;
+  page: string;
+  url: string;
+  problem: string;
+  failures: number;
+}): RenderedMail {
+  const subject = `Alerte : le site de la ${alert.site} a changé (${alert.page})`;
+  const lines = [
+    `L'application n'arrive plus à lire ${alert.page} sur le site de la ${alert.site} : sa mise en page ou son adresse a sans doute changé.`,
+    `Problème constaté : ${alert.problem}`,
+    `Lectures en échec d'affilée : ${alert.failures}.`,
+    `Page lue : ${alert.url}`,
+    "En attendant une correction du code qui lit ces pages (apps/api/src/competitions : ffta-parser.ts, ffta-rankings.ts, ffta-layout.ts), l'application garde les dernières données lues, sans les nouvelles.",
+    'Pas de nouvelle alerte pour cette page avant 24 heures.',
+  ];
+  return {
+    subject,
+    text: `${lines.join('\n\n')}\n`,
+    html: lines
+      .map((line, i) =>
+        i === 1
+          ? `<p style="padding:8px 14px;border-left:4px solid #c62828;background:#fdf1f1">${escapeHtml(line)}</p>`
+          : `<p>${escapeHtml(line)}</p>`,
+      )
+      .join('\n'),
+  };
+}
+
 /** How long a link stays valid, in words: "24 heures", "1 hour", "30 minutes". */
 export function validityOf(locale: MailLocale, seconds: number): string {
   const hours = seconds / 3600;

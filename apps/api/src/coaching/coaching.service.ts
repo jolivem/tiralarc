@@ -10,6 +10,7 @@ import type {
   JournalDto,
   JournalStatsDto,
   PhotoDto,
+  SessionCommentDto,
   SessionDto,
   SessionSuggestionsDto,
   SessionSummaryDto,
@@ -230,6 +231,44 @@ export class CoachingService {
   async sessionPhotos(coachId: string, archerId: string, id: string): Promise<PhotoDto[]> {
     await this.session(coachId, archerId, id);
     return this.photos.list(archerId, id);
+  }
+
+  /** The comments on an event of the current journal (every coach of the archer sees them). */
+  async comments(coachId: string, archerId: string, id: string): Promise<SessionCommentDto[]> {
+    await this.session(coachId, archerId, id);
+    return this.journal.comments(archerId, id, coachId);
+  }
+
+  /** Any coach of the archer comments, whatever their access: it changes nothing of the sheet. */
+  async addComment(
+    coachId: string,
+    archerId: string,
+    id: string,
+    text: string,
+  ): Promise<SessionCommentDto> {
+    await this.session(coachId, archerId, id);
+    return this.journal.addComment(archerId, id, coachId, text);
+  }
+
+  async updateComment(
+    coachId: string,
+    archerId: string,
+    id: string,
+    commentId: string,
+    text: string,
+  ): Promise<SessionCommentDto> {
+    await this.session(coachId, archerId, id);
+    return this.journal.updateComment(archerId, id, commentId, coachId, text);
+  }
+
+  async removeComment(
+    coachId: string,
+    archerId: string,
+    id: string,
+    commentId: string,
+  ): Promise<void> {
+    await this.session(coachId, archerId, id);
+    await this.journal.removeComment(archerId, id, commentId, coachId);
   }
 
   async sessionScoreSheet(coachId: string, archerId: string, id: string): Promise<Uint8Array> {

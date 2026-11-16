@@ -368,6 +368,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/journal/sessions/new-comments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Events with comments from the archer's coach the archer hasn't read yet (opening the sheet reads them) */
+        get: operations["Journal_newComments"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/journal/sessions/{id}": {
         parameters: {
             query?: never;
@@ -382,6 +399,23 @@ export interface paths {
         options?: never;
         head?: never;
         patch: operations["Journal_update"];
+        trace?: never;
+    };
+    "/api/v1/journal/sessions/{id}/comments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The comments the archer's coach left on the event, oldest first */
+        get: operations["Journal_comments"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/v1/journal/sessions/{id}/score-sheet": {
@@ -427,7 +461,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Tell that the archer opened the sheet (clients call it when they show it): a coach-planned event is then no longer new */
+        /** Tell that the archer opened the sheet (clients call it when they show it): a coach-planned event is then no longer new, nor are its coach's comments */
         post: operations["Journal_markSeen"];
         delete?: never;
         options?: never;
@@ -902,6 +936,42 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/api/v1/coach/athletes/{archerId}/sessions/{id}/comments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The comments left on the event by the archer's coaches, oldest first */
+        get: operations["Coaching_comments"];
+        put?: never;
+        /** Comment on the event (READ or WRITE access): new to the archer until they open its sheet */
+        post: operations["Coaching_addComment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/coach/athletes/{archerId}/sessions/{id}/comments/{commentId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete a comment you wrote */
+        delete: operations["Coaching_removeComment"];
+        options?: never;
+        head?: never;
+        /** Change a comment you wrote: new again to the archer */
+        patch: operations["Coaching_updateComment"];
         trace?: never;
     };
     "/api/v1/coach/athletes/{archerId}/sessions/{id}/score-sheet": {
@@ -1415,6 +1485,42 @@ export interface components {
             fftaCompetitionId: string | null;
             plannedBy: components["schemas"]["PlannerDto"];
         };
+        NewCommentEventDto: {
+            /** Format: uuid */
+            id: string;
+            type: components["schemas"]["SessionType"];
+            /** @example 2026-10-03 */
+            date: string;
+            durationMinutes: number | null;
+            location: string | null;
+            discipline: components["schemas"]["Discipline"] | null;
+            score: number | null;
+            /** @description Arrows shot (clients add them up, e.g. for the month shown). */
+            arrowCount: number | null;
+            /** @description Analyses, or the text of an `OTHER` event. */
+            description: string | null;
+            /** @description `OTHER` events only. */
+            title: string | null;
+            /** @description `OTHER` events only; null = default colour. */
+            color: components["schemas"]["EventColor"] | null;
+            /** @description `OTHER` events only; null = default pictogram. */
+            icon: components["schemas"]["EventIcon"] | null;
+            /** @description `CUSTOM` events only: their type, whose title, colour and pictogram they show. */
+            customType: components["schemas"]["CustomEventTypeDto"] | null;
+            /** @description Whether the review of a training, coaching or competition is written: at least one of arrowCount, score, satisfaction, technique, description, physicalFeeling, mentalFeeling, wentWell, toImprove, nextTime is filled. Always true for the other types (nothing to review). Clients fill the review only once the day has come. */
+            completed: boolean;
+            /** @description Whether the archer's coach planned the event (see `SessionDto.plannedBy`). Clients mark it until the archer completes it. */
+            plannedByCoach: boolean;
+            /**
+             * @description The FFTA competition it was added from (`CompetitionDto.id`), if any.
+             * @example 26349
+             */
+            fftaCompetitionId: string | null;
+            /** @description Comments not read yet. */
+            newComments: number;
+            /** @description The author of the latest one. */
+            coach: components["schemas"]["PlannerDto"];
+        };
         CreateSessionDto: {
             type: components["schemas"]["SessionType"];
             /**
@@ -1525,6 +1631,24 @@ export interface components {
             nextTime: string | null;
             /** Format: date-time */
             updatedAt: string;
+        };
+        SessionCommentDto: {
+            /** Format: uuid */
+            id: string;
+            /** @description The coach who wrote it. */
+            coach: components["schemas"]["PlannerDto"];
+            text: string;
+            /** Format: date-time */
+            createdAt: string;
+            /**
+             * Format: date-time
+             * @description Last change (= `createdAt` when none).
+             */
+            updatedAt: string;
+            /** @description Not seen by the archer yet: written (or changed) since they last opened the sheet. Opening it (`POST /journal/sessions/{id}/seen`) clears it. */
+            isNew: boolean;
+            /** @description Written by the one asking: only its author changes or deletes it. */
+            mine: boolean;
         };
         UpdateSessionDto: {
             type?: components["schemas"]["SessionType"];
@@ -2025,6 +2149,9 @@ export interface components {
              * @example 2026-11-04
              */
             date?: string;
+        };
+        SaveSessionCommentDto: {
+            text: string;
         };
         PublicReviewDto: {
             /** Format: uuid */
@@ -3022,6 +3149,32 @@ export interface operations {
             };
         };
     };
+    Journal_newComments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NewCommentEventDto"][];
+                };
+            };
+            /** @description Archers only */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     Journal_get: {
         parameters: {
             query?: never;
@@ -3126,6 +3279,40 @@ export interface operations {
             };
             /** @description DAY_FULL: moved to a day that already has 4 events */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    Journal_comments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionCommentDto"][];
+                };
+            };
+            /** @description Archers only */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -4657,6 +4844,151 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["PhotoDto"][];
                 };
+            };
+            /** @description Not one of your archers (or not in their current journal) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    Coaching_comments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                archerId: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionCommentDto"][];
+                };
+            };
+            /** @description Not one of your archers (or not in their current journal) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    Coaching_addComment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                archerId: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SaveSessionCommentDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionCommentDto"];
+                };
+            };
+            /** @description Not one of your archers (or not in their current journal) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description LIMIT_REACHED: 20 comments on this event */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    Coaching_removeComment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                archerId: string;
+                id: string;
+                commentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Another coach’s comment */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not one of your archers (or not in their current journal) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    Coaching_updateComment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                archerId: string;
+                id: string;
+                commentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SaveSessionCommentDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionCommentDto"];
+                };
+            };
+            /** @description Another coach’s comment */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Not one of your archers (or not in their current journal) */
             404: {

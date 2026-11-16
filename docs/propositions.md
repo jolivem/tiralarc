@@ -92,8 +92,12 @@ et une estimation de l'effort (S = quelques heures, M = une journée, L = plusie
 
 21. **Vue d'ensemble du coach** — Un tableau de bord avec tous ses archers : dernière séance, séances
     à venir planifiées, alertes (pas de séance depuis 10 jours, bilan non rempli). _(M)_
-22. **Commentaires du coach sur une fiche** — Le coach laisse une remarque sur une séance passée,
-    l'archer la voit sur sa fiche. Aujourd'hui l'échange se fait hors du site. _(M)_
+22. ~~**Commentaires du coach sur une fiche** — Le coach laisse une remarque sur une séance passée,
+    l'archer la voit sur sa fiche. Aujourd'hui l'échange se fait hors du site. _(M)_~~
+    **Fait** : encart bleu pâle « Commentaires du coach » en bas de la fiche (le coach écrit,
+    modifie ou supprime les siens) ; « Nouveau commentaire » dans « Événements proposés » de
+    l'accueil, vers la fiche, jusqu'à ce que l'archer l'ouvre ; « Le mot du coach » à cocher dans
+    le partage Instagram.
 23. **Planifier pour un groupe** — Planifier la même séance pour tous les archers d'un groupe en une
     fois. _(M)_
 
@@ -140,3 +144,4 @@ et une estimation de l'effort (S = quelques heures, M = une journée, L = plusie
     ou « Ma saison » (flèches tirées, meilleur score). _(M)_
 33. **Offre pour les clubs** — Un espace club où l'entraîneur suit ses licenciés, avec une
     invitation groupée ; bon moyen de faire connaître le site. _(L)_
+    s

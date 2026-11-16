@@ -46,12 +46,12 @@
       "stats": "The indicators: your progress in figures",
       "statsAlt": "The indicators page: goals, cumulative arrows and time, scores and average per arrow."
     },
-    "welcomeBody": "MyArcheryDiary is your archery notebook, always at hand. Like a real notebook lying on your desk, it keeps track of every session: training, coaching, competitions and strength work.",
+    "welcomeBody": "MyArcheryDiary is your archery notebook, always at hand. Like a real notebook lying on your desk, it keeps track of every session: training, coaching, competitions and strength work. At the end of the season, generate your notebook as a PDF to print or share it.",
     "faqTitle": "Frequently asked questions",
     "faq": {
       "audience": {
         "question": "Who is MyArcheryDiary for?",
-        "answer": "Archers of every level who want to keep track of their practice, and their coaches: an archer invites their coach, who then follows their journal of the current season."
+        "answer": "Archers of every level who want to keep track of their practice, and their coaches: an archer invites their coach, who then follows their journal of the current season. At the end of the season, the archer can generate their notebook as a PDF to print or share it."
       },
       "start": {
         "question": "How do I get started?",
@@ -569,8 +569,22 @@
         "description": "Analysis",
         "wentWell": "To keep",
         "toImprove": "To improve",
-        "nextTime": "Next time"
+        "nextTime": "Next time",
+        "coachComment": "Coach's note"
       }
+    },
+    "comments": {
+      "title": "Coach's comments",
+      "empty": "No comment yet: the archer will see yours at the bottom of their sheet.",
+      "placeholder": "Your comment on this session…",
+      "add": "Add the comment",
+      "edit": "Edit",
+      "save": "Save",
+      "cancel": "Cancel",
+      "delete": "Delete",
+      "deleteConfirm": "Delete this comment?",
+      "editedOn": "edited on {date}",
+      "new": "New"
     },
     "plannedBy": "Planned by {name}",
     "readOnly": "Read only",
@@ -584,9 +598,16 @@
       "rating": "{stars, plural, =0 {Not rated} other {# out of 5}}",
       "star": "Star {n}"
     },
+    "monthShare": {
+      "button": "Share",
+      "intro": "Your month written in chalk on a blackboard: its completed events, the arrows shot and your satisfaction. The caption is copied when you share: paste it into Instagram.",
+      "preview": "Preview of the {month} summary"
+    },
     "newEvents": {
       "title": "Proposed events",
-      "empty": "No new proposed event."
+      "empty": "No new proposed event.",
+      "comment": "{count, plural, one {New comment} other {# new comments}}",
+      "commentBy": "Comment from {name}: open the sheet"
     },
     "pendingReviews": {
       "title": "To complete",

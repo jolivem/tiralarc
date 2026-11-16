@@ -15,7 +15,8 @@ const EMPTY_SUGGESTIONS = { locations: [], distances: [], wentWell: [], toImprov
 
 /**
  * One of the archer's events, as their coach sees it: read-only, except the planning of an
- * event they planned, while it is still to come (WRITE access).
+ * event they planned, while it is still to come (WRITE access), and the comments at the bottom
+ * of the sheet (any access).
  */
 export default async function CoachSessionPage({
   params,
@@ -26,16 +27,24 @@ export default async function CoachSessionPage({
 
   const api = await getAuthedApi();
   const path = { archerId, id };
-  const [athlete, user, { data: session }, { data: suggestions }, { data: photos }] =
-    await Promise.all([
-      getAthlete(archerId),
-      getCurrentUser(),
-      api.GET('/api/v1/coach/athletes/{archerId}/sessions/{id}', { params: { path } }),
-      api.GET('/api/v1/coach/athletes/{archerId}/sessions/suggestions', {
-        params: { path: { archerId } },
-      }),
-      api.GET('/api/v1/coach/athletes/{archerId}/sessions/{id}/photos', { params: { path } }),
-    ]);
+  const [
+    athlete,
+    user,
+    { data: session },
+    { data: suggestions },
+    { data: photos },
+    { data: comments },
+  ] = await Promise.all([
+    getAthlete(archerId),
+    getCurrentUser(),
+    api.GET('/api/v1/coach/athletes/{archerId}/sessions/{id}', { params: { path } }),
+    api.GET('/api/v1/coach/athletes/{archerId}/sessions/suggestions', {
+      params: { path: { archerId } },
+    }),
+    api.GET('/api/v1/coach/athletes/{archerId}/sessions/{id}/photos', { params: { path } }),
+    // At the bottom of the sheet, where the coach writes theirs.
+    api.GET('/api/v1/coach/athletes/{archerId}/sessions/{id}/comments', { params: { path } }),
+  ]);
   // Not one of the archer's events in their current journal (the API answers 404).
   if (!athlete?.journal || !session || !user) notFound();
   const { photos: withPhotos } = SESSION_TYPES[session.type];
@@ -61,6 +70,7 @@ export default async function CoachSessionPage({
         disciplines={athlete.disciplines}
         title={title}
         coach={{ archerId, canEdit, lastDay: athlete.journal.endDate }}
+        comments={comments ?? []}
       >
         {withPhotos && <SessionPhotos sessionId={session.id} photos={photos ?? []} readOnly />}
       </SessionForm>

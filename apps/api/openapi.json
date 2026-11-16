@@ -1177,6 +1177,39 @@
         ]
       }
     },
+    "/api/v1/journal/sessions/new-comments": {
+      "get": {
+        "operationId": "Journal_newComments",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/NewCommentEventDto"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Archers only"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Events with comments from the archer's coach the archer hasn't read yet (opening the sheet reads them)",
+        "tags": [
+          "journal"
+        ]
+      }
+    },
     "/api/v1/journal/sessions/{id}": {
       "get": {
         "operationId": "Journal_get",
@@ -1297,6 +1330,51 @@
             "bearer": []
           }
         ],
+        "tags": [
+          "journal"
+        ]
+      }
+    },
+    "/api/v1/journal/sessions/{id}/comments": {
+      "get": {
+        "operationId": "Journal_comments",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SessionCommentDto"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Archers only"
+          },
+          "404": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "The comments the archer's coach left on the event, oldest first",
         "tags": [
           "journal"
         ]
@@ -1429,7 +1507,7 @@
             "bearer": []
           }
         ],
-        "summary": "Tell that the archer opened the sheet (clients call it when they show it): a coach-planned event is then no longer new",
+        "summary": "Tell that the archer opened the sheet (clients call it when they show it): a coach-planned event is then no longer new, nor are its coach's comments",
         "tags": [
           "journal"
         ]
@@ -3194,6 +3272,231 @@
         ]
       }
     },
+    "/api/v1/coach/athletes/{archerId}/sessions/{id}/comments": {
+      "get": {
+        "operationId": "Coaching_comments",
+        "parameters": [
+          {
+            "name": "archerId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SessionCommentDto"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not one of your archers (or not in their current journal)"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "The comments left on the event by the archer's coaches, oldest first",
+        "tags": [
+          "coaching"
+        ]
+      },
+      "post": {
+        "operationId": "Coaching_addComment",
+        "parameters": [
+          {
+            "name": "archerId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveSessionCommentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionCommentDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not one of your archers (or not in their current journal)"
+          },
+          "409": {
+            "description": "LIMIT_REACHED: 20 comments on this event"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Comment on the event (READ or WRITE access): new to the archer until they open its sheet",
+        "tags": [
+          "coaching"
+        ]
+      }
+    },
+    "/api/v1/coach/athletes/{archerId}/sessions/{id}/comments/{commentId}": {
+      "patch": {
+        "operationId": "Coaching_updateComment",
+        "parameters": [
+          {
+            "name": "archerId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "commentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveSessionCommentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionCommentDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Another coach’s comment"
+          },
+          "404": {
+            "description": "Not one of your archers (or not in their current journal)"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Change a comment you wrote: new again to the archer",
+        "tags": [
+          "coaching"
+        ]
+      },
+      "delete": {
+        "operationId": "Coaching_removeComment",
+        "parameters": [
+          {
+            "name": "archerId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "commentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "403": {
+            "description": "Another coach’s comment"
+          },
+          "404": {
+            "description": "Not one of your archers (or not in their current journal)"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Delete a comment you wrote",
+        "tags": [
+          "coaching"
+        ]
+      }
+    },
     "/api/v1/coach/athletes/{archerId}/sessions/{id}/score-sheet": {
       "get": {
         "operationId": "Coaching_scoreSheet",
@@ -4739,6 +5042,135 @@
           "plannedBy"
         ]
       },
+      "NewCommentEventDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "type": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SessionType"
+              }
+            ]
+          },
+          "date": {
+            "type": "string",
+            "example": "2026-10-03"
+          },
+          "durationMinutes": {
+            "type": "number",
+            "nullable": true
+          },
+          "location": {
+            "type": "string",
+            "nullable": true
+          },
+          "discipline": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Discipline"
+              }
+            ]
+          },
+          "score": {
+            "type": "number",
+            "nullable": true
+          },
+          "arrowCount": {
+            "type": "number",
+            "nullable": true,
+            "description": "Arrows shot (clients add them up, e.g. for the month shown)."
+          },
+          "description": {
+            "type": "string",
+            "nullable": true,
+            "description": "Analyses, or the text of an `OTHER` event."
+          },
+          "title": {
+            "type": "string",
+            "nullable": true,
+            "description": "`OTHER` events only."
+          },
+          "color": {
+            "nullable": true,
+            "description": "`OTHER` events only; null = default colour.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/EventColor"
+              }
+            ]
+          },
+          "icon": {
+            "nullable": true,
+            "description": "`OTHER` events only; null = default pictogram.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/EventIcon"
+              }
+            ]
+          },
+          "customType": {
+            "nullable": true,
+            "description": "`CUSTOM` events only: their type, whose title, colour and pictogram they show.",
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CustomEventTypeDto"
+              }
+            ]
+          },
+          "completed": {
+            "type": "boolean",
+            "description": "Whether the review of a training, coaching or competition is written: at least one of arrowCount, score, satisfaction, technique, description, physicalFeeling, mentalFeeling, wentWell, toImprove, nextTime is filled. Always true for the other types (nothing to review). Clients fill the review only once the day has come."
+          },
+          "plannedByCoach": {
+            "type": "boolean",
+            "description": "Whether the archer's coach planned the event (see `SessionDto.plannedBy`). Clients mark it until the archer completes it."
+          },
+          "fftaCompetitionId": {
+            "type": "string",
+            "nullable": true,
+            "example": "26349",
+            "description": "The FFTA competition it was added from (`CompetitionDto.id`), if any."
+          },
+          "newComments": {
+            "type": "number",
+            "description": "Comments not read yet."
+          },
+          "coach": {
+            "description": "The author of the latest one.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PlannerDto"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "date",
+          "durationMinutes",
+          "location",
+          "discipline",
+          "score",
+          "arrowCount",
+          "description",
+          "title",
+          "color",
+          "icon",
+          "customType",
+          "completed",
+          "plannedByCoach",
+          "fftaCompetitionId",
+          "newComments",
+          "coach"
+        ]
+      },
       "CreateSessionDto": {
         "type": "object",
         "properties": {
@@ -5091,6 +5523,52 @@
           "toImprove",
           "nextTime",
           "updatedAt"
+        ]
+      },
+      "SessionCommentDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "coach": {
+            "description": "The coach who wrote it.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PlannerDto"
+              }
+            ]
+          },
+          "text": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Last change (= `createdAt` when none)."
+          },
+          "isNew": {
+            "type": "boolean",
+            "description": "Not seen by the archer yet: written (or changed) since they last opened the sheet. Opening it (`POST /journal/sessions/{id}/seen`) clears it."
+          },
+          "mine": {
+            "type": "boolean",
+            "description": "Written by the one asking: only its author changes or deletes it."
+          }
+        },
+        "required": [
+          "id",
+          "coach",
+          "text",
+          "createdAt",
+          "updatedAt",
+          "isNew",
+          "mine"
         ]
       },
       "UpdateSessionDto": {
@@ -6459,6 +6937,19 @@
             "description": "A day after today, within the archer's journal of the season in progress."
           }
         }
+      },
+      "SaveSessionCommentDto": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          }
+        },
+        "required": [
+          "text"
+        ]
       },
       "PublicReviewDto": {
         "type": "object",

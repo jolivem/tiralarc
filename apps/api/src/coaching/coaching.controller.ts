@@ -37,6 +37,8 @@ import {
   JournalStatsDto,
   ListSessionsQuery,
   PhotoDto,
+  SaveSessionCommentDto,
+  SessionCommentDto,
   SessionDto,
   SessionSuggestionsDto,
   SessionSummaryDto,
@@ -242,6 +244,61 @@ export class CoachingController {
     @Param('id', new ParseUUIDPipe()) id: string,
   ): Promise<PhotoDto[]> {
     return this.coaching.sessionPhotos(user.id, archerId, id);
+  }
+
+  @Get(':archerId/sessions/:id/comments')
+  @ApiOperation({ summary: "The comments left on the event by the archer's coaches, oldest first" })
+  @ApiOkResponse({ type: SessionCommentDto, isArray: true })
+  comments(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param(ARCHER_ID, new ParseUUIDPipe()) archerId: string,
+    @Param('id', new ParseUUIDPipe()) id: string,
+  ): Promise<SessionCommentDto[]> {
+    return this.coaching.comments(user.id, archerId, id);
+  }
+
+  @Post(':archerId/sessions/:id/comments')
+  @ApiOperation({
+    summary:
+      'Comment on the event (READ or WRITE access): new to the archer until they open its sheet',
+  })
+  @ApiCreatedResponse({ type: SessionCommentDto })
+  @ApiConflictResponse({ description: 'LIMIT_REACHED: 20 comments on this event' })
+  addComment(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param(ARCHER_ID, new ParseUUIDPipe()) archerId: string,
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() dto: SaveSessionCommentDto,
+  ): Promise<SessionCommentDto> {
+    return this.coaching.addComment(user.id, archerId, id, dto.text);
+  }
+
+  @Patch(':archerId/sessions/:id/comments/:commentId')
+  @ApiOperation({ summary: 'Change a comment you wrote: new again to the archer' })
+  @ApiOkResponse({ type: SessionCommentDto })
+  @ApiForbiddenResponse({ description: 'Another coach’s comment' })
+  updateComment(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param(ARCHER_ID, new ParseUUIDPipe()) archerId: string,
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Param('commentId', new ParseUUIDPipe()) commentId: string,
+    @Body() dto: SaveSessionCommentDto,
+  ): Promise<SessionCommentDto> {
+    return this.coaching.updateComment(user.id, archerId, id, commentId, dto.text);
+  }
+
+  @Delete(':archerId/sessions/:id/comments/:commentId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Delete a comment you wrote' })
+  @ApiNoContentResponse()
+  @ApiForbiddenResponse({ description: 'Another coach’s comment' })
+  removeComment(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param(ARCHER_ID, new ParseUUIDPipe()) archerId: string,
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Param('commentId', new ParseUUIDPipe()) commentId: string,
+  ): Promise<void> {
+    return this.coaching.removeComment(user.id, archerId, id, commentId);
   }
 
   @Get(':archerId/sessions/:id/score-sheet')

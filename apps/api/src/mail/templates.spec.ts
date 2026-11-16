@@ -1,4 +1,30 @@
-import { invitationEmail, passwordResetEmail, validityOf, verificationEmail } from './templates.js';
+import {
+  invitationEmail,
+  layoutAlertEmail,
+  passwordResetEmail,
+  validityOf,
+  verificationEmail,
+} from './templates.js';
+
+describe('layout alert email', () => {
+  it('says which page broke, how, and where, escaped', () => {
+    const mail = layoutAlertEmail({
+      site: 'FFTA',
+      page: 'la recherche des compétitions',
+      url: 'https://www.ffta.fr/competitions?a=1&b=2',
+      problem: 'La vue <view-id-competitions> est absente.',
+      failures: 3,
+    });
+    expect(mail.subject).toBe(
+      'Alerte : le site de la FFTA a changé (la recherche des compétitions)',
+    );
+    expect(mail.text).toContain('La vue <view-id-competitions> est absente.');
+    expect(mail.text).toContain("Lectures en échec d'affilée : 3.");
+    expect(mail.text).toContain('https://www.ffta.fr/competitions?a=1&b=2');
+    expect(mail.html).toContain('&#60;view-id-competitions&#62;');
+    expect(mail.html).not.toContain('<view-id-competitions>');
+  });
+});
 
 describe('link emails', () => {
   it('say how long their link is valid, from the configured lifetime', () => {

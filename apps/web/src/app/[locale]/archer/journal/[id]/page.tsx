@@ -19,13 +19,18 @@ export default async function SessionPage({ params }: PageProps<'/[locale]/arche
   const t = await getTranslations('journal');
 
   const api = await getAuthedApi();
-  const [{ data: session }, { data: suggestions }, { data: photos }, profile] = await Promise.all([
-    api.GET('/api/v1/journal/sessions/{id}', { params: { path: { id } } }),
-    api.GET('/api/v1/journal/sessions/suggestions'),
-    api.GET('/api/v1/journal/sessions/{sessionId}/photos', { params: { path: { sessionId: id } } }),
-    // Its disciplines are the ones offered (already read by the root layout: cached).
-    getArcherProfile(),
-  ]);
+  const [{ data: session }, { data: suggestions }, { data: photos }, { data: comments }, profile] =
+    await Promise.all([
+      api.GET('/api/v1/journal/sessions/{id}', { params: { path: { id } } }),
+      api.GET('/api/v1/journal/sessions/suggestions'),
+      api.GET('/api/v1/journal/sessions/{sessionId}/photos', {
+        params: { path: { sessionId: id } },
+      }),
+      // The coach's, at the bottom of the sheet.
+      api.GET('/api/v1/journal/sessions/{id}/comments', { params: { path: { id } } }),
+      // Its disciplines are the ones offered (already read by the root layout: cached).
+      getArcherProfile(),
+    ]);
   // Unknown id, or someone else's session (the API answers 404 for both).
   if (!session) notFound();
   // Strength sessions and the archer's own types take no photos.
@@ -50,6 +55,7 @@ export default async function SessionPage({ params }: PageProps<'/[locale]/arche
         disciplines={profile?.disciplines ?? []}
         title={title}
         sharePhotos={withPhotos ? (photos ?? []) : undefined}
+        comments={comments ?? []}
       >
         {withPhotos && <SessionPhotos sessionId={session.id} photos={photos ?? []} />}
       </SessionForm>

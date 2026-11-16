@@ -46,11 +46,19 @@ the same API — keep it client-agnostic (no cookies, no web-only assumptions in
   "new" to the archer until they open its sheet (`seenAt`, set by `POST /journal/sessions/{id}/seen`, called by
   `SessionForm` once shown — not by the GET), listed on the home page (`GET /journal/sessions/new`,
   `components/journal/new-events.tsx`); calendars and the sheet's margin show a "Coach" stamp until it is completed. Web: the list of
-  archers is a card of the Account page (`components/coach/athletes-card.tsx`, where the coach profile's logo
+  archers is a card of the Account page (comments: below) (`components/coach/athletes-card.tsx`, where the coach profile's logo
   leads), then `/coach/[archerId]/{journal,journal/[id],stats}` reusing `JournalView` / `SessionForm` (`coach` prop) and
   read-only `SessionPhotos` / `GoalsCard`. Deleting the invitation ends the access. A coach sorts their archers into
   named groups of their own (`/coach/groups`, `PUT /coach/athletes/{id}/group`, `GROUP_NAME_TAKEN`; on the link,
   `coachGroupId`, unseen by the archer): sections of the athletes card and of the header's journal menu.
+  Any coach of the archer (READ or WRITE: it changes nothing of the sheet) comments on an event of the current journal
+  (table `session_comments`, `/coach/athletes/{id}/sessions/{id}/comments`, at most 20 per event, `LIMIT_REACHED`;
+  only its author changes / deletes it, a change makes it new again). The archer reads them
+  (`GET /journal/sessions/{id}/comments`); unread ones (`seenAt` null, `isNew`) are listed on the home page under the
+  proposed events as "Nouveau commentaire", linking to the sheet (`GET /journal/sessions/new-comments`), until the sheet
+  is opened (`POST .../seen` reads them too). Web: `components/journal/coach-comments.tsx`, a pale blue box at the
+  bottom of the loose leaf (the coach writes there; the archer's shows only with comments); on Instagram, the field
+  "Le mot du coach" (`coachComment`, not ticked at first).
 - Web is bilingual (next-intl, `/fr`, `/en`): every user-facing string goes in `apps/web/messages/{fr,en}.json`;
   use `Link`/`redirect` from `@/i18n/navigation`, not `next/link`/`next/navigation`.
 - UI: Mantine 9 (no Tailwind). Responsive via Mantine props (`cols={{ base: 1, sm: 2 }}`, `hiddenFrom`,
@@ -88,6 +96,12 @@ the same API — keep it client-agnostic (no cookies, no web-only assumptions in
   page); the web catalogue is `components/journal/themes.ts`,
   artwork in `apps/web/public/themes/<id>/` (`top`, optional `bottom` / `left` / `right`, `thumb`; black line art on
   white). Adding a theme = image folder + catalogue entry + `journals.themes.<id>` in both message files.
+  Every theme's artwork is generated (`apps/web/scripts/themes/<id>.mjs`, `node` it; shared geometry in `lib.mjs`: seeded
+  randomness, smooth closed outlines, tapering branches; shared small elements in `common.mjs`): shapes filled white in
+  drawing order, so nearer ones hide farther ones, sizes and line widths shrinking with distance. `cerisier` grows its
+  own branches; the others go through `writeTheme` (`compose`: big elements in front, medium ones in the gaps behind
+  them, small ones at the back; each element drawn with a `pen` in its own units; `thumb` = the picker's emblem).
+  Regenerating a theme moves its areas: colourings saved on it (`fills`, fractions of the image) no longer line up.
 - Colouring the decoration: `monthThemes[].fills` holds "paint bucket" clicks (band, x, y as fractions, colour);
   the web repaints them on a canvas (`components/journal/coloring.ts`, pure and unit-tested, + `calendar-frame.tsx`).
   Flood fill stops at dark strokes, so artwork needs closed shapes; changing a month's theme clears its colouring (the web asks to confirm first),
@@ -101,6 +115,13 @@ the same API — keep it client-agnostic (no cookies, no web-only assumptions in
   month's arrows (sum of the loaded summaries' `arrowCount`) and its satisfaction, 5 stars by halves
   (`monthSatisfactions` on the journal, `PUT /journals/{id}/months/{month}/satisfaction`; read-only for a coach).
   A click cycles the star empty → half → full → empty, those before it full, those after it empty (`month-stars.ts`).
+  "Partage" (Instagram logo, archer only), above the month summary, shares the month as a blackboard written in chalk
+  (`month-share.tsx` + `month-board-card.ts`, pure parts unit-tested): a canvas 1080×1350 — wooden frame, slate, no
+  decoration: the coloured month name repainted in chalk (`paint` with white strokes) above the journal's title (no
+  year), the calendar with each day's completed events only (`pendingReason` null; logos as large as the cell allows,
+  in their own colours, not grained, outlined in white by `haloIcon`: built-in pictures, custom pictograms rendered from
+  their Tabler icon), the month summary (arrows, stars)
+  in a chalk box (quiver / target redrawn in chalk, `chalkIcon`); everything chalky is drawn on one layer, then grained. Same share flow as the other cards (Web Share API, else download; caption copied).
 - Event sheet (`/archer/journal/[id]`): a loose leaf (`components/notebook/loose-leaf.tsx`, ruled every `--step`
   = 30px) drawn by `SessionForm`, its action bar sticky above it. `RuledStack` pushes each box onto a ruled line;
   names, Informations rows (`FieldRow`, xs fields = one line) and free texts (`RULED_TEXT`) are sized to sit on the
@@ -200,6 +221,13 @@ the same API — keep it client-agnostic (no cookies, no web-only assumptions in
   (phones: entries in the day's list), opening `CompetitionsModal` with the same rows. Postponed and cancelled ones
   stay off both calendars (only `SCHEDULED` ones are drawn): they show only in the season list.
   e2e tests replace `FftaClient` with `FakeFfta` (`test/helpers.ts`).
+  A redesign of the FFTA site would read as "nothing found": `FftaClient` checks each page against a landmark it has
+  with or without results (`ffta-layout.ts`, pure, unit-tested: `view-id-competitions` on the search, `path-epreuve`
+  on a competition's page, the `search[Annee]` filter on the rankings list, the `clmt` table on a ranking; search
+  items the parser can't read; 404 / 410; Cloudflare's "Just a moment" page is a failed reading, not a new layout).
+  A page not recognised throws `FftaLayoutError` (callers keep their last good reading) and goes to `FftaWatch`:
+  after 3 such readings in a row of one page (`ALERT_AFTER`), an email to `ALERTS_EMAIL` (feedback@myarcherydiary.com;
+  `layoutAlertEmail`), at most one a day per page; in memory, a good reading resets the count.
 - FFTA national rankings (`GET /rankings`, `RankingsService`, `ffta-rankings.ts`): the extranet page framed by
   ffta.fr's "classements nationaux" lists a season's rankings (POST filters; name, [TAE distance,] sex, bow,
   categories); the archer's are those of their profile's bow and category, either sex, no scratch, in their

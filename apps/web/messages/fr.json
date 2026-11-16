@@ -46,12 +46,12 @@
       "stats": "Les indicateurs : vos progrès en chiffres",
       "statsAlt": "Page des indicateurs : objectifs, flèches et durées cumulées, scores et moyenne par flèche."
     },
-    "welcomeBody": "MyArcheryDiary est votre carnet de tir à l'arc, toujours à portée de main. Comme un vrai carnet posé sur votre bureau, il garde la trace de chaque séance : entraînements, coachings, compétitions et renfo.",
+    "welcomeBody": "MyArcheryDiary est votre carnet de tir à l'arc, toujours à portée de main. Comme un vrai carnet posé sur votre bureau, il garde la trace de chaque séance : entraînements, coachings, compétitions et renfo. En fin de saison, générez votre carnet au format PDF pour l'imprimer ou le partager.",
     "faqTitle": "Questions fréquentes",
     "faq": {
       "audience": {
         "question": "À qui s'adresse MyArcheryDiary ?",
-        "answer": "Aux archers de tous niveaux qui veulent garder une trace de leur pratique, et à leurs coachs : un archer invite son coach, qui suit alors son journal de la saison en cours."
+        "answer": "Aux archers de tous niveaux qui veulent garder une trace de leur pratique, et à leurs coachs : un archer invite son coach, qui suit alors son journal de la saison en cours. À la fin de la saison, l'archer peut générer son carnet au format PDF pour l'imprimer ou le partager."
       },
       "start": {
         "question": "Comment commencer ?",
@@ -569,8 +569,22 @@
         "description": "Analyse",
         "wentWell": "À garder",
         "toImprove": "À améliorer",
-        "nextTime": "La prochaine fois"
+        "nextTime": "La prochaine fois",
+        "coachComment": "Le mot du coach"
       }
+    },
+    "comments": {
+      "title": "Commentaires du coach",
+      "empty": "Aucun commentaire pour l'instant : l'archer verra le vôtre en bas de sa fiche.",
+      "placeholder": "Votre commentaire sur cette séance…",
+      "add": "Ajouter le commentaire",
+      "edit": "Modifier",
+      "save": "Enregistrer",
+      "cancel": "Annuler",
+      "delete": "Supprimer",
+      "deleteConfirm": "Supprimer ce commentaire ?",
+      "editedOn": "modifié le {date}",
+      "new": "Nouveau"
     },
     "plannedBy": "Planifié par {name}",
     "readOnly": "Lecture seule",
@@ -584,9 +598,16 @@
       "rating": "{stars, plural, =0 {Pas de note} other {# sur 5}}",
       "star": "Étoile {n}"
     },
+    "monthShare": {
+      "button": "Partage",
+      "intro": "Le mois écrit à la craie sur un tableau noir : ses événements complétés, le nombre de flèches et votre satisfaction. La légende est copiée au moment du partage : collez-la dans Instagram.",
+      "preview": "Aperçu du bilan de {month}"
+    },
     "newEvents": {
       "title": "Événements proposés",
-      "empty": "Pas de nouvel événement proposé."
+      "empty": "Pas de nouvel événement proposé.",
+      "comment": "{count, plural, one {Nouveau commentaire} other {# nouveaux commentaires}}",
+      "commentBy": "Commentaire de {name} : ouvrir la fiche"
     },
     "pendingReviews": {
       "title": "À compléter",

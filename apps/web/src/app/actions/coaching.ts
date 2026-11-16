@@ -45,6 +45,58 @@ export async function openAthleteJournal(archerId: string): Promise<void> {
   return redirect({ href: `/coach/${archerId}/journal`, locale: await getLocale() });
 }
 
+/** Runs a change to an event's comments, then shows the sheet anew. */
+async function changeComments(
+  call: (
+    api: Awaited<ReturnType<typeof getAuthedApi>>,
+  ) => Promise<{ data?: unknown; error?: unknown; response: Response }>,
+): Promise<ActionState> {
+  const result = await send(call(await getAuthedApi()));
+  if (!result.ok) return result.state;
+  refresh();
+  return {};
+}
+
+/** The coach comments on one of their archer's events. */
+export async function addSessionComment(
+  archerId: string,
+  id: string,
+  text: string,
+): Promise<ActionState> {
+  return changeComments((api) =>
+    api.POST('/api/v1/coach/athletes/{archerId}/sessions/{id}/comments', {
+      params: { path: { archerId, id } },
+      body: { text },
+    }),
+  );
+}
+
+export async function updateSessionComment(
+  archerId: string,
+  id: string,
+  commentId: string,
+  text: string,
+): Promise<ActionState> {
+  return changeComments((api) =>
+    api.PATCH('/api/v1/coach/athletes/{archerId}/sessions/{id}/comments/{commentId}', {
+      params: { path: { archerId, id, commentId } },
+      body: { text },
+    }),
+  );
+}
+
+export async function deleteSessionComment(
+  archerId: string,
+  id: string,
+  commentId: string,
+): Promise<ActionState> {
+  return changeComments((api) =>
+    api.DELETE('/api/v1/coach/athletes/{archerId}/sessions/{id}/comments/{commentId}', {
+      params: { path: { archerId, id, commentId } },
+    }),
+  );
+}
+
 /** Runs a change to the coach's groups, then shows the page and the header's menu anew. */
 async function changeGroups(
   call: (
