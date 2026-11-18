@@ -240,8 +240,8 @@ const WITH_TYPE = {
   scoreSheet: { select: { sessionId: true } },
 } as const;
 
-/** Comments a coach (or the archer's coaches together) may leave on one event. */
-export const MAX_COMMENTS = 20;
+/** Comments each coach may leave on one event (they change it rather than add another). */
+export const MAX_COMMENTS_PER_COACH = 1;
 
 const COMMENT_AUTHOR = {
   coach: { select: { id: true, displayName: true, email: true } },
@@ -834,15 +834,19 @@ export class JournalService {
     text: string,
   ): Promise<SessionCommentDto> {
     await this.findOwned(userId, id);
-    if ((await this.prisma.sessionComment.count({ where: { sessionId: id } })) >= MAX_COMMENTS) {
+    const body = commentText(text);
+    const written = await this.prisma.sessionComment.count({
+      where: { sessionId: id, coachId },
+    });
+    if (written >= MAX_COMMENTS_PER_COACH) {
       throw new ApiException(
         HttpStatus.CONFLICT,
         ErrorCode.LIMIT_REACHED,
-        `At most ${MAX_COMMENTS} comments per event`,
+        `At most ${MAX_COMMENTS_PER_COACH} comment per coach on an event: change it instead`,
       );
     }
     const comment = await this.prisma.sessionComment.create({
-      data: { sessionId: id, coachId, text: commentText(text) },
+      data: { sessionId: id, coachId, text: body },
       include: COMMENT_AUTHOR,
     });
     return toCommentDto(comment, coachId);

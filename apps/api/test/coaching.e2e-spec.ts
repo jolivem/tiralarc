@@ -389,6 +389,10 @@ describe('Coaching (e2e)', () => {
       mine: true,
     });
     expect((await http().post(comments).set(as(coach)).send({ text: '   ' })).status).toBe(400);
+    // One comment per coach: they change it rather than add another.
+    const second = await http().post(comments).set(as(coach)).send({ text: 'Encore un mot' });
+    expect(second.status).toBe(409);
+    expect(second.body.code).toBe('LIMIT_REACHED');
     // Someone who doesn't coach the archer gets nothing.
     await http().post(comments).set(as(otherCoach)).send({ text: 'Hello' }).expect(404);
 

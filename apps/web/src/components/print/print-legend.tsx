@@ -20,12 +20,18 @@ export function PrintLegend({ customTypes }: { customTypes: CustomEventType[] })
         <span className={classes.highlight}>{t('legend')}</span>
       </h2>
       <div className={classes.legendFrame}>
+        {/* Three close columns: the type's name, its colour, its symbol (both in a black ring). */}
         <ul className={classes.legendTypes}>
           {rows.map(({ key, color, icon: Icon, label }) => (
             <li key={key} className={classes.legendType}>
-              <i style={{ background: `var(--mantine-color-${color}-filled)` }} />
-              <span>{label}</span>
-              <Icon size={34} color={`var(--mantine-color-${color}-filled)`} />
+              <span className={classes.legendName}>{label}</span>
+              <i
+                className={classes.legendColor}
+                style={{ background: `var(--mantine-color-${color}-filled)` }}
+              />
+              <span className={classes.legendSymbol}>
+                <Icon size={38} color={`var(--mantine-color-${color}-filled)`} />
+              </span>
             </li>
           ))}
         </ul>

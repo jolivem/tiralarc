@@ -30,7 +30,9 @@ export async function RegularityCard({
   return (
     // A blank ruled line under it, before the next card's heading.
     <section className={classes.regularity}>
-      <RuledHeading raised={raised}>{t('title')}</RuledHeading>
+      <RuledHeading raised={raised} highlight="mint">
+        {t('title')}
+      </RuledHeading>
       <RuledLine className={classes.regularityLine}>
         {t.rich('events', { events, days, strong })}
       </RuledLine>

@@ -48,23 +48,159 @@ function Paper({
 }
 
 /** A figure written in marker on the board: the number large, its name under it. */
-function Figure({
-  value,
-  label,
-  detail,
-  ink,
-}: {
-  value: string;
-  label: string;
-  detail?: string;
-  ink: Ink;
-}) {
+function Figure({ value, label, ink }: { value: string; label: string; ink: Ink }) {
   return (
     <div className={classes.figure} style={{ color: INKS[ink] }}>
       <div className={classes.figureValue}>{value}</div>
       <div className={classes.figureLabel}>{label}</div>
-      {detail && <div className={classes.figureDetail}>{detail}</div>}
     </div>
+  );
+}
+
+type SeasonJournal = Pick<Journal, 'title' | 'startDate' | 'endDate'>;
+
+/**
+ * The whiteboard alone, printed (the PDF's Indicators chapter opens on it, print-parts.tsx):
+ * the same board as in the window, without its cross and tray.
+ */
+export function SeasonBoard({
+  summary,
+  journal,
+}: {
+  summary: SeasonSummary;
+  journal: SeasonJournal;
+}) {
+  return (
+    <div className={classes.frame} data-print>
+      <div className={classes.board}>
+        <SeasonBoardContent summary={summary} journal={journal} />
+      </div>
+    </div>
+  );
+}
+
+/** What's on the board: the season's name, its figures in marker, the papers. */
+function SeasonBoardContent({
+  summary: s,
+  journal,
+}: {
+  summary: SeasonSummary;
+  journal: SeasonJournal;
+}) {
+  const t = useTranslations();
+  const format = useFormatter();
+  const number = (value: number) => format.number(value);
+  const points = (value: number) =>
+    format.number(value, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const day = (date: string) =>
+    format.dateTime(new Date(`${date}T12:00:00Z`), { dateStyle: 'medium', timeZone: 'UTC' });
+  const time = t('season.hoursValue', {
+    hours: Math.floor(s.minutes / 60),
+    minutes: String(s.minutes % 60).padStart(2, '0'),
+  });
+  return (
+    <>
+      <header className={classes.header}>
+        <h2 className={classes.title} style={{ color: INKS.blue }}>
+          {t('season.title')}
+        </h2>
+        <p className={classes.subtitle} style={{ color: INKS.black }}>
+          {journal.title}
+          <span className={classes.period}>
+            {' — '}
+            {t('journals.period', {
+              start: day(journal.startDate),
+              end: day(journal.endDate),
+            })}
+          </span>
+        </p>
+      </header>
+
+      {/* Written straight on the board. */}
+      <div className={classes.figures}>
+        <Figure value={number(s.events.total)} label={t('season.events')} ink="red" />
+        <Figure value={number(s.arrows)} label={t('season.arrows')} ink="blue" />
+        <Figure value={time} label={t('season.time')} ink="green" />
+        <Figure value={number(s.activeDays)} label={t('season.activeDays')} ink="black" />
+      </div>
+
+      {/* Pinned on with magnets. */}
+      <div className={classes.papers}>
+        <Paper title={t('season.bestScores')} kind="ruled" magnet="red" tilt={-2}>
+          {s.bestScores.length === 0 ? (
+            <p className={classes.empty}>{t('season.noBestScores')}</p>
+          ) : (
+            <ul className={classes.list}>
+              {s.bestScores.map((b) => (
+                <li key={b.discipline}>
+                  <span className={classes.label}>{t(`journal.disciplines.${b.discipline}`)}</span>
+                  <strong className={classes.big}>{number(b.score)}</strong>
+                  <span className={classes.muted}>
+                    {[day(b.date), b.location].filter(Boolean).join(' · ')}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Paper>
+
+        <Paper title={t('season.averages')} kind="squared" magnet="blue" tilt={1.5}>
+          {s.averages.length === 0 ? (
+            <p className={classes.empty}>{t('season.noAverages')}</p>
+          ) : (
+            <ul className={classes.list}>
+              {s.averages.map((a) => {
+                const p = s.progressions.find((pr) => pr.distance === a.distance);
+                const delta = p ? p.last - p.first : 0;
+                return (
+                  <li key={a.distance}>
+                    <span className={classes.label}>
+                      {t('season.distance', { distance: a.distance })}
+                    </span>
+                    <strong className={classes.big}>{points(a.average)}</strong>
+                    <span className={classes.muted}>{t('season.perArrow')}</span>
+                    {p && (
+                      <span
+                        className={classes.trend}
+                        data-trend={delta > 0 ? 'up' : delta < 0 ? 'down' : undefined}
+                        title={t('season.progressionHint')}
+                      >
+                        {t('season.progression', {
+                          first: points(p.first),
+                          last: points(p.last),
+                          delta: `${delta >= 0 ? '+' : '−'}${points(Math.abs(delta))}`,
+                        })}
+                      </span>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </Paper>
+
+        <Paper title={t('season.goals')} kind="sticky" magnet="green" tilt={-1}>
+          {s.goalsReached.length === 0 ? (
+            <p className={classes.empty}>{t('season.noGoalsReached')}</p>
+          ) : (
+            <ul className={classes.list}>
+              {s.goalsReached.map((g) => (
+                <li key={g.id}>
+                  <span className={classes.tick} aria-label={t('season.reached')}>
+                    ✓
+                  </span>
+                  <span>{g.description}</span>
+                  {g.achievedOn && <span className={classes.muted}>{day(g.achievedOn)}</span>}
+                </li>
+              ))}
+            </ul>
+          )}
+          {s.goalsOpen.length > 0 && (
+            <p className={classes.muted}>{t('season.goalsOpen', { count: s.goalsOpen.length })}</p>
+          )}
+        </Paper>
+      </div>
+    </>
   );
 }
 
@@ -80,7 +216,7 @@ export function SeasonBoardButton({
   journal,
 }: {
   summary: SeasonSummary;
-  journal: Pick<Journal, 'title' | 'startDate' | 'endDate'>;
+  journal: SeasonJournal;
 }) {
   const t = useTranslations();
   const format = useFormatter();
@@ -96,10 +232,6 @@ export function SeasonBoardButton({
     hours: Math.floor(s.minutes / 60),
     minutes: String(s.minutes % 60).padStart(2, '0'),
   });
-  const byType = (['TRAINING', 'COACHING', 'COMPETITION', 'STRENGTH'] as const)
-    .filter((type) => s.events[type] > 0)
-    .map((type) => t(`season.types.${type}`, { count: s.events[type] }))
-    .join(' · ');
 
   // The Instagram card: the same board (board-card.ts), its figures and papers worded here.
   const cardFigures: BoardFigure[] = [
@@ -191,115 +323,7 @@ export function SeasonBoardButton({
             >
               ×
             </button>
-            <header className={classes.header}>
-              <h2 className={classes.title} style={{ color: INKS.blue }}>
-                {t('season.title')}
-              </h2>
-              <p className={classes.subtitle} style={{ color: INKS.black }}>
-                {journal.title}
-                <span className={classes.period}>
-                  {' — '}
-                  {t('journals.period', {
-                    start: day(journal.startDate),
-                    end: day(journal.endDate),
-                  })}
-                </span>
-              </p>
-            </header>
-
-            {/* Written straight on the board. */}
-            <div className={classes.figures}>
-              <Figure
-                value={number(s.events.total)}
-                label={t('season.events')}
-                detail={byType || undefined}
-                ink="red"
-              />
-              <Figure value={number(s.arrows)} label={t('season.arrows')} ink="blue" />
-              <Figure value={time} label={t('season.time')} ink="green" />
-              <Figure value={number(s.activeDays)} label={t('season.activeDays')} ink="black" />
-            </div>
-
-            {/* Pinned on with magnets. */}
-            <div className={classes.papers}>
-              <Paper title={t('season.bestScores')} kind="ruled" magnet="red" tilt={-2}>
-                {s.bestScores.length === 0 ? (
-                  <p className={classes.empty}>{t('season.noBestScores')}</p>
-                ) : (
-                  <ul className={classes.list}>
-                    {s.bestScores.map((b) => (
-                      <li key={b.discipline}>
-                        <span className={classes.label}>
-                          {t(`journal.disciplines.${b.discipline}`)}
-                        </span>
-                        <strong className={classes.big}>{number(b.score)}</strong>
-                        <span className={classes.muted}>
-                          {[day(b.date), b.location].filter(Boolean).join(' · ')}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </Paper>
-
-              <Paper title={t('season.averages')} kind="squared" magnet="blue" tilt={1.5}>
-                {s.averages.length === 0 ? (
-                  <p className={classes.empty}>{t('season.noAverages')}</p>
-                ) : (
-                  <ul className={classes.list}>
-                    {s.averages.map((a) => {
-                      const p = s.progressions.find((pr) => pr.distance === a.distance);
-                      const delta = p ? p.last - p.first : 0;
-                      return (
-                        <li key={a.distance}>
-                          <span className={classes.label}>
-                            {t('season.distance', { distance: a.distance })}
-                          </span>
-                          <strong className={classes.big}>{points(a.average)}</strong>
-                          <span className={classes.muted}>{t('season.perArrow')}</span>
-                          {p && (
-                            <span
-                              className={classes.trend}
-                              data-trend={delta > 0 ? 'up' : delta < 0 ? 'down' : undefined}
-                              title={t('season.progressionHint')}
-                            >
-                              {t('season.progression', {
-                                first: points(p.first),
-                                last: points(p.last),
-                                delta: `${delta >= 0 ? '+' : '−'}${points(Math.abs(delta))}`,
-                              })}
-                            </span>
-                          )}
-                        </li>
-                      );
-                    })}
-                  </ul>
-                )}
-              </Paper>
-
-              <Paper title={t('season.goals')} kind="sticky" magnet="green" tilt={-1}>
-                {s.goalsReached.length === 0 ? (
-                  <p className={classes.empty}>{t('season.noGoalsReached')}</p>
-                ) : (
-                  <ul className={classes.list}>
-                    {s.goalsReached.map((g) => (
-                      <li key={g.id}>
-                        <span className={classes.tick} aria-label={t('season.reached')}>
-                          ✓
-                        </span>
-                        <span>{g.description}</span>
-                        {g.achievedOn && <span className={classes.muted}>{day(g.achievedOn)}</span>}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-                {s.goalsOpen.length > 0 && (
-                  <p className={classes.muted}>
-                    {t('season.goalsOpen', { count: s.goalsOpen.length })}
-                  </p>
-                )}
-              </Paper>
-            </div>
+            <SeasonBoardContent summary={s} journal={journal} />
           </div>
           {/* The board's tray, under it: the Instagram card. */}
           <div className={classes.tray}>

@@ -525,7 +525,7 @@
       "fields": "Informations à publier",
       "selectAll": "Tout sélectionner",
       "selectNone": "Tout désélectionner",
-      "photos": "Photos ({count} / {max})",
+      "photos": "Photos ({count} / {max} max)",
       "photo": "Photo {n}",
       "noPhotos": "Aucune photo : seule la carte résumé sera publiée.",
       "preview": "Aperçu de la carte résumé",
@@ -562,6 +562,7 @@
         "score": "Score",
         "weather": "Météo",
         "objective": "Objectif",
+        "steps": "Déroulé de la séance",
         "satisfaction": "Satisfaction",
         "technique": "Technique",
         "physical": "Physique",
@@ -604,8 +605,8 @@
       "preview": "Aperçu du bilan de {month}"
     },
     "newEvents": {
-      "title": "Événements proposés",
-      "empty": "Pas de nouvel événement proposé.",
+      "title": "Du côté du coach",
+      "empty": "Rien de nouveau du côté du coach.",
       "comment": "{count, plural, one {Nouveau commentaire} other {# nouveaux commentaires}}",
       "commentBy": "Commentaire de {name} : ouvrir la fiche"
     },
@@ -695,6 +696,10 @@
       "clear": "Tout effacer",
       "saving": "Enregistrement…",
       "saved": "Coloriage enregistré.",
+      "pastel": "{color} pastel",
+      "auto": "Coloriage automatique",
+      "autoHint": "Colorie tout le décor avec les couleurs de la réalité (le nom du mois garde les siennes). « Annuler le dernier coup » revient en arrière.",
+      "autoFailed": "Le décor n'a pas pu être lu : réessayez.",
       "palette": {
         "red": "Rouge",
         "orange": "Orange",
@@ -876,13 +881,7 @@
     "titleOf": "Bilan · {title}",
     "open": "Bilan de saison",
     "close": "Fermer le bilan",
-    "events": "Événements",
-    "types": {
-      "TRAINING": "{count, plural, one {# entraînement} other {# entraînements}}",
-      "COACHING": "{count, plural, one {# coaching} other {# coachings}}",
-      "COMPETITION": "{count, plural, one {# compétition} other {# compétitions}}",
-      "STRENGTH": "{count, plural, one {# renfo} other {# renfos}}"
-    },
+    "events": "Séances",
     "arrows": "Flèches tirées",
     "time": "Temps de pratique",
     "hoursValue": "{hours} h {minutes}",
@@ -910,8 +909,8 @@
     "date": "Date",
     "arrows": "Flèches",
     "cumulativeArrows": "Flèches cumulées",
-    "events": "Répartition des événements",
-    "noEvents": "Aucun événement pour l'instant.",
+    "events": "Répartition des séances",
+    "noEvents": "Aucune séance pour l'instant.",
     "feelings": {
       "physical": {
         "title": "Ressentis physiques",
@@ -1058,7 +1057,6 @@
     "cancel": "Annuler",
     "coverTitle": "Mon journal d'archer",
     "period": "Du {from} au {to}",
-    "generatedOn": "Extrait du {date}",
     "index": "Index",
     "yearTitle": "Calendrier de l'année",
     "noReview": "Bilan pas encore rempli.",

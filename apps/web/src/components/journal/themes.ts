@@ -33,3 +33,11 @@ export function findTheme(id: string | null | undefined): ThemeId | null {
 export function themeImage(id: ThemeId, image: ThemeBand | 'thumb'): string {
   return `/themes/${id}/${image}.${THEMES[id].ext}`;
 }
+
+/**
+ * A band's colour map: the same drawing, its shapes filled with their real-life colours
+ * (written by scripts/themes), read by the automatic colouring.
+ */
+export function themeColorMap(id: ThemeId, band: ThemeBand): string {
+  return `/themes/${id}/${band}.colors.${THEMES[id].ext}`;
+}

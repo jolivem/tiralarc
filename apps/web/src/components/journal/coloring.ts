@@ -252,6 +252,123 @@ export function letterSeeds(art: Artwork): { x: number; y: number }[] {
   });
 }
 
+/** A closed area of paper: its size in pixels and its deepest point (fractions of the image). */
+export interface AreaSeed {
+  x: number;
+  y: number;
+  pixels: number;
+}
+
+/**
+ * Every area of paper not reaching the image's edge (the paper around the drawing does), with
+ * its size and the point furthest from its outline: a click there fills that area, even on the
+ * same drawing read a pixel off. Largest areas first.
+ */
+export function areaSeeds(art: Artwork): AreaSeed[] {
+  const { width, height, light } = art;
+  const size = width * height;
+  const isPaper = (i: number) => at(light, i) >= PAPER;
+  const area = new Int32Array(size).fill(-1);
+  const pixels: number[] = [];
+  const onEdge: boolean[] = [];
+  for (let seed = 0; seed < size; seed++) {
+    if (area[seed] !== -1 || !isPaper(seed)) continue;
+    const id = pixels.length;
+    pixels.push(0);
+    onEdge.push(false);
+    area[seed] = id;
+    const stack = [seed];
+    while (stack.length > 0) {
+      const i = stack.pop()!;
+      pixels[id] = at(pixels, id) + 1;
+      const col = i % width;
+      if (col === 0 || col === width - 1 || i < width || i >= size - width) onEdge[id] = true;
+      const visit = (n: number) => {
+        if (area[n] === -1 && isPaper(n)) {
+          area[n] = id;
+          stack.push(n);
+        }
+      };
+      if (col > 0) visit(i - 1);
+      if (col < width - 1) visit(i + 1);
+      if (i >= width) visit(i - width);
+      if (i < size - width) visit(i + width);
+    }
+  }
+  // Steps to the nearest stroke (two passes), and each area's deepest pixel.
+  const far = width + height;
+  const distance = new Int32Array(size);
+  for (let i = 0; i < size; i++) {
+    if (!isPaper(i)) continue;
+    const col = i % width;
+    const left = col > 0 ? at(distance, i - 1) : 0;
+    const up = i >= width ? at(distance, i - width) : 0;
+    distance[i] = Math.min(far, left + 1, up + 1);
+  }
+  for (let i = size - 1; i >= 0; i--) {
+    if (!isPaper(i)) continue;
+    const col = i % width;
+    const right = col < width - 1 ? at(distance, i + 1) : 0;
+    const down = i < size - width ? at(distance, i + width) : 0;
+    distance[i] = Math.min(at(distance, i), right + 1, down + 1);
+  }
+  const deepest = new Int32Array(pixels.length).fill(-1);
+  for (let i = 0; i < size; i++) {
+    const id = at(area, i);
+    if (id < 0) continue;
+    const best = at(deepest, id);
+    if (best < 0 || at(distance, i) > at(distance, best)) deepest[id] = i;
+  }
+  return pixels
+    .flatMap((count, id) => {
+      if (onEdge[id]) return [];
+      const i = at(deepest, id);
+      return [
+        {
+          x: ((i % width) + 0.5) / width,
+          y: (Math.floor(i / width) + 0.5) / height,
+          pixels: count,
+        },
+      ];
+    })
+    .sort((a, b) => b.pixels - a.pixels);
+}
+
+/** A colour map's pixel as "#rrggbb", or null where it is (nearly) white: nothing to paint. */
+function colorAt(rgba: ArrayLike<number>, width: number, height: number, x: number, y: number) {
+  const i =
+    (Math.min(height - 1, Math.floor(y * height)) * width +
+      Math.min(width - 1, Math.floor(x * width))) *
+    4;
+  const [r, g, b] = [at(rgba, i), at(rgba, i + 1), at(rgba, i + 2)];
+  if (r > 245 && g > 245 && b > 245) return null;
+  const hex = (v: number) => v.toString(16).padStart(2, '0');
+  return `#${hex(r)}${hex(g)}${hex(b)}`;
+}
+
+/**
+ * The automatic colouring of a band: one fill per closed area of the line art (`art`), in the
+ * colour its colour map (`colors`, RGBA pixels of the same drawing filled with real-life colours,
+ * any size) has at that area's deepest point; areas left white there stay uncoloured. Largest
+ * areas first, at most `limit`.
+ */
+export function realisticFills<B extends string>(
+  art: Artwork,
+  colors: { rgba: ArrayLike<number>; width: number; height: number },
+  band: B,
+  limit: number,
+): (Fill & { band: B; pixels: number })[] {
+  const out: (Fill & { band: B; pixels: number })[] = [];
+  for (const seed of areaSeeds(art)) {
+    if (out.length >= limit) break;
+    const color = colorAt(colors.rgba, colors.width, colors.height, seed.x, seed.y);
+    if (!color) continue;
+    const round = (value: number) => Math.round(value * 10_000) / 10_000;
+    out.push({ band, x: round(seed.x), y: round(seed.y), color, pixels: seed.pixels });
+  }
+  return out;
+}
+
 /** True when the fill's point lies in the paper area described by `mask`. */
 export function inRegion(art: Artwork, mask: Uint8Array, fill: Pick<Fill, 'x' | 'y'>): boolean {
   return mask[pixelOf(art, fill.x, fill.y)] === 1;

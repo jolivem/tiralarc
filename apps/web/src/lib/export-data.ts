@@ -1,6 +1,7 @@
 import 'server-only';
 import type {
   CustomEventType,
+  Goal,
   Journal,
   JournalSession,
   JournalSessionSummary,
@@ -32,9 +33,11 @@ export interface ExportData {
   customTypes: CustomEventType[];
   /** By day, when asked for. */
   sheets: ExportSheet[];
-  /** Null when not asked for, or the API could not be reached. */
+  /** Null without the Indicators chapter, or when the API could not be reached. */
   stats: JournalStats | null;
   rankings: RankingList | null;
+  /** The archer's goals, for the season summary (Indicators chapter only). */
+  goals: Goal[];
 }
 
 /** `task` on each item, `PARALLEL` at a time, results in the items' order. */
@@ -50,15 +53,22 @@ async function inBatches<T, R>(items: T[], task: (item: T) => Promise<R>): Promi
 export async function getExportData(options: ExportOptions): Promise<ExportData> {
   const api = await getAuthedApi();
   const range = { from: options.from, to: options.to };
-  const [journals, { data: sessions }, { data: customTypes }, stats, rankings] = await Promise.all([
-    getJournals(),
-    api.GET('/api/v1/journal/sessions', { params: { query: range } }),
-    api.GET('/api/v1/journal/event-types'),
-    options.indicators.length > 0
-      ? api.GET('/api/v1/journal/sessions/stats', { params: { query: range } }).then((r) => r.data)
-      : undefined,
-    options.rankings.length > 0 ? api.GET('/api/v1/rankings').then((r) => r.data) : undefined,
-  ]);
+  // The Indicators chapter (rankings or indicators asked for) opens on the season summary,
+  // which needs the figures and the goals.
+  const withStats = options.indicators.length > 0 || options.rankings.length > 0;
+  const [journals, { data: sessions }, { data: customTypes }, stats, rankings, goals] =
+    await Promise.all([
+      getJournals(),
+      api.GET('/api/v1/journal/sessions', { params: { query: range } }),
+      api.GET('/api/v1/journal/event-types'),
+      withStats
+        ? api
+            .GET('/api/v1/journal/sessions/stats', { params: { query: range } })
+            .then((r) => r.data)
+        : undefined,
+      options.rankings.length > 0 ? api.GET('/api/v1/rankings').then((r) => r.data) : undefined,
+      withStats ? api.GET('/api/v1/goals').then((r) => r.data) : undefined,
+    ]);
 
   const sheeted = options.sheets
     ? (sessions ?? []).filter((s) => SHEET_TYPES.includes(s.type))
@@ -85,6 +95,7 @@ export async function getExportData(options: ExportOptions): Promise<ExportData>
     sheets: sheets.filter((s): s is ExportSheet => s !== null),
     stats: stats ?? null,
     rankings: rankings ?? null,
+    goals: goals ?? [],
   };
 }
 

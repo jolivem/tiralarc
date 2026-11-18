@@ -111,8 +111,10 @@ export function MonthTitle({
   fills: ThemeFill[];
   tool: ColoringTool;
   onFillsChange: (fills: ThemeFill[]) => void;
-  onPrevious: () => void;
-  onNext: () => void;
+  /** Undefined on the journal's first month: no arrow (its place kept, the name stays centred). */
+  onPrevious?: () => void;
+  /** Undefined on the journal's last month. */
+  onNext?: () => void;
   labels: { previous: string; next: string };
 }) {
   return (
@@ -124,6 +126,8 @@ export function MonthTitle({
         aria-label={labels.previous}
         title={labels.previous}
         onClick={onPrevious}
+        disabled={!onPrevious}
+        style={onPrevious ? undefined : { visibility: 'hidden' }}
       >
         <IconChevronLeft size={48} stroke={1.5} />
       </ActionIcon>
@@ -151,6 +155,8 @@ export function MonthTitle({
         aria-label={labels.next}
         title={labels.next}
         onClick={onNext}
+        disabled={!onNext}
+        style={onNext ? undefined : { visibility: 'hidden' }}
       >
         <IconChevronRight size={48} stroke={1.5} />
       </ActionIcon>

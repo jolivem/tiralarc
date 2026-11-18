@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
+  areaSeeds,
   enclosedRegionAt,
+  realisticFills,
   inRegion,
   letterSeeds,
   paint,
@@ -31,6 +33,36 @@ const at = (col: number, row: number) => ({ x: (col + 0.5) / 9, y: (row + 0.5) /
 const pixel = (out: Uint8ClampedArray, col: number, row: number) => [
   ...out.slice((row * 9 + col) * 4, (row * 9 + col) * 4 + 4),
 ];
+
+describe('automatic colouring', () => {
+  it('fills each closed area with its colour in the colour map, not the paper around', () => {
+    const art = drawing();
+    // The colour map: the box filled green, at twice the size (another resolution).
+    const width = 18;
+    const height = 10;
+    const rgba = new Uint8ClampedArray(width * height * 4).fill(255);
+    for (let row = 4; row < 6; row++)
+      for (let col = 4; col < 10; col++) rgba.set([47, 158, 68, 255], (row * width + col) * 4);
+    const fills = realisticFills(art, { rgba, width, height }, 'top', 10);
+    expect(fills).toHaveLength(1);
+    expect(fills[0]).toMatchObject({ band: 'top', color: '#2f9e44', pixels: 3 });
+    // Its point is inside the box.
+    const inside = regionAt(art, at(3, 2).x, at(3, 2).y)!;
+    expect(inRegion(art, inside, fills[0]!)).toBe(true);
+  });
+
+  it('leaves areas white in the colour map uncoloured, and keeps to the limit', () => {
+    const art = drawing();
+    const rgba = new Uint8ClampedArray(9 * 5 * 4).fill(255);
+    expect(realisticFills(art, { rgba, width: 9, height: 5 }, 'top', 10)).toEqual([]);
+    rgba.set([255, 0, 0, 255], (2 * 9 + 3) * 4);
+    expect(realisticFills(art, { rgba, width: 9, height: 5 }, 'top', 0)).toEqual([]);
+  });
+
+  it('finds every closed area, largest first, never the paper around', () => {
+    expect(areaSeeds(drawing()).map((seed) => seed.pixels)).toEqual([3]);
+  });
+});
 
 describe('colouring', () => {
   it('fills the closed area around the click, not beyond its outline', () => {

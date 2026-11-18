@@ -61,6 +61,7 @@ export function CompetitionPlanningCard({
   return (
     <RuledActionCard
       title={t('planningTitle')}
+      highlight="peach"
       intro={t('planningIntro')}
       // A line higher, close under the published invitations.
       raised

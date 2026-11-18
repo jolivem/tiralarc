@@ -6,7 +6,7 @@ import { useFormatter, useTranslations } from 'next-intl';
 import type { CSSProperties, ReactNode } from 'react';
 import { EventIcon } from '@/components/journal/event-display';
 import { FEELING_INK, FEELINGS } from '@/components/journal/feelings';
-import { useStepLabel } from '@/components/journal/session-steps';
+import { useStepLabel, useStepsTotal } from '@/components/journal/session-steps';
 import { DISCIPLINE_COLORS } from '@/components/journal/session-types';
 import { SkyIcon, Windsock } from '@/components/journal/weather-icons';
 import { SHEET_ATTRIBUTE } from './markers';
@@ -51,7 +51,7 @@ function FeelingFace({ label, value }: { label: string; value: Feeling }) {
   const Icon = feeling.icon;
   return (
     <Box title={label}>
-      <div className={classes.feeling}>
+      <div className={`${classes.feeling} ${classes.plainFont}`}>
         <span className={classes.face} style={{ background: feeling.color }}>
           <Icon size={26} color={FEELING_INK} />
         </span>
@@ -71,6 +71,7 @@ export function PrintSheet({ session: s }: { session: JournalSession }) {
   const format = useFormatter();
   const number = (value: number) => format.number(value);
   const stepLabel = useStepLabel();
+  const stepsTotal = useStepsTotal();
 
   const fields: [string, ReactNode][] = [];
   if (s.durationMinutes !== null) fields.push([t('journal.duration'), number(s.durationMinutes)]);
@@ -78,7 +79,13 @@ export function PrintSheet({ session: s }: { session: JournalSession }) {
   if (s.discipline) {
     fields.push([
       t('journal.discipline'),
-      <Badge key="discipline" variant="light" color={DISCIPLINE_COLORS[s.discipline]} size="sm">
+      <Badge
+        key="discipline"
+        variant="light"
+        color={DISCIPLINE_COLORS[s.discipline]}
+        size="sm"
+        className={classes.plainFont}
+      >
         {t(`journal.disciplines.${s.discipline}`)}
       </Badge>,
     ]);
@@ -159,10 +166,25 @@ export function PrintSheet({ session: s }: { session: JournalSession }) {
         </Box>
       )}
       {s.steps.length > 0 && (
-        <Box title={t('journal.outline')}>
-          <ol className={classes.text}>
+        // "Déroulé de la séance (45 min · 72 flèches)", as on the sheet: each step numbered,
+        // a box ticked once it was done.
+        <Box
+          title={
+            stepsTotal(s.steps)
+              ? `${t('journal.outline')} (${stepsTotal(s.steps)})`
+              : t('journal.outline')
+          }
+        >
+          <ol className={classes.steps}>
             {s.steps.map((step, i) => (
-              <li key={i}>{stepLabel(step)}</li>
+              <li key={i} data-done={step.done || undefined}>
+                <span className={classes.stepBox} aria-hidden>
+                  {step.done ? '✓' : ''}
+                </span>
+                <span>
+                  {i + 1}. {stepLabel(step)}
+                </span>
+              </li>
             ))}
           </ol>
         </Box>

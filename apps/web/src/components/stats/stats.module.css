@@ -119,7 +119,8 @@
   & :global(.mantine-LineChart-root) {
     /* Their padding inside the page's width: wider than it, Chromium shrinks the whole PDF. */
     box-sizing: border-box;
-    height: 190px !important;
+    /* Taller alone on a landscape page (print.module.css `.landscapeCard`). */
+    height: var(--printed-chart-height, 190px) !important;
   }
 
   & .barTrack {
@@ -357,6 +358,36 @@
  * One national ranking on the home notebook (rankings-card.tsx): the discipline on the left,
  * the place beside it, the ranking's name and the scores under the place.
  */
+/* The rankings card (rankings-card.tsx): the places, then a podium drawn on the right. */
+.rankingsBody {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+/* The podium in the middle of the space the places leave on the right. */
+.podiumSpace {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  align-self: stretch;
+  min-width: 0;
+
+  /* Phones: the places take the whole width. */
+  @media (max-width: $mantine-breakpoint-xs) {
+    display: none;
+  }
+}
+
+.podium {
+  width: min(360px, 100%);
+  color: var(--frame-color, currentColor);
+}
+
+.compact .podium {
+  width: min(200px, 100%);
+}
+
 .ranking {
   display: grid;
   grid-template-columns: 6.5rem minmax(0, 1fr);

@@ -21,7 +21,8 @@ export function IndicatorCard({
   compact = false,
   ...props
 }: {
-  indicator: Indicator;
+  /** The rankings card loads its own figures: not one of these (archer/page.tsx). */
+  indicator: Exclude<Indicator, 'RANKINGS'>;
   stats: JournalStats;
   period: Period;
   today: string;
@@ -42,7 +43,7 @@ function Card({
   period,
   today,
 }: {
-  indicator: Indicator;
+  indicator: Exclude<Indicator, 'RANKINGS'>;
   stats: JournalStats;
   period: Period;
   today: string;

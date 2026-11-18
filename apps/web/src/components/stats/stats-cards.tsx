@@ -30,7 +30,7 @@ import {
   useRef,
   useState,
 } from 'react';
-import { OnRuling } from '@/components/notebook/on-ruling';
+import { Highlighted, type Highlighter, OnRuling } from '@/components/notebook/on-ruling';
 import { AnchorLink } from '@/components/links';
 import { FEELING_INK, FEELINGS } from '@/components/journal/feelings';
 import {
@@ -55,12 +55,26 @@ export const RuledCardTitles = createContext(false);
  * period shown (all event types for the scores), every competition listed.
  */
 export const PrintedCards = createContext(false);
-
 /**
  * A card's title, in the calligraphy font the archer chose on the Profile page, written on
  * a line of the squared paper (see `.cardTitle`) — or of a ruled page (`RuledCardTitles`).
  */
-export function StatsCardTitle({ aside, children }: { aside?: ReactNode; children: ReactNode }) {
+export function StatsCardTitle({
+  aside,
+  highlight,
+  children,
+}: {
+  aside?: ReactNode;
+  /** The card's highlighter (`INDICATOR_HIGHLIGHTS`), on screen only: not in the PDF. */
+  highlight?: Highlighter;
+  children: ReactNode;
+}) {
+  const marked =
+    highlight && !use(PrintedCards) ? (
+      <Highlighted color={highlight}>{children}</Highlighted>
+    ) : (
+      children
+    );
   // On the home notebook's ruled page: on its lines, as big as the page's other titles
   // (RuledHeading).
   if (use(RuledCardTitles)) {
@@ -76,7 +90,7 @@ export function StatsCardTitle({ aside, children }: { aside?: ReactNode; childre
       >
         {/* `aside` (the star) at the end of the line, level with the title. */}
         <span className={classes.ruledTitle}>
-          <span>{children}</span>
+          <span>{marked}</span>
           {aside}
         </span>
       </OnRuling>
@@ -92,10 +106,23 @@ export function StatsCardTitle({ aside, children }: { aside?: ReactNode; childre
       fw="var(--card-title-weight, 400)"
       lh={1}
     >
-      {children}
+      {marked}
     </Title>
   );
 }
+
+/** Each card's highlighter on its title: neighbours on the Indicators page never share one. */
+export const INDICATOR_HIGHLIGHTS = {
+  ARROWS: 'blue',
+  DURATIONS: 'mint',
+  SCORES: 'peach',
+  ARROW_AVERAGES: 'lilac',
+  EVENTS: 'pink',
+  PHYSICAL_FEELINGS: 'yellow',
+  MENTAL_FEELINGS: 'blue',
+  COMPETITIONS: 'mint',
+  RANKINGS: 'lilac',
+} as const satisfies Record<Indicator, Highlighter>;
 
 /**
  * A see-through card on the notebook's squared paper (`--square`): its height is rounded up
@@ -182,7 +209,12 @@ function StatsCard({
   return (
     <SquaredCard className={classes.viz}>
       <Stack gap="md">
-        <StatsCardTitle aside={ruled ? star : undefined}>{title}</StatsCardTitle>
+        <StatsCardTitle
+          aside={ruled ? star : undefined}
+          highlight={INDICATOR_HIGHLIGHTS[indicator]}
+        >
+          {title}
+        </StatsCardTitle>
         {children}
       </Stack>
       {/* In the centre of the top right square (see SquaredCard). */}

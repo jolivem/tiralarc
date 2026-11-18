@@ -1882,7 +1882,7 @@ export interface components {
          * @description The indicator shown on the home page; null = none.
          * @enum {string}
          */
-        Indicator: "ARROWS" | "DURATIONS" | "SCORES" | "EVENTS" | "COMPETITIONS" | "PHYSICAL_FEELINGS" | "MENTAL_FEELINGS" | "ARROW_AVERAGES";
+        Indicator: "ARROWS" | "DURATIONS" | "SCORES" | "EVENTS" | "COMPETITIONS" | "PHYSICAL_FEELINGS" | "MENTAL_FEELINGS" | "ARROW_AVERAGES" | "RANKINGS";
         ProfileDto: {
             /** @example 0123456A */
             licenceNumber: string | null;
@@ -4914,7 +4914,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description LIMIT_REACHED: 20 comments on this event */
+            /** @description LIMIT_REACHED: this coach already commented on the event (change it instead) */
             409: {
                 headers: {
                     [name: string]: unknown;

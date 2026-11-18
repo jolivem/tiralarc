@@ -2,6 +2,7 @@
 
 import type { CustomEventType, JournalSessionSummary } from '@tiralarc/api-client';
 import { useFormatter, useTranslations } from 'next-intl';
+import type { CSSProperties } from 'react';
 import { eventDisplay, pendingReason } from '@/components/journal/event-display';
 import { useLegendRows } from '@/components/journal/event-legend';
 import classes from './print.module.css';
@@ -47,7 +48,11 @@ export function PrintYear({
       <h2 className={`${classes.heading} ${classes.yearTitle}`}>
         <span className={classes.highlight}>{title ?? t('yearTitle')}</span>
       </h2>
-      <div className={classes.yearMonths}>
+      <div
+        className={classes.yearMonths}
+        data-many={months.length > 12 || undefined}
+        data-few={months.length <= 4 || undefined}
+      >
         {months.map((month) => {
           const [year, index] = month.split('-').map(Number) as [number, number];
           const first = new Date(Date.UTC(year, index - 1, 1));
@@ -56,10 +61,13 @@ export function PrintYear({
           const lead = (first.getUTCDay() + 6) % 7;
           const name = format.dateTime(first, { month: 'long', timeZone: 'UTC' });
           return (
-            <div key={month}>
-              <div className={classes.yearMonthName}>
-                <span className={classes.highlight}>{name}</span>
-              </div>
+            <div
+              key={month}
+              className={classes.yearMonth}
+              // Its pastel, as on the home page's season calendar (by month of the year).
+              style={{ '--month-tint': `var(--tint-${index})` } as CSSProperties}
+            >
+              <div className={classes.yearMonthName}>{name}</div>
               <div className={classes.yearGrid}>
                 {Array.from({ length: lead }, (_, i) => (
                   <span key={`blank-${i}`} />

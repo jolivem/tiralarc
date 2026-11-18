@@ -1,9 +1,9 @@
 'use client';
 
 import { Badge } from '@mantine/core';
-import type { Discipline, Indicator, JournalStats, RankingList } from '@tiralarc/api-client';
+import type { Discipline, JournalStats, RankingList } from '@tiralarc/api-client';
 import { useFormatter, useTranslations } from 'next-intl';
-import { Fragment } from 'react';
+import { Fragment, type ReactNode } from 'react';
 import { DISCIPLINE_COLORS } from '@/components/journal/session-types';
 import {
   ArrowAveragesCard,
@@ -15,6 +15,7 @@ import {
   PrintedCards,
   ScoresCard,
 } from '@/components/stats/stats-cards';
+import type { CardIndicator } from '@/lib/export-options';
 import classes from './print.module.css';
 
 /**
@@ -82,7 +83,10 @@ export function PrintRankings({
 
   return (
     <section className={classes.page}>
-      <h2 className={classes.heading}>{t('title')}</h2>
+      {/* "Classement national", not bold. */}
+      <h2 className={classes.heading} style={{ fontWeight: 400 }}>
+        {t('title')}
+      </h2>
       {body()}
     </section>
   );
@@ -101,14 +105,14 @@ export function PrintStats({
 }: {
   stats: JournalStats | null;
   /** In the Indicators page's order. */
-  indicators: Indicator[];
+  indicators: CardIndicator[];
   from: string;
   to: string;
   today: string;
 }) {
   const t = useTranslations();
   const period = { startDate: from, endDate: to };
-  const card = (indicator: Indicator, stats: JournalStats) => {
+  const card = (indicator: CardIndicator, stats: JournalStats) => {
     switch (indicator) {
       case 'ARROWS':
         return <ArrowsCard period={period} arrowsByDay={stats.arrowsByDay} today={today} />;
@@ -144,20 +148,54 @@ export function PrintStats({
         return <CompetitionsCard competitions={stats.competitions} />;
     }
   };
+  if (!stats) {
+    return (
+      <section className={classes.page}>
+        <p className={classes.muted}>{t('export.unavailable')}</p>
+      </section>
+    );
+  }
+  // The charts over time, each alone on a landscape page (turned left); the other cards
+  // together on an upright one.
+  const wide = indicators.filter((i) => LANDSCAPE_INDICATORS.includes(i));
+  const rest = indicators.filter((i) => !LANDSCAPE_INDICATORS.includes(i));
   return (
     // No heading: the chapter's title page already says "Indicators".
-    <section className={classes.page}>
-      {stats ? (
-        <PrintedCards value>
+    <PrintedCards value>
+      {rest.length > 0 && (
+        <section className={classes.page}>
           <div className={classes.indicators}>
-            {indicators.map((indicator) => (
+            {rest.map((indicator) => (
               <Fragment key={indicator}>{card(indicator, stats)}</Fragment>
             ))}
           </div>
-        </PrintedCards>
-      ) : (
-        <p className={classes.muted}>{t('export.unavailable')}</p>
+        </section>
       )}
+      {wide.map((indicator) => (
+        <Landscape key={indicator}>
+          <div className={classes.landscapeCard}>{card(indicator, stats)}</div>
+        </Landscape>
+      ))}
+    </PrintedCards>
+  );
+}
+
+/** The cards printed alone, landscape: the charts that run over the extract's days. */
+const LANDSCAPE_INDICATORS: readonly CardIndicator[] = [
+  'ARROWS',
+  'DURATIONS',
+  'SCORES',
+  'ARROW_AVERAGES',
+];
+
+/**
+ * A landscape page, turned left (its top along the page's left edge): its content laid out
+ * as wide as the page is tall, then rotated a quarter turn counter-clockwise.
+ */
+export function Landscape({ children }: { children: ReactNode }) {
+  return (
+    <section className={`${classes.page} ${classes.landscape}`}>
+      <div className={classes.landscapeInner}>{children}</div>
     </section>
   );
 }

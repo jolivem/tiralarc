@@ -10,6 +10,18 @@ import { writeFileSync } from 'node:fs';
 import { branchOutline, Drawing, place, random, smooth, wander } from './lib.mjs';
 
 const OUT = new URL('../../public/themes/cerisier/', import.meta.url);
+
+/** Real-life colours, for the colour maps (the web's automatic colouring). */
+const COLORS = {
+  wood: '#8b5a2b',
+  petal: '#fcc2d7',
+  heart: '#ffe066',
+  bud: '#f783ac',
+  leaf: '#8ce99a',
+  wing: '#9775fa',
+  wingInner: '#d0bfff',
+  body: '#343a40',
+};
 const TAU = Math.PI * 2;
 
 // ------------------------------------------------------------------ elements
@@ -48,6 +60,7 @@ const strokeFor = (size, near = 46) => Math.max(2.6, Math.min(5.5, 2.4 + (size /
 function flower(d, rand, { x, y, r, rotate = rand.range(0, TAU), tilt = 1, tiltAxis = 0 }) {
   const stroke = strokeFor(r);
   const view = { x, y, tilt, tiltAxis };
+  d.color = COLORS.petal;
   for (let i = 0; i < 5; i++) {
     const angle = rotate + (i * TAU) / 5 + rand.range(-0.09, 0.09);
     const petal = place(petalPoints(rand, rand.range(1, 1.2)), {
@@ -75,6 +88,7 @@ function flower(d, rand, { x, y, r, rotate = rand.range(0, TAU), tilt = 1, tiltA
     d.line(smooth([start, middle, end], false), Math.max(1.5, stroke * 0.42));
     if (r > 18) d.dot(end[0], end[1], Math.max(1.8, r * 0.045));
   }
+  d.color = COLORS.heart;
   d.shape(smooth(place(circlePoints(r * 0.15), view)), stroke * 0.8);
 }
 
@@ -92,7 +106,9 @@ function bud(d, rand, { x, y, size, angle }) {
     [0.44, -0.7],
     [0.42, -0.3],
   ];
+  d.color = COLORS.bud;
   d.shape(smooth(place(body, { x, y, scale: size, rotate })), stroke);
+  d.color = COLORS.leaf;
   d.line(
     smooth(
       place(
@@ -135,6 +151,7 @@ function leaf(d, rand, { x, y, size, angle }) {
     edge.push(side < 0 ? half : half.reverse());
   }
   const points = [[0, 0], ...edge[0], [0, -1.02], ...edge[1]];
+  d.color = COLORS.leaf;
   d.shape(smooth(place(points, { x, y, scale: size, rotate })), stroke);
   d.line(
     smooth(
@@ -180,6 +197,7 @@ function fallingPetal(d, rand, { x, y, size }) {
     tilt: rand.range(0.45, 1),
     tiltAxis: rand.range(0, TAU),
   });
+  d.color = COLORS.petal;
   d.shape(smooth(points), strokeFor(size * 2.2));
 }
 
@@ -234,12 +252,18 @@ function butterfly(d, rand, { x, y, size, rotate = 0, turn = 1 }) {
   // The far wings first (hidden in part by the body and the near ones).
   for (const side of [-1, 1]) {
     const v = view(side);
+    d.color = COLORS.wing;
     d.shape(smooth(v(hind)), stroke);
+    d.color = COLORS.wingInner;
     d.shape(smooth(v(inner(hind, 0.6))), stroke * 0.65);
+    d.color = COLORS.heart;
     d.shape(smooth(v(spot(0.56, 0.48, 0.045))), stroke * 0.55);
+    d.color = COLORS.wing;
     d.shape(smooth(v(fore)), stroke);
+    d.color = COLORS.wingInner;
     d.shape(smooth(v(inner(fore, 0.62))), stroke * 0.65);
     // Spots in the band along the forewing's tip.
+    d.color = COLORS.heart;
     d.shape(smooth(v(spot(0.86, -0.7, 0.05))), stroke * 0.55);
     d.shape(smooth(v(spot(0.84, -0.48, 0.035))), stroke * 0.55);
   }
@@ -255,6 +279,7 @@ function butterfly(d, rand, { x, y, size, rotate = 0, turn = 1 }) {
     [0.07, -0.2],
   ];
   const at = view(1);
+  d.color = COLORS.body;
   d.shape(smooth(at(body)), stroke);
   d.shape(smooth(at(circlePoints(0.075, 10).map(([a, b]) => [a, b - 0.4]))), stroke * 0.8);
   for (const side of [-1, 1]) {
@@ -309,6 +334,7 @@ function grow(d, rand, { points, base, tip, depth, bounds, spurs }) {
     }
   }
   for (const child of children) grow(d, rand, { ...child, bounds, spurs });
+  d.color = COLORS.wood;
   d.shape(outline, Math.max(3, Math.min(6, base * 0.22)));
   // Bark, kept off the edges: the cherry's lenticels (short marks across the wood, by twos at
   // times, slightly bowed) and, on the thick wood, a few long grain lines along it.
@@ -487,7 +513,8 @@ function scene({ width, height, seed, branches, sizes, petals, butterflies, marg
   }
   for (const draw of front) draw();
   for (const b of butterflies) butterfly(d, rand, b);
-  return d.toString();
+  // The drawing itself: its line art, and its colour map (`toString(true)`).
+  return d;
 }
 
 const H = 280;
@@ -678,9 +705,15 @@ const thumb = scene({
   butterflies: [{ x: 320, y: 225, size: 60, rotate: -0.4, turn: 0.7 }],
 });
 
-writeFileSync(new URL('top.svg', OUT), top);
-writeFileSync(new URL('bottom.svg', OUT), bottom);
-writeFileSync(new URL('left.svg', OUT), side(41, false));
-writeFileSync(new URL('right.svg', OUT), side(57, true));
-writeFileSync(new URL('thumb.svg', OUT), thumb);
+// Each band, and its colour map for the web's automatic colouring.
+for (const [band, drawing] of [
+  ['top', top],
+  ['bottom', bottom],
+  ['left', side(41, false)],
+  ['right', side(57, true)],
+]) {
+  writeFileSync(new URL(`${band}.svg`, OUT), drawing.toString());
+  writeFileSync(new URL(`${band}.colors.svg`, OUT), drawing.toString(true));
+}
+writeFileSync(new URL('thumb.svg', OUT), thumb.toString());
 console.log('cerisier: top, bottom, left, right, thumb written');

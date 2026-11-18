@@ -1,25 +1,56 @@
 /**
- * Elements several themes share (small fillers, snowflakes, the winter hat), drawn with a `pen`
+ * Elements several themes share (star, heart, snowflakes, the winter hat), drawn with a `pen`
  * from lib.mjs in their own units: box w × h (largest side 1), centred on 0.
  */
-import { arc, c, ellipse, frame, heart, scallop, sparkle, star, sym, TAU } from './lib.mjs';
+import { arc, c, frame, heart, scallop, star, sym, TAU } from './lib.mjs';
+
+/**
+ * Real-life colours for the colour maps (the web's automatic colouring), shared so that the same
+ * matter has the same tint everywhere. White things get none: they stay paper.
+ */
+export const K = {
+  wood: '#a0703c',
+  darkWood: '#7f4f24',
+  lightWood: '#d4a373',
+  bark: '#8b5a2b',
+  leaf: '#69db7c',
+  darkLeaf: '#2f9e44',
+  grass: '#8ce99a',
+  autumnOrange: '#f76707',
+  autumnGold: '#f59f00',
+  red: '#e03131',
+  darkRed: '#c92a2a',
+  orange: '#fd7e14',
+  yellow: '#ffd43b',
+  gold: '#fcc419',
+  cream: '#fff3bf',
+  pink: '#f783ac',
+  palePink: '#fcc2d7',
+  skin: '#ffd8a8',
+  sky: '#74c0fc',
+  water: '#a5d8ff',
+  blue: '#339af0',
+  navy: '#1864ab',
+  ice: '#d0ebff',
+  violet: '#9775fa',
+  lavender: '#d0bfff',
+  teal: '#20c997',
+  sand: '#f4d9a6',
+  grey: '#adb5bd',
+  lightGrey: '#dee2e6',
+  darkGrey: '#495057',
+  black: '#343a40',
+  silver: '#ced4da',
+  paper: '#fff9db',
+};
 
 export const starItem = {
   w: 1,
   h: 0.95,
   tilt: 0.5,
+  color: K.gold,
   draw(p) {
     p.shape(star(0, 0.04, 0.52, 0.46));
-  },
-};
-
-export const sparkleItem = {
-  w: 0.8,
-  h: 1,
-  tilt: 0.25,
-  draw(p) {
-    p.shape(sparkle(0, 0, 0.5));
-    p.shape(sparkle(0.32, -0.36, 0.13), 0.7);
   },
 };
 
@@ -27,6 +58,7 @@ export const heartItem = {
   w: 1,
   h: 0.92,
   tilt: 0.35,
+  color: K.red,
   draw(p) {
     p.shape(heart(0, 0, 0.9));
     // A gloss on its left lobe.
@@ -77,6 +109,7 @@ export const snowflakeItem = {
   w: 1,
   h: 1,
   tilt: 0.5,
+  color: K.ice,
   draw(p) {
     snowflake(p, 0, 0, 0.5);
   },
@@ -98,6 +131,7 @@ export const bonnet = {
   h: 1,
   tilt: 0.15,
   draw(p) {
+    p.color(K.red);
     p.shape([
       c(-0.38, 0.16),
       [-0.37, -0.06],
@@ -127,6 +161,7 @@ export const bonnet = {
     }
     p.seg(zig, 0.6);
     // The folded cuff with its rib.
+    p.color(K.darkRed);
     p.shape([c(-0.43, 0.1), [0, 0.07], c(0.43, 0.1), c(0.44, 0.44), [0, 0.47], c(-0.44, 0.44)]);
     for (let i = 1; i < 10; i++) {
       const x = -0.43 + (0.86 * i) / 10;
@@ -138,6 +173,7 @@ export const bonnet = {
         0.5,
       );
     }
+    p.color(K.cream);
     p.shape(scallop(0, -0.36, 0.14, 11, 0.22));
   },
 };
@@ -148,6 +184,7 @@ export const apple = {
   h: 1,
   tilt: 0.2,
   draw(p) {
+    p.color(K.darkWood);
     p.wire(
       [
         [0, -0.2],
@@ -156,6 +193,7 @@ export const apple = {
       ],
       0.035,
     );
+    p.color(K.red);
     p.shape(
       sym([
         c(0, -0.2),
@@ -168,6 +206,7 @@ export const apple = {
         c(0, 0.39),
       ]),
     );
+    p.color(K.leaf);
     p.shape(
       [c(0.05, -0.33), [0.12, -0.45], [0.25, -0.48], c(0.34, -0.44), [0.24, -0.35], [0.12, -0.31]],
       0.85,
@@ -227,6 +266,7 @@ export const cloudItem = {
   w: 1,
   h: 0.6,
   tilt: 0.04,
+  color: K.lightGrey,
   draw(p) {
     p.shape([
       c(-0.46, 0.2),
@@ -249,17 +289,5 @@ export const cloudItem = {
       ],
       0.5,
     );
-  },
-};
-
-/** Dots of light, for the background: a few circles in a cluster. */
-export const twinkles = {
-  w: 1,
-  h: 1,
-  tilt: 0,
-  draw(p) {
-    p.shape(star(-0.2, -0.15, 0.32, 0.42));
-    p.shape(ellipse(0.3, 0.25, 0.09, 0.09, 12), 0.8);
-    p.shape(sparkle(0.25, -0.32, 0.16), 0.7);
   },
 };

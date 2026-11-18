@@ -219,6 +219,46 @@
 }
 
 /* HandHeading's size (order 2). */
+/*
+ * A pastel highlighter stroke over a title of the home notebook (`RuledHeading highlight`): the
+ * lower two thirds of the letters, ends a little past the word, slightly slanted like a hand's.
+ */
+.highlighter {
+  --highlighter: #fff3a3;
+
+  padding: 0 0.2em;
+  margin: 0 -0.1em;
+  background: linear-gradient(
+    176deg,
+    transparent 38%,
+    var(--highlighter) 40%,
+    var(--highlighter) 88%,
+    transparent 90%
+  );
+  border-radius: 0.15em 0.35em 0.2em 0.4em;
+  box-decoration-break: clone;
+
+  &[data-color='pink'] {
+    --highlighter: #ffc9de;
+  }
+
+  &[data-color='mint'] {
+    --highlighter: #bdf0d4;
+  }
+
+  &[data-color='blue'] {
+    --highlighter: #bfe0ff;
+  }
+
+  &[data-color='lilac'] {
+    --highlighter: #e0d0ff;
+  }
+
+  &[data-color='peach'] {
+    --highlighter: #ffd8b8;
+  }
+}
+
 .ruledHeading {
   font-size: 2rem;
 

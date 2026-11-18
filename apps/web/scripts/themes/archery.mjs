@@ -6,10 +6,11 @@
  *   node apps/web/scripts/themes/archery.mjs   → apps/web/public/themes/archery/*.svg
  */
 import { bar, c, ellipse, frame, rrect, star, sym, writeTheme } from './lib.mjs';
-import { sparkleItem, starItem } from './common.mjs';
+import { K } from './common.mjs';
 
 /** An arrow's fletching (two vanes) and nock at its tail, along `at` (u forwards). */
 function fletching(p, at, length = 0.2, width = 0.06) {
+  p.color(K.red);
   for (const side of [1, -1]) {
     p.shape(
       [
@@ -22,6 +23,7 @@ function fletching(p, at, length = 0.2, width = 0.06) {
       0.8,
     );
   }
+  p.color(K.yellow);
   p.poly(
     [
       at(-0.025, -0.018, true),
@@ -38,6 +40,7 @@ function arrow(p, [x0, y0], [x1, y1], { head = 0.1, vane = 0.2, width = 0.06 } =
   const angle = Math.atan2(y1 - y0, x1 - x0);
   const length = Math.hypot(x1 - x0, y1 - y0);
   const at = frame(x0, y0, angle);
+  p.color(K.darkGrey);
   p.poly(
     [
       at(0.02, -0.012, true),
@@ -47,6 +50,7 @@ function arrow(p, [x0, y0], [x1, y1], { head = 0.1, vane = 0.2, width = 0.06 } =
     ],
     0.8,
   );
+  p.color(K.silver);
   p.poly([
     at(length - head, -0.014, true),
     at(length - head * 1.15, -head * 0.42, true),
@@ -57,10 +61,13 @@ function arrow(p, [x0, y0], [x1, y1], { head = 0.1, vane = 0.2, width = 0.06 } =
   fletching(p, at, vane, width);
 }
 
-/** The target face's rings, outside in (each its own area to colour). */
+/** The target face's rings, outside in (each its own area to colour): white, black, blue, red, gold. */
 function rings(p, cx, cy, r) {
-  for (const k of [1, 0.8, 0.6, 0.4, 0.2])
+  const colors = [null, K.black, K.blue, K.red, K.gold];
+  [1, 0.8, 0.6, 0.4, 0.2].forEach((k, i) => {
+    p.color(colors[i]);
     p.shape(ellipse(cx, cy, r * k, r * k, 20), k === 1 ? 1 : 0.7);
+  });
   p.seg(
     [
       [cx - r * 0.06, cy],
@@ -80,6 +87,7 @@ function rings(p, cx, cy, r) {
 /** An arrow stuck in the target: only its back half shows, heading out towards us. */
 function stuck(p, [x, y], angle, length = 0.3) {
   const at = frame(x, y, angle);
+  p.color(K.darkGrey);
   p.poly(
     [at(0, -0.011, true), at(length, -0.011, true), at(length, 0.011, true), at(0, 0.011, true)],
     0.8,
@@ -93,11 +101,13 @@ const targetStand = {
   h: 1,
   tilt: 0.04,
   draw(p) {
+    p.color(K.wood);
     p.poly(bar(0.02, -0.15, 0.06, 0.5, 0.045));
     p.poly(bar(-0.26, 0.33, 0.26, 0.33, 0.035));
     p.poly(bar(-0.12, -0.1, -0.31, 0.5, 0.05));
     p.poly(bar(0.12, -0.1, 0.31, 0.5, 0.05));
     // The straw boss, its edge bristling, then the face.
+    p.color('#e9c46a');
     p.shape(ellipse(0, -0.13, 0.37, 0.36, 22));
     for (let i = 0; i < 26; i++) {
       const a = (i / 26) * Math.PI * 2 + p.rand.range(-0.05, 0.05);
@@ -122,6 +132,7 @@ const targetFace = {
   h: 1,
   tilt: 0.1,
   draw(p) {
+    p.color(K.lightGrey);
     p.shape(ellipse(0, 0, 0.48, 0.48, 24));
     rings(p, 0, 0, 0.42);
     stuck(p, [0.06, 0.02], -2.3, 0.4);
@@ -142,6 +153,7 @@ const bow = {
       [-0.13, -0.48],
       [-0.12, -0.5],
     ];
+    p.color(K.black);
     p.branch(upper, 0.065, 0.022);
     p.branch(
       upper.map(([x, y]) => [x, -y]),
@@ -158,12 +170,14 @@ const bow = {
     );
     p.shape(rrect(-0.128, -0.06, -0.108, 0.05, 0.006), 0.6);
     // Stabiliser forwards, its weight; the sight above.
+    p.color(K.darkGrey);
     p.poly(bar(0.06, 0.08, 0.235, 0.08, 0.022), 0.8);
     p.poly(rrect(0.225, 0.05, 0.275, 0.11, 0.012), 0.9);
     p.poly(bar(0.06, -0.12, 0.2, -0.13, 0.016), 0.8);
     p.poly(rrect(0.19, -0.16, 0.225, -0.1, 0.008), 0.8);
     p.dot(0.207, -0.13, 0.008);
     // The riser: grip below the arrow shelf, sight window above.
+    p.color(K.navy);
     p.shape([
       c(0, -0.19),
       c(0.07, -0.19),
@@ -204,6 +218,7 @@ const quiver = {
   tilt: 0.18,
   draw(p) {
     // The strap, behind.
+    p.color(K.darkWood);
     p.wire(
       [
         [0.12, -0.15],
@@ -222,6 +237,7 @@ const quiver = {
     ];
     for (const [x, y] of tops) {
       const at = frame(x, y, Math.PI / 2 + x * 1.6);
+      p.color(K.darkGrey);
       p.poly(
         [at(0.02, -0.01, true), at(0.3, -0.01, true), at(0.3, 0.01, true), at(0.02, 0.01, true)],
         0.7,
@@ -229,6 +245,7 @@ const quiver = {
       fletching(p, at, 0.13, 0.034);
     }
     // The tube, its rim and foot, bands and a star.
+    p.color(K.bark);
     p.shape([
       c(-0.16, -0.24),
       c(0.16, -0.24),
@@ -237,6 +254,7 @@ const quiver = {
       c(-0.125, 0.48),
       [-0.15, 0.1],
     ]);
+    p.color(K.darkWood);
     p.poly(rrect(-0.175, -0.27, 0.175, -0.18, 0.02));
     p.poly(rrect(-0.14, 0.4, 0.14, 0.49, 0.02));
     p.line(
@@ -255,6 +273,7 @@ const quiver = {
       ],
       0.6,
     );
+    p.color(K.gold);
     p.shape(star(0, 0.0, 0.085, 0.45), 0.8);
     p.line(
       [
@@ -289,6 +308,7 @@ const medal = {
       c(-0.06 * Math.sign(-x), -0.05),
     ];
     for (const x of [-0.27, 0.27]) {
+      p.color(x < 0 ? K.blue : K.red);
       p.poly(strap(x));
       const s = Math.sign(-x);
       for (const k of [0.36, 0.66]) {
@@ -301,6 +321,7 @@ const medal = {
         );
       }
     }
+    p.color(K.gold);
     p.shape(ellipse(0, -0.03, 0.05, 0.045, 12), 0.9);
     // The medal: notched rim, inner disc, star, a laurel's two sprigs.
     const rim = [];
@@ -310,8 +331,11 @@ const medal = {
       rim.push([Math.cos(a) * r, 0.21 + Math.sin(a) * r]);
     }
     p.shape(rim);
+    p.color(K.yellow);
     p.shape(ellipse(0, 0.21, 0.215, 0.215, 18), 0.8);
+    p.color(K.gold);
     p.shape(star(0, 0.2, 0.11, 0.45), 0.8);
+    p.color(K.darkLeaf);
     for (const s of [-1, 1]) {
       for (let i = 0; i < 4; i++) {
         const a = Math.PI / 2 + s * (0.55 + i * 0.32);
@@ -327,6 +351,7 @@ const trophy = {
   w: 0.76,
   h: 1,
   tilt: 0.05,
+  color: K.gold,
   draw(p) {
     for (const s of [-1, 1]) {
       p.wire(
@@ -352,7 +377,9 @@ const trophy = {
       ]),
     );
     p.poly(rrect(-0.3, -0.49, 0.3, -0.42, 0.02));
+    p.color(K.yellow);
     p.shape(star(0, -0.22, 0.1, 0.45), 0.8);
+    p.color(K.gold);
     p.line(
       [
         [-0.2, -0.36],
@@ -363,8 +390,10 @@ const trophy = {
     );
     p.shape(sym([c(0, 0.08), c(0.045, 0.08), [0.035, 0.18], c(0.085, 0.28), c(0, 0.28)]));
     p.shape(ellipse(0, 0.16, 0.06, 0.024, 12), 0.8);
+    p.color(K.darkWood);
     p.poly(rrect(-0.2, 0.27, 0.2, 0.37, 0.012));
     p.poly(rrect(-0.27, 0.37, 0.27, 0.5, 0.015));
+    p.color(K.silver);
     p.poly(rrect(-0.13, 0.405, 0.13, 0.465, 0.006), 0.7);
   },
 };
@@ -373,6 +402,7 @@ const feather = {
   w: 0.34,
   h: 1,
   tilt: 0.7,
+  color: K.water,
   draw(p) {
     p.shape([
       c(0, -0.5),
@@ -430,10 +460,276 @@ const feather = {
   },
 };
 
+// ------------------------------------------------ shown once in the whole decoration
+
+/** The podium: 1 in the middle, 2 on the left, 3 on the right. */
+const podium = {
+  w: 1,
+  h: 0.72,
+  tilt: 0.04,
+  flip: false,
+  draw(p) {
+    p.color(K.silver);
+    p.poly(rrect(-0.48, -0.08, -0.16, 0.34));
+    p.color('#e8a87c');
+    p.poly(rrect(0.16, 0.04, 0.48, 0.34));
+    p.color(K.gold);
+    p.poly(rrect(-0.16, -0.32, 0.16, 0.34));
+    // 1
+    p.seg(
+      [
+        [-0.04, -0.16],
+        [0.02, -0.22],
+        [0.02, 0.0],
+      ],
+      0.8,
+    );
+    // 2
+    p.line(
+      [
+        [-0.38, 0.03],
+        [-0.32, -0.01],
+        [-0.27, 0.04],
+        [-0.38, 0.18],
+      ],
+      0.8,
+    );
+    p.seg(
+      [
+        [-0.38, 0.18],
+        [-0.26, 0.18],
+      ],
+      0.8,
+    );
+    // 3
+    p.line(
+      [
+        [0.27, 0.12],
+        [0.32, 0.09],
+        [0.36, 0.13],
+        [0.31, 0.18],
+      ],
+      0.8,
+    );
+    p.line(
+      [
+        [0.31, 0.18],
+        [0.37, 0.23],
+        [0.32, 0.29],
+        [0.26, 0.26],
+      ],
+      0.8,
+    );
+  },
+};
+
+/** An arm guard with its two straps. */
+const armGuard = {
+  w: 0.66,
+  h: 1,
+  tilt: 0.35,
+  draw(p) {
+    p.color(K.lightWood);
+    p.shape([
+      c(-0.24, -0.44),
+      [0, -0.47],
+      c(0.24, -0.44),
+      [0.2, 0],
+      c(0.16, 0.44),
+      [0, 0.46],
+      c(-0.16, 0.44),
+      [-0.2, 0],
+    ]);
+    p.color(K.darkWood);
+    p.shape(rrect(-0.32, -0.3, 0.32, -0.18, 0.03), 0.9);
+    p.shape(rrect(-0.29, 0.16, 0.29, 0.28, 0.03), 0.9);
+    p.line(
+      [
+        [0, -0.4],
+        [0, -0.32],
+      ],
+      0.5,
+    );
+    p.line(
+      [
+        [0, -0.15],
+        [0, 0.13],
+      ],
+      0.5,
+    );
+    p.line(
+      [
+        [0, 0.31],
+        [0, 0.4],
+      ],
+      0.5,
+    );
+  },
+};
+
+/** A cap with a target on its front. */
+const cap = {
+  w: 1,
+  h: 0.62,
+  tilt: 0.15,
+  draw(p) {
+    p.color(K.blue);
+    p.shape([
+      c(-0.34, 0.12),
+      [-0.32, -0.1],
+      [-0.18, -0.25],
+      [0.04, -0.28],
+      [0.22, -0.19],
+      [0.32, -0.02],
+      c(0.33, 0.12),
+    ]);
+    p.line(
+      [
+        [0.04, -0.27],
+        [0.08, -0.1],
+        [0.06, 0.1],
+      ],
+      0.5,
+    );
+    p.line(
+      [
+        [0.04, -0.27],
+        [-0.12, -0.08],
+        [-0.16, 0.11],
+      ],
+      0.5,
+    );
+    p.color(K.navy);
+    p.shape(ellipse(0.04, -0.28, 0.05, 0.035, 10), 0.8);
+    p.color(K.red);
+    p.shape(ellipse(0.2, -0.04, 0.09, 0.09, 14), 0.8);
+    p.color(K.gold);
+    p.shape(ellipse(0.2, -0.04, 0.045, 0.045, 10), 0.7);
+    p.color(K.navy);
+    p.shape([c(0.2, 0.06), [0.4, 0.07], [0.49, 0.15], c(0.46, 0.22), [0.26, 0.2], c(0.06, 0.16)]);
+    p.shape(rrect(-0.35, 0.09, 0.22, 0.17, 0.02), 0.8);
+  },
+};
+
+/** A water bottle with its loop. */
+const waterBottle = {
+  w: 0.46,
+  h: 1,
+  tilt: 0.3,
+  draw(p) {
+    p.wire(
+      [
+        [0.06, -0.4],
+        [0.16, -0.48],
+        [0.22, -0.4],
+        [0.1, -0.34],
+      ],
+      0.03,
+      0.7,
+    );
+    p.color(K.teal);
+    p.shape(rrect(-0.2, -0.24, 0.2, 0.47, 0.08));
+    p.shape(
+      [c(-0.2, -0.16), [-0.14, -0.27], c(-0.1, -0.29), c(0.1, -0.29), [0.14, -0.27], c(0.2, -0.16)],
+      0.9,
+    );
+    p.color(K.darkGrey);
+    p.shape(rrect(-0.11, -0.43, 0.11, -0.28, 0.03), 0.9);
+    p.color(null);
+    p.shape(rrect(-0.2, 0.02, 0.2, 0.24), 0.8);
+  },
+};
+
+/** A stopwatch: the shooting time. */
+const stopwatch = {
+  w: 0.86,
+  h: 1,
+  tilt: 0.25,
+  color: K.silver,
+  draw(p) {
+    p.poly(bar(0.24, -0.26, 0.32, -0.35, 0.09), 0.8);
+    p.shape(rrect(-0.06, -0.42, 0.06, -0.3, 0.02), 0.8);
+    p.shape(rrect(-0.13, -0.49, 0.13, -0.41, 0.03), 0.8);
+    p.shape(ellipse(0, 0.08, 0.41, 0.41, 28));
+    p.color(null);
+    p.shape(ellipse(0, 0.08, 0.32, 0.32, 24), 0.8);
+    for (let i = 0; i < 12; i += 3) {
+      const a = (i / 12) * Math.PI * 2;
+      p.seg(
+        [
+          [Math.cos(a) * 0.25, 0.08 + Math.sin(a) * 0.25],
+          [Math.cos(a) * 0.3, 0.08 + Math.sin(a) * 0.3],
+        ],
+        0.6,
+      );
+    }
+    p.seg(
+      [
+        [0, 0.08],
+        [0, -0.16],
+      ],
+      0.8,
+    );
+    p.seg(
+      [
+        [0, 0.08],
+        [0.14, 0.15],
+      ],
+      0.8,
+    );
+  },
+};
+
+/** A wind flag on its pole, at the end of the shooting line. */
+const fieldFlag = {
+  w: 0.72,
+  h: 1,
+  tilt: 0.06,
+  draw(p) {
+    p.color(K.grass);
+    p.shape(ellipse(-0.2, 0.44, 0.16, 0.05, 14), 0.8);
+    p.color(K.grey);
+    p.wire(
+      [
+        [-0.24, -0.42],
+        [-0.24, 0.44],
+      ],
+      0.04,
+      0.8,
+    );
+    p.color(K.orange);
+    p.shape([
+      c(-0.22, -0.4),
+      [0.02, -0.36],
+      [0.2, -0.32],
+      c(0.36, -0.28),
+      [0.18, -0.2],
+      [0.0, -0.17],
+      c(-0.22, -0.12),
+    ]);
+    p.line(
+      [
+        [-0.06, -0.37],
+        [-0.06, -0.15],
+      ],
+      0.5,
+    );
+    p.line(
+      [
+        [0.12, -0.33],
+        [0.12, -0.2],
+      ],
+      0.5,
+    );
+    p.color(K.gold);
+    p.shape(ellipse(-0.24, -0.45, 0.05, 0.05, 10), 0.8);
+  },
+};
+
 writeTheme('archery', {
   seed: 101,
   thumb: targetStand,
   front: [targetStand, bow, quiver, trophy],
-  middle: [crossedArrows, medal, targetFace, quiver, feather],
-  back: [feather, starItem, sparkleItem, starItem],
+  middle: [crossedArrows, medal, targetFace, feather],
+  once: [podium, armGuard, cap, waterBottle, stopwatch, fieldFlag],
 });

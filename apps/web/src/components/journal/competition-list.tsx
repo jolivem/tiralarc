@@ -543,7 +543,9 @@ export function CompetitionsToPlan({
 
   return (
     <section>
-      <RuledHeading raised={raised}>{t('toPlan')}</RuledHeading>
+      <RuledHeading raised={raised} highlight="blue">
+        {t('toPlan')}
+      </RuledHeading>
       {/* Room under the heading (written on its box's last line) before the list. */}
       <Box mt="md">{body()}</Box>
       <Modal

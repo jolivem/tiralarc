@@ -70,6 +70,18 @@ export function OnRuling({
   );
 }
 
+/** The pastel highlighters of the home notebook's titles (`.highlighter`). */
+export type Highlighter = 'yellow' | 'pink' | 'mint' | 'blue' | 'lilac' | 'peach';
+
+/** A title gone over with a pastel highlighter. */
+export function Highlighted({ color, children }: { color: Highlighter; children: ReactNode }) {
+  return (
+    <span className={classes.highlighter} data-color={color}>
+      {children}
+    </span>
+  );
+}
+
 /**
  * A handwritten heading of a page (like HandHeading), on two of its lines. `raised`: its first
  * (blank) line over the last line of what comes before, so it is written a line higher.
@@ -77,11 +89,14 @@ export function OnRuling({
 export function RuledHeading({
   raised = false,
   penRule = false,
+  highlight,
   children,
 }: {
   raised?: boolean;
   /** A double rule drawn in pen on the line above it, setting off what follows. */
   penRule?: boolean;
+  /** Gone over with this highlighter: each card of the home page has its own colour. */
+  highlight?: Highlighter;
   children: ReactNode;
 }) {
   const className = [
@@ -94,7 +109,7 @@ export function RuledHeading({
     .join(' ');
   return (
     <OnRuling as="h2" lines={2} className={className}>
-      {children}
+      {highlight ? <Highlighted color={highlight}>{children}</Highlighted> : children}
     </OnRuling>
   );
 }

@@ -843,7 +843,9 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   grid-template-areas: 'top' 'content';
-  gap: var(--mantine-spacing-sm);
+  /* The bands meet: no gap between the rows (the calendar keeps its own room, below). */
+  column-gap: var(--mantine-spacing-sm);
+  row-gap: 0;
 
   @media (min-width: $mantine-breakpoint-sm) {
     grid-template-areas: 'top' 'content' 'bottom';
@@ -860,6 +862,7 @@
 
 .frameContent {
   grid-area: content;
+  padding-block: var(--mantine-spacing-sm);
 }
 
 .frameBand {
@@ -910,13 +913,15 @@
 
   /*
    * From the top band down to the bottom one, whatever the month's number of weeks: out of the
-   * row's sizing (the calendar alone sets its height). Artwork 300 x 2200, drawn for six weeks.
+   * row's sizing (the calendar alone sets its height), stretched to it so that the four bands
+   * meet (see `click` in calendar-frame.tsx). Artwork 300 x 2200, drawn for six weeks.
    */
   &[data-band='left'],
   &[data-band='right'] {
     position: absolute;
     inset: 0;
     height: 100%;
+    object-fit: fill;
     display: none;
 
     @media (min-width: $mantine-breakpoint-lg) {
@@ -974,6 +979,11 @@
  * Desktop: the calendar (with its decoration) takes 80% of its base size, in both directions;
  * with the side bands, the page's full width, so they sit against its margins.
  */
+/* The legend's link, right above the decoration's top band (journal-view.tsx). */
+.legendLine {
+  margin-bottom: 2px;
+}
+
 .calendarWidth {
   @media (min-width: $mantine-breakpoint-md) {
     /* An explicit width: with auto margins, a flex child would shrink to its content. */
@@ -1097,13 +1107,26 @@
  * the A5 page's width (the media queries above see it as a phone); a little smaller.
  */
 .monthSummary[data-print] {
-  zoom: 0.62;
+  /* Under the right page's three days (76.5 mm): small enough for its titles on two lines. */
+  zoom: 0.52;
   flex-wrap: nowrap;
   width: fit-content;
+  max-width: none;
 
   & .summaryDrawing,
   & .summaryDivider {
     display: block;
+  }
+
+  /* The printed font is wider: two lines still, inside the box. */
+  & .summaryTitle {
+    max-width: 24ch;
+  }
+
+  /* Not squeezed by the room under the days: the titles keep their two lines. */
+  & .summarySection {
+    flex-shrink: 0;
+    justify-content: center;
   }
 }
 

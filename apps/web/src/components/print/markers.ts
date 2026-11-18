@@ -8,7 +8,14 @@ export const SHEET_ATTRIBUTE = 'data-print-sheet';
 export const FOLLOWS_ATTRIBUTE = 'data-print-follows';
 /** On a month's left page, which must land on an even page (lib/pdf.ts). */
 export const SPREAD_ATTRIBUTE = 'data-print-spread';
-/** On the blank page before a month: "shown" when the month needs it to face its pages. */
+/** On a chapter's title page, which must land on a right-hand (odd) page (lib/pdf.ts). */
+export const CHAPTER_ATTRIBUTE = 'data-print-chapter';
+/** On the index's page numbers: the chapter's id, its first page written in (lib/pdf.ts). */
+export const CHAPTER_PAGE_ATTRIBUTE = 'data-print-chapter-page';
+/**
+ * On the blank page before a month or a chapter: "shown" when it needs it to start on the
+ * right side (a month's left page even, a chapter's title page odd).
+ */
 export const BLANK_ATTRIBUTE = 'data-print-blank';
 /** On the parts left out of a trial print (lib/pdf.ts counting pages). */
 export const HIDDEN_ATTRIBUTE = 'data-print-hidden';

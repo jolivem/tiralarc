@@ -52,8 +52,8 @@ the same API — keep it client-agnostic (no cookies, no web-only assumptions in
   named groups of their own (`/coach/groups`, `PUT /coach/athletes/{id}/group`, `GROUP_NAME_TAKEN`; on the link,
   `coachGroupId`, unseen by the archer): sections of the athletes card and of the header's journal menu.
   Any coach of the archer (READ or WRITE: it changes nothing of the sheet) comments on an event of the current journal
-  (table `session_comments`, `/coach/athletes/{id}/sessions/{id}/comments`, at most 20 per event, `LIMIT_REACHED`;
-  only its author changes / deletes it, a change makes it new again). The archer reads them
+  (table `session_comments`, `/coach/athletes/{id}/sessions/{id}/comments`, one per coach and event, `LIMIT_REACHED`
+  (API check only; the web hides the field once written); only its author changes / deletes it, a change makes it new again). The archer reads them
   (`GET /journal/sessions/{id}/comments`); unread ones (`seenAt` null, `isNew`) are listed on the home page under the
   proposed events as "Nouveau commentaire", linking to the sheet (`GET /journal/sessions/new-comments`), until the sheet
   is opened (`POST .../seen` reads them too). Web: `components/journal/coach-comments.tsx`, a pale blue box at the
@@ -83,13 +83,15 @@ the same API — keep it client-agnostic (no cookies, no web-only assumptions in
   / `RuledLine` one, snapped again when content above changes), and the left page's calendar starts level with the
   right page's first heading, "Régularité" (`regularity-card.tsx`, `lib/regularity.ts`: events noted / days since the
   journal began, weeks in a row with 2+ sessions; `raised`; `page-alignment.tsx`: the right page's top is measured, md and up).
-  Left page: "À compléter" (`to-complete.tsx`: past events without review) under "Événements proposés"; the date (and its
+  Left page: "À compléter" (`to-complete.tsx`: past events without review) under "Du côté du coach" (`new-events.tsx`: events the coach planned, new comments); the date (and its
   pen) opens the new-event dialog on today (`today-entry.tsx`).
 - An event's place (`location`) reads with a capital first, the rest in lower case (`placeName` in
   `journal.service.ts`, applied when saving and reading back, FFTA places too).
 - Journals: a `Journal` is a named period (title + inclusive start / end days), usually one season. There is no
   link to events: a journal's events are the archer's sessions dated within its period. An archer's journals must
-  not overlap (`JOURNAL_OVERLAP`, checked by the API, not the database); deleting a journal keeps its events. The
+  not overlap (`JOURNAL_OVERLAP`, checked by the API, not the database); deleting a journal keeps its events.
+  The Journal page's month calendar stays within the journal's months (`journal-view.tsx`: no arrow before the first
+  or after the last, "Today" disabled outside the period): other months need another journal. The
   selected journal is a web-only preference (`tl_journal` cookie, `src/lib/journals.ts`), cleared at sign-in so the
   archer's default journal (`isDefault`, starred on the Account page, one per archer, set via PATCH) opens first.
 - Calendar decoration themes: a journal stores one theme id per month (`monthThemes`, set from the Journal
@@ -99,11 +101,23 @@ the same API — keep it client-agnostic (no cookies, no web-only assumptions in
   Every theme's artwork is generated (`apps/web/scripts/themes/<id>.mjs`, `node` it; shared geometry in `lib.mjs`: seeded
   randomness, smooth closed outlines, tapering branches; shared small elements in `common.mjs`): shapes filled white in
   drawing order, so nearer ones hide farther ones, sizes and line widths shrinking with distance. `cerisier` grows its
-  own branches; the others go through `writeTheme` (`compose`: big elements in front, medium ones in the gaps behind
-  them, small ones at the back; each element drawn with a `pen` in its own units; `thumb` = the picker's emblem).
+  own branches; the others go through `writeTheme` (`compose`: big elements spaced along the band, medium ones in
+  the widest gaps, then the holes left filled (unused kinds first, else one already in the band, far from it); no small
+  elements (hard to colour); the theme's `once` ones in a single band of the four; elements never overlap
+  (`MAX_OVERLAP` 0, boxes `PAD` apart), what doesn't fit is left out; backdrops (`before`) get the boxes and keep clear of them (icicles), or have a strip
+  of their own that elements stay out of (`inset`: the New Year garland along the top / bottom bands' outer edge); each element drawn with a
+  `pen` in its own units; `thumb` = the picker's emblem).
   Regenerating a theme moves its areas: colourings saved on it (`fills`, fractions of the image) no longer line up.
 - Colouring the decoration: `monthThemes[].fills` holds "paint bucket" clicks (band, x, y as fractions, colour);
   the web repaints them on a canvas (`components/journal/coloring.ts`, pure and unit-tested, + `calendar-frame.tsx`).
+  The toolbar has a row of crayons and a row of their pastels (`PASTELS` in `coloring-toolbar.tsx`), and "Coloriage
+  automatique" (`auto-coloring.ts`): each band has a colour map (`<band>.colors.svg`, the same drawing filled with
+  real-life colours: generators call `p.color(…)` / set `kind.color` before drawing a part, `p.tint` for areas only
+  lines split, e.g. a beach ball's segments; colours shared in `K`, `common.mjs`); every closed area of the band takes
+  its colour there at its deepest point (`realisticFills` / `areaSeeds`), largest first, at most `MAX_FILLS` (500)
+  with the title's fills, which it keeps. It replaces the bands' colouring (undo takes it back).
+  The side bands are stretched to the calendar's height (`object-fit: fill`) and the frame has no row gap: the four
+  bands meet (`click` in `calendar-frame.tsx` maps the pointer accordingly).
   Flood fill stops at dark strokes, so artwork needs closed shapes; changing a month's theme clears its colouring (the web asks to confirm first),
   except band `title` (the only one allowed without a theme: such a month is stored with `theme: null`): the Journal calendar's heading (`month-title.tsx`), the month's name drawn on a fixed-size
   canvas as hollow letters (`--font-month`, Ribeye, outline only), coloured like the bands (inside letters only), or
@@ -162,7 +176,10 @@ the same API — keep it client-agnostic (no cookies, no web-only assumptions in
   ticked figures and papers); not printable.
   A star on each card (goals aside) picks the favourite indicator (`favoriteIndicator` in the API's archer
   profile, `components/stats/favorite.tsx`), shown on the right page of the archer home notebook
-  (`lib/stats.ts` loads the figures for both pages).
+  (`lib/stats.ts` loads the figures for both pages); `RANKINGS` is the national rankings card (it loads its own
+  figures; not an indicator of the PDF's list: `CardIndicator` in `lib/export-options.ts`), drawn with a white podium
+  on its right. Each card's title is gone over with a pastel highlighter (`INDICATOR_HIGHLIGHTS`, `Highlighted` in
+  `notebook/on-ruling.tsx`), as are the home notebook's titles (`RuledHeading highlight`), not in the PDF.
 - Goals (`apps/api/src/goals/`, card on the Indicators page): type, description, the day it was set (`createdOn`,
   editable) and the day it was reached (`achievedOn`; null = not reached — there is no separate boolean). They belong
   to the archer, not to a journal or period.
@@ -178,7 +195,7 @@ the same API — keep it client-agnostic (no cookies, no web-only assumptions in
   only the photos' pin now: `push-pin.tsx`), in the archer's calendar font (`--font-calendar`); the type's drawing top right (`TYPE_PICTURES`), place → score in
   two columns, ratings as bars, the two feelings' faces side by side, as the two lists
   (`pairing`), signed with the site's host; the caption is only the
-  heading, the site's link and hashtags) and up to 9 photos (read as JPEG through
+  heading, the site's link and hashtags; "Déroulé de la séance", the steps, among the fields) and up to 4 photos (read as JPEG through
   `/[locale]/archer/journal/[id]/photos/[photoId]`, same origin), edits the caption; Web Share API with files (the
   caption copied, Instagram drops shared text), else the pictures are downloaded.
 - FFTA competitions (`apps/api/src/competitions/`, `GET /competitions?from&to`): no FFTA API — `FftaClient` reads
@@ -249,7 +266,16 @@ the same API — keep it client-agnostic (no cookies, no web-only assumptions in
   `lib/export-options.ts`, unit-tested) downloads `GET /[locale]/archer/export` (route handler), which opens
   `/[locale]/print/journal` in a headless Chromium (`lib/pdf.ts`, `playwright-core`; signed in with the access
   cookie only — refresh tokens are single-use) and prints it A5. That page (no shell: `app-shell.tsx` leaves
-  `/print/` bare; data in `lib/export-data.ts`) is plain paper, no notebook: cover, legend (`print-legend.tsx`: colours, symbols, faces), index of the chapters (PDF links), the whole period's calendar on one page (`print-year.tsx`: titled with the
+  `/print/` bare; data in `lib/export-data.ts`) is plain paper, no notebook, pages numbered at the bottom's outer corner (CSS `@page :left / :right`
+  margin boxes, not the cover); a month's summary card goes in the right page's last week when its Friday–Sunday are
+  blank, else in a strip under the days (`data-summary` in `print-month.tsx`); sheets in the calendar font, the
+  discipline's badge and the faces in the plain one (`.plainFont`): cover, legend (`print-legend.tsx`: one column of types, symbols, faces), index of the
+  chapters (PDF links, each chapter's first page written in by `lib/pdf.ts`), each chapter's title page on a right-hand
+  (odd) page (the blank page before it shown when needed, `CHAPTER_ATTRIBUTE`); the cover's title lettered in
+  Kaushan Script (`--font-cal-kaushan-script`: white letters outlined in black, a swash, the journal's season years); the file ends on the
+  season summary of the extract's days (`print-season.tsx`, the Indicators page's whiteboard: `SeasonBoard`), on a
+  landscape page turned left (`Landscape` in `print-parts.tsx`), like each chart over time (arrows, durations, scores,
+  averages per arrow: alone, taller via `--printed-chart-height`); the whole period's calendar on one page (`print-year.tsx`: titled with the
   journal's name, coloured dots per event, the legend at the bottom), rankings, indicators
   (`PrintedCards` context in `stats-cards.tsx`: whole span, no choice bars), then per month the calendar with its
   decoration / colouring (`components/print/print-month.tsx`, reusing `useArtwork` / `ColorableCanvas` /

@@ -263,7 +263,9 @@ export class CoachingController {
       'Comment on the event (READ or WRITE access): new to the archer until they open its sheet',
   })
   @ApiCreatedResponse({ type: SessionCommentDto })
-  @ApiConflictResponse({ description: 'LIMIT_REACHED: 20 comments on this event' })
+  @ApiConflictResponse({
+    description: 'LIMIT_REACHED: this coach already commented on the event (change it instead)',
+  })
   addComment(
     @CurrentUser() user: AuthenticatedUser,
     @Param(ARCHER_ID, new ParseUUIDPipe()) archerId: string,

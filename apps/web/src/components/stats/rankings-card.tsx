@@ -4,12 +4,13 @@ import { Anchor, Badge, Group, Loader, Stack, Text } from '@mantine/core';
 import { IconExternalLink } from '@tabler/icons-react';
 import type { Ranking, RankingList } from '@tiralarc/api-client';
 import { useFormatter, useTranslations } from 'next-intl';
-import { useEffect, useState } from 'react';
+import { use, useEffect, useState } from 'react';
 import { listRankings } from '@/app/actions/rankings';
 import { DISCIPLINE_COLORS } from '@/components/journal/session-types';
 import { AnchorLink } from '@/components/links';
 import { readCached, writeCached } from '@/lib/browser-cache';
-import { SquaredCard, StatsCardTitle } from './stats-cards';
+import { FavoriteStar } from './favorite';
+import { INDICATOR_HIGHLIGHTS, RuledCardTitles, SquaredCard, StatsCardTitle } from './stats-cards';
 import classes from './stats.module.css';
 
 /**
@@ -124,12 +125,64 @@ export function RankingsCard({ cacheScope }: { cacheScope: string }) {
     </div>
   );
 
+  // Like the other indicators' cards (StatsCard): the star choosing it for the home page, in
+  // the top right square, or after the title on a ruled page.
+  const star = <FavoriteStar indicator="RANKINGS" />;
+  const ruled = use(RuledCardTitles);
   return (
-    <SquaredCard>
+    <SquaredCard className={classes.viz}>
       <Stack gap="md">
-        <StatsCardTitle>{t('title')}</StatsCardTitle>
-        {body()}
+        <StatsCardTitle aside={ruled ? star : undefined} highlight={INDICATOR_HIGHLIGHTS.RANKINGS}>
+          {t('title')}
+        </StatsCardTitle>
+        {/* The places on the left, a podium drawn on the right. */}
+        <Group align="flex-start" wrap="nowrap" gap="md">
+          <div className={classes.rankingsBody}>{body()}</div>
+          <div className={classes.podiumSpace}>
+            <Podium />
+          </div>
+        </Group>
       </Stack>
+      {!ruled && <div className={classes.cornerStar}>{star}</div>}
     </SquaredCard>
+  );
+}
+
+/** A white podium in ink, steps 2 · 1 · 3: the card's drawing (decorative). */
+function Podium() {
+  return (
+    <svg className={classes.podium} viewBox="0 0 120 84" aria-hidden>
+      <g fill="#fff" stroke="currentColor" strokeWidth="2" strokeLinejoin="round">
+        <path d="M4 40h37v42H4z" />
+        <path d="M41 22h38v60H41z" />
+        <path d="M79 52h37v30H79z" />
+      </g>
+      <g
+        fill="currentColor"
+        fontFamily="var(--font-calendar, var(--font-hand)), cursive"
+        fontSize="20"
+        fontWeight="700"
+        textAnchor="middle"
+      >
+        <text x="22.5" y="67">
+          2
+        </text>
+        <text x="60" y="58">
+          1
+        </text>
+        <text x="97.5" y="74">
+          3
+        </text>
+      </g>
+      {/* A star over the first step. */}
+      <path
+        d="M60 3l3.4 6.9 7.6 1.1-5.5 5.4 1.3 7.5L60 20.4l-6.8 3.5 1.3-7.5-5.5-5.4 7.6-1.1z"
+        fill="#fff"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinejoin="round"
+        transform="translate(0 -2) scale(1 0.9)"
+      />
+    </svg>
   );
 }

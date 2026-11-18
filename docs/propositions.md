@@ -94,8 +94,8 @@ et une estimation de l'effort (S = quelques heures, M = une journée, L = plusie
     à venir planifiées, alertes (pas de séance depuis 10 jours, bilan non rempli). _(M)_
 22. ~~**Commentaires du coach sur une fiche** — Le coach laisse une remarque sur une séance passée,
     l'archer la voit sur sa fiche. Aujourd'hui l'échange se fait hors du site. _(M)_~~
-    **Fait** : encart bleu pâle « Commentaires du coach » en bas de la fiche (le coach écrit,
-    modifie ou supprime les siens) ; « Nouveau commentaire » dans « Événements proposés » de
+    **Fait** : encart bleu pâle « Commentaires du coach » en bas de la fiche (chaque coach y écrit
+    un seul commentaire, qu'il modifie ou supprime) ; « Nouveau commentaire » dans « Du côté du coach » de
     l'accueil, vers la fiche, jusqu'à ce que l'archer l'ouvre ; « Le mot du coach » à cocher dans
     le partage Instagram.
 23. **Planifier pour un groupe** — Planifier la même séance pour tous les archers d'un groupe en une

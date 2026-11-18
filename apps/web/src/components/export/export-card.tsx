@@ -12,6 +12,7 @@ export async function ExportCard(props: { from: string; to: string; disciplines:
   return (
     <RuledActionCard
       title={t('title')}
+      highlight="lilac"
       intro={t('cardIntro')}
       action={<ExportButton {...props} />}
     />

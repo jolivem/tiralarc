@@ -82,7 +82,15 @@ export function useArtwork(src: string): Artwork | null {
 }
 
 /** A decoration image read as line art (scaled down to `MAX_WORK_SIZE`); null if unreadable. */
-export function readArtwork(src: string): Promise<Artwork | null> {
+export async function readArtwork(src: string): Promise<Artwork | null> {
+  const read = await readPixels(src);
+  return read && toArtwork(read.rgba, read.width, read.height);
+}
+
+/** An image's RGBA pixels (scaled down to `MAX_WORK_SIZE`); null if unreadable. */
+export function readPixels(
+  src: string,
+): Promise<{ rgba: Uint8ClampedArray; width: number; height: number } | null> {
   return new Promise((resolve) => {
     const image = new Image();
     image.onerror = () => resolve(null);
@@ -96,7 +104,7 @@ export function readArtwork(src: string): Promise<Artwork | null> {
       );
       if (!context) return resolve(null);
       context.drawImage(image, 0, 0, width, height);
-      resolve(toArtwork(context.getImageData(0, 0, width, height).data, width, height));
+      resolve({ rgba: context.getImageData(0, 0, width, height).data, width, height });
     };
     image.src = src;
   });
@@ -173,15 +181,15 @@ export function ColorableCanvas({
 
   const click = (event: MouseEvent<HTMLCanvasElement>) => {
     if (!tool) return;
-    // The picture is fitted inside the element ("contain"), centred except the side bands, kept
-    // against the page's margin: find the point in the picture itself.
+    // The side bands are stretched to the element ("fill"); the others fitted inside it
+    // ("contain"), centred: find the point in the picture itself.
     const box = event.currentTarget.getBoundingClientRect();
-    const scale = Math.min(box.width / art.width, box.height / art.height);
-    const spare = box.width - art.width * scale;
-    const offset = band === 'left' ? 0 : band === 'right' ? spare : spare / 2;
-    const x = (event.clientX - box.left - offset) / (art.width * scale);
-    const y =
-      (event.clientY - box.top - (box.height - art.height * scale) / 2) / (art.height * scale);
+    const stretched = band === 'left' || band === 'right';
+    const [sx, sy] = stretched
+      ? [box.width / art.width, box.height / art.height]
+      : Array(2).fill(Math.min(box.width / art.width, box.height / art.height));
+    const x = (event.clientX - box.left - (box.width - art.width * sx) / 2) / (art.width * sx);
+    const y = (event.clientY - box.top - (box.height - art.height * sy) / 2) / (art.height * sy);
     if (x < 0 || x > 1 || y < 0 || y > 1) return;
     const region = regionAt(art, x, y);
     if (!region) return; // on a stroke

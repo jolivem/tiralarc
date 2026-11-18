@@ -39,7 +39,7 @@ export async function NewEvents({
     <section>
       <RuledStack>
         <Group gap="sm" align="center" wrap="nowrap">
-          <RuledHeading>{t('newEvents.title')}</RuledHeading>
+          <RuledHeading highlight="pink">{t('newEvents.title')}</RuledHeading>
           <span className={classes.coachStampTitle}>{t('coachStamp')}</span>
         </Group>
         {events.length === 0 && comments.length === 0 ? (

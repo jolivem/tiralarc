@@ -5,14 +5,10 @@ import {
   Box,
   Button,
   Group,
-  Loader,
   LoadingOverlay,
-  Modal,
-  Text,
   Tooltip,
   UnstyledButton,
 } from '@mantine/core';
-import { useMediaQuery } from '@mantine/hooks';
 import { Schedule, type ScheduleEventData } from '@mantine/schedule';
 import { IconCalendarMonth, IconPlus } from '@tabler/icons-react';
 import type {
@@ -41,11 +37,12 @@ import {
   ownJournal,
   topChampionship,
 } from './competition-list';
+import { automaticColoring } from './auto-coloring';
 import { ColoringToolbar, DEFAULT_COLOR } from './coloring-toolbar';
 import { MonthThemeModal, monthTheme } from './month-theme-modal';
 import { eventDisplay, pendingReason } from './event-display';
 import { EventLegend } from './event-legend';
-import { MonthsOverview } from './months-overview';
+import { useSeasonDialog } from './season-calendar';
 import classes from './journal.module.css';
 import {
   clampToJournal,
@@ -173,10 +170,14 @@ export function JournalView({
   const canPlan = !coach || coach.access === 'WRITE';
   const archerId = coach?.archerId;
   // A past or future season opens on its closest day rather than on an empty month.
-  const [date, setDate] = useState(() => {
-    const day = initialMonth && !today().startsWith(initialMonth) ? `${initialMonth}-01` : today();
-    return clampToJournal(day, journal);
-  });
+  const [shownDate, setShownDate] = useState(() =>
+    initialMonth && !today().startsWith(initialMonth) ? `${initialMonth}-01` : today(),
+  );
+  // The calendar never leaves the journal's months: before or after them is another journal.
+  const date = clampToJournal(shownDate, journal);
+  const setDate = (day: string) => setShownDate(clampToJournal(day, journal));
+  const firstMonth = journal.startDate.slice(0, 7);
+  const lastMonth = journal.endDate.slice(0, 7);
   const [sessions, setSessions] = useState<JournalSessionSummary[]>([]);
   // The events are loaded in the browser, so its clock decides which days are still to come.
   const todayDate = today();
@@ -195,8 +196,21 @@ export function JournalView({
   const [tool, setTool] = useState<string>(DEFAULT_COLOR);
   // The month's name can always be coloured; its decoration too, when it has one.
   const isColoring = coloringOn;
-  const coloringStatus =
-    coloring.status === 'saving'
+  // The automatic colouring: reading the bands takes a moment.
+  const [autoBusy, setAutoBusy] = useState(false);
+  const [autoFailed, setAutoFailed] = useState(false);
+  const colorAutomatically = async () => {
+    if (!theme) return;
+    setAutoBusy(true);
+    setAutoFailed(false);
+    const next = await automaticColoring(theme, coloring.fills);
+    setAutoBusy(false);
+    if (next) coloring.change(next);
+    else setAutoFailed(true);
+  };
+  const coloringStatus = autoFailed
+    ? t('journals.coloring.autoFailed')
+    : coloring.status === 'saving'
       ? t('journals.coloring.saving')
       : coloring.status === 'saved'
         ? t('journals.coloring.saved')
@@ -337,28 +351,15 @@ export function JournalView({
   const monthArrows = sessions.reduce((sum, session) => sum + (session.arrowCount ?? 0), 0);
   const satisfaction = useMonthSatisfaction(journal, month);
 
-  // The season dialog: every month of the journal with its events (read on each opening);
-  // a click on one shows it here.
-  const [seasonSessions, setSeasonSessions] = useState<JournalSessionSummary[] | null>(null);
-  const [seasonOpened, setSeasonOpened] = useState(false);
-  const isPhone = useMediaQuery('(max-width: 48em)');
-  const openSeason = () => {
-    setSeasonOpened(true);
-    setSeasonSessions(null);
-    const { startDate, endDate } = journal;
-    (archerId
-      ? listAthleteSessions(archerId, startDate, endDate)
-      : listSessions(startDate, endDate)
-    ).then(setSeasonSessions);
-  };
-  const seasonMonths: string[] = [];
-  for (
-    let m = dayjs(journal.startDate).startOf('month');
-    !m.isAfter(journal.endDate, 'month');
-    m = m.add(1, 'month')
-  ) {
-    seasonMonths.push(m.format('YYYY-MM'));
-  }
+  // The season dialog, the same as the home page's: every month of the journal with its events
+  // and the FFTA competitions to come (read on each opening); a click on a month shows it here.
+  const { open: openSeason, dialog: seasonDialog } = useSeasonDialog({
+    journal,
+    today: todayDate,
+    customTypes,
+    coachOf: archerId,
+    onPick: (picked) => setDate(`${picked}-01`),
+  });
 
   return (
     <div>
@@ -368,7 +369,13 @@ export function JournalView({
       */}
       <div className={classes.pageActions}>
         <Group gap="xs">
-          <Button variant="default" size="sm" onClick={() => setDate(today())}>
+          <Button
+            variant="default"
+            size="sm"
+            // Today outside the journal's period: in another journal.
+            disabled={todayDate < journal.startDate || todayDate > journal.endDate}
+            onClick={() => setDate(today())}
+          >
             {t('schedule.today')}
           </Button>
           {/* The whole season, to jump to one of its months. */}
@@ -409,9 +416,6 @@ export function JournalView({
           </div>
         )}
         <Group gap="xs" className={classes.pageActionsEnd}>
-          <Box mr={{ base: 0, sm: 'xl' }}>
-            <EventLegend customTypes={customTypes} />
-          </Box>
           {/* The decoration is the archer's own. */}
           {!coach && (
             <Tooltip label={t('journals.theme')}>
@@ -453,6 +457,10 @@ export function JournalView({
           )}
         </Group>
       </div>
+      {/* The legend's link right above the decoration's top band, at its right end. */}
+      <Group justify="flex-end" className={`${classes.calendarWidth} ${classes.legendLine}`}>
+        <EventLegend customTypes={customTypes} />
+      </Group>
       <Box pos="relative" className={classes.calendarWidth}>
         <LoadingOverlay visible={loading} overlayProps={{ blur: 1 }} loaderProps={{ size: 'sm' }} />
         {isColoring && (
@@ -463,6 +471,8 @@ export function JournalView({
             onUndo={coloring.undo}
             canClear={coloring.fills.length > 0}
             onClear={() => coloring.change([])}
+            onAuto={theme ? () => void colorAutomatically() : undefined}
+            autoBusy={autoBusy}
             onDone={() => {
               coloring.flush();
               setColoringOn(false);
@@ -483,8 +493,8 @@ export function JournalView({
               fills={shownFills}
               tool={isColoring ? tool : null}
               onFillsChange={coloring.change}
-              onPrevious={() => setDate(addMonth(date, -1))}
-              onNext={() => setDate(addMonth(date, 1))}
+              onPrevious={month > firstMonth ? () => setDate(addMonth(date, -1)) : undefined}
+              onNext={month < lastMonth ? () => setDate(addMonth(date, 1)) : undefined}
               labels={{ previous: t('schedule.previous'), next: t('schedule.next') }}
             />
             <Schedule
@@ -696,28 +706,7 @@ export function JournalView({
           onClose={() => setNewSession(null)}
           coachOf={archerId}
         />
-        <Modal
-          opened={seasonOpened}
-          onClose={() => setSeasonOpened(false)}
-          title={<Text fw={600}>{journal.title}</Text>}
-          size="xl"
-          fullScreen={isPhone}
-        >
-          {seasonSessions === null ? (
-            <Loader size="sm" />
-          ) : (
-            <MonthsOverview
-              months={seasonMonths}
-              today={todayDate}
-              sessions={seasonSessions}
-              cols={{ base: 1, xs: 2, md: 3 }}
-              onPick={(picked) => {
-                setDate(clampToJournal(`${picked}-01`, journal));
-                setSeasonOpened(false);
-              }}
-            />
-          )}
-        </Modal>
+        {seasonDialog}
         <CompetitionsModal
           day={competitionDay}
           competitions={shownCompetitions}

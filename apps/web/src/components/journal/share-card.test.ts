@@ -15,6 +15,7 @@ const wording: ShareWording = {
   minutes: (v) => `${v} min`,
   weather: ({ sky, wind, temperatureC }) =>
     [sky, wind, temperatureC].filter((v) => v !== null).join(' '),
+  step: (s) => `${s.amount} ${s.unit} ${s.description}`.trim(),
 };
 
 const session = {
@@ -34,6 +35,7 @@ const session = {
   wentWell: ['Placement', ' ', ''],
   toImprove: ['', '', ''],
   nextTime: null,
+  steps: [],
 } as unknown as JournalSession;
 
 describe('filledRows', () => {
@@ -49,6 +51,35 @@ describe('filledRows', () => {
       { field: 'satisfaction', label: 'satisfaction', text: '7/10', rating: 7 },
       { field: 'physical', label: 'physical', text: 'great', feeling: 'GREAT' },
       { field: 'wentWell', label: 'wentWell', items: ['Placement'], bullet: 'well' },
+    ]);
+  });
+
+  it('lists the steps after the objective, one per line, across the whole width', () => {
+    const planned = {
+      ...session,
+      steps: [
+        { unit: 'MINUTES', amount: 15, target: null, description: 'Échauffement', done: true },
+        { unit: 'ARROWS', amount: 36, target: 'STRAW', description: '', done: false },
+      ],
+    } as JournalSession;
+    const rows = filledRows(planned, wording);
+    const steps = rows.find((row) => row.field === 'steps');
+    expect(steps).toEqual({
+      field: 'steps',
+      label: 'steps',
+      items: ['15 MINUTES Échauffement', '36 ARROWS'],
+      bullet: 'step',
+    });
+    expect(rows.map((row) => row.field).slice(6, 9)).toEqual([
+      'objective',
+      'steps',
+      'satisfaction',
+    ]);
+    // Never beside another list: its label then its lines, bulleted.
+    const lines = cardLines([steps!, rows.at(-1)!], 60, measure);
+    expect(lines.slice(0, 2)).toEqual([
+      { label: 'steps :', text: '' },
+      { text: '15 MINUTES Échauffement', indent: true, bullet: 'step' },
     ]);
   });
 

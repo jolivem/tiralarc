@@ -1,7 +1,13 @@
 import { notFound } from 'next/navigation';
 import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/server';
 import { Fragment, type ReactNode } from 'react';
+import {
+  BLANK_ATTRIBUTE,
+  CHAPTER_ATTRIBUTE,
+  CHAPTER_PAGE_ATTRIBUTE,
+} from '@/components/print/markers';
 import { Paginate } from '@/components/print/paginate';
+import { PrintSeason } from '@/components/print/print-season';
 import { PrintLegend } from '@/components/print/print-legend';
 import { PrintMonth } from '@/components/print/print-month';
 import { PrintRankings, PrintStats } from '@/components/print/print-parts';
@@ -13,6 +19,7 @@ import type { Locale } from '@/i18n/routing';
 import { getCurrentUser } from '@/lib/current-user';
 import { getExportData, monthDecoration, monthStars, periodJournal } from '@/lib/export-data';
 import { exportMonths, parseExportOptions } from '@/lib/export-options';
+import { seasonSummary } from '@/lib/season-summary';
 
 /**
  * The journal's PDF extract, as Chromium prints it (archer/export/route.ts): a cover, the
@@ -45,6 +52,10 @@ export default async function PrintJournalPage({
   const day = (date: string) =>
     format.dateTime(new Date(`${date}T12:00:00Z`), { dateStyle: 'long', timeZone: 'UTC' });
   const withStats = options.rankings.length > 0 || options.indicators.length > 0;
+  const journal = periodJournal(data.journals, options.from, options.to);
+  const firstYear = (journal?.startDate ?? options.from).slice(0, 4);
+  const lastYear = (journal?.endDate ?? options.to).slice(0, 4);
+  const coverYears = firstYear === lastYear ? firstYear : `${firstYear}-${lastYear}`;
   const chapters = [
     ...(withStats ? [{ id: 'chapter-stats', title: tArcher('stats') }] : []),
     { id: 'chapter-journal', title: tArcher('journal') },
@@ -54,20 +65,60 @@ export default async function PrintJournalPage({
   return (
     <main className={classes.document}>
       <section className={classes.cover}>
-        <h1 className={classes.coverTitle}>{t('coverTitle')}</h1>
-        <div className={classes.coverName}>{user.displayName ?? user.email}</div>
-        <div>{t('period', { from: day(options.from), to: day(options.to) })}</div>
-        <div className={classes.muted}>{t('generatedOn', { date: day(today) })}</div>
+        {/* Lettering: a word a line, white letters outlined in black, a swash, the years. */}
+        <h1 className={classes.coverTitle}>
+          {t('coverTitle')
+            .split(' ')
+            .map((word, i) => (
+              <span key={i} className={classes.coverWord}>
+                {word}
+              </span>
+            ))}
+          <svg className={classes.coverSwash} viewBox="0 0 200 24" aria-hidden>
+            <path d="M6 16 C 50 4, 120 2, 194 10 C 140 8, 70 12, 6 20 Z" />
+          </svg>
+          {/* The journal's season (e.g. 2026-2027), else the extract's own years. */}
+          <span className={classes.coverYears}>{coverYears}</span>
+        </h1>
+        <div className={classes.coverPeriod}>
+          {t('period', { from: day(options.from), to: day(options.to) })}
+        </div>
       </section>
       <PrintLegend customTypes={data.customTypes} />
       <section className={classes.page}>
-        <h2 className={classes.heading}>
+        <h2 className={`${classes.heading} ${classes.indexTitle}`}>
           <span className={classes.highlight}>{t('index')}</span>
         </h2>
         <ol className={classes.indexList}>
           {chapters.map(({ id, title }) => (
             <li key={id}>
-              <a href={`#${id}`}>{title}</a>
+              <a href={`#${id}`}>
+                <span>{title}</span>
+                {/* Its first page, written in by lib/pdf.ts once the pages are counted. */}
+                <span className={classes.indexPage} {...{ [CHAPTER_PAGE_ATTRIBUTE]: id }} />
+              </a>
+              {/* The Journal's months, each with its first page. */}
+              {id === 'chapter-journal' && (
+                <ol className={classes.indexMonths}>
+                  {exportMonths(options.from, options.to).map((month) => (
+                    <li key={month}>
+                      <a href={`#month-${month}`}>
+                        <span>
+                          {format.dateTime(new Date(`${month}-15T12:00:00Z`), {
+                            month: 'long',
+                            year: 'numeric',
+                            timeZone: 'UTC',
+                          })}
+                        </span>
+                        <span
+                          className={classes.indexPage}
+                          {...{ [CHAPTER_PAGE_ATTRIBUTE]: `month-${month}` }}
+                        />
+                      </a>
+                    </li>
+                  ))}
+                </ol>
+              )}
             </li>
           ))}
         </ol>
@@ -132,6 +183,20 @@ export default async function PrintJournalPage({
         <p>{tArcher('sheetsIntro')}</p>
         <p className={classes.muted}>{tArcher('comingSoon')}</p>
       </ChapterPage>
+      {/*
+        The very end: the season summary of the extract's days, as the Indicators page's
+        whiteboard, landscape (with the Indicators chapter's figures).
+      */}
+      {data.stats && (
+        <PrintSeason
+          summary={seasonSummary(data.stats, data.goals, options.from, options.to)}
+          journal={{
+            title: periodJournal(data.journals, options.from, options.to)?.title ?? '',
+            startDate: options.from,
+            endDate: options.to,
+          }}
+        />
+      )}
       {/* Sheets paired, months on facing pages: before printing. */}
       <Paginate />
       <PrintReady />
@@ -139,7 +204,10 @@ export default async function PrintJournalPage({
   );
 }
 
-/** A chapter's title page: its name in the middle of the page, and a few words under it. */
+/**
+ * A chapter's title page: its name in the middle of the page, and a few words under it. On a
+ * right-hand page: the blank page before it is shown when needed (lib/pdf.ts).
+ */
 function ChapterPage({
   id,
   title,
@@ -151,9 +219,16 @@ function ChapterPage({
   children?: ReactNode;
 }) {
   return (
-    <section id={id} className={`${classes.page} ${classes.chapter}`}>
-      <h2 className={classes.chapterTitle}>{title}</h2>
-      {children && <div className={classes.chapterNote}>{children}</div>}
-    </section>
+    <>
+      <div className={classes.blankPage} {...{ [BLANK_ATTRIBUTE]: '' }} />
+      <section
+        id={id}
+        className={`${classes.page} ${classes.chapter}`}
+        {...{ [CHAPTER_ATTRIBUTE]: '' }}
+      >
+        <h2 className={classes.chapterTitle}>{title}</h2>
+        {children && <div className={classes.chapterNote}>{children}</div>}
+      </section>
+    </>
   );
 }

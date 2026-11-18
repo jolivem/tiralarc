@@ -86,51 +86,77 @@ export function place(points, { x, y, scale = 1, rotate = 0, tilt = 1, tiltAxis 
   });
 }
 
-/** An SVG collector: shapes in drawing order (later ones in front). */
+/**
+ * An SVG collector: shapes in drawing order (later ones in front). Each closed shape (and wire)
+ * may carry the colour it has in real life (`color`, set before drawing it): the line art leaves
+ * them white, its colour map (`toString(true)`) fills them, so that the web's automatic
+ * colouring reads, inside each closed area, the colour of the shape on top there.
+ */
 export class Drawing {
   constructor(width, height) {
     this.width = width;
     this.height = height;
     this.items = [];
+    /** "#rrggbb" of the shapes drawn next, or null (left white). */
+    this.color = null;
   }
 
-  /** A closed shape, white inside, outlined. */
+  /** A closed shape, white inside (its colour in the map), outlined. */
   shape(d, stroke = 5) {
-    this.items.push(`<path d="${d}" stroke-width="${r1(stroke)}"/>`);
+    const color = this.color;
+    this.items.push(
+      (colored) =>
+        `<path d="${d}"${colored && color ? ` fill="${color}"` : ''} stroke-width="${r1(stroke)}"/>`,
+    );
+  }
+
+  /**
+   * A patch of colour in the colour map only (no outline, nothing in the line art): parts of a
+   * shape that lines split into areas of different colours (a beach ball's segments, stripes).
+   */
+  tint(d, color) {
+    this.items.push((colored) => (colored ? `<path d="${d}" fill="${color}" stroke="none"/>` : ''));
   }
 
   /** An open line (veins, stamens, bark marks): never closes an area by itself. */
   line(d, stroke = 3) {
-    this.items.push(`<path d="${d}" fill="none" stroke-width="${r1(stroke)}"/>`);
+    this.items.push(() => `<path d="${d}" fill="none" stroke-width="${r1(stroke)}"/>`);
   }
 
   /** A wire: a band of `width` outlined (strings, stems, straps), white inside. */
   wire(d, width, stroke = 3) {
-    this.items.push(`<path d="${d}" fill="none" stroke-width="${r1(width + stroke * 2)}"/>`);
-    this.items.push(`<path d="${d}" fill="none" stroke="#fff" stroke-width="${r1(width)}"/>`);
+    const color = this.color;
+    this.items.push(
+      (colored) =>
+        `<path d="${d}" fill="none" stroke-width="${r1(width + stroke * 2)}"/>` +
+        `<path d="${d}" fill="none" stroke="${colored && color ? color : '#fff'}" stroke-width="${r1(width)}"/>`,
+    );
   }
 
   /** A small black dot (anthers, antennae tips). */
   dot(x, y, radius) {
     this.items.push(
-      `<circle cx="${r1(x)}" cy="${r1(y)}" r="${r1(radius)}" fill="#000" stroke="none"/>`,
+      () => `<circle cx="${r1(x)}" cy="${r1(y)}" r="${r1(radius)}" fill="#000" stroke="none"/>`,
     );
   }
 
-  /** A closed circle, white inside. */
+  /** A closed circle, white inside (its colour in the map). */
   circle(x, y, radius, stroke = 4) {
+    const color = this.color;
     this.items.push(
-      `<circle cx="${r1(x)}" cy="${r1(y)}" r="${r1(radius)}" stroke-width="${r1(stroke)}"/>`,
+      (colored) =>
+        `<circle cx="${r1(x)}" cy="${r1(y)}" r="${r1(radius)}"${colored && color ? ` fill="${color}"` : ''} stroke-width="${r1(stroke)}"/>`,
     );
   }
 
-  toString() {
+  /** The line art, or (`colored`) its colour map. */
+  toString(colored = false) {
     const { width: w, height: h } = this;
     return (
       `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}">` +
       `<rect width="${w}" height="${h}" fill="#fff"/>` +
       `<g fill="#fff" stroke="#000" stroke-linejoin="round" stroke-linecap="round">` +
-      this.items.join('') +
+      this.items.map((item) => item(colored)).join('') +
       `</g></svg>\n`
     );
   }
@@ -380,10 +406,16 @@ export function pen(d, rand, { x, y, size, rotate = 0, flip = false, weight = 1 
     size,
     stroke,
     map,
+    /** The real-life colour ("#rrggbb", null = none) of the shapes drawn next (colour map). */
+    color: (value) => {
+      d.color = value;
+    },
     /** A closed smooth shape (corners where flagged). */
     shape: (points, k = 1) => d.shape(smooth(map(points)), stroke * k),
     /** A closed straight-sided shape. */
     poly: (points, k = 1) => d.shape(polyPath(map(points)), stroke * k),
+    /** A patch of `color` in the colour map only (straight sides), over what is drawn. */
+    tint: (points, color) => d.tint(polyPath(map(points)), color),
     /** An open smooth line. */
     line: (points, k = 0.6) => d.line(smooth(map(points), false), stroke * k),
     /** An open straight line. */
@@ -399,6 +431,7 @@ export function pen(d, rand, { x, y, size, rotate = 0, flip = false, weight = 1 
     raw: {
       line: (points, k = 0.6) => d.line(smooth(points, false), stroke * k),
       shape: (points, k = 1) => d.shape(smooth(points), stroke * k),
+      tint: (points, color) => d.tint(polyPath(points), color),
     },
     /** A tapering limb (bow limb, antler, twig) along the points. */
     branch: (points, base, tip, k = 1) => {
@@ -409,129 +442,262 @@ export function pen(d, rand, { x, y, size, rotate = 0, flip = false, weight = 1 
   };
 }
 
+/** At most this share of the smaller of two elements' boxes may lie under the other: none. */
+export const MAX_OVERLAP = 0;
+
+/** Room kept around each element's box (px): some drawings go slightly beyond it. */
+const PAD = 5;
+
+/** Whether the box { x0, y0, x1, y1 } meets one of `boxes`. */
+export function hits(box, boxes) {
+  return boxes.some((b) => box.x0 < b.x1 && b.x0 < box.x1 && box.y0 < b.y1 && b.y0 < box.y1);
+}
+
+/** How much of the smaller box two boxes { x0, y0, x1, y1 } share (0 to 1). */
+export function overlap(a, b) {
+  const w = Math.min(a.x1, b.x1) - Math.max(a.x0, b.x0);
+  const h = Math.min(a.y1, b.y1) - Math.max(a.y0, b.y0);
+  if (w <= 0 || h <= 0) return 0;
+  const area = (r) => (r.x1 - r.x0) * (r.y1 - r.y0);
+  return (w * h) / Math.min(area(a), area(b));
+}
+
 /**
- * A band of a theme as one scene: big elements in front, spaced out; medium ones behind them,
- * in the gaps they leave (partly hidden, so they belong together); small ones further back.
+ * A band of a theme as one scene: big elements spaced out along it, medium ones in the gaps
+ * they leave, then the holes left filled. An element shows once in a band, unless a hole needs
+ * it again far from the first (a theme's `once` ones: only in one band of the four, `unique`);
+ * elements never overlap (`MAX_OVERLAP`, boxes `PAD` apart), so they stay easy to colour.
  * Each layer: `kinds` (elements { w, h, draw(pen), tilt?, flip?, scale? }, w and h ≤ 1 their
  * box), `size` (range, fraction of the band's thickness), `gap` (fraction of an element).
  */
-export function compose({ width, height, seed, front, middle, back, before, after, margin = 10 }) {
+export function compose({
+  width,
+  height,
+  seed,
+  front,
+  middle,
+  unique = [],
+  before,
+  after,
+  margin = 10,
+  inset = [0, 0],
+}) {
   const rand = random(seed);
   const d = new Drawing(width, height);
   const vertical = height > width;
   const length = vertical ? height : width;
-  const room = (vertical ? width : height) - margin * 2;
-  const along = (kind, size) => size * (vertical ? kind.h : kind.w);
-  const across = (kind, size) => size * (vertical ? kind.w : kind.h);
-  const fit = (kind, size) => Math.min(size, room / (vertical ? kind.w : kind.h));
-  const deck = (kinds) => {
-    let bag = [];
-    let last;
-    return () => {
-      if (!bag.length) bag = shuffle(rand, kinds.slice());
-      let kind = bag.pop();
-      if (kind === last && kinds.length > 1) {
-        if (!bag.length)
-          bag = shuffle(
-            rand,
-            kinds.filter((k) => k !== kind),
-          );
-        const other = bag.pop();
-        bag.push(kind);
-        kind = other;
+  // `inset`: room kept free across the band (its top / left side, its bottom / right side),
+  // for what goes behind (a garland).
+  const room = (vertical ? width : height) - margin * 2 - inset[0] - inset[1];
+  const edge0 = margin + inset[0];
+  const used = new Set();
+  /** The kinds still unused in this band, shuffled (`first` ahead of them). */
+  const deck = (kinds, first = []) => {
+    const bag = [...shuffle(rand, [...new Set(kinds)]), ...shuffle(rand, first.slice())];
+    const next = () => {
+      while (bag.length) {
+        const kind = bag.pop();
+        if (!used.has(kind)) {
+          used.add(kind);
+          return kind;
+        }
       }
-      last = kind;
-      return kind;
+      return undefined;
     };
+    /** Not placed after all: back into the bag, to be tried after the others. */
+    next.putBack = (kind) => {
+      used.delete(kind);
+      bag.unshift(kind);
+    };
+    return next;
   };
-  const sized = (kind, layer) => fit(kind, room * rand.range(...layer.size) * (kind.scale ?? 1));
-  /** A row along the band: elements as they come, spaces shared out evenly. */
-  const row = (layer) => {
-    const next = deck(layer.kinds);
-    const items = [];
-    let used = 0;
-    for (let guard = 0; guard < 200; guard++) {
-      const kind = next();
-      const size = sized(kind, layer);
-      const extent = along(kind, size);
-      if (used + extent > length - 2 * margin) break;
-      items.push({ kind, size, extent });
-      used += extent * (1 + layer.gap * rand.range(0.7, 1.3));
+  /** An element of `kind`, `size` px, turned: its box's extent along and across the band. */
+  const make = (kind, size) => {
+    const rotate = (kind.tilt ?? 0.12) * rand.range(-1, 1);
+    const [cr, sr] = [Math.abs(Math.cos(rotate)), Math.abs(Math.sin(rotate))];
+    const wx = (kind.w * cr + kind.h * sr) * size;
+    const hy = (kind.w * sr + kind.h * cr) * size;
+    const [along, across] = vertical ? [hy, wx] : [wx, hy];
+    // Never thicker than the band.
+    const k = Math.min(1, room / across);
+    return { kind, rotate, size: size * k, along: along * k, across: across * k };
+  };
+  const sized = (kind, layer) => make(kind, room * rand.range(...layer.size) * (kind.scale ?? 1));
+  const box = (item) => {
+    const [x, y] = vertical ? [item.offset, item.at] : [item.at, item.offset];
+    const [w, h] = vertical ? [item.across, item.along] : [item.along, item.across];
+    return { x0: x - w / 2, y0: y - h / 2, x1: x + w / 2, y1: y + h / 2 };
+  };
+  const placed = [];
+  const padded = (item) => {
+    const b = box(item);
+    return { x0: b.x0 - PAD, y0: b.y0 - PAD, x1: b.x1 + PAD, y1: b.y1 + PAD };
+  };
+  const fits = (item) => placed.every((other) => overlap(padded(item), box(other)) <= MAX_OVERLAP);
+
+  // The big ones: a row along the band, spaces shared out evenly.
+  const fronts = [];
+  {
+    const next = deck(front.kinds);
+    let total = 0;
+    for (let kind = next(); kind; kind = next()) {
+      const item = sized(kind, front);
+      if (total + item.along > length - 2 * margin) break;
+      fronts.push(item);
+      total += item.along * (1 + front.gap * rand.range(0.7, 1.3));
     }
-    const total = items.reduce((s, i) => s + i.extent, 0);
-    const slot = (length - 2 * margin - total) / Math.max(1, items.length);
+    const sum = fronts.reduce((s, i) => s + i.along, 0);
+    const slot = (length - 2 * margin - sum) / Math.max(1, fronts.length);
     let cursor = margin + slot / 2;
-    for (const item of items) {
-      item.at = cursor + item.extent / 2 + rand.range(-0.25, 0.25) * slot;
+    for (const item of fronts) {
+      item.at = cursor + item.along / 2 + rand.range(-0.12, 0.12) * slot;
       item.at = Math.max(
-        margin + item.extent / 2,
-        Math.min(length - margin - item.extent / 2, item.at),
+        margin + item.along / 2,
+        Math.min(length - margin - item.along / 2, item.at),
       );
-      cursor += item.extent + slot;
+      const [lo, hi] = front.across ?? [0, 1];
+      item.offset = edge0 + item.across / 2 + (room - item.across) * rand.range(lo, hi);
+      cursor += item.along + slot;
+      placed.push(item);
     }
-    return items;
-  };
-  const fronts = row(front);
-  const backs = back ? row(back) : [];
-  // The middle row fills the gaps between the front elements, overlapping them a little.
+  }
+
+  // The medium ones in the gaps between them (this band's unique ones first), as large as
+  // the room left allows; a gap too narrow stays empty.
   const middles = [];
   if (middle) {
-    const next = deck(middle.kinds);
+    const next = deck(middle.kinds, unique);
     const edges = [
       margin,
-      ...fronts.flatMap((f) => [f.at - f.extent / 2, f.at + f.extent / 2]),
+      ...fronts.flatMap((f) => [f.at - f.along / 2, f.at + f.along / 2]),
       length - margin,
     ];
-    let high = rand.chance(0.5);
+    const gaps = [];
     for (let i = 0; i < edges.length; i += 2) {
-      const [start, end] = [edges[i], edges[i + 1]];
-      const gap = end - start;
-      const outer = i === 0 || i === edges.length - 2;
+      gaps.push({ start: edges[i], end: edges[i + 1], count: 0 });
+    }
+    let high = rand.chance(0.5);
+    /** One more element in `gap`, if one fits there. */
+    const fill = (gap) => {
+      const { start, end } = gap;
+      if (end - start < room * middle.size[0] * 0.6) return false;
       const kind = next();
-      const size = sized(kind, middle);
-      const extent = along(kind, size);
-      if (gap < extent * (outer ? 0.55 : 0.3)) continue;
-      const count = gap > extent * 2.1 ? 2 : 1;
-      for (let n = 0; n < count; n++) {
-        const k = n === 0 ? kind : next();
-        const s = n === 0 ? size : sized(k, middle);
-        const e = along(k, s);
-        let at = start + (gap * (n + 1)) / (count + 1) + rand.range(-0.12, 0.12) * gap;
-        at = Math.max(margin + e / 2, Math.min(length - margin - e / 2, at));
-        middles.push({ kind: k, size: s, extent: e, at, side: high ? [0, 0.3] : [0.7, 1] });
-        high = !high;
+      if (!kind) return false;
+      let best;
+      for (let attempt = 0; attempt < 60 && !best; attempt++) {
+        // Larger first, then smaller, down to the layer's smallest size.
+        const t = Math.min(1, attempt / 40);
+        const scale = middle.size[1] - (middle.size[1] - middle.size[0]) * t;
+        const item = make(kind, room * scale * rand.range(0.94, 1) * (kind.scale ?? 1));
+        const lo = start + item.along / 2;
+        const hi = end - item.along / 2;
+        const mid = (start + end) / 2;
+        // Alone in its gap: near its middle; a second one: wherever there is room.
+        const along =
+          hi < lo
+            ? mid
+            : gap.count
+              ? rand.range(lo, hi)
+              : mid + (rand() - 0.5) * Math.min(hi - lo, item.along * 0.5);
+        item.at = Math.max(
+          margin + item.along / 2,
+          Math.min(length - margin - item.along / 2, along),
+        );
+        const side = attempt % 3 === 2 ? rand() : high ? rand.range(0, 0.3) : rand.range(0.7, 1);
+        item.offset = edge0 + item.across / 2 + (room - item.across) * side;
+        if (fits(item)) best = item;
+      }
+      if (!best) {
+        // Not this one here: it may fit in another gap.
+        next.putBack(kind);
+        return false;
+      }
+      placed.push(best);
+      middles.push(best);
+      gap.count++;
+      high = !high;
+      return true;
+    };
+    // The widest gaps first, one element each, then a second one where there is room.
+    for (let round = 0; round < 3; round++) {
+      const order = gaps
+        .slice()
+        .sort((a, b) => (b.end - b.start) / (b.count + 1) - (a.end - a.start) / (a.count + 1));
+      for (const gap of order) if (gap.count === round) fill(gap);
+    }
+  }
+
+  // The holes left are filled with whatever fits there: kinds not yet in the band first, then
+  // (the theme's `once` ones aside) one already in it, but far from where it shows.
+  const fillers = [];
+  if (middle) {
+    const spread = length * 0.35;
+    const seen = new Map();
+    for (const item of placed) seen.set(item.kind, [...(seen.get(item.kind) ?? []), item.at]);
+    const repeatable = new Set([...front.kinds, ...middle.kinds]);
+    const pool = [...new Set([...front.kinds, ...middle.kinds, ...unique])];
+    const [lo, hi] = [middle.size[0], middle.size[1]];
+    const across = [0, 0.5, 1, 0.25, 0.75];
+    for (let pass = 0; pass < 2; pass++) {
+      for (let at = margin; at < length - margin; at += 16) {
+        const near = (kind) => (seen.get(kind) ?? []).some((p) => Math.abs(p - at) < spread);
+        const candidates = shuffle(rand, pool.slice())
+          .filter((kind) => !seen.has(kind) || (repeatable.has(kind) && !near(kind)))
+          .sort((a, b) => Number(seen.has(a)) - Number(seen.has(b)));
+        let done = false;
+        for (const kind of candidates) {
+          for (let s = 0; s <= 6 && !done; s++) {
+            const item = make(kind, room * (hi - ((hi - lo) * s) / 6) * (kind.scale ?? 1));
+            item.at = at + item.along / 2;
+            if (item.at + item.along / 2 > length - margin) continue;
+            for (const side of across) {
+              item.offset = edge0 + item.across / 2 + (room - item.across) * side;
+              if (fits(item)) {
+                placed.push(item);
+                fillers.push(item);
+                seen.set(kind, [...(seen.get(kind) ?? []), item.at]);
+                used.add(kind);
+                at = item.at + item.along / 2;
+                done = true;
+                break;
+              }
+            }
+          }
+          if (done) break;
+        }
       }
     }
   }
-  before?.(d, rand);
-  const draw = (items, layer, weight) => {
-    for (const item of items) {
-      const { kind, size } = item;
-      const cross = across(kind, size);
-      const [lo, hi] = item.side ?? layer.across ?? [0, 1];
-      const offset = margin + cross / 2 + (room - cross) * rand.range(lo, hi);
-      const [x, y] = vertical ? [offset, item.at] : [item.at, offset];
-      kind.draw(
-        pen(d, rand, {
-          x,
-          y,
-          size,
-          rotate: (kind.tilt ?? 0.12) * rand.range(-1, 1),
-          flip: (kind.flip ?? true) && rand.chance(0.5),
-          weight,
-        }),
-      );
-    }
-  };
-  draw(backs, back, 0.85);
-  draw(middles, middle, 1);
-  draw(fronts, front, 1);
+  // What goes behind (a garland, icicles) is told where the elements are, to keep clear of them.
+  before?.(d, rand, placed.map(box));
+  d.color = null;
+  for (const item of [...middles, ...fronts, ...fillers]) {
+    const [x, y] = vertical ? [item.offset, item.at] : [item.at, item.offset];
+    // Each element starts with its own colours (`kind.color`, else none).
+    d.color = item.kind.color ?? null;
+    item.kind.draw(
+      pen(d, rand, {
+        x,
+        y,
+        size: item.size,
+        rotate: item.rotate,
+        flip: (item.kind.flip ?? true) && rand.chance(0.5),
+      }),
+    );
+  }
   after?.(d, rand);
-  return d.toString();
+  return { svg: d.toString(), colors: d.toString(true), kinds: used };
 }
 
-/** The bands of a theme and its thumbnail, written to public/themes/<id>/. */
-export function writeTheme(id, { seed, front, middle, back, before, after, thumb, layers = {} }) {
+/**
+ * The bands of a theme and its thumbnail, written to public/themes/<id>/. `once`: elements that
+ * show only once in the whole decoration (shared out between the four bands). `inset(band)`:
+ * room kept free across a band ([top / left, bottom / right] px) for a backdrop of its own.
+ */
+export function writeTheme(
+  id,
+  { seed, front, middle, once = [], before, after, thumb, inset, layers = {} },
+) {
   const out = new URL(`../../public/themes/${id}/`, import.meta.url);
   const bands = {
     top: [2000, 280],
@@ -540,9 +706,13 @@ export function writeTheme(id, { seed, front, middle, back, before, after, thumb
     right: [300, 2200],
     thumb: [400, 300],
   };
+  const sides = ['top', 'bottom', 'left', 'right'];
+  const shared = shuffle(random(seed * 7 + 3), once.slice());
   let n = seed;
   for (const [band, [width, height]] of Object.entries(bands)) {
-    const svg = compose({
+    const side = sides.indexOf(band);
+    const unique = side < 0 ? [] : shared.filter((_, i) => i % sides.length === side);
+    const { svg, colors, kinds } = compose({
       width,
       height,
       seed: n++,
@@ -553,14 +723,22 @@ export function writeTheme(id, { seed, front, middle, back, before, after, thumb
         ...layers.front,
         kinds: band === 'thumb' && thumb ? [thumb] : front,
       },
-      middle: middle && { size: [0.44, 0.62], ...layers.middle, kinds: middle },
-      back: back && { size: [0.16, 0.28], gap: 0.9, ...layers.back, kinds: back },
-      before: before && ((d, rand) => before(d, rand, { band, width, height })),
+      middle:
+        band === 'thumb'
+          ? undefined
+          : middle && { size: [0.55, 0.74], ...layers.middle, kinds: middle },
+      unique,
+      inset: inset?.(band) ?? [0, 0],
+      before: before && ((d, rand, boxes) => before(d, rand, { band, width, height, boxes })),
       after: after && ((d, rand) => after(d, rand, { band, width, height })),
     });
+    const missing = unique.filter((kind) => !kinds.has(kind)).length;
+    if (missing) console.warn(`${id} ${band}: ${missing} unique element(s) found no room`);
     writeFileSync(new URL(`${band}.svg`, out), svg);
+    // The real-life colours, for the web's automatic colouring (not for the picker's thumbnail).
+    if (band !== 'thumb') writeFileSync(new URL(`${band}.colors.svg`, out), colors);
   }
-  console.log(`${id}: top, bottom, left, right, thumb written`);
+  console.log(`${id}: top, bottom, left, right, thumb (+ colour maps) written`);
 }
 
 /**

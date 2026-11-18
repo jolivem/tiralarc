@@ -22,7 +22,7 @@ import {
 } from '@tabler/icons-react';
 import type { JournalSession } from '@tiralarc/api-client';
 import { useTranslations } from 'next-intl';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import classes from './journal.module.css';
 
 export type SessionStep = JournalSession['steps'][number];
@@ -45,19 +45,23 @@ const EMPTY: SessionStep = {
 /** "15 min · Paille — Échauffement": a step written on one line of the sheet (or more). */
 export function useStepLabel() {
   const t = useTranslations('journal.steps');
-  return (step: SessionStep) =>
-    [
+  // Stable: the share dialog's rows are memoised on it.
+  return useCallback(
+    (step: SessionStep) =>
       [
-        step.amount !== null &&
-          t(step.unit === 'MINUTES' ? 'minutes' : 'arrows', { count: step.amount }),
-        step.target && t(`targets.${step.target}`),
+        [
+          step.amount !== null &&
+            t(step.unit === 'MINUTES' ? 'minutes' : 'arrows', { count: step.amount }),
+          step.target && t(`targets.${step.target}`),
+        ]
+          .filter(Boolean)
+          .join(' · '),
+        step.description,
       ]
         .filter(Boolean)
-        .join(' · '),
-      step.description,
-    ]
-      .filter(Boolean)
-      .join(' — ');
+        .join(' — '),
+    [t],
+  );
 }
 
 /** The "+" next to the "Déroulé de la séance" title: a new step. */

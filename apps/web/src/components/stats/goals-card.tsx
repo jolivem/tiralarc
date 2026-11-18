@@ -100,7 +100,7 @@ export function GoalsCard({
       <Stack gap="md">
         {/* The title, the progress over all goals in the middle, the "+" on the right. */}
         <Group justify="space-between" align="center" gap="md">
-          <StatsCardTitle>{t('title')}</StatsCardTitle>
+          <StatsCardTitle highlight="peach">{t('title')}</StatsCardTitle>
           {shown.length > 0 && (
             <Stack gap={4} align="center" className={classes.goalsProgress}>
               <Group gap={6} align="baseline" justify="center" wrap="nowrap">

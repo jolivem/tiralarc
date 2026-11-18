@@ -3,13 +3,14 @@
 import { Alert, Button, Checkbox, Group, Modal, SimpleGrid, Stack, Text } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
 import { IconCalendar, IconFileTypePdf } from '@tabler/icons-react';
-import type { Discipline, Indicator } from '@tiralarc/api-client';
+import type { Discipline } from '@tiralarc/api-client';
 import { useLocale, useTranslations } from 'next-intl';
 import { useState } from 'react';
 import {
   type ExportOptions,
   exportQuery,
   INDICATORS,
+  type CardIndicator,
   MAX_EXPORT_DAYS,
   spanDays,
 } from '@/lib/export-options';
@@ -27,7 +28,7 @@ const INDICATOR_TITLES = {
   MENTAL_FEELINGS: 'feelings.mental.title',
   COMPETITIONS: 'competitions',
   ARROW_AVERAGES: 'averages.title',
-} as const satisfies Record<Indicator, string>;
+} as const satisfies Record<CardIndicator, string>;
 
 /**
  * A group of checkboxes under one that ticks or clears them all (indeterminate when only
@@ -93,7 +94,7 @@ export function ExportButton({
   const [opened, setOpened] = useState(false);
   const [days, setDays] = useState<[string | null, string | null]>([from, to]);
   const [rankings, setRankings] = useState<Discipline[]>(disciplines);
-  const [indicators, setIndicators] = useState<Indicator[]>([...INDICATORS]);
+  const [indicators, setIndicators] = useState<CardIndicator[]>([...INDICATORS]);
   const [parts, setParts] = useState<Record<Part, boolean>>({
     sheets: true,
     photos: false,

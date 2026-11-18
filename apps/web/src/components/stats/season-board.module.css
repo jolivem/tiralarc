@@ -121,13 +121,6 @@
   font-size: 1.05rem;
 }
 
-.figureDetail {
-  margin-top: 4px;
-  color: #5c636a;
-  font-family: var(--font-hand-upright), cursive;
-  font-size: 0.95rem;
-}
-
 /* The papers, side by side, each a little askew. */
 .papers {
   display: grid;

@@ -27,7 +27,7 @@ export async function ToComplete({ sessions }: { sessions: JournalSessionSummary
   return (
     <section>
       <RuledStack>
-        <RuledHeading>{t('pendingReviews.title')}</RuledHeading>
+        <RuledHeading highlight="peach">{t('pendingReviews.title')}</RuledHeading>
         <ul className={classes.newEvents}>
           {pending.slice(0, SHOWN).map((session) => (
             <li key={session.id}>

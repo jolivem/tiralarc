@@ -12,7 +12,7 @@ export interface ExportOptions {
   /** The disciplines whose national rankings are printed, in `RANKED_DISCIPLINES` order. */
   rankings: Discipline[];
   /** The Indicators page's cards printed, in `INDICATORS` order. */
-  indicators: Indicator[];
+  indicators: CardIndicator[];
   /** One page per training, coaching and competition sheet. */
   sheets: boolean;
   /** Each sheet's photos on a page of their own (with the sheets only). */
@@ -29,8 +29,11 @@ export const RANKED_DISCIPLINES: readonly Discipline[] = [
   'NATURE',
 ];
 
-/** The Indicators page's cards, in its order (goals aside). */
-export const INDICATORS: readonly Indicator[] = [
+/** The Indicators page's figure cards: the rankings are an option of their own (`rankings`). */
+export type CardIndicator = Exclude<Indicator, 'RANKINGS'>;
+
+/** The Indicators page's figure cards, in its order (goals and rankings aside). */
+export const INDICATORS: readonly CardIndicator[] = [
   'ARROWS',
   'DURATIONS',
   'SCORES',

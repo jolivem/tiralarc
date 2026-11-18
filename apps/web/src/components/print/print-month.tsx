@@ -90,6 +90,17 @@ export function PrintMonth({
     return day >= 1 && day <= length ? day : null;
   });
   const weeks = cells.length / 7;
+  // The month's summary (arrows, satisfaction) goes where the right page has room: in its last
+  // week when Friday to Sunday are blank there, else in a strip under the days (both pages,
+  // so the weeks stay level), never over the calendar or the bottom band.
+  const lastWeekFree = [4, 5, 6].every((d) => cells[(weeks - 1) * 7 + d] === null);
+  const summary = (
+    <MonthSummaryCard
+      arrows={sessions.reduce((sum, s) => sum + (s.arrowCount ?? 0), 0)}
+      stars={stars}
+      print
+    />
+  );
   const band = (name: ThemeBand, className?: string) =>
     theme && bands.includes(name) ? (
       <PrintBand theme={theme} band={name} fills={fills} className={className} />
@@ -99,32 +110,43 @@ export function PrintMonth({
       {format.dateTime(new Date(MONDAY + i * DAY_MS), { weekday: 'short', timeZone: 'UTC' })}
     </span>
   );
-  // Row after row, the cells of the given weekdays (0 = Monday).
-  const days = (weekdays: number[]) =>
-    Array.from({ length: weeks }, (_, week) => weekdays.map((d) => week * 7 + d))
+  // Row after row, the cells of the given weekdays (0 = Monday); `summaryLast`: the last row's
+  // blank cells give way to the month's summary.
+  const days = (weekdays: number[], summaryLast = false) => [
+    ...Array.from({ length: summaryLast ? weeks - 1 : weeks }, (_, week) =>
+      weekdays.map((d) => week * 7 + d),
+    )
       .flat()
       .map((i) => {
         const day = cells[i];
         if (day === null) return <div key={i} className={`${classes.day} ${classes.blank}`} />;
         const date = `${month}-${String(day).padStart(2, '0')}`;
+        const events = sessions.filter((s) => s.date === date);
+        // As large as the day's box allows: one alone, two side by side, up to 4 in two rows.
+        const size = events.length <= 1 ? 54 : events.length === 2 ? 40 : 34;
         return (
           <div key={i} className={classes.day} data-outside={date < from || date > to || undefined}>
             <span className={classes.dayNumber}>{day}</span>
             <span className={classes.dayIcons}>
-              {sessions
-                .filter((s) => s.date === date)
-                .map((s) => (
-                  // Up to 4 a day: two rows of two fit a day's box.
-                  <EventIcon key={s.id} session={s} size={26} />
-                ))}
+              {events.map((s) => (
+                <EventIcon key={s.id} session={s} size={size} />
+              ))}
             </span>
           </div>
         );
-      });
+      }),
+    ...(summaryLast
+      ? [
+          <div key="summary" className={classes.summaryInWeek}>
+            {summary}
+          </div>,
+        ]
+      : []),
+  ];
 
   // Both pages show the same spread, the right one shifted by a page's width.
   const spread = (
-    <div className={classes.spread}>
+    <div className={classes.spread} data-summary={lastWeekFree ? 'week' : 'strip'}>
       {band('left', classes.bandLeft)}
       {band('right', classes.bandRight)}
       {band('top', classes.bandTop)}
@@ -160,14 +182,10 @@ export function PrintMonth({
             <div className={`${classes.weekdays} ${classes.threeDays}`} aria-hidden>
               {Array.from({ length: 3 }, (_, i) => weekday(4 + i))}
             </div>
-            <div className={`${classes.days} ${classes.threeDays}`}>{days([4, 5, 6])}</div>
-            <div className={classes.monthSummaryRow}>
-              <MonthSummaryCard
-                arrows={sessions.reduce((sum, s) => sum + (s.arrowCount ?? 0), 0)}
-                stars={stars}
-                print
-              />
+            <div className={`${classes.days} ${classes.threeDays}`}>
+              {days([4, 5, 6], lastWeekFree)}
             </div>
+            <div className={classes.monthSummaryRow}>{!lastWeekFree && summary}</div>
           </div>
         </div>
       </div>
@@ -179,7 +197,11 @@ export function PrintMonth({
     <>
       {/* Shown (lib/pdf.ts) when the left page would otherwise land on an odd page. */}
       <div className={classes.blankPage} {...{ [BLANK_ATTRIBUTE]: '' }} />
-      <section className={`${classes.page} ${classes.month}`} {...{ [SPREAD_ATTRIBUTE]: '' }}>
+      <section
+        id={`month-${month}`}
+        className={`${classes.page} ${classes.month}`}
+        {...{ [SPREAD_ATTRIBUTE]: '' }}
+      >
         {spread}
       </section>
       <section className={`${classes.page} ${classes.month} ${classes.monthRight}`}>

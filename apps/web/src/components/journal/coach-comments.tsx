@@ -18,7 +18,8 @@ const MAX_LENGTH = 2000;
 
 /**
  * The bottom of an event's sheet: the comments the archer's coach left on it, in a box of its
- * own colour. The coach (`coach`) writes new ones and changes or deletes their own; the archer
+ * own colour. The coach (`coach`) writes one (the field goes once it exists) and changes or
+ * deletes it; the archer
  * reads them (the box shows only when there are some), the unread ones marked "new".
  */
 export function CoachComments({
@@ -37,6 +38,8 @@ export function CoachComments({
   const [pending, startTransition] = useTransition();
 
   if (!coach && comments.length === 0) return null;
+  // One comment per coach and event: once written, they change it.
+  const written = comments.some((comment) => comment.mine);
 
   const run = (action: () => Promise<ActionState>, done?: () => void) =>
     startTransition(async () => {
@@ -76,7 +79,7 @@ export function CoachComments({
             showNew={!coach}
           />
         ))}
-        {coach && (
+        {coach && !written && (
           <Stack gap="xs">
             <Textarea
               aria-label={t('placeholder')}

@@ -2,6 +2,8 @@ import 'server-only';
 import { chromium, type Page } from 'playwright-core';
 import {
   BLANK_ATTRIBUTE,
+  CHAPTER_ATTRIBUTE,
+  CHAPTER_PAGE_ATTRIBUTE,
   HIDDEN_ATTRIBUTE,
   READY_ATTRIBUTE,
   SPREAD_ATTRIBUTE,
@@ -91,39 +93,44 @@ const pageCount = (pdf: Uint8Array) =>
     .match(/\/Type\s*\/Page[^s]/g)?.length ?? 0;
 
 /**
- * Puts each month's double page on facing pages, its left page even (`[SPREAD_ATTRIBUTE]`):
- * Chromium ignores `break-before: left`, and only its own printing tells how many pages the
- * rest takes (charts and sheets lay out differently on paper). So the parts between two
- * months are printed alone, their pages counted, and the blank page before a month shown
- * when its left page would land on an odd one. A few small trial prints, one per month.
+ * Puts each month's double page on facing pages, its left page even (`[SPREAD_ATTRIBUTE]`),
+ * and each chapter's title page on a right-hand page, odd (`[CHAPTER_ATTRIBUTE]`): Chromium
+ * ignores `break-before: left / right`, and only its own printing tells how many pages the
+ * rest takes (charts and sheets lay out differently on paper). So the parts between two of
+ * them are printed alone, their pages counted, and the blank page before one shown when it
+ * would land on the wrong side. Each chapter's first page is then written in the index
+ * (`[CHAPTER_PAGE_ATTRIBUTE]`). A few small trial prints, one per month or chapter.
  */
 async function faceSpreads(page: Page) {
   await page.addStyleTag({ content: `[${HIDDEN_ATTRIBUTE}] { display: none !important; }` });
-  // The extract's parts in order: a month's left page, its blank page, or anything else
-  // printed (runs of these between two months make one trial print).
-  const kinds = await page.evaluate(
-    ([spread, blank]) => {
-      const extract = document.querySelector(`[${spread}]`)?.parentElement;
+  // The extract's parts in order: a month's left page, a chapter's title page, a blank page,
+  // or anything else printed (runs of these between two of the first make one trial print).
+  const parts = await page.evaluate(
+    ([spread, chapter, blank]) => {
+      const extract = document.querySelector(`[${spread}], [${chapter}]`)?.parentElement;
       return [...(extract?.children ?? [])].map((part) => {
-        if (part.hasAttribute(spread)) return 'spread';
-        if (part.hasAttribute(blank)) return 'blank';
+        if (part.hasAttribute(spread)) return { kind: 'spread', id: part.id };
+        if (part.hasAttribute(chapter)) return { kind: 'chapter', id: part.id };
+        if (part.hasAttribute(blank)) return { kind: 'blank', id: '' };
         const style = getComputedStyle(part);
-        return style.display === 'none' || style.position === 'absolute' ? 'none' : 'part';
+        const hidden = style.display === 'none' || style.position === 'absolute';
+        return { kind: hidden ? 'none' : 'part', id: '' };
       });
     },
-    [SPREAD_ATTRIBUTE, BLANK_ATTRIBUTE] as const,
+    [SPREAD_ATTRIBUTE, CHAPTER_ATTRIBUTE, BLANK_ATTRIBUTE] as const,
   );
-  if (!kinds.includes('spread')) return;
+  const kinds = parts.map((p) => p.kind);
+  if (!kinds.includes('spread') && !kinds.includes('chapter')) return;
 
   const only = async (shown: number[]) => {
     await page.evaluate(
-      ([spread, hidden, shown]) => {
-        const extract = document.querySelector(`[${spread}]`)!.parentElement!;
+      ([spread, chapter, hidden, shown]) => {
+        const extract = document.querySelector(`[${spread}], [${chapter}]`)!.parentElement!;
         [...extract.children].forEach((part, i) =>
           part.toggleAttribute(hidden, !shown.includes(i)),
         );
       },
-      [SPREAD_ATTRIBUTE, HIDDEN_ATTRIBUTE, shown] as const,
+      [SPREAD_ATTRIBUTE, CHAPTER_ATTRIBUTE, HIDDEN_ATTRIBUTE, shown] as const,
     );
     // A chart that was hidden is drawn again a moment after it shows: printing sooner loses it.
     await page.waitForFunction(() =>
@@ -141,22 +148,38 @@ async function faceSpreads(page: Page) {
     pages += pageCount(await print(page));
     run = [];
   };
-  for (const [i, kind] of kinds.entries()) {
+  const chapterPages: Record<string, number> = {};
+  for (const [i, { kind, id }] of parts.entries()) {
     if (kind === 'part') run.push(i);
-    if (kind !== 'spread') continue;
+    if (kind !== 'spread' && kind !== 'chapter') continue;
     await countRun();
-    if (pages % 2 === 0) {
-      // The left page would be odd: the blank page just before it is printed.
+    // A month's left page must be even, a chapter's title page odd: the page it would land
+    // on is `pages + 1`.
+    const wrongSide = kind === 'spread' ? pages % 2 === 0 : pages % 2 === 1;
+    if (wrongSide) {
+      // The blank page just before it is printed.
       await page.evaluate(
-        ([spread, blank, i]) => {
-          const part = document.querySelector(`[${spread}]`)!.parentElement!.children[i];
-          part?.previousElementSibling?.setAttribute(blank, 'shown');
+        ([spread, chapter, blank, i]) => {
+          const extract = document.querySelector(`[${spread}], [${chapter}]`)!.parentElement!;
+          extract.children[i]?.previousElementSibling?.setAttribute(blank, 'shown');
         },
-        [SPREAD_ATTRIBUTE, BLANK_ATTRIBUTE, i] as const,
+        [SPREAD_ATTRIBUTE, CHAPTER_ATTRIBUTE, BLANK_ATTRIBUTE, i] as const,
       );
       pages += 1;
     }
+    // Chapters and months (their left page) in the index.
+    if (id) chapterPages[id] = pages + 1;
     pages += 1;
   }
   await only(kinds.map((_, i) => i));
+  // The index: each chapter's first page.
+  await page.evaluate(
+    ([attribute, chapterPages]) => {
+      for (const cell of document.querySelectorAll(`[${attribute}]`)) {
+        const number = chapterPages[cell.getAttribute(attribute) ?? ''];
+        if (number) cell.textContent = String(number);
+      }
+    },
+    [CHAPTER_PAGE_ATTRIBUTE, chapterPages] as const,
+  );
 }

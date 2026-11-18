@@ -1,7 +1,16 @@
 'use client';
 
-import { ActionIcon, Button, CheckIcon, ColorSwatch, Group, Paper, Text } from '@mantine/core';
-import { IconArrowBackUp, IconEraser, IconTrash } from '@tabler/icons-react';
+import {
+  ActionIcon,
+  Button,
+  CheckIcon,
+  ColorSwatch,
+  Group,
+  Paper,
+  Stack,
+  Text,
+} from '@mantine/core';
+import { IconArrowBackUp, IconEraser, IconTrash, IconWand } from '@tabler/icons-react';
 import { useTranslations } from 'next-intl';
 import { type ColoringTool, ERASER } from './calendar-frame';
 import classes from './journal.module.css';
@@ -26,7 +35,30 @@ export const PALETTE = {
 } as const;
 export const DEFAULT_COLOR = PALETTE.red;
 
-/** Colours, eraser, undo and clear, shown above the decoration while colouring. */
+type ColorName = keyof typeof PALETTE;
+
+/** The same crayons, pastel (no pastel white): a second row. */
+export const PASTELS: Partial<Record<ColorName, string>> = {
+  red: '#ffc9c9',
+  orange: '#ffd8a8',
+  yellow: '#fff3bf',
+  lime: '#e9fac8',
+  green: '#b2f2bb',
+  teal: '#c3fae8',
+  sky: '#e7f5ff',
+  blue: '#a5d8ff',
+  violet: '#d0bfff',
+  pink: '#fcc2d7',
+  brown: '#e6c9a8',
+  beige: '#fff4e6',
+  gray: '#e9ecef',
+  black: '#868e96',
+};
+
+/**
+ * Colours (a row of crayons, a row of their pastels), eraser, undo and clear, shown above the
+ * decoration while colouring; `onAuto` colours the decoration in real-life colours at once.
+ */
 export function ColoringToolbar({
   tool,
   onToolChange,
@@ -34,6 +66,8 @@ export function ColoringToolbar({
   onUndo,
   canClear,
   onClear,
+  onAuto,
+  autoBusy = false,
   onDone,
   status,
 }: {
@@ -43,49 +77,84 @@ export function ColoringToolbar({
   onUndo: () => void;
   canClear: boolean;
   onClear: () => void;
+  /** The month has a decoration: colour it automatically. */
+  onAuto?: () => void;
+  autoBusy?: boolean;
   onDone: () => void;
   /** Saving state, or an error message. */
   status: string;
 }) {
   const t = useTranslations('journals.coloring');
+  const swatch = (name: ColorName, color: string, label: string, light: boolean) => (
+    <ColorSwatch
+      key={`${name}-${color}`}
+      component="button"
+      type="button"
+      role="radio"
+      aria-checked={tool === color}
+      aria-label={label}
+      title={label}
+      color={color}
+      size={30}
+      style={{ color: light ? '#343a40' : '#fff', cursor: 'pointer' }}
+      onClick={() => onToolChange(color)}
+    >
+      {tool === color && <CheckIcon size={13} />}
+    </ColorSwatch>
+  );
+  const names = Object.keys(PALETTE) as ColorName[];
   return (
     <Paper withBorder radius="md" p="sm" mb="sm" className={classes.coloringBar}>
-      <Group gap="sm" justify="space-between">
-        <Group gap={6} role="radiogroup" aria-label={t('colors')}>
-          {(Object.keys(PALETTE) as (keyof typeof PALETTE)[]).map((name) => {
-            const color = PALETTE[name];
-            const light = name === 'white' || name === 'beige' || name === 'yellow';
-            return (
-              <ColorSwatch
-                key={name}
-                component="button"
-                type="button"
-                role="radio"
-                aria-checked={tool === color}
-                aria-label={t(`palette.${name}`)}
-                color={color}
-                size={30}
-                style={{ color: light ? '#343a40' : '#fff', cursor: 'pointer' }}
-                onClick={() => onToolChange(color)}
-              >
-                {tool === color && <CheckIcon size={13} />}
-              </ColorSwatch>
-            );
-          })}
-          <ActionIcon
-            role="radio"
-            aria-checked={tool === ERASER}
-            aria-label={t('eraser')}
-            title={t('eraser')}
-            variant={tool === ERASER ? 'filled' : 'default'}
-            radius="xl"
-            size={30}
-            onClick={() => onToolChange(ERASER)}
-          >
-            <IconEraser size={18} />
-          </ActionIcon>
-        </Group>
+      <Group gap="sm" justify="space-between" align="flex-start">
+        <Stack gap={6} role="radiogroup" aria-label={t('colors')}>
+          <Group gap={6}>
+            {names.map((name) =>
+              swatch(
+                name,
+                PALETTE[name],
+                t(`palette.${name}`),
+                name === 'white' || name === 'beige' || name === 'yellow',
+              ),
+            )}
+            <ActionIcon
+              role="radio"
+              aria-checked={tool === ERASER}
+              aria-label={t('eraser')}
+              title={t('eraser')}
+              variant={tool === ERASER ? 'filled' : 'default'}
+              radius="xl"
+              size={30}
+              onClick={() => onToolChange(ERASER)}
+            >
+              <IconEraser size={18} />
+            </ActionIcon>
+          </Group>
+          <Group gap={6}>
+            {names.map((name) => {
+              const pastel = PASTELS[name];
+              return pastel
+                ? swatch(
+                    name,
+                    pastel,
+                    t('pastel', { color: t(`palette.${name}`) }),
+                    name !== 'black',
+                  )
+                : null;
+            })}
+          </Group>
+        </Stack>
         <Group gap="xs">
+          {onAuto && (
+            <Button
+              variant="light"
+              leftSection={<IconWand size={18} />}
+              loading={autoBusy}
+              onClick={onAuto}
+              title={t('autoHint')}
+            >
+              {t('auto')}
+            </Button>
+          )}
           <ActionIcon
             variant="default"
             size="lg"

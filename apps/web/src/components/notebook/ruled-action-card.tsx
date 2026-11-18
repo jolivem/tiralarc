@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { RuledHeading } from './on-ruling';
+import { type Highlighter, RuledHeading } from './on-ruling';
 import { RuledStack } from './ruled-stack';
 import classes from './ruled-action-card.module.css';
 
@@ -12,10 +12,13 @@ export function RuledActionCard({
   intro,
   action,
   raised = false,
+  highlight,
   children,
 }: {
   /** Its heading a line higher (over the last line of what comes before). */
   raised?: boolean;
+  /** Its heading's highlighter. */
+  highlight: Highlighter;
   title: ReactNode;
   intro: ReactNode;
   action: ReactNode;
@@ -25,7 +28,9 @@ export function RuledActionCard({
   return (
     <section>
       <RuledStack>
-        <RuledHeading raised={raised}>{title}</RuledHeading>
+        <RuledHeading raised={raised} highlight={highlight}>
+          {title}
+        </RuledHeading>
         <div className={classes.row}>
           <p className={classes.intro}>{intro}</p>
           <div className={classes.action}>{action}</div>

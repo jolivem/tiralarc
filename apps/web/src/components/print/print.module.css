@@ -8,6 +8,35 @@
   margin: 12mm 10mm;
 }
 
+/*
+ * The page's number in the bottom margin, on its outer side (Chromium's page margin boxes):
+ * right on right-hand pages (odd, the cover's side), left on left-hand ones.
+ */
+@page :right {
+  @bottom-right {
+    content: counter(page);
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 9pt;
+    color: #555;
+  }
+}
+
+@page :left {
+  @bottom-left {
+    content: counter(page);
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 9pt;
+    color: #555;
+  }
+}
+
+/* The cover has none. */
+@page :first {
+  @bottom-right {
+    content: none;
+  }
+}
+
 .document {
   --print-ink: #212529;
   --print-muted: #6c757d;
@@ -53,6 +82,7 @@
 /* ------------------------------------------------------------------ cover */
 
 .cover {
+  position: relative;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -62,22 +92,58 @@
   text-align: center;
 }
 
-.coverTitle {
-  margin: 0;
-  font-family: var(--font-calendar, var(--font-hand)), cursive;
-  font-size: 30pt;
-  font-weight: 700;
-  line-height: 1.1;
+/* The extract's period, in the cover's bottom right corner. */
+.coverPeriod {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  text-align: right;
 }
 
-.coverName {
-  font-size: 14pt;
-  font-weight: 600;
+/*
+ * The cover's title as lettering: a round bold script (Pacifico), a word a line, white letters
+ * outlined in black with a black shadow down and right (a sticker's depth), a swash under the
+ * last word, then the years.
+ */
+.coverTitle {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 0;
+  /* A brush script (one of the calendar fonts, layout.tsx): lettered, not bubbly. */
+  font-family: var(--font-cal-kaushan-script), cursive;
+  font-weight: 400;
+  line-height: 1.12;
+  color: #fff;
+  -webkit-text-stroke: 1.1mm #000;
+  paint-order: stroke fill;
+  text-shadow: 0.7mm 0.9mm 0 #000;
+}
+
+.coverWord {
+  font-size: 44pt;
+}
+
+.coverSwash {
+  width: 46mm;
+  height: 6mm;
+  margin-top: -1mm;
+  fill: #fff;
+  stroke: #000;
+  stroke-width: 2.4;
+  stroke-linejoin: round;
+  filter: drop-shadow(0.6mm 0.8mm 0 #000);
+}
+
+.coverYears {
+  margin-top: 2mm;
+  font-size: 32pt;
+  letter-spacing: 0.5mm;
 }
 
 /* ------------------------------------------------------- legend and index */
 
-/* print-legend.tsx: each type's colour and symbol, two columns, then the faces. */
+/* print-legend.tsx: each type's name, colour and symbol (three close columns), then the faces. */
 .legendFrame {
   display: flex;
   flex-direction: column;
@@ -87,32 +153,46 @@
   border-radius: 2mm;
 }
 
+/* One type a row; the columns as wide as their content, close together, centred. */
 .legendTypes {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 5mm 6mm;
+  grid-template-columns: auto auto auto;
+  justify-content: center;
+  align-items: center;
+  gap: 3mm 4mm;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
+/* Its cells sit straight in the list's grid. */
 .legendType {
+  display: contents;
+  font-size: 11pt;
+}
+
+.legendName {
+  font-size: 11pt;
+}
+
+.legendColor {
+  width: 5mm;
+  height: 5mm;
+  border: 1px solid #000;
+  border-radius: 50%;
+  justify-self: center;
+}
+
+.legendSymbol {
   display: flex;
   align-items: center;
-  gap: 2.5mm;
-  font-size: 11pt;
-
-  & i {
-    flex: none;
-    width: 4mm;
-    height: 4mm;
-    border-radius: 50%;
-  }
-
-  & span {
-    flex: 1;
-    min-width: 0;
-  }
+  justify-content: center;
+  /* The 38 px (10 mm) drawings' corners inside the ring: 10 mm × √2, and a margin. */
+  width: 15mm;
+  height: 15mm;
+  border: 1px solid #000;
+  border-radius: 50%;
+  background: #fff;
 }
 
 .legendFaces {
@@ -129,12 +209,15 @@
   margin: 0;
   font-size: 9pt;
 
+  /* A black ring around the face, like the types' colours and symbols. */
   & span {
     display: block;
     width: 15mm;
     height: 15mm;
-    padding: 1mm;
-    border: 1px solid var(--print-ink);
+    padding: 1.5mm;
+    border: 1px solid #000;
+    border-radius: 50%;
+    overflow: hidden;
   }
 
   & img {
@@ -145,21 +228,113 @@
   }
 }
 
+.indexTitle {
+  font-size: 30pt;
+  text-align: center;
+}
+
+/* In the archer's calendar font: chapters in bold on a solid line, the months on a dotted one. */
 .indexList {
   margin: 6mm 0 0;
   padding: 0;
-  font-size: 14pt;
+  font-family: var(--font-calendar, var(--font-hand)), cursive;
+  font-size: 16pt;
   list-style: none;
 
   & li {
     padding: 3mm 0;
-    border-bottom: 1px solid var(--print-line);
   }
 
+  /* The name, a line, its first page. */
   & a {
-    display: block;
+    display: flex;
+    align-items: baseline;
+    gap: 2mm;
     color: inherit;
     text-decoration: none;
+
+    &::after {
+      content: '';
+      flex: 1;
+      order: 1;
+      border-bottom: 1px dotted var(--print-muted);
+    }
+  }
+
+  & > li > a {
+    font-weight: 700;
+
+    &::after {
+      border-bottom: 1.5px solid var(--print-ink);
+    }
+  }
+}
+
+/* The months under "Journal": smaller, indented, no rule between them. */
+.indexMonths {
+  margin: 1.5mm 0 0;
+  padding: 0 0 0 6mm;
+  font-size: 13pt;
+  list-style: none;
+
+  & li {
+    padding: 0.6mm 0;
+  }
+
+  & span:first-child {
+    text-transform: capitalize;
+  }
+}
+
+.indexPage {
+  order: 2;
+  min-width: 8mm;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/*
+ * A landscape page (print-parts.tsx `Landscape`), turned left: the inner box is as wide as the
+ * page is tall and as tall as it is wide, rotated a quarter turn counter-clockwise about its
+ * top left corner, then moved down by its width so it fills the page.
+ */
+.landscape {
+  position: relative;
+  height: var(--page-height);
+  overflow: hidden;
+}
+
+.landscapeInner {
+  position: absolute;
+  top: var(--page-height);
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  width: var(--page-height);
+  height: 128mm;
+  transform: rotate(-90deg);
+  transform-origin: top left;
+}
+
+/* A chart's card alone on its landscape page: the whole width. */
+.landscapeCard {
+  /* As tall as the turned page leaves under the card's title and figures. */
+  --printed-chart-height: 330px;
+
+  width: 100%;
+}
+
+/* The season's whiteboard on its landscape page, scaled to fit. */
+.season {
+  display: flex;
+  align-items: center;
+  height: 100%;
+
+  /* Laid out at ~1050 px (as in its window), scaled down to the page's length. */
+  & > * {
+    zoom: 0.67;
+    width: calc(100% / 0.67);
   }
 }
 
@@ -241,38 +416,87 @@
   }
 }
 
+/*
+ * Each month a square: ~39 mm in three columns, the largest four rows of which still fit the
+ * page with the title and the legend; four columns when the extract touches 13 months.
+ */
 .yearMonths {
   display: grid;
   flex: 1;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   align-content: space-evenly;
-
-  /* Wide gaps between the columns: months ~33 mm wide, more like squares. */
-  gap: 3mm 14mm;
+  gap: 2mm 5mm;
   min-height: 0;
   font-family: var(--font-calendar, var(--font-hand-upright)), cursive;
+
+  &[data-many] {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 3mm 5mm;
+  }
+
+  /* Up to four months: two columns of larger squares. */
+  &[data-few] {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6mm 10mm;
+  }
+}
+
+/*
+ * Its square, on its month's pastel (the home page's season calendar: journal.module.css
+ * `.pastel`): the type sized on its width (cqi), whatever the number of columns.
+ */
+.yearMonth {
+  display: flex;
+  flex-direction: column;
+  aspect-ratio: 1;
+  padding: 2.5cqi 3cqi;
+  border-radius: 4cqi;
+  background: var(--month-tint);
+  container-type: inline-size;
+}
+
+.yearMonths {
+  --tint-1: #e3eefb;
+  --tint-2: #eee5fb;
+  --tint-3: #e1f4e8;
+  --tint-4: #fde7ef;
+  --tint-5: #edf6da;
+  --tint-6: #fff5d3;
+  --tint-7: #ffe8d6;
+  --tint-8: #fbe1dc;
+  --tint-9: #f2e9d8;
+  --tint-10: #fde3cb;
+  --tint-11: #e5ebef;
+  --tint-12: #def2f3;
 }
 
 .yearMonthName {
-  margin-bottom: 0.5mm;
-  font-size: 10pt;
+  margin-bottom: 1mm;
+  font-size: 13cqi;
   font-weight: 700;
+  line-height: 1.1;
   text-align: center;
   text-transform: capitalize;
 }
 
+/* Always six rows of weeks, spread over the square. */
 .yearGrid {
   display: grid;
+  flex: 1;
   grid-template-columns: repeat(7, minmax(0, 1fr));
-  font-size: 6.5pt;
-  line-height: 1.1;
+  grid-template-rows: repeat(6, minmax(0, 1fr));
+  min-height: 0;
+  font-size: 9.5cqi;
+  line-height: 1;
   text-align: center;
 }
 
 .yearDay {
   display: flex;
   flex-direction: column;
+  justify-content: center;
   align-items: center;
+  gap: 0.3mm;
 
   /* Days of the month outside the extract. */
   &[data-outside] {
@@ -283,11 +507,11 @@
 .yearDots {
   display: flex;
   gap: 0.3mm;
-  height: 1.2mm;
+  height: 4cqi;
 
   & i {
-    width: 1.2mm;
-    height: 1.2mm;
+    width: 4cqi;
+    height: 4cqi;
     border-radius: 50%;
   }
 
@@ -331,6 +555,8 @@
 .spread {
   --day-width: 25.5mm;
   --band-gap: 2mm;
+  /* The side bands' width: what the left page's four days leave (24 mm). */
+  --side-band: calc(128mm - var(--band-gap) - 4 * var(--day-width));
 
   position: absolute;
   top: 0;
@@ -361,6 +587,7 @@
 /* The month's name on the left page, a blank as tall on the right one. */
 .monthHeader {
   display: flex;
+  flex: none;
   align-items: flex-end;
   justify-content: center;
   height: 18mm;
@@ -372,6 +599,18 @@
   object-fit: contain;
 }
 
+/*
+ * The four bands meet, as on the Journal page: the side ones the whole page high against its
+ * outer edge, the top and bottom ones between them; each stretched to its box (`fill`, the
+ * colouring's fractions follow).
+ */
+.bandTop,
+.bandBottom {
+  width: auto;
+  margin-inline: var(--side-band);
+  object-fit: fill;
+}
+
 .bandTop {
   height: 26mm;
 }
@@ -380,22 +619,21 @@
   height: 22mm;
 }
 
-/* The whole page high, in what the days leave on the outer side (the top and bottom are centred). */
 .bandLeft,
 .bandRight {
   position: absolute;
   top: 0;
+  width: var(--side-band);
   height: 100%;
+  object-fit: fill;
 }
 
 .bandLeft {
   left: 0;
-  width: calc(128mm - var(--band-gap) - 4 * var(--day-width));
 }
 
 .bandRight {
   right: 0;
-  width: calc(128mm - var(--band-gap) - 3 * var(--day-width));
 }
 
 /* The calendar's two halves, filling what the top and bottom bands leave. */
@@ -437,6 +675,8 @@
 }
 
 .weekdays {
+  /* Never squeezed (nor the header above): the weeks stay level on both pages. */
+  flex: none;
   margin-top: 1mm;
   font-family: var(--font-calendar, var(--font-hand-upright)), cursive;
   font-size: 10pt;
@@ -449,15 +689,38 @@
 }
 
 /*
- * Under the right page's days, at its right: the month's arrows and satisfaction. As tall, empty,
- * on the left page: the days are the same height on both.
+ * Under the right page's days, at its right: the month's arrows and satisfaction, when its last
+ * week has no room for them (`data-summary="strip"`, print-month.tsx). As tall, empty, on the left
+ * page: the days are the same height on both. Tall enough to keep it clear of the bottom band's
+ * artwork, which rises into the strip's lower part.
  */
 .monthSummaryRow {
+  position: relative;
+  /* Above the decoration: a coloured bottom band would hide its lower edge. */
+  z-index: 1;
   display: flex;
   flex: none;
   justify-content: flex-end;
-  height: 14mm;
+  align-items: flex-start;
+  height: 20mm;
   margin-top: 2mm;
+
+  [data-summary='week'] & {
+    height: 0;
+    margin: 0;
+  }
+}
+
+/* In the right page's last week, when Friday to Sunday are blank there: across those cells. */
+.summaryInWeek {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  /* As tall as a week, whatever the card's own height. */
+  min-height: 0;
+  grid-column: 1 / -1;
+  align-items: center;
+  justify-content: center;
 }
 
 /*
@@ -503,6 +766,22 @@
 /* ------------------------------------------------------------------ sheet */
 
 /* A sheet sharing the page of the one before it (paginate.tsx): a rule between them. */
+/*
+ * An event's sheet, written in the archer's calendar font (Profile page, `--font-calendar` on
+ * <html>), as handwritten; a little larger, the calligraphic ones being small for their size.
+ */
+.sheet {
+  font-family: var(--font-calendar, var(--font-hand-upright)), cursive;
+  font-size: 12pt;
+  line-height: 1.3;
+}
+
+/* In a sheet, what stays in the plain font: the discipline's badge, the feelings' faces. */
+.plainFont {
+  font-family: var(--mantine-font-family);
+  font-size: 10pt;
+}
+
 .sheet[data-print-follows] {
   break-before: auto;
   margin-top: 6mm;
@@ -539,8 +818,11 @@
   line-height: 1.1;
 }
 
+/* The event's day, top right: red, a little larger. */
 .sheetDate {
   text-align: right;
+  color: #c92a2a;
+  font-size: 14pt;
 }
 
 .box {
@@ -551,7 +833,7 @@
 .boxTitle {
   margin: 0 0 1mm;
   font-family: var(--font-calendar, var(--font-hand)), cursive;
-  font-size: 12pt;
+  font-size: 15pt;
   font-weight: 700;
 }
 
@@ -629,6 +911,37 @@
 .list {
   margin: 0;
   padding-left: 4mm;
+}
+
+/* The session's steps: a box (ticked when done) before each. */
+.steps {
+  display: flex;
+  flex-direction: column;
+  gap: 1.2mm;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  & li {
+    display: flex;
+    align-items: flex-start;
+    gap: 2mm;
+    break-inside: avoid;
+  }
+}
+
+.stepBox {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.4mm;
+  height: 3.4mm;
+  margin-top: 0.3mm;
+  border: 1px solid var(--print-ink);
+  border-radius: 0.6mm;
+  font-size: 8pt;
+  line-height: 1;
 }
 
 /* ----------------------------------------------------------------- photos */

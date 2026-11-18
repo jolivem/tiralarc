@@ -280,7 +280,7 @@ model JournalSession {
   @@map("journal_sessions")
 }
 
-/// A comment the archer's coach left on one of their events (at most `MAX_COMMENTS_PER_SESSION`),
+/// A comment the archer's coach left on one of their events (one per coach, `MAX_COMMENTS_PER_COACH`),
 /// shown at the bottom of its sheet. Only its author changes or deletes it.
 model SessionComment {
   id        String    @id @default(uuid()) @db.Char(36)
@@ -456,6 +456,8 @@ enum Indicator {
   MENTAL_FEELINGS
   /// Average per arrow, by distance (score / arrows of the scored sessions).
   ARROW_AVERAGES
+  /// The archer's FFTA national rankings (`GET /rankings`).
+  RANKINGS
 }
 
 /// What an archer's coach may do in the journal of the season in progress.

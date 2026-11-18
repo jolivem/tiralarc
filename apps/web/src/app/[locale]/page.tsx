@@ -25,12 +25,15 @@ const FAQ = [
   'devices',
 ] as const;
 
-/** Screenshots of the notebook (public/home/notebook-<key>.webp, made-up data), their size. */
+/**
+ * Screenshots of the notebook (public/home/, made-up data), their size. A new screenshot gets a
+ * new file name: browsers and the image optimiser keep the old one under the same name.
+ */
 const PREVIEWS = [
-  { key: 'home', width: 1200, height: 938 },
-  { key: 'journal', width: 1200, height: 1219 },
-  { key: 'sheet', width: 1200, height: 909 },
-  { key: 'stats', width: 1200, height: 1313 },
+  { key: 'home', file: 'notebook-home-2026-11.webp', width: 1200, height: 938 },
+  { key: 'journal', file: 'notebook-journal-cerisier-2026-11.webp', width: 1200, height: 1280 },
+  { key: 'sheet', file: 'notebook-sheet-photo.webp', width: 1200, height: 909 },
+  { key: 'stats', file: 'notebook-stats-2026-11.webp', width: 1200, height: 1313 },
 ] as const;
 
 /** `?invitation=`: the visitor comes from an invitation email (see accept-invitation-form.tsx). */
@@ -107,11 +110,11 @@ export default async function HomePage({ params, searchParams }: PageProps<'/[lo
           </div>
           {[PREVIEWS.slice(0, 2), PREVIEWS.slice(2)].map((side, s) => (
             <div key={s} className={classes.showcaseSide} data-side={s === 0 ? 'left' : 'right'}>
-              {side.map(({ key, width, height }, i) => (
+              {side.map(({ key, file, width, height }, i) => (
                 // A click opens it enlarged in a window, closed by its cross.
                 <PreviewPrint
                   key={key}
-                  src={`/home/notebook-${key}.webp`}
+                  src={`/home/${file}`}
                   alt={t(`preview.${key}Alt`)}
                   caption={t(`preview.${key}`)}
                   width={width}

@@ -5,13 +5,14 @@
  *   node apps/web/scripts/themes/fruits.mjs   → apps/web/public/themes/fruits/*.svg
  */
 import { arc, c, ellipse, frame, sym, turn, writeTheme } from './lib.mjs';
-import { apple } from './common.mjs';
+import { apple, K } from './common.mjs';
 
 const TAU = Math.PI * 2;
 
 /** A pointed leaf from (x, y) heading `angle`, with its midrib and a vein or two. */
 function leaf(p, x, y, angle, length, k = 0.85) {
   const at = frame(x, y, angle);
+  p.color(K.leaf);
   p.shape(
     [
       at(0, 0, true),
@@ -58,9 +59,13 @@ const watermelon = {
       ...arc(0, -0.26, r, ry, Math.PI, 0, 18).slice(1, -1),
       c(r, -0.26),
     ];
+    p.color(K.darkLeaf);
     p.shape(half(0.49, 0.55));
+    p.color('#d8f5a2');
     p.shape(half(0.445, 0.5), 0.7);
+    p.color('#ff6b6b');
     p.shape(half(0.4, 0.45), 0.8);
+    p.color(K.black);
     for (const [x, y] of [
       [-0.24, -0.15],
       [-0.08, -0.12],
@@ -85,6 +90,7 @@ const pineapple = {
   tilt: 0.12,
   draw(p) {
     // The crown: stiff leaves fanning out, the middle ones in front.
+    p.color(K.darkLeaf);
     for (const [a, l, w] of [
       [-2.35, 0.24, 0.05],
       [-0.8, 0.24, 0.05],
@@ -108,6 +114,7 @@ const pineapple = {
       p.line([at(0.04, 0), at(l * 0.7, 0)], 0.4);
     }
     const [cx, cy, rx, ry] = [0, 0.2, 0.25, 0.3];
+    p.color(K.gold);
     p.shape(ellipse(cx, cy, rx, ry, 24));
     for (const angle of [0.75, -0.75]) {
       for (let o = -0.36; o <= 0.36; o += 0.09) {
@@ -128,6 +135,7 @@ const grapes = {
   h: 1,
   tilt: 0.15,
   draw(p) {
+    p.color(K.wood);
     p.wire(
       [
         [0.0, -0.3],
@@ -136,6 +144,7 @@ const grapes = {
       ],
       0.035,
     );
+    p.color(K.leaf);
     p.wire(
       Array.from({ length: 16 }, (_, i) => {
         const a = i * 0.7;
@@ -173,6 +182,7 @@ const grapes = {
       [0.3, 2],
       [0.42, 1],
     ];
+    p.color(K.violet);
     for (const [y, n] of rows) {
       for (let i = 0; i < n; i++) {
         const x = (i - (n - 1) / 2) * 0.15 + ((y * 37) % 0.02);
@@ -189,6 +199,7 @@ const orange = {
   tilt: 0.1,
   draw(p) {
     // The whole fruit behind, its stalk and leaf, its dimpled skin.
+    p.color(K.orange);
     p.shape(ellipse(-0.18, -0.02, 0.32, 0.32, 24));
     for (let i = 0; i < 14; i++) {
       const a = i * 2.4;
@@ -196,11 +207,15 @@ const orange = {
       p.dot(-0.18 + Math.cos(a) * r, -0.02 + Math.sin(a) * r, 0.007);
     }
     leaf(p, -0.17, -0.33, -0.5, 0.2);
+    p.color(K.darkLeaf);
     p.shape(ellipse(-0.18, -0.33, 0.025, 0.02, 8), 0.7);
     // The slice in front: rind, pith, segments.
     const [cx, cy] = [0.22, 0.12];
+    p.color(K.orange);
     p.shape(ellipse(cx, cy, 0.27, 0.27, 24));
+    p.color(K.cream);
     p.shape(ellipse(cx, cy, 0.23, 0.23, 22), 0.7);
+    p.color('#ffa94d');
     for (let i = 0; i < 9; i++) {
       const a0 = (i / 9) * TAU + 0.04;
       const a1 = ((i + 1) / 9) * TAU - 0.04;
@@ -223,6 +238,7 @@ const strawberry = {
   h: 1,
   tilt: 0.3,
   draw(p) {
+    p.color(K.darkLeaf);
     p.wire(
       [
         [0, -0.3],
@@ -231,9 +247,11 @@ const strawberry = {
       ],
       0.03,
     );
+    p.color(K.red);
     p.shape(
       sym([c(0, -0.24), [0.18, -0.28], [0.31, -0.17], [0.31, 0.03], [0.2, 0.28], c(0, 0.47)]),
     );
+    p.color(K.yellow);
     for (const [x, y] of [
       [-0.18, -0.1],
       [0, -0.13],
@@ -260,6 +278,7 @@ const strawberry = {
         sepals.push([Math.cos(b) * 0.08, -0.24 + Math.sin(b) * -0.03 + 0.03]);
       }
     }
+    p.color(K.darkLeaf);
     p.shape([c(-0.06, -0.26), ...sepals, c(0.06, -0.26)], 0.8);
   },
 };
@@ -269,6 +288,7 @@ const cherries = {
   h: 1,
   tilt: 0.25,
   draw(p) {
+    p.color('#5c940d');
     p.wire(
       [
         [-0.15, 0.17],
@@ -288,6 +308,7 @@ const cherries = {
       0.025,
     );
     leaf(p, 0.06, -0.4, -0.3, 0.28);
+    p.color(K.darkRed);
     for (const [x, y] of [
       [-0.16, 0.31],
       [0.17, 0.26],
@@ -312,6 +333,7 @@ const pear = {
   h: 1,
   tilt: 0.2,
   draw(p) {
+    p.color(K.wood);
     p.wire(
       [
         [0, -0.3],
@@ -321,6 +343,7 @@ const pear = {
       0.035,
     );
     leaf(p, 0.01, -0.42, -0.5, 0.22);
+    p.color('#c0eb75');
     p.shape(
       sym([
         c(0, -0.32),
@@ -354,7 +377,9 @@ const kiwi = {
   h: 0.8,
   tilt: 0.25,
   draw(p) {
+    p.color('#8b6a3e');
     p.shape(ellipse(0, 0, 0.47, 0.39, 26));
+    p.color('#94d82d');
     p.shape(ellipse(0, 0, 0.42, 0.34, 26), 0.7);
     for (let i = 0; i < 22; i++) {
       const a = (i / 22) * TAU;
@@ -369,8 +394,10 @@ const kiwi = {
     for (let i = 0; i < 18; i++) {
       const a = (i / 18) * TAU + 0.1;
       const at = frame(Math.cos(a) * 0.25, Math.sin(a) * 0.2, a);
+      p.color(K.black);
       p.shape([at(-0.028, 0, true), at(0, -0.014), at(0.022, 0), at(0, 0.014)], 0.45);
     }
+    p.color('#e9fac8');
     p.shape(ellipse(0, 0, 0.16, 0.12, 18), 0.7);
   },
 };
@@ -381,6 +408,7 @@ const lemon = {
   tilt: 0.3,
   draw(p) {
     leaf(p, 0.36, -0.12, -0.9, 0.28);
+    p.color(K.yellow);
     p.shape([
       c(-0.48, 0.04),
       [-0.4, -0.14],
@@ -411,10 +439,263 @@ const lemon = {
   },
 };
 
+// ------------------------------------------------ shown once in the whole decoration
+
+const banana = {
+  w: 1,
+  h: 0.6,
+  tilt: 0.3,
+  draw(p) {
+    p.color(K.darkWood);
+    p.poly([c(0.36, -0.16), c(0.42, -0.28), c(0.48, -0.26), c(0.44, -0.12)], 0.8);
+    p.color(K.yellow);
+    p.shape([
+      c(-0.46, -0.12),
+      [-0.3, 0.1],
+      [0, 0.22],
+      [0.28, 0.12],
+      [0.42, -0.04],
+      c(0.44, -0.16),
+      [0.32, -0.06],
+      [0.1, 0.04],
+      [-0.16, 0.02],
+      [-0.36, -0.08],
+    ]);
+    p.line(
+      [
+        [-0.36, -0.04],
+        [-0.1, 0.1],
+        [0.2, 0.08],
+        [0.4, -0.08],
+      ],
+      0.5,
+    );
+  },
+};
+
+const peach = {
+  w: 0.9,
+  h: 1,
+  tilt: 0.25,
+  draw(p) {
+    leaf(p, 0.02, -0.32, -0.5, 0.36);
+    p.color('#ffa8a8');
+    p.shape([
+      c(0, -0.26),
+      [0.2, -0.33],
+      [0.38, -0.18],
+      [0.4, 0.08],
+      [0.26, 0.34],
+      [0, 0.44],
+      [-0.26, 0.34],
+      [-0.4, 0.08],
+      [-0.38, -0.18],
+      [-0.2, -0.33],
+    ]);
+    p.line(
+      [
+        [0, -0.26],
+        [0.08, 0.0],
+        [0.04, 0.3],
+      ],
+      0.6,
+    );
+    p.color(K.darkWood);
+    p.wire(
+      [
+        [0, -0.26],
+        [-0.02, -0.38],
+      ],
+      0.04,
+      0.7,
+    );
+  },
+};
+
+/** Half an avocado, its stone. */
+const avocado = {
+  w: 0.76,
+  h: 1,
+  tilt: 0.3,
+  draw(p) {
+    const half = [
+      [0, -0.46],
+      [0.13, -0.4],
+      [0.2, -0.14],
+      [0.34, 0.14],
+      [0.3, 0.36],
+      [0, 0.48],
+    ];
+    p.color(K.darkLeaf);
+    p.shape(sym(half));
+    p.color('#d8f5a2');
+    p.shape(sym(half.map(([x, y]) => [x * 0.8, 0.04 + y * 0.84])), 0.8);
+    p.color(K.wood);
+    p.shape(ellipse(0, 0.2, 0.15, 0.16, 18));
+    p.line(
+      [
+        [-0.07, 0.12],
+        [-0.03, 0.08],
+      ],
+      0.5,
+    );
+  },
+};
+
+/** A coconut cut open, with a straw. */
+const coconut = {
+  w: 1,
+  h: 0.84,
+  tilt: 0.12,
+  draw(p) {
+    p.color(K.pink);
+    p.wire(
+      [
+        [0.08, -0.05],
+        [0.2, -0.3],
+        [0.3, -0.42],
+        [0.4, -0.4],
+      ],
+      0.05,
+      0.8,
+    );
+    p.color(K.darkWood);
+    p.shape([c(-0.45, -0.04), c(0.45, -0.04), [0.4, 0.2], [0.2, 0.36], [-0.2, 0.36], [-0.4, 0.2]]);
+    p.color(null);
+    p.shape(ellipse(0, -0.04, 0.45, 0.11, 26), 0.9);
+    p.color('#e7f5ff');
+    p.shape(ellipse(0, -0.04, 0.34, 0.07, 22), 0.8);
+    p.color(K.pink);
+    p.line(
+      [
+        [-0.3, 0.1],
+        [-0.22, 0.2],
+      ],
+      0.5,
+    );
+    p.line(
+      [
+        [0.24, 0.16],
+        [0.32, 0.1],
+      ],
+      0.5,
+    );
+    p.wire(
+      [
+        [0.08, -0.05],
+        [0.13, -0.12],
+      ],
+      0.05,
+      0.8,
+    );
+  },
+};
+
+/** A glass of orange juice, a slice on its rim. */
+const juice = {
+  w: 0.66,
+  h: 1,
+  tilt: 0.08,
+  draw(p) {
+    p.color(K.red);
+    p.wire(
+      [
+        [-0.06, -0.2],
+        [-0.12, -0.44],
+        [-0.2, -0.48],
+      ],
+      0.04,
+      0.75,
+    );
+    p.color('#e7f5ff');
+    p.poly([c(-0.24, -0.3), c(0.2, -0.3), c(0.15, 0.46), c(-0.19, 0.46)]);
+    // The juice, below its surface.
+    p.tint(
+      [
+        [-0.225, -0.13],
+        [0.19, -0.13],
+        [0.15, 0.46],
+        [-0.19, 0.46],
+      ],
+      K.orange,
+    );
+    p.line(
+      [
+        [-0.23, -0.14],
+        [-0.1, -0.11],
+        [0.06, -0.15],
+        [0.19, -0.13],
+      ],
+      0.6,
+    );
+    p.color(K.orange);
+    p.shape(
+      [
+        c(0.04, -0.32),
+        ...arc(0.18, -0.32, 0.14, 0.14, Math.PI, Math.PI * 2, 10).slice(1, -1),
+        c(0.32, -0.32),
+      ],
+      0.9,
+    );
+    p.color('#ffc078');
+    p.shape(
+      [
+        c(0.08, -0.32),
+        ...arc(0.18, -0.32, 0.1, 0.1, Math.PI, Math.PI * 2, 8).slice(1, -1),
+        c(0.28, -0.32),
+      ],
+      0.7,
+    );
+    p.seg(
+      [
+        [0.18, -0.32],
+        [0.18, -0.42],
+      ],
+      0.5,
+    );
+  },
+};
+
+const mango = {
+  w: 0.8,
+  h: 1,
+  tilt: 0.35,
+  draw(p) {
+    leaf(p, 0.04, -0.38, -0.3, 0.32);
+    p.color('#ff922b');
+    p.shape([
+      [0.02, -0.38],
+      [0.22, -0.32],
+      [0.32, -0.08],
+      [0.26, 0.24],
+      [0.06, 0.45],
+      [-0.18, 0.42],
+      [-0.3, 0.16],
+      [-0.24, -0.18],
+    ]);
+    p.line(
+      [
+        [-0.14, -0.14],
+        [-0.2, 0.08],
+      ],
+      0.5,
+    );
+    p.color(K.darkWood);
+    p.wire(
+      [
+        [0.02, -0.38],
+        [0.0, -0.46],
+      ],
+      0.04,
+      0.7,
+    );
+  },
+};
+
 writeTheme('fruits', {
   seed: 701,
   thumb: watermelon,
   front: [watermelon, pineapple, grapes, orange, apple],
-  middle: [cherries, strawberry, pear, kiwi, lemon, apple, strawberry],
-  back: [cherries, strawberry, lemon],
+  middle: [cherries, strawberry, pear, kiwi, lemon],
+  once: [banana, peach, avocado, coconut, juice, mango],
 });

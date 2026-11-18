@@ -24,6 +24,7 @@ import { useFormatter, useLocale, useTranslations } from 'next-intl';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { FEELINGS } from './feelings';
 import classes from './journal.module.css';
+import { useStepLabel } from './session-steps';
 import { TYPE_PICTURES } from './session-types';
 import {
   CARD_HEIGHT,
@@ -36,8 +37,11 @@ import {
 } from './share-card';
 import { skySvg, weatherImageUrl, windsockSvg } from './weather-icons';
 
-/** Instagram's carousel takes 10 pictures: the card, then 9 photos at most. */
-const MAX_SHARED_PHOTOS = 9;
+/**
+ * The photos shared after the card: an event's 4 at most (`MAX_PHOTOS_PER_SESSION` in the API;
+ * older events with more pick 4 of them). Instagram's carousel would take 9.
+ */
+const MAX_SHARED_PHOTOS = 4;
 const JPEG_QUALITY = 0.92;
 /** The types whose sheets are shared (session-form.tsx). */
 type SharedType = 'TRAINING' | 'COACHING' | 'COMPETITION';
@@ -146,6 +150,7 @@ export function ShareButton({
   const format = useFormatter();
   const locale = useLocale();
   const [opened, setOpened] = useState(false);
+  const stepLabel = useStepLabel();
 
   const rows = useMemo(
     () =>
@@ -172,9 +177,10 @@ export function ShareButton({
           ]
             .filter(Boolean)
             .join(' · '),
+        step: stepLabel,
         coachComment,
       }),
-    [session, t, tJournal, format, coachComment],
+    [session, t, tJournal, format, coachComment, stepLabel],
   );
   const [fields, setFields] = useState<ShareField[]>(DEFAULT_SHARE_FIELDS);
   const [photoIds, setPhotoIds] = useState(() =>

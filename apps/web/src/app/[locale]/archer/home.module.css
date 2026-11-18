@@ -14,14 +14,15 @@
   }
 }
 
-/* The day, top right of the notebook: navy ink, underlined (a lighter navy on dark paper). */
+/* The day, top right of the notebook: red ink, underlined in red (a lighter red on dark paper). */
 .date {
-  color: #1f3a6e;
+  color: #c62828;
   text-decoration: underline;
+  text-decoration-color: currentColor;
   text-decoration-thickness: 2px;
   text-underline-offset: 4px;
 
   @mixin dark {
-    color: #8fb3ea;
+    color: #ff8a80;
   }
 }

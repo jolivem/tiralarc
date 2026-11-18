@@ -11,6 +11,8 @@ export const SHARE_FIELDS = [
   'score',
   'weather',
   'objective',
+  // "Déroulé de la séance": the planned steps, one per line.
+  'steps',
   'satisfaction',
   'technique',
   'physical',
@@ -53,8 +55,8 @@ export interface ShareRow<F extends string = ShareField> {
   short?: boolean;
   text?: string;
   items?: string[];
-  /** The list's bullet: what went well, or what is to improve. */
-  bullet?: 'well' | 'improve';
+  /** The list's bullet: what went well, what is to improve, or a step of the session. */
+  bullet?: Bullet;
   /** A feeling: its face on the card (`text` names it in the caption). */
   feeling?: Feeling;
   /** A rating (0–10): a bar on the card (`text` gives it in the caption). */
@@ -74,6 +76,8 @@ export interface ShareWording {
   minutes: (value: number) => string;
   /** "Éclaircies · vent fort · 12 °C" (what was noted). */
   weather: (weather: ShareWeather) => string;
+  /** A step of "Déroulé de la séance": "15 min · Paille — Échauffement". */
+  step: (step: JournalSession['steps'][number]) => string;
   /** The coach's comments on the event, one per line; none = no such field. */
   coachComment?: string | null;
 }
@@ -94,6 +98,7 @@ export function filledRows(session: JournalSession, w: ShareWording): ShareRow[]
     score: session.score === null ? null : String(session.score),
     weather: weather && w.weather(weather),
     objective: session.objective,
+    steps: lines(session.steps.map(w.step)),
     satisfaction: session.satisfaction === null ? null : w.rating(session.satisfaction),
     technique: session.technique === null ? null : w.rating(session.technique),
     physical: session.physicalFeeling && w.feeling(session.physicalFeeling),
@@ -122,11 +127,13 @@ export function filledRows(session: JournalSession, w: ShareWording): ShareRow[]
     if (rating != null) return [{ field, label, text: value as string, rating }];
     if (field === 'weather' && weather) return [{ field, label, text: value as string, weather }];
     if (typeof value === 'string') return [{ field, label, text: value.trim() }];
-    return [{ field, label, items: value, bullet: field === 'wentWell' ? 'well' : 'improve' }];
+    const bullet = field === 'wentWell' ? 'well' : field === 'steps' ? 'step' : 'improve';
+    return [{ field, label, items: value, bullet }];
   });
 }
 
-const BULLETS = { well: '✓', improve: '→' } as const;
+const BULLETS = { well: '✓', improve: '→', step: '•' } as const;
+type Bullet = keyof typeof BULLETS;
 
 /**
  * A line of the card: a field's label (on its first line), then text (or a feeling's face);
@@ -141,7 +148,7 @@ export interface CardLine extends Cell {
 interface Cell {
   label?: string;
   text: string;
-  bullet?: 'well' | 'improve';
+  bullet?: Bullet;
   indent?: boolean;
   feeling?: Feeling;
   rating?: number;
@@ -233,7 +240,8 @@ function pairing(row: AnyRow | undefined) {
   if (!row) return null;
   if (row.short ?? (SHORT_FIELDS as readonly string[]).includes(row.field)) return 'short';
   if (row.feeling) return 'feeling';
-  return row.items ? 'list' : null;
+  // The steps' lines are long: across the whole width.
+  return row.items && row.bullet !== 'step' ? 'list' : null;
 }
 
 /**
@@ -279,7 +287,7 @@ const MARGIN = '#e06666';
 const INK = '#27313f';
 const LABEL_INK = '#1c4f8f';
 const HIGHLIGHT = '#bfe0ff';
-const BULLET_INK = { well: '#0ca678', improve: '#f76707' } as const;
+const BULLET_INK = { well: '#0ca678', improve: '#f76707', step: '#1c4f8f' } as const;
 /** The leaf on the desk: this far from the card's top, right and bottom. */
 const PAPER_INSET = 26;
 /**

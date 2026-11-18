@@ -17,7 +17,9 @@ import { SectionCard } from '@/components/section-card';
 import type { Locale } from '@/i18n/routing';
 import { FavoriteIndicatorProvider } from '@/components/stats/favorite';
 import { IndicatorCard } from '@/components/stats/favorite-card';
+import { RankingsCard } from '@/components/stats/rankings-card';
 import { RuledCardTitles } from '@/components/stats/stats-cards';
+import statsClasses from '@/components/stats/stats.module.css';
 import { CompetitionsToPlan } from '@/components/journal/competition-list';
 import { getAuthedApi } from '@/lib/api';
 import { getArcherProfile } from '@/lib/archer-profile';
@@ -76,9 +78,19 @@ export default async function ArcherHomePage({ params }: PageProps<'/[locale]/ar
   );
   // The favourite indicator (starred on the Indicators page), over the selected journal.
   const favorite = profile?.favoriteIndicator ?? null;
-  const favoriteStats = favorite ? await getStats(selected ?? null) : null;
+  // The rankings card loads its own figures, from the FFTA.
+  const favoriteStats =
+    favorite && favorite !== 'RANKINGS' ? await getStats(selected ?? null) : null;
   // Practising in France (or not said yet): the FFTA's competitions and rankings show.
   const ffta = profile?.practisesInFrance !== false;
+  // What the rankings depend on (as on the Indicators page): kept an hour in the browser.
+  const rankingsScope = JSON.stringify([
+    user?.id,
+    profile?.licenceNumber,
+    profile?.category,
+    profile?.bowType,
+    profile?.disciplines,
+  ]);
   // What they depend on: kept an hour in the browser, read again once any of it changes.
   const fftaScope = JSON.stringify([
     user?.id,
@@ -164,7 +176,9 @@ export default async function ArcherHomePage({ params }: PageProps<'/[locale]/ar
         <AlignedSpacer />
         {selected ? (
           <>
-            <RuledHeading raised>{t('calendar')}</RuledHeading>
+            <RuledHeading raised highlight="yellow">
+              {t('calendar')}
+            </RuledHeading>
             {/* A click opens the whole season. */}
             <SeasonCalendar
               journal={selected}
@@ -200,7 +214,9 @@ export default async function ArcherHomePage({ params }: PageProps<'/[locale]/ar
       {/* A blank line at least above the pen rule (on both pages: they stay level). */}
       <Box mt="auto" pt="var(--line)">
         {/* A pen rule above the sections, across both pages, sets them off. */}
-        <RuledHeading penRule>{t('sections')}</RuledHeading>
+        <RuledHeading penRule highlight="mint">
+          {t('sections')}
+        </RuledHeading>
         {notes(LEFT_NOTES, 0)}
       </Box>
     </Stack>
@@ -245,7 +261,16 @@ export default async function ArcherHomePage({ params }: PageProps<'/[locale]/ar
           }
         />
       )}
-      {favorite && favoriteStats && (
+      {favorite === 'RANKINGS' && ffta && (
+        <RuledCardTitles value>
+          <FavoriteIndicatorProvider initial={favorite}>
+            <div className={statsClasses.compact}>
+              <RankingsCard cacheScope={rankingsScope} />
+            </div>
+          </FavoriteIndicatorProvider>
+        </RuledCardTitles>
+      )}
+      {favorite && favorite !== 'RANKINGS' && favoriteStats && (
         <RuledCardTitles value>
           <FavoriteIndicatorProvider initial={favorite}>
             <IndicatorCard

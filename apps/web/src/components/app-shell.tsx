@@ -80,9 +80,13 @@ export function TiralarcShell({ user, children }: { user: ShellUser | null; chil
       }
       footer={hasSections ? { height: { base: 64, sm: 0 } } : undefined}
       padding="md"
-      // Archer area and visitors' home page: a desk; on phones, the archer tab bar edged with
-      // the colour of the open divider.
-      className={hasSections || (!user && pathname === '/') ? classes.desk : undefined}
+      // Archer area, visitors' home page and the sign-in page: a desk; on phones, the archer tab
+      // bar edged with the colour of the open divider.
+      className={
+        hasSections || (!user && pathname === '/') || pathname === '/login'
+          ? classes.desk
+          : undefined
+      }
       style={
         current
           ? ({ ...tabColors(current), '--open-tab': 'var(--tab-filled)' } as CSSProperties)

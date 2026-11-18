@@ -525,7 +525,7 @@
       "fields": "Details to post",
       "selectAll": "Select all",
       "selectNone": "Deselect all",
-      "photos": "Photos ({count} / {max})",
+      "photos": "Photos ({count} / {max} max)",
       "photo": "Photo {n}",
       "noPhotos": "No photos: only the summary card will be posted.",
       "preview": "Summary card preview",
@@ -562,6 +562,7 @@
         "score": "Score",
         "weather": "Weather",
         "objective": "Objective",
+        "steps": "Session plan",
         "satisfaction": "Satisfaction",
         "technique": "Technique",
         "physical": "Physical",
@@ -604,8 +605,8 @@
       "preview": "Preview of the {month} summary"
     },
     "newEvents": {
-      "title": "Proposed events",
-      "empty": "No new proposed event.",
+      "title": "From your coach",
+      "empty": "Nothing new from your coach.",
       "comment": "{count, plural, one {New comment} other {# new comments}}",
       "commentBy": "Comment from {name}: open the sheet"
     },
@@ -695,6 +696,10 @@
       "clear": "Clear all",
       "saving": "Saving…",
       "saved": "Colouring saved.",
+      "pastel": "Pastel {color}",
+      "auto": "Colour automatically",
+      "autoHint": "Colours the whole decoration in real-life colours (the month's name keeps its own). \"Undo last step\" takes it back.",
+      "autoFailed": "The decoration couldn't be read: try again.",
       "palette": {
         "red": "Red",
         "orange": "Orange",
@@ -876,13 +881,7 @@
     "titleOf": "Summary · {title}",
     "open": "Season summary",
     "close": "Close the summary",
-    "events": "Events",
-    "types": {
-      "TRAINING": "{count, plural, one {# training} other {# trainings}}",
-      "COACHING": "{count, plural, one {# coaching} other {# coachings}}",
-      "COMPETITION": "{count, plural, one {# competition} other {# competitions}}",
-      "STRENGTH": "{count, plural, one {# strength session} other {# strength sessions}}"
-    },
+    "events": "Sessions",
     "arrows": "Arrows shot",
     "time": "Time practising",
     "hoursValue": "{hours} h {minutes}",
@@ -910,8 +909,8 @@
     "date": "Date",
     "arrows": "Arrows",
     "cumulativeArrows": "Cumulative arrows",
-    "events": "Events by type",
-    "noEvents": "No events yet.",
+    "events": "Sessions by type",
+    "noEvents": "No sessions yet.",
     "feelings": {
       "physical": {
         "title": "Physical feelings",
@@ -1058,7 +1057,6 @@
     "cancel": "Cancel",
     "coverTitle": "My archery journal",
     "period": "From {from} to {to}",
-    "generatedOn": "Extract of {date}",
     "index": "Contents",
     "yearTitle": "Year calendar",
     "noReview": "Review not written yet.",

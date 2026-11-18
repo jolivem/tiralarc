@@ -3366,7 +3366,7 @@
             "description": "Not one of your archers (or not in their current journal)"
           },
           "409": {
-            "description": "LIMIT_REACHED: 20 comments on this event"
+            "description": "LIMIT_REACHED: this coach already commented on the event (change it instead)"
           }
         },
         "security": [
@@ -6201,7 +6201,8 @@
           "COMPETITIONS",
           "PHYSICAL_FEELINGS",
           "MENTAL_FEELINGS",
-          "ARROW_AVERAGES"
+          "ARROW_AVERAGES",
+          "RANKINGS"
         ],
         "description": "The indicator shown on the home page; null = none."
       },
