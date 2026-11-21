@@ -96,7 +96,9 @@ export type ErrorCode =
   | 'DATE_LOCKED'
   | 'DAILY_LIMIT_REACHED'
   | 'GROUP_NAME_TAKEN'
-  | 'INVALID_REVIEW_TOKEN';
+  | 'INVALID_REVIEW_TOKEN'
+  | 'WEATHER_UNAVAILABLE'
+  | 'DEMO_READ_ONLY';
 
 /** RFC 9457 error body returned by every failing API call. */
 export interface ProblemDetails {

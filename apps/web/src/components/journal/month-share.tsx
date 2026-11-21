@@ -229,6 +229,7 @@ export function MonthShareButton({
         variant="default"
         size="sm"
         leftSection={<IconBrandInstagram size={18} />}
+        data-tour="share"
         onClick={() => {
           setStatus('idle');
           setEdited(null);

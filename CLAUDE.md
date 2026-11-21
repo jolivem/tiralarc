@@ -81,10 +81,25 @@ the same API — keep it client-agnostic (no cookies, no web-only assumptions in
   journal's title is centred in the header. On the home notebook every title and the months' names
   sit on a ruled line (`components/notebook/on-ruling.tsx`: `RuledHeading` two lines, `RuledSubtitle`
   / `RuledLine` one, snapped again when content above changes), and the left page's calendar starts level with the
-  right page's first heading, "Régularité" (`regularity-card.tsx`, `lib/regularity.ts`: events noted / days since the
+  right page's first heading, "Régularité" (`regularity-card.tsx`, `lib/regularity.ts`: events noted ("séances") / days since the
   journal began, weeks in a row with 2+ sessions; `raised`; `page-alignment.tsx`: the right page's top is measured, md and up).
   Left page: "À compléter" (`to-complete.tsx`: past events without review) under "Du côté du coach" (`new-events.tsx`: events the coach planned, new comments); the date (and its
   pen) opens the new-event dialog on today (`today-entry.tsx`).
+- Guided tours (web, `components/tour/`): a page's `<Tour id steps autoStart>` dims the page but for one element
+  at a time (`data-tour="<step>"` on it; a step whose elements are missing or hidden is left out, a step without
+  target is a centred word; a list of targets = the first one shown; `also` lights more elements, each its own hole
+  in the SVG veil; `data-tour-fit` on an element frames only its text / buttons / pictures, not blank ruled lines) with a sticky note beside it (`placeNote` in `tour-layout.ts`, unit-tested: under, over,
+  right, left, else at the window's bottom). It starts by itself once the archer has a journal and hasn't seen it
+  (`toursSeen` in the API's archer profile, `PUT /profile/tours/{tour}` when finished or skipped), then from the
+  header's "?" (`TourButton`, `tour-store.ts`; in the user menu on phones). Steps' texts: `tours.<id>.<step>`.
+  Done: `home` (archer home page, `HOME_TOUR`), `journal` (Journal page, `JOURNAL_TOUR`: marks in `journal-view.tsx`;
+  not started by itself over a `?day=` competitions' dialog), `stats` (Indicators, `STATS_TOUR`: the arrows card and
+  its star stand for every chart card, `StatsCard`), `profile` (`PROFILE_TOUR`, one step per card), `sheet` (the
+  event sheet, trainings / coachings / competitions only, `SHEET_TOUR`: `Section tour=`); still to come: the Sheets
+  section (once it has content). Home page, left page, for a new archer: "Pour bien démarrer" (`getting-started.tsx`:
+  profile, first event, coach invited, a month decorated; ticked ones crossed out; there until hidden —
+  `getting-started` in `toursSeen`; not in the example journal).
+  Existing accounts get each tour on their next visit (`toursSeen` null = none seen).
 - An event's place (`location`) reads with a capital first, the rest in lower case (`placeName` in
   `journal.service.ts`, applied when saving and reading back, FFTA places too).
 - Journals: a `Journal` is a named period (title + inclusive start / end days), usually one season. There is no
@@ -113,9 +128,10 @@ the same API — keep it client-agnostic (no cookies, no web-only assumptions in
   The toolbar has a row of crayons and a row of their pastels (`PASTELS` in `coloring-toolbar.tsx`), and "Coloriage
   automatique" (`auto-coloring.ts`): each band has a colour map (`<band>.colors.svg`, the same drawing filled with
   real-life colours: generators call `p.color(…)` / set `kind.color` before drawing a part, `p.tint` for areas only
-  lines split, e.g. a beach ball's segments; colours shared in `K`, `common.mjs`); every closed area of the band takes
-  its colour there at its deepest point (`realisticFills` / `areaSeeds`), largest first, at most `MAX_FILLS` (500)
-  with the title's fills, which it keeps. It replaces the bands' colouring (undo takes it back).
+  lines split, e.g. a beach ball's segments; colours shared in `K`, `common.mjs`); every closed area of the band (those cut by its
+  edge too, a branch running off it; not the paper around, `MAX_EDGE_AREA`) takes its colour there at its deepest point (`realisticFills` / `areaSeeds`), largest first, at most `AUTO_FILLS` (500)
+  with the title's fills, which it keeps (a month holds up to `MAX_FILLS`, 2000: room for corrections; past it the
+  web refuses the click and says so, `full`). It replaces the bands' colouring (undo takes it back).
   The side bands are stretched to the calendar's height (`object-fit: fill`) and the frame has no row gap: the four
   bands meet (`click` in `calendar-frame.tsx` maps the pointer accordingly).
   Flood fill stops at dark strokes, so artwork needs closed shapes; changing a month's theme clears its colouring (the web asks to confirm first),
@@ -182,7 +198,10 @@ the same API — keep it client-agnostic (no cookies, no web-only assumptions in
   `notebook/on-ruling.tsx`), as are the home notebook's titles (`RuledHeading highlight`), not in the PDF.
 - Goals (`apps/api/src/goals/`, card on the Indicators page): type, description, the day it was set (`createdOn`,
   editable) and the day it was reached (`achievedOn`; null = not reached — there is no separate boolean). They belong
-  to the archer, not to a journal or period.
+  to the archer, not to a journal or period. Optional figures (`metric` SCORE / ARROWS + `target`, SCORE with an
+  optional `discipline` / `distanceMeters`): `progress` (best competition score — a training's score counts however
+  many arrows were shot —, or arrows shot since `createdOn`, `goal-progress.ts`, unit-tested) is worked out when the
+  goals are read, and a goal whose target was met becomes reached on that day (the card shows a progress bar).
 - Event photos: files go to S3-compatible storage through `StorageService` (`apps/api/src/storage/`, a local
   Versity Gateway on :9000 in dev, an in-memory fake in e2e tests); the DB keeps one `SessionPhoto` row, at most 4
   per event (`MAX_PHOTOS_PER_SESSION`, `LIMIT_REACHED`; events that had more keep them). Uploads are
@@ -218,7 +237,8 @@ the same API — keep it client-agnostic (no cookies, no web-only assumptions in
   text ("championnat", "championnat de france"; `Scope` in `CompetitionsService`). A U11–U21 archer sees the
   young archers' championships, not the adults' (`championshipAge`), others the other way round. Web: a medal badge,
   and the Journal calendar's ticket says "CF" / "CR" / "CD" (gold / silver / bronze). The home page's season calendar
-  (`season-calendar.tsx`) outlines their days; the right page's "Planification Concours" card (under "Mandats publiés")
+  (`season-calendar.tsx`) outlines their days; the right page's "Planification Concours" card (under "Régularité"; its "Planifier"
+  button on the title's line, the published invitations listed under it: `CompetitionsToPlan heading={false}`)
   (`competition-planning.tsx`, "Planifier" button → dialog, today to the journal's end) lists them
   (`competition-list.tsx`) under their map (`competitions-map.tsx`, Leaflet + OpenStreetMap tiles: one point per town,
   the profile's `homeTown` in blue; hover = names and km as the crow flies, `lib/geo.ts`; click = the list scrolls to it).
@@ -244,7 +264,9 @@ the same API — keep it client-agnostic (no cookies, no web-only assumptions in
   items the parser can't read; 404 / 410; Cloudflare's "Just a moment" page is a failed reading, not a new layout).
   A page not recognised throws `FftaLayoutError` (callers keep their last good reading) and goes to `FftaWatch`:
   after 3 such readings in a row of one page (`ALERT_AFTER`), an email to `ALERTS_EMAIL` (feedback@myarcherydiary.com;
-  `layoutAlertEmail`), at most one a day per page; in memory, a good reading resets the count.
+  `layoutAlertEmail`), at most one a day per page; in memory, a good reading resets the count. The counting is
+  `LayoutWatch` (`mail/layout-watch.ts`), shared with ianseo.net (`IanseoWatch`, `ianseo-layout.ts`: the year's list
+  of competitions without any `Details.php?toId=` link, or none of whose dates reads).
 - FFTA national rankings (`GET /rankings`, `RankingsService`, `ffta-rankings.ts`): the extranet page framed by
   ffta.fr's "classements nationaux" lists a season's rankings (POST filters; name, [TAE distance,] sex, bow,
   categories); the archer's are those of their profile's bow and category, either sex, no scratch, in their
@@ -253,7 +275,8 @@ the same API — keep it client-agnostic (no cookies, no web-only assumptions in
   only the archer's own row is kept (12 h, in memory). Web: `components/stats/rankings-card.tsx`, a card of the
   Indicators page under the goals, loaded once shown (the pages are big), then kept an hour in the browser like the competitions
   to plan (`lib/browser-cache.ts`, keyed by the archer and the profile settings they depend on; complete readings only); `missing` asks for licence / category / bow. On
-  the home notebook's right page, under "Régularité", "Mandats publiés" (`CompetitionsToPlan` in `competition-list.tsx`): the next scheduled FFTA
+  the home notebook's right page, in "Planification Concours" (under "Régularité"; titled "Mandats publiés" on its own
+  when no journal is selected) (`CompetitionsToPlan` in `competition-list.tsx`): the next scheduled FFTA
   competitions whose invitation (`mandateUrl`) is published, not in the journal yet; their dates and name open the
   Journal page with `?day=YYYY-MM-DD` (that month, the day's `CompetitionsModal` open, where it is added). A black
   cross (confirmed) dismisses one: `PUT/DELETE /competitions/{id}/dismissal` (table `dismissed_competitions`),
@@ -320,4 +343,33 @@ the same API — keep it client-agnostic (no cookies, no web-only assumptions in
   `/verify-email`); `POST /auth/reset-password` sets the password, revokes every refresh token, marks the email
   verified and signs in (`INVALID_RESET_TOKEN`). Web: "Mot de passe oublié ?" under the sign-in button → `/forgot-password`.
 - Dev emails land in Mailpit (http://localhost:8025). e2e tests capture mail and fake ID tokens (`apps/api/test/helpers.ts`).
+- The account itself (`apps/api/src/account/`): `DELETE /users/me` ({ email typed again, password if the account has
+  one }; rows cascade, photos' files removed) and `GET /users/me/export` (a ZIP streamed as it is written, `zip.ts`
+  — stored entries, no dependency —: `mes-donnees.json`, photos, score sheets). Web: "Vos données" card of the Account
+  page (`components/account/account-data-card.tsx`, route handler `/[locale]/account/export`); after deletion the
+  visitors' home page says so (`?account=deleted`).
+- Archers' emails (`apps/api/src/notifications/`, hourly timer like the score sheets, none before 7:00 UTC): the
+  coach's news (events proposed still to come and unseen, comments unread; at most one a day, `coachNotifiedAt`) and
+  the competitions of the coming 7 days (once each, `reminderSentAt`; not those added in the last 2 days), each off in
+  the profile (`coachEmails`, `competitionReminders`; Profile page's "Emails" card). Templates: `coachNewsEmail`,
+  `competitionReminderEmail` (notebook page).
+- Calendar subscription (`apps/api/src/calendar-feed/`): `POST /profile/calendar-feed` makes a secret link (only its
+  hash kept, `calendarFeedTokenHash`; a new one replaces it), `GET /calendar/{token}.ics` (public) lists the events as
+  whole days (`ics.ts`, unit-tested), 180 days back to 400 ahead. URL base: `API_PUBLIC_URL`, else `WEB_URL` (the API
+  is under `/api/*` in production). Web: Profile page's "Agenda du téléphone" card (link shown once, copy button).
+- Event weather (`apps/api/src/weather/`): `GET /journal/sessions/{id}/weather` (from the day on) looks the day up on
+  Open-Meteo (`WeatherClient`; forecast service for the last 60 days, archive before) at the event's place if it
+  geocodes, else the profile's home town (`WEATHER_UNAVAILABLE`); nothing saved. Web: "Remplir avec la météo du jour"
+  under the outdoor weather fields. e2e tests use `FakeWeather`.
+- Dictation (web only): a microphone by the objective, the description and "Next" titles (`dictation-button.tsx`,
+  the browser's SpeechRecognition — hidden where there is none, e.g. Firefox; words appended, `lib/dictation.ts`).
+- Example journal (`apps/api/src/demo/`): `POST /auth/demo` {locale} signs into an `isDemo` account per language
+  (`exemple@` / `example@myarcherydiary.invalid`), its season made up around today by `demoSeason` (pure, deterministic,
+  unit-tested; made again once a week when opened). Its access tokens carry `demo: true`: `AuthGuard` refuses every
+  non-GET request (`DEMO_READ_ONLY`). Web: "Voir un exemple" on the visitors' home page (`openDemo`), a banner on every
+  page (`DemoBanner` in `app-shell.tsx`, "Créer mon compte" = `leaveDemo`). The visitors' home page also shows up to 3
+  short 4–5 star reviews under the tagline (`FeaturedReviews`).
+- Web end-to-end journeys (`apps/web/e2e/`, `pnpm --filter @tiralarc/web test:e2e`): playwright-core + Vitest against
+  the running `pnpm dev` (Mailpit for the confirmation link): the example journal, and sign-up → first journal →
+  a session → account deleted (leaves the dev database as it was).
 - TypeScript is pinned to 6.0 (TS 7 is not yet supported by typescript-eslint / tooling).

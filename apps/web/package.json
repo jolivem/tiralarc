@@ -8,7 +8,8 @@
     "start": "next start --port 3000",
     "lint": "eslint .",
     "typecheck": "next typegen && tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:e2e": "vitest run --config ./vitest.config.e2e.mts"
   },
   "dependencies": {
     "@mantine/charts": "^9.6.3",

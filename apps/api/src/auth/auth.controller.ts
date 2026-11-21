@@ -17,6 +17,7 @@ import { UserAgent } from '../common/decorators/user-agent.decorator.js';
 import { AuthProvider } from '../generated/prisma/client.js';
 import { AuthService } from './auth.service.js';
 import {
+  DemoSignInDto,
   ForgotPasswordDto,
   LoginDto,
   RefreshTokenDto,
@@ -42,6 +43,19 @@ export class AuthController {
   @ApiConflictResponse({ description: 'EMAIL_TAKEN' })
   register(@Body() dto: RegisterDto): Promise<RegistrationDto> {
     return this.auth.register(dto);
+  }
+
+  @Post('demo')
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
+  @ApiOperation({
+    summary:
+      'Signs into the example journal (a made-up season, in the language asked for): read-only, ' +
+      'every change is refused (DEMO_READ_ONLY)',
+  })
+  @ApiOkResponse({ type: TokenPairDto })
+  demo(@Body() dto: DemoSignInDto, @UserAgent() userAgent?: string): Promise<TokenPairDto> {
+    return this.auth.demoSignIn(dto.locale === 'en' ? 'en' : 'fr', { userAgent });
   }
 
   @Post('verify-email')

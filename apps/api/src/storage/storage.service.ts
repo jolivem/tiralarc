@@ -57,6 +57,15 @@ export class StorageService implements OnModuleInit {
     );
   }
 
+  /** The file's bytes (the account's data export). */
+  async get(key: string): Promise<Buffer> {
+    const { Body } = await this.client.send(
+      new GetObjectCommand({ Bucket: this.bucket, Key: key }),
+    );
+    if (!Body) throw new Error(`Empty object ${key}`);
+    return Buffer.from(await Body.transformToByteArray());
+  }
+
   async remove(keys: string[]): Promise<void> {
     // DeleteObjects takes at most 1000 keys per call.
     for (let i = 0; i < keys.length; i += 1000) {

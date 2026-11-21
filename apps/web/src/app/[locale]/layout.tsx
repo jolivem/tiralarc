@@ -186,6 +186,7 @@ export default async function LocaleLayout({ children, params }: LayoutProps<'/[
     displayName: user.displayName,
     email: user.email,
     roles: user.roles,
+    isDemo: user.isDemo,
     profile,
     journals: {
       own: ownJournals.map(({ id, title }) => ({ id, title })),

@@ -31,6 +31,8 @@ model User {
   displayName     String?   @map("display_name") @db.VarChar(100)
   /// Preferred language (BCP 47, e.g. "fr", "en"), used for emails.
   locale          String    @default("fr") @db.VarChar(10)
+  /// The visitors' example journal (`DemoService`): signed into without a password, read-only.
+  isDemo          Boolean   @default(false) @map("is_demo")
   createdAt       DateTime  @default(now()) @map("created_at") @db.DateTime(3)
   updatedAt       DateTime  @updatedAt @map("updated_at") @db.DateTime(3)
 
@@ -264,6 +266,8 @@ model JournalSession {
   fftaCompetitionId   String?     @map("ffta_competition_id") @db.VarChar(20)
   /// The last day its score sheet was looked for on ianseo.net (see `ScoreSheet`).
   scoreSheetCheckedOn DateTime?   @map("score_sheet_checked_on") @db.Date
+  /// Competitions: when the archer was reminded of it by email, the week before (`NotificationsService`).
+  reminderSentAt      DateTime?   @map("reminder_sent_at") @db.DateTime(3)
   createdAt           DateTime    @default(now()) @map("created_at") @db.DateTime(3)
   updatedAt           DateTime    @updatedAt @map("updated_at") @db.DateTime(3)
 
@@ -437,6 +441,17 @@ model ArcherProfile {
   homeTown          String?      @map("home_town") @db.VarChar(100)
   homeLatitude      Float?       @map("home_latitude")
   homeLongitude     Float?       @map("home_longitude")
+  /// Array of the guided tours the archer has seen (ids are client-side keys: "home", "journal"…);
+  /// null = none yet.
+  toursSeen         Json?        @map("tours_seen")
+  /// Email the archer (at most once a day) when their coach proposes an event or comments one.
+  coachEmails          Boolean   @default(true) @map("coach_emails")
+  /// Email the archer the week before each competition of their journal.
+  competitionReminders Boolean   @default(true) @map("competition_reminders")
+  /// When the last coach email was sent: what is newer goes in the next one.
+  coachNotifiedAt      DateTime? @map("coach_notified_at") @db.DateTime(3)
+  /// SHA-256 of the secret in the archer's calendar subscription link (iCal); null = none.
+  calendarFeedTokenHash String?  @unique @map("calendar_feed_token_hash") @db.Char(64)
   createdAt         DateTime     @default(now()) @map("created_at") @db.DateTime(3)
   updatedAt         DateTime     @updatedAt @map("updated_at") @db.DateTime(3)
 
@@ -566,12 +581,27 @@ enum GoalType {
   PERSONAL
 }
 
-/// A goal an archer sets for themselves. Reached once `achievedOn` is set.
+/// What a figured goal measures, followed by the API from the archer's events.
+enum GoalMetric {
+  /// A score to reach in competition (a round of fixed length, unlike a training's).
+  SCORE
+  /// Arrows to shoot in all, from the day the goal was set.
+  ARROWS
+}
+
+/// A goal an archer sets for themselves. Reached once `achievedOn` is set. With a `metric` and
+/// a `target`, its progress is figured from the events since `createdOn`, and it is reached by
+/// itself (`GoalsService`).
 model Goal {
   id          String    @id @default(uuid()) @db.Char(36)
   userId      String    @map("user_id") @db.Char(36)
   type        GoalType
   description String    @db.VarChar(500)
+  metric         GoalMetric?
+  target         Int?
+  /// SCORE only, optional: the sessions of that discipline / distance only.
+  discipline     Discipline?
+  distanceMeters Int?        @map("distance_meters") @db.SmallInt
   /// Day the archer set the goal (they can backdate it), not the row's timestamp.
   createdOn   DateTime  @map("created_on") @db.Date
   /// Day the goal was reached; null = not yet.

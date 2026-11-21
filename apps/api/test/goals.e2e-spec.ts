@@ -45,6 +45,12 @@ describe('Goals (e2e)', () => {
       createdOn: today,
       achieved: false,
       achievedOn: null,
+      // A goal in words only (no figures to follow).
+      metric: null,
+      target: null,
+      discipline: null,
+      distanceMeters: null,
+      progress: null,
     });
     const older = await http()
       .post('/api/v1/goals')

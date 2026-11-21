@@ -9,6 +9,7 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Put,
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
@@ -67,6 +68,19 @@ export class ProfileController {
     @Body() dto: UpdateProfileDto,
   ): Promise<ProfileDto> {
     return this.profile.update(user.id, dto);
+  }
+
+  @Put('tours/:tour')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({
+    summary: 'Mark a guided tour as seen (listed in `toursSeen`)',
+    description: 'Tour ids are client-side keys (`^[a-z0-9-]{1,30}$`, one per page). Idempotent.',
+  })
+  @ApiNoContentResponse()
+  @ApiBadRequestResponse({ description: 'VALIDATION_FAILED: not a tour id' })
+  @ApiConflictResponse({ description: 'LIMIT_REACHED' })
+  markTourSeen(@CurrentUser() user: AuthenticatedUser, @Param('tour') tour: string): Promise<void> {
+    return this.profile.markTourSeen(user.id, tour);
   }
 
   @Get('invitations')

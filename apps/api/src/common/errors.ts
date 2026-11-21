@@ -41,6 +41,10 @@ export const ErrorCode = {
   GROUP_NAME_TAKEN: 'GROUP_NAME_TAKEN',
   /** A review's moderation link is unknown, or the review was already published or refused. */
   INVALID_REVIEW_TOKEN: 'INVALID_REVIEW_TOKEN',
+  /** An event's weather can't be looked up: no place found on the map, or the service is down. */
+  WEATHER_UNAVAILABLE: 'WEATHER_UNAVAILABLE',
+  /** The example journal (`isDemo` account) is read-only. */
+  DEMO_READ_ONLY: 'DEMO_READ_ONLY',
 } as const;
 
 export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];

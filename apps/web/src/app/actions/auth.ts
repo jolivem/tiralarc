@@ -158,6 +158,33 @@ export async function socialSignIn(input: SocialSignInInput): Promise<ActionStat
   return completeSignIn(result.data, safeNext(input.next));
 }
 
+/**
+ * "Voir un exemple" (visitors' home page, a form's action): signed into the read-only example
+ * journal; back to the home page, which says so, if it can't be opened.
+ */
+export async function openDemo(): Promise<void> {
+  const locale = await getLocale();
+  const result = await send(
+    api.POST('/api/v1/auth/demo', { body: { locale }, headers: await clientHeaders() }),
+  );
+  if (!result.ok) {
+    redirect({ href: { pathname: '/', query: { demo: 'unavailable' } }, locale });
+    return;
+  }
+  await completeSignIn(result.data, '/archer');
+}
+
+/** The example journal's "Créer mon compte": signed out of it, then on the sign-up page. */
+export async function leaveDemo(): Promise<void> {
+  const cookieStore = await cookies();
+  const refreshToken = cookieStore.get(REFRESH_COOKIE)?.value;
+  if (refreshToken) await send(api.POST('/api/v1/auth/logout', { body: { refreshToken } }));
+  clearSession(cookieStore);
+  cookieStore.delete(PROFILE_COOKIE);
+  cookieStore.delete(JOURNAL_COOKIE);
+  redirect({ href: '/register', locale: await getLocale() });
+}
+
 export async function logout(): Promise<void> {
   const cookieStore = await cookies();
   const refreshToken = cookieStore.get(REFRESH_COOKIE)?.value;

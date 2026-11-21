@@ -131,7 +131,16 @@ export const INDICATOR_HIGHLIGHTS = {
  * content's size changes. Also places its top right square (`--corner-x` / `--corner-y`:
  * the centre of the last whole square of the second row, inside the frame), for the star.
  */
-export function SquaredCard({ className, children }: { className?: string; children: ReactNode }) {
+export function SquaredCard({
+  className,
+  tour,
+  children,
+}: {
+  className?: string;
+  /** Its `data-tour` mark, for the page's guided tour. */
+  tour?: string;
+  children: ReactNode;
+}) {
   const ref = useRef<HTMLDivElement>(null);
 
   useLayoutEffect(() => {
@@ -176,6 +185,7 @@ export function SquaredCard({ className, children }: { className?: string; child
       p={18}
       style={{ borderWidth: 2, borderColor: 'var(--frame-color)' }}
       bg="transparent"
+      data-tour={tour}
       className={`${classes.squaredCard} ${className ?? ''}`}
     >
       {children}
@@ -206,8 +216,10 @@ function StatsCard({
       </section>
     );
   }
+  // The Indicators page's tour shows the first card (arrows) and its star, for them all.
+  const first = indicator === 'ARROWS';
   return (
-    <SquaredCard className={classes.viz}>
+    <SquaredCard className={classes.viz} tour={first ? 'charts' : undefined}>
       <Stack gap="md">
         <StatsCardTitle
           aside={ruled ? star : undefined}
@@ -218,7 +230,11 @@ function StatsCard({
         {children}
       </Stack>
       {/* In the centre of the top right square (see SquaredCard). */}
-      {!ruled && <div className={classes.cornerStar}>{star}</div>}
+      {!ruled && (
+        <div className={classes.cornerStar} data-tour={first ? 'favorite' : undefined}>
+          {star}
+        </div>
+      )}
     </SquaredCard>
   );
 }

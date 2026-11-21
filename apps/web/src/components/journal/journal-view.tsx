@@ -212,8 +212,8 @@ export function JournalView({
     ? t('journals.coloring.autoFailed')
     : coloring.status === 'saving'
       ? t('journals.coloring.saving')
-      : coloring.status === 'saved'
-        ? t('journals.coloring.saved')
+      : coloring.status === 'saved' || coloring.status === 'full'
+        ? t(`journals.coloring.${coloring.status}`)
         : coloring.status === 'idle' || coloring.status === undefined
           ? ''
           : t(`errors.${coloring.status}`);
@@ -368,7 +368,7 @@ export function JournalView({
         between them, centred, the month's arrows and satisfaction (a month of the journal).
       */}
       <div className={classes.pageActions}>
-        <Group gap="xs">
+        <Group gap="xs" data-tour="navigate">
           <Button
             variant="default"
             size="sm"
@@ -408,11 +408,13 @@ export function JournalView({
                 today={todayDate}
               />
             )}
-            <MonthSummaryCard
-              arrows={monthArrows}
-              stars={satisfaction.stars}
-              onStar={coach ? undefined : satisfaction.change}
-            />
+            <div data-tour="summary">
+              <MonthSummaryCard
+                arrows={monthArrows}
+                stars={satisfaction.stars}
+                onStar={coach ? undefined : satisfaction.change}
+              />
+            </div>
           </div>
         )}
         <Group gap="xs" className={classes.pageActionsEnd}>
@@ -422,6 +424,7 @@ export function JournalView({
               <ActionIcon
                 variant="default"
                 size="lg"
+                data-tour="decor"
                 aria-label={t('journals.theme')}
                 onClick={() => setPickingTheme(true)}
               >
@@ -434,6 +437,7 @@ export function JournalView({
               <ActionIcon
                 variant="default"
                 size="lg"
+                data-tour="coloring"
                 aria-label={t('journals.coloring.start')}
                 disabled={isColoring}
                 onClick={() => setColoringOn(true)}
@@ -446,6 +450,7 @@ export function JournalView({
             <Tooltip label={t(coach ? 'coach.planSession' : 'journal.newSession')}>
               <ActionIcon
                 size="lg"
+                data-tour="new-event"
                 aria-label={t(coach ? 'coach.planSession' : 'journal.newSession')}
                 // The day picked in the calendar when there is one (phones select a day by tapping
                 // it), otherwise the calendar's own day: today, or a day of the month navigated to.
@@ -459,7 +464,9 @@ export function JournalView({
       </div>
       {/* The legend's link right above the decoration's top band, at its right end. */}
       <Group justify="flex-end" className={`${classes.calendarWidth} ${classes.legendLine}`}>
-        <EventLegend customTypes={customTypes} />
+        <span data-tour="legend">
+          <EventLegend customTypes={customTypes} />
+        </span>
       </Group>
       <Box pos="relative" className={classes.calendarWidth}>
         <LoadingOverlay visible={loading} overlayProps={{ blur: 1 }} loaderProps={{ size: 'sm' }} />
@@ -486,7 +493,8 @@ export function JournalView({
           tool={isColoring ? tool : null}
           onFillsChange={coloring.change}
         >
-          <div className={classes.calendarScale}>
+          {/* The guided tour's calendar (not its decoration), when no event's icon is shown. */}
+          <div className={classes.calendarScale} data-tour="calendar">
             <MonthTitle
               label={monthLabel}
               art={lettering}
@@ -564,6 +572,10 @@ export function JournalView({
                           <div key={session.id} className={classes.dotCell}>
                             <UnstyledButton
                               className={classes.dot}
+                              // The month's first event: the guided tour shows its icon.
+                              data-tour={
+                                session.id === sessions[0]?.id ? 'calendar-event' : undefined
+                              }
                               style={
                                 {
                                   '--dot-color': `var(--mantine-color-${color}-filled)`,

@@ -3,9 +3,31 @@ import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/serve
 import { JournalView } from '@/components/journal/journal-view';
 import { NewJournalButton } from '@/components/journal/journal-modal';
 import { SectionPage } from '@/components/section-page';
+import { Tour } from '@/components/tour/tour';
 import type { Locale } from '@/i18n/routing';
 import { getAuthedApi } from '@/lib/api';
+import { getArcherProfile } from '@/lib/archer-profile';
 import { getSelectedJournal } from '@/lib/journals';
+
+/**
+ * The Journal page's guided tour: a welcome, then each `data-tour` element of `JournalView`
+ * (left out when not shown: no "+" on a journal whose period is over, no summary outside it).
+ */
+const JOURNAL_TOUR = [
+  'welcome',
+  'calendar',
+  'new-event',
+  'navigate',
+  'summary',
+  'share',
+  'decor',
+  'coloring',
+  'legend',
+] as const;
+/** Steps pointing elsewhere than their name: an event's icon in a day, else the whole calendar. */
+const JOURNAL_TOUR_TARGETS: Partial<Record<(typeof JOURNAL_TOUR)[number], readonly string[]>> = {
+  calendar: ['calendar-event', 'calendar'],
+};
 
 const MONTH = /^\d{4}-(0[1-9]|1[0-2])$/;
 const DAY = /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/;
@@ -30,9 +52,10 @@ export default async function ArcherJournalPage({
     (typeof requested === 'string' && MONTH.test(requested) ? requested : undefined);
   const t = await getTranslations();
   const format = await getFormatter();
-  const [journal, { data: customTypes }] = await Promise.all([
+  const [journal, { data: customTypes }, profile] = await Promise.all([
     getSelectedJournal(),
     (await getAuthedApi()).GET('/api/v1/journal/event-types'),
+    getArcherProfile(),
   ]);
 
   if (!journal) {
@@ -69,6 +92,16 @@ export default async function ArcherJournalPage({
         customTypes={customTypes ?? []}
         month={month}
         competitionDay={competitionDay}
+      />
+      {/* The first time only (then from the header's "?"). Not over a competition's dialog. */}
+      <Tour
+        id="journal"
+        autoStart={!competitionDay && !(profile?.toursSeen ?? []).includes('journal')}
+        steps={JOURNAL_TOUR.map((key) => ({
+          target: JOURNAL_TOUR_TARGETS[key] ?? (key === 'welcome' ? undefined : key),
+          title: t(`tours.journal.${key}.title`),
+          body: t(`tours.journal.${key}.body`),
+        }))}
       />
     </SectionPage>
   );

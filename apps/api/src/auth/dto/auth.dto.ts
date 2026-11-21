@@ -8,6 +8,16 @@ const deviceNameProperty = {
   maxLength: 100,
 };
 
+export class DemoSignInDto {
+  @ApiPropertyOptional({
+    enum: SUPPORTED_LOCALES,
+    description: "The example journal's language (French by default).",
+  })
+  @IsOptional()
+  @IsIn(SUPPORTED_LOCALES)
+  locale?: string;
+}
+
 export class LoginDto {
   @ApiProperty({ format: 'email', example: 'jane@example.com' })
   @IsEmail()

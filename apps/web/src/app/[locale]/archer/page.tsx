@@ -3,6 +3,7 @@ import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/serve
 import binder from '@/components/binder/binder.module.css';
 import { ExportCard } from '@/components/export/export-card';
 import { FirstJournalPrompt } from '@/components/journal/journal-modal';
+import { GettingStarted } from '@/components/journal/getting-started';
 import { CompetitionPlanningCard } from '@/components/journal/competition-planning';
 import { MonthsOverview } from '@/components/journal/months-overview';
 import { NewEvents } from '@/components/journal/new-events';
@@ -14,6 +15,7 @@ import { HandHeading, HandNote, Notebook } from '@/components/notebook/notebook'
 import { RuledHeading, RuledPenRule } from '@/components/notebook/on-ruling';
 import { AlignedSpacer, AlignedTop, PageAlignment } from '@/components/notebook/page-alignment';
 import { SectionCard } from '@/components/section-card';
+import { Tour } from '@/components/tour/tour';
 import type { Locale } from '@/i18n/routing';
 import { FavoriteIndicatorProvider } from '@/components/stats/favorite';
 import { IndicatorCard } from '@/components/stats/favorite-card';
@@ -33,6 +35,23 @@ type NoteSection = 'journal' | 'sheets' | 'stats' | 'profile';
 /** The sections' sticky notes: two at the bottom of each page. */
 const LEFT_NOTES: readonly NoteSection[] = ['journal', 'sheets'];
 const RIGHT_NOTES: readonly NoteSection[] = ['stats', 'profile'];
+/**
+ * The home page's guided tour: a welcome, then each `data-tour` element (left out when not
+ * shown: no FFTA competitions outside France, no pen when the journal doesn't cover today).
+ */
+const HOME_TOUR = [
+  'welcome',
+  'today',
+  'calendar',
+  'regularity',
+  'competitions',
+  'export',
+  'tabs',
+  'account',
+  'help',
+] as const;
+/** Lit along with a step's element: the sections' sticky notes, with the divider tabs. */
+const HOME_TOUR_ALSO: Partial<Record<(typeof HOME_TOUR)[number], string>> = { tabs: 'notes' };
 /** Months shown in the notebook: the current one and the next. */
 const OVERVIEW_MONTHS = 2;
 
@@ -48,6 +67,7 @@ export default async function ArcherHomePage({ params }: PageProps<'/[locale]/ar
   setRequestLocale(locale as Locale);
   const t = await getTranslations('archer');
   const tJournals = await getTranslations('journals');
+  const tTour = await getTranslations('tours.home');
   const format = await getFormatter();
   const api = await getAuthedApi();
   const [
@@ -148,7 +168,15 @@ export default async function ArcherHomePage({ params }: PageProps<'/[locale]/ar
   // Two sticky notes side by side; `first` numbers them across both pages (tilts).
   const notes = (sections: readonly NoteSection[], first: number) => (
     // Room above each note for its strip of tape, and some air under the heading.
-    <SimpleGrid cols={{ base: 1, xs: 2 }} spacing="xl" verticalSpacing="xl" pt={36}>
+    <SimpleGrid
+      cols={{ base: 1, xs: 2 }}
+      spacing="xl"
+      verticalSpacing="xl"
+      pt={36}
+      data-tour="notes"
+      // The notes, not the room above them.
+      data-tour-fit
+    >
       {sections.map((section, i) => (
         <SectionCard
           key={section}
@@ -175,7 +203,7 @@ export default async function ArcherHomePage({ params }: PageProps<'/[locale]/ar
       <div>
         <AlignedSpacer />
         {selected ? (
-          <>
+          <div data-tour="calendar">
             <RuledHeading raised highlight="yellow">
               {t('calendar')}
             </RuledHeading>
@@ -194,11 +222,15 @@ export default async function ArcherHomePage({ params }: PageProps<'/[locale]/ar
                 ruled
               />
             </SeasonCalendar>
-          </>
+          </div>
         ) : (
           <Text c="dimmed">{tJournals('noneBody')}</Text>
         )}
       </div>
+      {/* A new archer's first steps, until done or hidden (not in the example journal). */}
+      {!user?.isDemo && (
+        <GettingStarted profile={profile} journals={journals} invitations={invitations ?? []} />
+      )}
       <NewEvents
         events={newEvents ?? []}
         comments={newComments ?? []}
@@ -206,11 +238,15 @@ export default async function ArcherHomePage({ params }: PageProps<'/[locale]/ar
       />
       <ToComplete sessions={pastSessions} />
       {/* The PDF extract, over the selected journal's period at first. */}
-      <ExportCard
-        from={selected?.startDate ?? `${today.slice(0, 7)}-01`}
-        to={selected?.endDate ?? today}
-        disciplines={ffta ? RANKED_DISCIPLINES.filter((d) => profile?.disciplines.includes(d)) : []}
-      />
+      <div data-tour="export" data-tour-fit>
+        <ExportCard
+          from={selected?.startDate ?? `${today.slice(0, 7)}-01`}
+          to={selected?.endDate ?? today}
+          disciplines={
+            ffta ? RANKED_DISCIPLINES.filter((d) => profile?.disciplines.includes(d)) : []
+          }
+        />
+      </div>
       {/* A blank line at least above the pen rule (on both pages: they stay level). */}
       <Box mt="auto" pt="var(--line)">
         {/* A pen rule above the sections, across both pages, sets them off. */}
@@ -233,33 +269,40 @@ export default async function ArcherHomePage({ params }: PageProps<'/[locale]/ar
           <Box visibleFrom="md">{date}</Box>
         </AlignedTop>
         {selected ? (
-          <RegularityCard
-            sessions={seasonSessions ?? []}
-            startDate={selected.startDate}
-            today={today}
-            raised
-          />
+          // Framed around its writing: its heading's blank first line is level with the date.
+          <div data-tour="regularity" data-tour-fit>
+            <RegularityCard
+              sessions={seasonSessions ?? []}
+              startDate={selected.startDate}
+              today={today}
+              raised
+            />
+          </div>
         ) : (
           ffta && <CompetitionsToPlan today={today} cacheScope={fftaScope} raised />
         )}
       </div>
-      {selected && ffta && <CompetitionsToPlan today={today} cacheScope={fftaScope} />}
-      {/* The FFTA competitions still to come this season, in a dialog. */}
-      {ffta && selected && (
-        <CompetitionPlanningCard
-          journal={selected}
-          today={today}
-          // The starting town (Profile page), for the map's distances to travel.
-          home={
-            profile?.homeTown && profile.homeLatitude !== null && profile.homeLongitude !== null
-              ? {
-                  name: profile.homeTown,
-                  latitude: profile.homeLatitude,
-                  longitude: profile.homeLongitude,
-                }
-              : null
-          }
-        />
+      {selected && ffta && (
+        // The season's competitions in a dialog (button by the title), the published invitations
+        // under the title.
+        <div data-tour="competitions">
+          <CompetitionPlanningCard
+            journal={selected}
+            today={today}
+            // The starting town (Profile page), for the map's distances to travel.
+            home={
+              profile?.homeTown && profile.homeLatitude !== null && profile.homeLongitude !== null
+                ? {
+                    name: profile.homeTown,
+                    latitude: profile.homeLatitude,
+                    longitude: profile.homeLongitude,
+                  }
+                : null
+            }
+          >
+            <CompetitionsToPlan today={today} cacheScope={fftaScope} heading={false} />
+          </CompetitionPlanningCard>
+        </div>
       )}
       {favorite === 'RANKINGS' && ffta && (
         <RuledCardTitles value>
@@ -304,6 +347,17 @@ export default async function ArcherHomePage({ params }: PageProps<'/[locale]/ar
         <Notebook left={left} right={right} label={t('home')} className={home.home} />
       </PageAlignment>
       {journals.length === 0 && <FirstJournalPrompt />}
+      {/* Once the first journal exists: a guided tour of the page, the first time only. */}
+      <Tour
+        id="home"
+        autoStart={journals.length > 0 && !(profile?.toursSeen ?? []).includes('home')}
+        steps={HOME_TOUR.map((key) => ({
+          target: key === 'welcome' ? undefined : key,
+          also: HOME_TOUR_ALSO[key],
+          title: tTour(`${key}.title`),
+          body: tTour(`${key}.body`),
+        }))}
+      />
     </>
   );
 }

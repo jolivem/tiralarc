@@ -38,6 +38,11 @@ const envSchema = z.object({
     .default(60 * 60 * 24 * 30),
   /** Public URL of the web app, used to build links in emails. */
   WEB_URL: z.url().default('http://localhost:3000'),
+  /**
+   * Public URL of the API, for links that calendar apps read (the iCal subscription). Unset: the
+   * web app's URL, the API being served under it (`/api/*`, see deploy/caddy/Caddyfile).
+   */
+  API_PUBLIC_URL: z.url().optional(),
   /** SMTP connection string, e.g. smtp://localhost:1025 (Mailpit in dev) or smtps://user:pass@host:465. */
   SMTP_URL: z.string().default('smtp://localhost:1025'),
   MAIL_FROM: z.string().default('MyArcheryDiary <no-reply@tiralarc.local>'),

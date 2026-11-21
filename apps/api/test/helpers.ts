@@ -14,6 +14,7 @@ import { PrismaService } from '../src/prisma/prisma.service.js';
 import { IanseoClient } from '../src/score-sheets/ianseo.client.js';
 import { StorageService } from '../src/storage/storage.service.js';
 import { configureApp } from '../src/setup.js';
+import { WeatherClient } from '../src/weather/weather.client.js';
 
 /**
  * Fake ID tokens: "<sub>|<email>|<emailVerified>|<name>". Real signature checks
@@ -48,11 +49,31 @@ class FakeStorage {
   async put(key: string, body: Buffer) {
     this.files.set(key, body);
   }
+  async get(key: string) {
+    const file = this.files.get(key);
+    if (!file) throw new Error(`No file ${key}`);
+    return file;
+  }
   async remove(keys: string[]) {
     for (const key of keys) this.files.delete(key);
   }
   async signedUrl(key: string) {
     return `https://storage.test/${key}?signature=fake`;
+  }
+}
+
+/** Stand-in for Open-Meteo: the same day's weather everywhere (`undefined`: unreachable). */
+export class FakeWeather {
+  weather:
+    { code: number | null; temperatureMax: number | null; windMax: number | null } | undefined = {
+    code: 2,
+    temperatureMax: 17.6,
+    windMax: 14,
+  };
+  readonly requests: string[] = [];
+  async daily(source: string, latitude: number, longitude: number, day: string) {
+    this.requests.push(`${source}:${latitude},${longitude}:${day}`);
+    return this.weather;
   }
 }
 
@@ -142,6 +163,7 @@ export interface TestContext {
   ffta: FakeFfta;
   ianseo: FakeIanseo;
   address: FakeAddress;
+  weather: FakeWeather;
 }
 
 export async function createTestApp(): Promise<TestContext> {
@@ -157,6 +179,8 @@ export async function createTestApp(): Promise<TestContext> {
     .useClass(FakeIanseo)
     .overrideProvider(AddressClient)
     .useClass(FakeAddress)
+    .overrideProvider(WeatherClient)
+    .useClass(FakeWeather)
     .compile();
 
   const app = moduleRef.createNestApplication<INestApplication<App>>();
@@ -178,6 +202,7 @@ export async function createTestApp(): Promise<TestContext> {
     ffta: app.get<FakeFfta>(FftaClient),
     ianseo: app.get<FakeIanseo>(IanseoClient),
     address: app.get<FakeAddress>(AddressClient),
+    weather: app.get<FakeWeather>(WeatherClient),
   };
 }
 

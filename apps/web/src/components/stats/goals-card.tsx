@@ -6,6 +6,7 @@ import {
   Checkbox,
   Group,
   Modal,
+  NumberInput,
   Progress,
   Select,
   SimpleGrid,
@@ -25,7 +26,7 @@ import {
   IconTargetArrow,
   IconTrash,
 } from '@tabler/icons-react';
-import type { Goal, GoalType } from '@tiralarc/api-client';
+import type { Discipline, Goal, GoalType } from '@tiralarc/api-client';
 import { useFormatter, useTranslations } from 'next-intl';
 import { type CSSProperties, useOptimistic, useState, useTransition } from 'react';
 import { createGoal, deleteGoal, updateGoal } from '@/app/actions/goals';
@@ -35,6 +36,17 @@ import { SquaredCard, StatsCardTitle } from './stats-cards';
 import classes from './stats.module.css';
 
 const GOAL_TYPES: GoalType[] = ['SPORT', 'TECHNIQUE', 'PHYSICAL', 'PERSONAL'];
+type GoalMetric = NonNullable<Goal['metric']>;
+const DISCIPLINES: Discipline[] = [
+  'INDOOR',
+  'TAE_NATIONAL',
+  'TAE_INTERNATIONAL',
+  'THREE_D',
+  'FIELD',
+  'BEURSAULT',
+  'RUN_ARCHERY',
+  'NATURE',
+];
 /** Each category's stamp (top right of its box). */
 const TYPE_ICONS: Record<GoalType, typeof IconPlus> = {
   SPORT: IconTargetArrow,
@@ -215,6 +227,24 @@ export function GoalsCard({
                             >
                               {goal.description}
                             </Text>
+                            {/* A figured goal: where it stands (the API follows the events). */}
+                            {goal.metric && goal.target !== null && goal.progress !== null && (
+                              <Group gap={6} wrap="nowrap" mt={4} align="center">
+                                <Progress
+                                  style={{ flex: 1 }}
+                                  size="sm"
+                                  color={TYPE_COLORS[type]}
+                                  value={Math.min((goal.progress / goal.target) * 100, 100)}
+                                  aria-hidden
+                                />
+                                <Text size="xs" c="dimmed" style={{ whiteSpace: 'nowrap' }}>
+                                  {t(`progressOf.${goal.metric}`, {
+                                    value: format.number(goal.progress),
+                                    target: format.number(goal.target),
+                                  })}
+                                </Text>
+                              </Group>
+                            )}
                             {/* The day it was reached (not the day it was set). */}
                             {goal.achievedOn && (
                               <Text size="xs" c="dimmed" mt={2}>
@@ -314,14 +344,21 @@ function GoalForm({ goal, today, onDone }: { goal?: Goal; today: string; onDone:
   const [createdOn, setCreatedOn] = useState<string | null>(goal?.createdOn ?? today);
   const [achieved, setAchieved] = useState(goal?.achieved ?? false);
   const [achievedOn, setAchievedOn] = useState<string | null>(goal?.achievedOn ?? null);
+  // Figures followed by the API: a score to reach, or arrows to shoot.
+  const [metric, setMetric] = useState<GoalMetric | null>(goal?.metric ?? null);
+  const [target, setTarget] = useState<number | null>(goal?.target ?? null);
+  const [discipline, setDiscipline] = useState<Discipline | null>(goal?.discipline ?? null);
+  const [distance, setDistance] = useState<number | null>(goal?.distanceMeters ?? null);
   const [state, setState] = useState<ActionState>({});
   const [pending, startTransition] = useTransition();
+  const tJournal = useTranslations('journal');
 
   const valid =
     type !== null &&
     description.trim() !== '' &&
     createdOn !== null &&
-    (!achieved || achievedOn !== null);
+    (!achieved || achievedOn !== null) &&
+    (metric === null || (target !== null && target > 0));
   const submit = () => {
     if (!type || !createdOn || !valid) return;
     startTransition(async () => {
@@ -330,6 +367,10 @@ function GoalForm({ goal, today, onDone }: { goal?: Goal; today: string; onDone:
         description: description.trim(),
         createdOn,
         achievedOn: achieved ? achievedOn : null,
+        metric,
+        target: metric ? target : null,
+        discipline: metric === 'SCORE' ? discipline : null,
+        distanceMeters: metric === 'SCORE' ? distance : null,
       };
       const result = goal ? await updateGoal(goal.id, values) : await createGoal(values);
       if (result.code) setState(result);
@@ -375,6 +416,54 @@ function GoalForm({ goal, today, onDone }: { goal?: Goal; today: string; onDone:
           error={fieldError(state, 'createdOn')}
           required
         />
+        {/* Optional: the API follows the figures and ticks the goal by itself once reached. */}
+        <Select
+          label={t('metric')}
+          description={t('metricHint')}
+          data={[
+            { value: 'NONE', label: t('metrics.NONE') },
+            { value: 'SCORE', label: t('metrics.SCORE') },
+            { value: 'ARROWS', label: t('metrics.ARROWS') },
+          ]}
+          value={metric ?? 'NONE'}
+          onChange={(value) => setMetric(value === 'SCORE' || value === 'ARROWS' ? value : null)}
+          allowDeselect={false}
+        />
+        {metric && (
+          <NumberInput
+            label={t(`targetLabel.${metric}`)}
+            value={target ?? ''}
+            onChange={(v) => setTarget(typeof v === 'number' ? v : null)}
+            min={1}
+            max={1_000_000}
+            allowDecimal={false}
+            thousandSeparator=" "
+            error={fieldError(state, 'target')}
+            required
+          />
+        )}
+        {metric === 'SCORE' && (
+          <Group grow gap="sm" align="flex-start">
+            <Select
+              label={t('discipline')}
+              placeholder={t('anyDiscipline')}
+              data={DISCIPLINES.map((d) => ({ value: d, label: tJournal(`disciplines.${d}`) }))}
+              value={discipline}
+              onChange={(v) => setDiscipline(v as Discipline | null)}
+              clearable
+            />
+            <NumberInput
+              label={t('distance')}
+              placeholder={t('anyDistance')}
+              value={distance ?? ''}
+              onChange={(v) => setDistance(typeof v === 'number' ? v : null)}
+              min={1}
+              max={1000}
+              allowDecimal={false}
+              suffix=" m"
+            />
+          </Group>
+        )}
         <Checkbox
           label={t('achieved')}
           checked={achieved}

@@ -39,6 +39,7 @@ export function SessionAgainButton({ sessionId, dirty }: { sessionId: string; di
       <Button
         variant="subtle"
         leftSection={<IconRepeat size={18} />}
+        data-tour="again"
         onClick={open}
         disabled={dirty}
         title={dirty ? t('saveFirst') : t('hint')}

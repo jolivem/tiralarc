@@ -327,6 +327,7 @@ export function ShareButton({
       <Button
         variant="subtle"
         leftSection={<IconBrandInstagram size={18} />}
+        data-tour="share"
         onClick={() => {
           setStatus('idle');
           setOpened(true);

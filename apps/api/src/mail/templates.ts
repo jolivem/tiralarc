@@ -154,24 +154,42 @@ export function reviewModerationEmail(
   };
 }
 
+/** The outside websites read without an API, watched by `LayoutWatch`. */
+export type AlertSite = 'FFTA' | 'ianseo';
+
+/** How the alert names each site, the code that reads it, and what happens meanwhile. */
+const ALERT_SITES: Record<AlertSite, { name: string; code: string; meanwhile: string }> = {
+  FFTA: {
+    name: 'le site de la FFTA',
+    code: 'apps/api/src/competitions : ffta-parser.ts, ffta-rankings.ts, ffta-layout.ts',
+    meanwhile: "l'application garde les dernières données lues, sans les nouvelles",
+  },
+  ianseo: {
+    name: 'le site ianseo.net',
+    code: 'apps/api/src/score-sheets : ianseo-parser.ts, ianseo-layout.ts',
+    meanwhile: "plus aucune feuille de marque n'est trouvée pour les compétitions récentes",
+  },
+};
+
 /**
- * To the site's team (in French): a page of an outside website (the FFTA's) is no longer read as
- * expected — its layout or address changed —, what went wrong, and where.
+ * To the site's team (in French): a page of an outside website (the FFTA's, ianseo.net) is no
+ * longer read as expected — its layout or address changed —, what went wrong, and where.
  */
 export function layoutAlertEmail(alert: {
-  site: string;
+  site: AlertSite;
   page: string;
   url: string;
   problem: string;
   failures: number;
 }): RenderedMail {
-  const subject = `Alerte : le site de la ${alert.site} a changé (${alert.page})`;
+  const site = ALERT_SITES[alert.site];
+  const subject = `Alerte : ${site.name} a changé (${alert.page})`;
   const lines = [
-    `L'application n'arrive plus à lire ${alert.page} sur le site de la ${alert.site} : sa mise en page ou son adresse a sans doute changé.`,
+    `L'application n'arrive plus à lire ${alert.page} sur ${site.name} : sa mise en page ou son adresse a sans doute changé.`,
     `Problème constaté : ${alert.problem}`,
     `Lectures en échec d'affilée : ${alert.failures}.`,
     `Page lue : ${alert.url}`,
-    "En attendant une correction du code qui lit ces pages (apps/api/src/competitions : ffta-parser.ts, ffta-rankings.ts, ffta-layout.ts), l'application garde les dernières données lues, sans les nouvelles.",
+    `En attendant une correction du code qui lit ces pages (${site.code}), ${site.meanwhile}.`,
     'Pas de nouvelle alerte pour cette page avant 24 heures.',
   ];
   return {
@@ -274,7 +292,7 @@ function notebookPage(
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="${ruling};border-radius:2px 6px 6px 2px;box-shadow:2px 3px 0 rgba(0,0,0,0.15)">
 <tr><td style="padding:${STEP}px 22px ${STEP}px 20px;border-left:2px solid ${n.margin}">
 <h1 style="margin:0 0 ${STEP}px;font-family:${HAND};font-size:40px;line-height:${STEP * 2}px;font-weight:700;color:${n.ink}">${escapeHtml(t.heading)}</h1>
-<p style="margin:0 0 ${STEP}px;${text}">${escapeHtml(t.body)}</p>
+<p style="margin:0 0 ${STEP}px;${text};white-space:pre-line">${escapeHtml(t.body)}</p>
 <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin:0 auto ${STEP}px"><tr>
 <td style="border-radius:6px;background:${n.button}"><a href="${href}" style="display:inline-block;padding:0 26px;font-family:${HAND};font-size:22px;font-weight:700;line-height:${STEP * 2 - 8}px;color:#fff;text-decoration:none;border-radius:6px">${escapeHtml(t.button)}</a></td>
 </tr></table>
@@ -291,6 +309,138 @@ function notebookPage(
 </table>
 </body>
 </html>`;
+}
+
+/** A day of the journal ("YYYY-MM-DD") in words: "samedi 28 novembre", "Saturday 28 November". */
+export function dayInWords(locale: MailLocale, day: string): string {
+  return new Intl.DateTimeFormat(locale === 'fr' ? 'fr-FR' : 'en-GB', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    timeZone: 'UTC',
+  }).format(new Date(`${day}T12:00:00Z`));
+}
+
+const notices = {
+  coach: {
+    fr: {
+      subject: (coach: string) => `Du nouveau de ${coach} dans votre journal`,
+      heading: 'Du côté du coach',
+      event: (day: string, type: string) => `• ${type} proposé(e) pour le ${day}`,
+      comment: (day: string, coach: string) =>
+        `• Commentaire de ${coach} sur votre séance du ${day}`,
+      intro: 'Votre coach a pensé à vous :',
+      button: 'Ouvrir mon journal',
+      outro: 'Ces emails se désactivent sur la page Profil de votre journal (carte « Emails »).',
+      copyLink: 'Si le bouton ne fonctionne pas, copiez ce lien dans votre navigateur :',
+    },
+    en: {
+      subject: (coach: string) => `News from ${coach} in your journal`,
+      heading: 'From your coach',
+      event: (day: string, type: string) => `• ${type} proposed for ${day}`,
+      comment: (day: string, coach: string) => `• ${coach}'s comment on your session of ${day}`,
+      intro: 'Your coach thought of you:',
+      button: 'Open my journal',
+      outro: "These emails can be turned off on your journal's Profile page (“Emails” card).",
+      copyLink: "If the button doesn't work, copy this link into your browser:",
+    },
+  },
+  reminder: {
+    fr: {
+      subject: (count: number) =>
+        count > 1 ? 'Vos concours de la semaine' : 'Votre concours de la semaine',
+      heading: 'Prêt pour le concours ?',
+      line: (day: string, place: string) => `• ${day} : ${place}`,
+      mandate: (url: string) => `  Mandat et horaires : ${url}`,
+      intro: 'Au programme dans votre journal :',
+      button: 'Préparer ma séance',
+      outro:
+        'Ces rappels se désactivent sur la page Profil de votre journal (carte « Emails »). Bons tirs !',
+      copyLink: 'Si le bouton ne fonctionne pas, copiez ce lien dans votre navigateur :',
+    },
+    en: {
+      subject: (count: number) =>
+        count > 1 ? "This week's competitions" : "This week's competition",
+      heading: 'Ready for the competition?',
+      line: (day: string, place: string) => `• ${day}: ${place}`,
+      mandate: (url: string) => `  Invitation and times: ${url}`,
+      intro: 'Coming up in your journal:',
+      button: 'Get ready',
+      outro:
+        "These reminders can be turned off on your journal's Profile page (“Emails” card). Shoot well!",
+      copyLink: "If the button doesn't work, copy this link into your browser:",
+    },
+  },
+} as const;
+
+/** The type names the coach email uses (the web's names of the events planned). */
+const TYPE_NAMES: Record<MailLocale, Record<string, string>> = {
+  fr: {
+    TRAINING: 'Entraînement',
+    COACHING: 'Coaching',
+    COMPETITION: 'Compétition',
+    STRENGTH: 'Renforcement musculaire',
+  },
+  en: {
+    TRAINING: 'Training',
+    COACHING: 'Coaching',
+    COMPETITION: 'Competition',
+    STRENGTH: 'Strength',
+  },
+};
+
+/**
+ * To an archer (at most once a day): what their coach(es) did since the last such email — events
+ * proposed, comments written —, on a notebook page, with the link to their journal.
+ */
+export function coachNewsEmail(
+  locale: MailLocale,
+  news: {
+    events: { day: string; type: string }[];
+    comments: { day: string; coach: string }[];
+    /** Whose name goes in the subject: the coach of the latest news. */
+    coach: string;
+  },
+  link: string,
+): RenderedMail {
+  const t = notices.coach[locale];
+  const lines = [
+    ...news.events.map((e) =>
+      t.event(dayInWords(locale, e.day), TYPE_NAMES[locale][e.type] ?? e.type),
+    ),
+    ...news.comments.map((c) => t.comment(dayInWords(locale, c.day), c.coach)),
+  ];
+  const body = `${t.intro}\n${lines.join('\n')}`;
+  const subject = t.subject(news.coach);
+  return {
+    subject,
+    text: `${body}\n\n${link}\n\n${t.outro}\n`,
+    html: notebookPage(locale, { ...t, subject, body }, link),
+  };
+}
+
+/**
+ * To an archer, the week before: their competitions of the coming days (day, place, the FFTA
+ * page with the invitation when it came from the FFTA calendar), with the link to the first one's
+ * sheet.
+ */
+export function competitionReminderEmail(
+  locale: MailLocale,
+  competitions: { day: string; place: string; fftaUrl: string | null }[],
+  link: string,
+): RenderedMail {
+  const t = notices.reminder[locale];
+  const lines = competitions.flatMap((c) => [
+    t.line(dayInWords(locale, c.day), c.place),
+    ...(c.fftaUrl ? [t.mandate(c.fftaUrl)] : []),
+  ]);
+  const body = `${t.intro}\n${lines.join('\n')}`;
+  const subject = t.subject(competitions.length);
+  return {
+    subject,
+    text: `${body}\n\n${link}\n\n${t.outro}\n`,
+    html: notebookPage(locale, { ...t, subject, body }, link),
+  };
 }
 
 /** `ttlSeconds`: how long the link is valid (said in the email). */

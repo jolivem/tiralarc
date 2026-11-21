@@ -434,11 +434,14 @@ export function CompetitionsToPlan({
   today,
   cacheScope,
   raised = false,
+  heading = true,
 }: {
   today: string;
   cacheScope: string;
   /** Its heading a line higher: first under the day, level with the left page's calendar. */
   raised?: boolean;
+  /** False: the list alone, under the "Planification Concours" title (CompetitionPlanningCard). */
+  heading?: boolean;
 }) {
   const t = useTranslations('archer.competitions');
   const [loaded, setLoaded] = useState<{
@@ -543,11 +546,17 @@ export function CompetitionsToPlan({
 
   return (
     <section>
-      <RuledHeading raised={raised} highlight="blue">
-        {t('toPlan')}
-      </RuledHeading>
-      {/* Room under the heading (written on its box's last line) before the list. */}
-      <Box mt="md">{body()}</Box>
+      {heading ? (
+        <>
+          <RuledHeading raised={raised} highlight="blue">
+            {t('toPlan')}
+          </RuledHeading>
+          {/* Room under the heading (written on its box's last line) before the list. */}
+          <Box mt="md">{body()}</Box>
+        </>
+      ) : (
+        body()
+      )}
       <Modal
         opened={dismissing !== null}
         onClose={() => setDismissing(null)}

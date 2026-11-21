@@ -1,0 +1,139 @@
+/* A guided tour (tour.tsx): the page dimmed but for the spotlight, a sticky note beside it. */
+.layer {
+  --tour-note: #fff3a3;
+  --tour-ink: #3b2f0b;
+  --tour-dim: rgb(24 16 8 / 0.58);
+  --tour-move: 260ms ease;
+
+  position: fixed;
+  inset: 0;
+  z-index: 400;
+
+  @mixin dark {
+    --tour-note: #5c4f1c;
+    --tour-ink: var(--mantine-color-white);
+    --tour-dim: rgb(0 0 0 / 0.66);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    --tour-move: 0ms;
+  }
+}
+
+/* The dimming (an SVG, masked: a hole per lit element). */
+.veil {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.dim {
+  fill: var(--tour-dim);
+}
+
+.hole {
+  transition:
+    x var(--tour-move),
+    y var(--tour-move),
+    width var(--tour-move),
+    height var(--tour-move);
+}
+
+/* Each hole's edge, gone over with a yellow highlighter. */
+.spotlight {
+  position: absolute;
+  border-radius: 10px;
+  box-shadow: 0 0 0 3px rgb(255 212 59 / 0.9);
+  pointer-events: none;
+  transition:
+    top var(--tour-move),
+    left var(--tour-move),
+    width var(--tour-move),
+    height var(--tour-move);
+}
+
+/* A sticky note held by a strip of tape, like the sections' (section-card.module.css). */
+.note {
+  position: absolute;
+  padding: 22px 18px 14px;
+  border-radius: 2px 2px 18px 2px;
+  background: var(--tour-note);
+  color: var(--tour-ink);
+  box-shadow: 0 10px 18px -8px rgb(0 0 0 / 0.5);
+  rotate: -0.6deg;
+  transition:
+    top var(--tour-move),
+    left var(--tour-move);
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: -10px;
+    left: 50%;
+    width: 64px;
+    height: 20px;
+    translate: -50% 0;
+    rotate: -4deg;
+    background: rgb(255 255 255 / 0.55);
+    box-shadow: 0 1px 2px rgb(0 0 0 / 0.15);
+
+    @mixin dark {
+      background: rgb(255 255 255 / 0.2);
+    }
+  }
+}
+
+.title {
+  margin: 0 0 4px;
+  font-family: var(--font-hand), 'Segoe Print', cursive;
+  font-size: 1.7rem;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.body {
+  color: inherit;
+  line-height: 1.45;
+}
+
+.progress {
+  min-width: 2.4em;
+  text-align: center;
+  opacity: 0.75;
+}
+
+/* Drawn in the note's colour, on the dimmed page, from the note to the element. */
+.arrow {
+  position: absolute;
+  width: 32px;
+  overflow: visible;
+  fill: none;
+  stroke: #ffe066;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+
+  &[data-side='below'] {
+    bottom: 100%;
+  }
+
+  &[data-side='above'] {
+    top: 100%;
+    rotate: 180deg;
+  }
+
+  &[data-side='right'] {
+    right: 100%;
+  }
+
+  &[data-side='left'] {
+    left: 100%;
+    scale: -1 1;
+  }
+}
+
+/* "Skip the tour" keeps its words, the other buttons give way. */
+.skip {
+  flex-shrink: 0;
+}

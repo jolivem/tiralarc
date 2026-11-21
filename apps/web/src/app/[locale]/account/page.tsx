@@ -15,6 +15,7 @@ import {
 } from '@mantine/core';
 import { IconX } from '@tabler/icons-react';
 import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/server';
+import { AccountDataCard } from '@/components/account/account-data-card';
 import { AthletesCard } from '@/components/coach/athletes-card';
 import { JournalsCard } from '@/components/journal/journals-card';
 import { ActionIconLink } from '@/components/links';
@@ -128,6 +129,8 @@ export default async function AccountPage({ params }: PageProps<'/[locale]/accou
         {athletes && <AthletesCard athletes={athletes} />}
         {/* Rate the app: approved by email before it shows on the home page. */}
         <ReviewCard nextAllowedAt={reviews?.nextAllowedAt ?? null} />
+        {/* Download everything, or delete the account. */}
+        <AccountDataCard email={user.email} hasPassword={user.hasPassword} />
       </Stack>
     </Container>
   );

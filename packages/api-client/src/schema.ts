@@ -37,6 +37,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/auth/demo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Signs into the example journal (a made-up season, in the language asked for): read-only, every change is refused (DEMO_READ_ONLY) */
+        post: operations["Auth_demo"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/verify-email": {
         parameters: {
             query?: never;
@@ -197,7 +214,8 @@ export interface paths {
         get: operations["Users_me"];
         put?: never;
         post?: never;
-        delete?: never;
+        /** Deletes the signed-in account and everything in it (journals, events, photos, goals, profile, invitations, coaching links). Cannot be undone. */
+        delete: operations["Account_delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -211,6 +229,23 @@ export interface paths {
             cookie?: never;
         };
         get: operations["Users_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/users/me/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** All the account's data, as a ZIP archive: `mes-donnees.json` (account, profile, journals, events, goals, invitations, reviews, what was written as a coach), the photos (`photos/<day>_<event id>/<photo id>.webp`) and the score sheets (PDF). */
+        get: operations["Account_export"];
         put?: never;
         post?: never;
         delete?: never;
@@ -651,6 +686,26 @@ export interface paths {
         patch: operations["Profile_update"];
         trace?: never;
     };
+    "/api/v1/profile/tours/{tour}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Mark a guided tour as seen (listed in `toursSeen`)
+         * @description Tour ids are client-side keys (`^[a-z0-9-]{1,30}$`, one per page). Idempotent.
+         */
+        put: operations["Profile_markTourSeen"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/profile/invitations": {
         parameters: {
             query?: never;
@@ -1041,6 +1096,58 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/profile/calendar-feed": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Creates the archer's calendar subscription link (replacing the previous one) */
+        post: operations["CalendarFeed_create"];
+        /** Turns the calendar subscription link off */
+        delete: operations["CalendarFeed_remove"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/calendar/{file}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The archer's events as an iCalendar file (whole days), for calendar apps: the link of POST /profile/calendar-feed, no sign-in. */
+        get: operations["CalendarFeed_file"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/journal/sessions/{id}/weather": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The weather of the event's day (Open-Meteo), as the sheet notes it, to fill in its sky, wind and temperature. Nothing is saved. */
+        get: operations["Weather_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/reviews": {
         parameters: {
             query?: never;
@@ -1117,11 +1224,12 @@ export interface components {
             /** @description Always true: a confirmation link was emailed; login is refused until it is used. */
             verificationRequired: boolean;
         };
-        VerifyEmailDto: {
-            /** @description Token from the link emailed at registration. */
-            token: string;
-            /** @description Human-readable device label (e.g. "Pixel 9", "Firefox on Linux"), shown in session lists. */
-            deviceName?: string;
+        DemoSignInDto: {
+            /**
+             * @description The example journal's language (French by default).
+             * @enum {string}
+             */
+            locale?: "fr" | "en";
         };
         TokenPairDto: {
             /** @description Short-lived JWT, sent as `Authorization: Bearer <token>`. */
@@ -1134,6 +1242,12 @@ export interface components {
             expiresIn: number;
             /** @description Refresh token lifetime, in seconds. */
             refreshExpiresIn: number;
+        };
+        VerifyEmailDto: {
+            /** @description Token from the link emailed at registration. */
+            token: string;
+            /** @description Human-readable device label (e.g. "Pixel 9", "Firefox on Linux"), shown in session lists. */
+            deviceName?: string;
         };
         ResendVerificationDto: {
             /** Format: email */
@@ -1196,9 +1310,20 @@ export interface components {
             roles: components["schemas"]["Role"][];
             /** @description False for accounts created through Google / Apple only. */
             hasPassword: boolean;
+            /** @description The example journal (POST /auth/demo): read-only, every change refused (DEMO_READ_ONLY). */
+            isDemo: boolean;
             providers: components["schemas"]["AuthProvider"][];
             /** Format: date-time */
             createdAt: string;
+        };
+        DeleteAccountDto: {
+            /**
+             * Format: email
+             * @description The account's email, typed again.
+             */
+            email: string;
+            /** @description Required when the account has a password (INVALID_CREDENTIALS if wrong). */
+            password?: string;
         };
         /**
          * @description Which band was clicked: one of the theme's artwork bands, or `title` (the month's name in hollow letters, drawn by the client).
@@ -1925,6 +2050,20 @@ export interface components {
             homeLatitude: number | null;
             /** @description `homeTown`'s longitude. */
             homeLongitude: number | null;
+            /**
+             * @description Guided tours the archer has seen (ids are client-side keys, one per page): a client starts a page's tour once, the first time it is shown. See PUT /profile/tours/{tour}.
+             * @example [
+             *       "home",
+             *       "journal"
+             *     ]
+             */
+            toursSeen: string[];
+            /** @description Email the archer (at most once a day) when their coach proposes an event or comments one. */
+            coachEmails: boolean;
+            /** @description Email the archer the week before each competition of their journal. */
+            competitionReminders: boolean;
+            /** @description Whether a calendar subscription link exists (POST /profile/calendar-feed creates one). */
+            hasCalendarFeed: boolean;
         };
         UpdateProfileDto: {
             licenceNumber?: string | null;
@@ -1959,6 +2098,10 @@ export interface components {
             paraCompetitions?: boolean;
             /** @description Town the archer sets off from; its coordinates are looked up when saved. */
             homeTown?: string | null;
+            /** @description The coach's news by email (at most once a day). */
+            coachEmails?: boolean;
+            /** @description Competition reminders by email, the week before. */
+            competitionReminders?: boolean;
         };
         /**
          * @description Coaches only. What the coach may do in the archer's journal of the season in progress (the one whose period covers today): READ = see all of it, plus the indicators and goals; WRITE = READ, and plan future trainings, coachings, competitions and strength sessions.
@@ -2043,6 +2186,11 @@ export interface components {
         };
         /** @enum {string} */
         GoalType: "SPORT" | "TECHNIQUE" | "PHYSICAL" | "PERSONAL";
+        /**
+         * @description What a figured goal measures, followed from the events since `createdOn` (it is then reached by itself, the day the target is met): SCORE = the best score in competition (a round of fixed length, unlike a training's); ARROWS = the arrows shot in all. Null: a goal in words only. Given with `target` (VALIDATION_FAILED otherwise).
+         * @enum {string}
+         */
+        GoalMetric: "SCORE" | "ARROWS";
         GoalDto: {
             /** Format: uuid */
             id: string;
@@ -2057,6 +2205,18 @@ export interface components {
             achieved: boolean;
             /** @example 2027-02-06 */
             achievedOn: string | null;
+            /** @description What a figured goal measures, followed from the events since `createdOn` (it is then reached by itself, the day the target is met): SCORE = the best score in competition (a round of fixed length, unlike a training's); ARROWS = the arrows shot in all. Null: a goal in words only. Given with `target` (VALIDATION_FAILED otherwise). */
+            metric: components["schemas"]["GoalMetric"] | null;
+            /** @example 550 */
+            target: number | null;
+            discipline: components["schemas"]["Discipline"] | null;
+            /** @example 18 */
+            distanceMeters: number | null;
+            /**
+             * @description Figured goals: the best score so far, or the arrows shot so far (up to today); null otherwise.
+             * @example 532
+             */
+            progress: number | null;
         };
         CreateGoalDto: {
             type: components["schemas"]["GoalType"];
@@ -2072,6 +2232,17 @@ export interface components {
              * @example 2027-02-06
              */
             achievedOn?: string | null;
+            /** @description What a figured goal measures, followed from the events since `createdOn` (it is then reached by itself, the day the target is met): SCORE = the best score in competition (a round of fixed length, unlike a training's); ARROWS = the arrows shot in all. Null: a goal in words only. Given with `target` (VALIDATION_FAILED otherwise). */
+            metric?: components["schemas"]["GoalMetric"] | null;
+            /** @example 550 */
+            target?: number | null;
+            /** @description SCORE goals: only the competitions of this discipline (null: any). */
+            discipline?: components["schemas"]["Discipline"] | null;
+            /**
+             * @description SCORE goals: only the competitions shot at this distance, in metres (null: any).
+             * @example 18
+             */
+            distanceMeters?: number | null;
         };
         UpdateGoalDto: {
             type?: components["schemas"]["GoalType"];
@@ -2080,6 +2251,11 @@ export interface components {
             createdOn?: string;
             /** @example 2027-02-06 */
             achievedOn?: string | null;
+            /** @description What a figured goal measures, followed from the events since `createdOn` (it is then reached by itself, the day the target is met): SCORE = the best score in competition (a round of fixed length, unlike a training's); ARROWS = the arrows shot in all. Null: a goal in words only. Given with `target` (VALIDATION_FAILED otherwise). Null makes it a goal in words only. */
+            metric?: components["schemas"]["GoalMetric"] | null;
+            target?: number | null;
+            discipline?: components["schemas"]["Discipline"] | null;
+            distanceMeters?: number | null;
         };
         CoachGroupDto: {
             /** Format: uuid */
@@ -2152,6 +2328,27 @@ export interface components {
         };
         SaveSessionCommentDto: {
             text: string;
+        };
+        CalendarFeedDto: {
+            /**
+             * Format: uri
+             * @description The subscription link (iCal), to add to a calendar app. Shown only now: keep it secret, anyone with it sees the events. A new one replaces it.
+             */
+            url: string;
+        };
+        WeatherDto: {
+            sky: components["schemas"]["Sky"] | null;
+            wind: components["schemas"]["Wind"] | null;
+            /**
+             * @description The day's highest, °C.
+             * @example 17
+             */
+            temperatureC: number | null;
+            /**
+             * @description Where it was looked up: the event's place, or the archer's home town.
+             * @example Rennes
+             */
+            place: string;
         };
         PublicReviewDto: {
             /** Format: uuid */
@@ -2401,6 +2598,29 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    Auth_demo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DemoSignInDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TokenPairDto"];
+                };
             };
         };
     };
@@ -2687,6 +2907,41 @@ export interface operations {
             };
         };
     };
+    Account_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DeleteAccountDto"];
+            };
+        };
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description VALIDATION_FAILED: the email is not the account's */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description INVALID_CREDENTIALS: wrong or missing password */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     Users_list: {
         parameters: {
             query?: never;
@@ -2710,6 +2965,25 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    Account_export: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/zip": string;
+                };
             };
         };
     };
@@ -3930,6 +4204,46 @@ export interface operations {
             };
         };
     };
+    Profile_markTourSeen: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tour: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description VALIDATION_FAILED: not a tour id */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Archers only */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description LIMIT_REACHED */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     Profile_listInvitations: {
         parameters: {
             query?: never;
@@ -5110,6 +5424,111 @@ export interface operations {
             };
             /** @description Not one of your archers (or not in their current journal) */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CalendarFeed_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CalendarFeedDto"];
+                };
+            };
+        };
+    };
+    CalendarFeed_remove: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CalendarFeed_file: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                file: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/calendar": string;
+                };
+            };
+            /** @description Unknown or turned-off link */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    Weather_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WeatherDto"];
+                };
+            };
+            /** @description VALIDATION_FAILED: the day is still to come */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description WEATHER_UNAVAILABLE: no place found on the map, or the service unreachable */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };

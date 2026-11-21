@@ -59,6 +59,24 @@ describe('automatic colouring', () => {
     expect(realisticFills(art, { rgba, width: 9, height: 5 }, 'top', 0)).toEqual([]);
   });
 
+  it('fills an area cut by the image edge (a branch running off the band), not the paper around', () => {
+    // A branch coming in from the left edge: its inside (row 2, columns 0–3) reaches the edge.
+    const rows = ['.........', '#####....', '....#....', '#####....', '.........'];
+    const rgba = new Uint8ClampedArray(9 * 5 * 4);
+    rows
+      .join('')
+      .split('')
+      .forEach((cell, i) => rgba.set(cell === '#' ? [0, 0, 0, 255] : [255, 255, 255, 255], i * 4));
+    const art = toArtwork(rgba, 9, 5);
+    // The colour map: everything brown but the paper around, left white.
+    const colors = new Uint8ClampedArray(9 * 5 * 4).fill(255);
+    for (let col = 0; col < 4; col++) colors.set([139, 90, 43, 255], (2 * 9 + col) * 4);
+    const fills = realisticFills(art, { rgba: colors, width: 9, height: 5 }, 'left', 10);
+    expect(fills).toEqual([expect.objectContaining({ color: '#8b5a2b', pixels: 4 })]);
+    // The paper around stays out even where the colour map isn't white.
+    expect(areaSeeds(art, { edges: true }).map((seed) => seed.pixels)).toEqual([4]);
+  });
+
   it('finds every closed area, largest first, never the paper around', () => {
     expect(areaSeeds(drawing()).map((seed) => seed.pixels)).toEqual([3]);
   });

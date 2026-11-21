@@ -23,6 +23,7 @@ describe('FftaWatch', () => {
     expect(sendLayoutAlert).not.toHaveBeenCalled();
     fail(1);
     expect(sendLayoutAlert).toHaveBeenCalledWith({
+      site: 'FFTA',
       page: expect.stringContaining('recherche des compétitions'),
       url: 'https://www.ffta.fr/competitions',
       problem: 'vue absente',

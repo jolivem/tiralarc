@@ -20,6 +20,7 @@ function toDto(user: UserRecord): UserDto {
     locale: user.locale,
     roles: rolesOf(user),
     hasPassword: user.passwordHash !== null,
+    isDemo: user.isDemo,
     providers: [...new Set(user.identities.map(({ provider }) => provider))],
     createdAt: user.createdAt,
   };

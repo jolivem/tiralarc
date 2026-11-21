@@ -11,7 +11,9 @@ import {
   type ScoreSheetArcher,
   sheetPages,
 } from './ianseo-parser.js';
-import { IanseoClient } from './ianseo.client.js';
+import { IanseoClient, ianseoUrl, tourListPath } from './ianseo.client.js';
+import { toursProblem } from './ianseo-layout.js';
+import { IanseoWatch } from './ianseo-watch.service.js';
 
 interface PdfPage {
   /** The page's text in reading order. */
@@ -78,7 +80,10 @@ export class SearchCache {
 export class ScoreSheetFinder {
   private readonly logger = new Logger(ScoreSheetFinder.name);
 
-  constructor(private readonly ianseo: IanseoClient) {}
+  constructor(
+    private readonly ianseo: IanseoClient,
+    private readonly watch: IanseoWatch,
+  ) {}
 
   async find(
     archer: ScoreSheetArcher,
@@ -87,9 +92,15 @@ export class ScoreSheetFinder {
     cache = new SearchCache(),
   ): Promise<Uint8Array | null> {
     const year = Number(date.slice(0, 4));
-    const tours = await remember(cache.lists, year, async () =>
-      parseTours(await this.ianseo.tours(year), year),
-    );
+    const tours = await remember(cache.lists, year, async () => {
+      const html = await this.ianseo.tours(year);
+      const parsed = parseTours(html, year);
+      // Checked once per round and year: a redesign would otherwise read as "no sheet yet".
+      const problem = toursProblem(html, parsed);
+      if (problem) this.watch.anomaly('tours', ianseoUrl(tourListPath(year)), problem.problem);
+      else this.watch.ok('tours');
+      return problem?.fatal ? [] : parsed;
+    });
     for (const { id } of candidateTours(tours, date, location).slice(0, MAX_TOURS)) {
       try {
         const sheet = await this.inTour(id, archer, date, cache);

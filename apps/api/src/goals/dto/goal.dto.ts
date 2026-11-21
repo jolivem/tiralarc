@@ -1,9 +1,18 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsIn, IsOptional, IsString, Matches, MaxLength } from 'class-validator';
-import { GoalType } from '../../generated/prisma/client.js';
+import { IsIn, IsInt, IsOptional, IsString, Matches, Max, MaxLength, Min } from 'class-validator';
+import { Discipline, GoalMetric, GoalType } from '../../generated/prisma/client.js';
 
 const DATE = /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/;
 const GOAL_TYPES = Object.values(GoalType);
+const GOAL_METRICS = Object.values(GoalMetric);
+const DISCIPLINES = Object.values(Discipline);
+const METRIC_DESCRIPTION =
+  'What a figured goal measures, followed from the events since `createdOn` (it is then ' +
+  'reached by itself, the day the target is met): SCORE = the best score in competition (a ' +
+  "round of fixed length, unlike a training's); ARROWS = the arrows shot in all. Null: a goal " +
+  'in words only. ' +
+  'Given with `target` (VALIDATION_FAILED otherwise).';
+export const MAX_TARGET = 1_000_000;
 
 export class CreateGoalDto {
   @ApiProperty({ enum: GOAL_TYPES, enumName: 'GoalType' })
@@ -33,6 +42,51 @@ export class CreateGoalDto {
   @IsOptional()
   @Matches(DATE, { message: 'achievedOn must be YYYY-MM-DD' })
   achievedOn?: string | null;
+
+  @ApiPropertyOptional({
+    enum: GOAL_METRICS,
+    enumName: 'GoalMetric',
+    nullable: true,
+    description: METRIC_DESCRIPTION,
+  })
+  @IsOptional()
+  @IsIn(GOAL_METRICS)
+  metric?: GoalMetric | null;
+
+  @ApiPropertyOptional({
+    type: Number,
+    nullable: true,
+    minimum: 1,
+    maximum: MAX_TARGET,
+    example: 550,
+  })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(MAX_TARGET)
+  target?: number | null;
+
+  @ApiPropertyOptional({
+    enum: DISCIPLINES,
+    enumName: 'Discipline',
+    nullable: true,
+    description: 'SCORE goals: only the competitions of this discipline (null: any).',
+  })
+  @IsOptional()
+  @IsIn(DISCIPLINES)
+  discipline?: Discipline | null;
+
+  @ApiPropertyOptional({
+    type: Number,
+    nullable: true,
+    example: 18,
+    description: 'SCORE goals: only the competitions shot at this distance, in metres (null: any).',
+  })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(1000)
+  distanceMeters?: number | null;
 }
 
 /** PATCH body: every field optional; `achievedOn: null` marks the goal as not reached. */
@@ -58,6 +112,35 @@ export class UpdateGoalDto {
   @IsOptional()
   @Matches(DATE, { message: 'achievedOn must be YYYY-MM-DD' })
   achievedOn?: string | null;
+
+  @ApiPropertyOptional({
+    enum: GOAL_METRICS,
+    enumName: 'GoalMetric',
+    nullable: true,
+    description: `${METRIC_DESCRIPTION} Null makes it a goal in words only.`,
+  })
+  @IsOptional()
+  @IsIn(GOAL_METRICS)
+  metric?: GoalMetric | null;
+
+  @ApiPropertyOptional({ type: Number, nullable: true, minimum: 1, maximum: MAX_TARGET })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(MAX_TARGET)
+  target?: number | null;
+
+  @ApiPropertyOptional({ enum: DISCIPLINES, enumName: 'Discipline', nullable: true })
+  @IsOptional()
+  @IsIn(DISCIPLINES)
+  discipline?: Discipline | null;
+
+  @ApiPropertyOptional({ type: Number, nullable: true })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(1000)
+  distanceMeters?: number | null;
 }
 
 /** One of the archer's goals. */
@@ -79,4 +162,30 @@ export class GoalDto {
 
   @ApiProperty({ type: String, nullable: true, example: '2027-02-06' })
   achievedOn!: string | null;
+
+  @ApiProperty({
+    enum: GOAL_METRICS,
+    enumName: 'GoalMetric',
+    nullable: true,
+    description: METRIC_DESCRIPTION,
+  })
+  metric!: GoalMetric | null;
+
+  @ApiProperty({ type: Number, nullable: true, example: 550 })
+  target!: number | null;
+
+  @ApiProperty({ enum: DISCIPLINES, enumName: 'Discipline', nullable: true })
+  discipline!: Discipline | null;
+
+  @ApiProperty({ type: Number, nullable: true, example: 18 })
+  distanceMeters!: number | null;
+
+  @ApiProperty({
+    type: Number,
+    nullable: true,
+    example: 532,
+    description:
+      'Figured goals: the best score so far, or the arrows shot so far (up to today); null otherwise.',
+  })
+  progress!: number | null;
 }

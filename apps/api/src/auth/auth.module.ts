@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtModule } from '@nestjs/jwt';
 import type { Env } from '../config/env.js';
+import { DemoModule } from '../demo/demo.module.js';
 import { AuthController } from './auth.controller.js';
 import { AuthGuard } from './auth.guard.js';
 import { AuthService } from './auth.service.js';
@@ -10,6 +11,8 @@ import { IdTokenVerifier } from './id-token-verifier.service.js';
 
 @Module({
   imports: [
+    // The example journal's account (POST /auth/demo).
+    DemoModule,
     JwtModule.registerAsync({
       inject: [ConfigService],
       useFactory: (config: ConfigService<Env, true>) => ({

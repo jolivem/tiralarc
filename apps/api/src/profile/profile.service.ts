@@ -23,6 +23,7 @@ import type {
   UpdateInvitationDto,
   UpdateProfileDto,
 } from './dto/profile.dto.js';
+import { MAX_TOURS, TOUR } from './dto/profile.dto.js';
 
 export const MAX_INVITATIONS = 20;
 /** Sent in 24 hours: removing an invitation frees a place in `MAX_INVITATIONS`, not this. */
@@ -54,7 +55,16 @@ function toProfileDto(profile: ArcherProfile | null): ProfileDto {
     homeTown: profile?.homeTown ?? null,
     homeLatitude: profile?.homeLatitude ?? null,
     homeLongitude: profile?.homeLongitude ?? null,
+    toursSeen: toursOf(profile),
+    coachEmails: profile?.coachEmails ?? true,
+    competitionReminders: profile?.competitionReminders ?? true,
+    hasCalendarFeed: Boolean(profile?.calendarFeedTokenHash),
   };
+}
+
+function toursOf(profile: ArcherProfile | null): string[] {
+  const stored: unknown[] = Array.isArray(profile?.toursSeen) ? profile.toursSeen : [];
+  return stored.filter((t): t is string => typeof t === 'string');
 }
 
 function toInvitationDto(i: ProfileInvitation): InvitationDto {
@@ -155,6 +165,27 @@ export class ProfileService {
       update: data,
     });
     return toProfileDto(profile);
+  }
+
+  /** Marks a guided tour as seen (again: harmless). */
+  async markTourSeen(userId: string, tour: string): Promise<void> {
+    if (!TOUR.test(tour)) {
+      throw new ApiException(HttpStatus.BAD_REQUEST, ErrorCode.VALIDATION_FAILED, 'Unknown tour');
+    }
+    await this.prisma.$transaction(async (tx) => {
+      // One at a time per account: two pages marking theirs at once both stay.
+      await tx.$queryRaw`SELECT id FROM users WHERE id = ${userId} FOR UPDATE`;
+      const profile = await tx.archerProfile.findUnique({ where: { userId } });
+      const seen = toursOf(profile);
+      if (seen.includes(tour)) return;
+      if (seen.length >= MAX_TOURS) throw limitReached('tours', MAX_TOURS);
+      const toursSeen = [...seen, tour];
+      await tx.archerProfile.upsert({
+        where: { userId },
+        create: { userId, disciplines: [], departments: [], toursSeen },
+        update: { toursSeen },
+      });
+    });
   }
 
   // ------------------------------------------------------------ invitations

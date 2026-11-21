@@ -22,12 +22,201 @@
     "userMenu": "Menu utilisateur",
     "archerSection": "Espace archer",
     "mainNavigation": "Navigation principale",
+    "tour": "Revoir la visite guidée de cette page",
     "journalMenu": {
       "label": "Choisir le journal affiché",
       "choose": "Choisir un journal",
       "own": "Mes journaux",
       "athletes": "Mes archers",
       "athleteJournal": "{title} — {name}"
+    }
+  },
+  "tours": {
+    "next": "Suivant",
+    "previous": "Précédent",
+    "skip": "Passer la visite",
+    "finish": "C'est parti !",
+    "home": {
+      "welcome": {
+        "title": "Bienvenue dans votre carnet !",
+        "body": "Cette page d'accueil résume votre saison. Une petite visite pour en découvrir l'essentiel ? (Échap pour la passer.)"
+      },
+      "today": {
+        "title": "Noter un événement",
+        "body": "Cliquez sur la date du jour, ou sur son stylo, pour noter un entraînement, un concours, une séance de renfo… Vous remplirez sa fiche ensuite."
+      },
+      "calendar": {
+        "title": "Votre calendrier",
+        "body": "Ce mois-ci et le suivant, avec une icône par événement. Cliquez dessus pour voir toute la saison d'un coup d'œil."
+      },
+      "regularity": {
+        "title": "Votre régularité",
+        "body": "Nombre de jours où vous avez noté une séance depuis le début du journal, et vos semaines d'affilée avec au moins deux séances. De quoi garder le rythme !"
+      },
+      "competitions": {
+        "title": "Les concours FFTA",
+        "body": "Les mandats publiés dans vos départements, et « Planifier » pour choisir vos concours de la saison sur une carte. Un clic les ajoute à votre journal."
+      },
+      "export": {
+        "title": "Publication du Journal",
+        "body": "Imprimez le carnet de votre saison : calendriers décorés, fiches, photos et indicateurs, pour garder le souvenir de cette saison de tir à l'arc."
+      },
+      "tabs": {
+        "title": "Les rubriques du carnet",
+        "body": "Ces onglets, comme les post-it en bas de page, mènent au Journal, aux Fiches, aux Indicateurs et à votre Profil. Chacun a sa petite visite la première fois que vous l'ouvrez."
+      },
+      "account": {
+        "title": "Votre compte",
+        "body": "Accédez à votre compte pour ajouter un nouveau journal ou noter l'application."
+      },
+      "help": {
+        "title": "Revoir la visite",
+        "body": "Un doute ? Le bouton « ? » relance la visite de la page affichée, quand vous voulez. Sur téléphone, il est dans le menu de votre compte."
+      }
+    },
+    "journal": {
+      "welcome": {
+        "title": "Le journal du mois",
+        "body": "Ici, votre saison mois par mois : vos séances, leurs fiches descriptives, et un calendrier à décorer. Petit tour ? (Échap pour le passer.)"
+      },
+      "calendar": {
+        "title": "Le calendrier",
+        "body": "Cliquez sur un jour pour ajouter ou planifier une séance (entraînement, compétition, coaching…). Si l'icône est grisée, sa fiche descriptive reste à compléter. Un ticket « FFTA » signale les concours du jour."
+      },
+      "new-event": {
+        "title": "Nouvel événement",
+        "body": "Le « + » ajoute un événement à la date de votre choix : entraînement, concours, renfo, ou l'un de vos types à vous."
+      },
+      "navigate": {
+        "title": "Changer de mois",
+        "body": "Pour naviguer plus rapidement, utilisez le bouton « Aujourd'hui », ou celui du calendrier pour afficher la saison complète."
+      },
+      "summary": {
+        "title": "Le bilan du mois",
+        "body": "Les flèches tirées ce mois-ci, et votre satisfaction : cliquez sur les étoiles pour la noter."
+      },
+      "share": {
+        "title": "Partager le mois",
+        "body": "Votre mois écrit à la craie sur un tableau noir, prêt pour Instagram."
+      },
+      "decor": {
+        "title": "Le décor",
+        "body": "Choisissez un décor pour ce mois ainsi que la couleur d'affichage du mois."
+      },
+      "coloring": {
+        "title": "Le coloriage",
+        "body": "Personnalisez le décor avec les couleurs de votre choix, ou laissez faire le « Coloriage automatique »."
+      },
+      "legend": {
+        "title": "La légende",
+        "body": "Pour retrouver le sens de chaque icône."
+      }
+    },
+    "stats": {
+      "welcome": {
+        "title": "Vos indicateurs",
+        "body": "Vos fiches remplies deviennent des chiffres et des courbes, pour suivre vos progrès. Petit tour ? (Échap pour le passer.)"
+      },
+      "period": {
+        "title": "La période",
+        "body": "Les indicateurs portent sur la période d'un journal, ou sur tout ce que vous avez noté depuis le début."
+      },
+      "season": {
+        "title": "Le bilan de saison",
+        "body": "Toute la saison résumée sur un tableau blanc : meilleurs scores, moyennes par flèche, objectifs atteints… à partager sur Instagram."
+      },
+      "goals": {
+        "title": "Vos objectifs",
+        "body": "Fixez-vous des objectifs, puis notez le jour où vous les atteignez."
+      },
+      "rankings": {
+        "title": "Les classements nationaux",
+        "body": "Votre place dans les classements FFTA de votre arme et de votre catégorie, cette saison et la précédente. Il faut votre n° de licence, votre catégorie et votre arme (page Profil)."
+      },
+      "charts": {
+        "title": "Les courbes",
+        "body": "Flèches, durées, scores, moyennes par flèche, événements, ressentis : chaque carte a son graphique, et souvent des boutons en haut pour changer d'échelle ou de discipline."
+      },
+      "favorite": {
+        "title": "Votre indicateur favori",
+        "body": "L'étoile d'une carte la met en avant sur la page d'accueil. Une seule à la fois."
+      },
+      "all": {
+        "title": "Tous vos indicateurs",
+        "body": "Ensemble des indicateurs à votre disposition."
+      }
+    },
+    "profile": {
+      "welcome": {
+        "title": "Votre profil",
+        "body": "Ici, ce que le carnet doit savoir de vous, et les personnes avec qui vous le partagez. Petit tour ? (Échap pour le passer.)"
+      },
+      "guests": {
+        "title": "Invitation",
+        "body": "Invitez vos amis archers pour qu'ils créent leur propre journal, mais aussi votre entraîneur : il pourra voir votre journal de la saison en cours et, si vous le permettez, vous proposer des séances et commenter les vôtres."
+      },
+      "competitions": {
+        "title": "Vos concours",
+        "body": "Choisissez jusqu'à cinq départements : leurs concours FFTA s'affichent dans vos calendriers. Votre ville de départ donne la distance sur la carte des concours."
+      },
+      "configuration": {
+        "title": "Votre configuration",
+        "body": "Licence, nom, catégorie, arme et disciplines : ils servent aux concours, aux classements et à retrouver vos feuilles de marque."
+      },
+      "personalization": {
+        "title": "Personnalisation",
+        "body": "Choisissez l'écriture de vos calendriers : une calligraphie, ou une police plus simple à lire."
+      },
+      "emails": {
+        "title": "Vos emails",
+        "body": "Recevez les nouvelles de votre coach et un rappel la semaine de vos concours. Désactivables à tout moment."
+      },
+      "calendar-feed": {
+        "title": "L'agenda du téléphone",
+        "body": "Un lien à ajouter à votre agenda : vos séances et concours y apparaissent tout seuls."
+      }
+    },
+    "sheet": {
+      "welcome": {
+        "title": "La fiche de séance",
+        "body": "Tout ce qui fait votre séance : avant, ce que vous prévoyez ; après, votre bilan. Petit tour ? (Échap pour le passer.)"
+      },
+      "info": {
+        "title": "Les informations",
+        "body": "Date, durée, lieu, discipline et distance se notent à l'avance ; les flèches, le score et, en extérieur, la météo, une fois le jour venu."
+      },
+      "photos": {
+        "title": "Les photos",
+        "body": "Jusqu'à quatre photos par séance : votre blason, votre matériel, le pas de tir… Elles restent privées."
+      },
+      "objective": {
+        "title": "L'objectif",
+        "body": "Ce que vous voulez travailler pendant cette séance."
+      },
+      "steps": {
+        "title": "Le déroulé",
+        "body": "Le « + » ajoute une étape (en minutes ou en flèches). Le jour de la séance, cochez celles que vous avez faites."
+      },
+      "review": {
+        "title": "Le bilan",
+        "body": "Après la séance : votre satisfaction et votre technique, puis l'analyse, ce qui est à garder, à améliorer et pour la prochaine fois."
+      },
+      "feelings": {
+        "title": "Vos ressentis",
+        "body": "Comment vous vous sentiez, physiquement et mentalement : ils alimentent les indicateurs."
+      },
+      "save": {
+        "title": "Enregistrer",
+        "body": "Pensez à enregistrer vos modifications avant de fermer la fiche."
+      },
+      "again": {
+        "title": "Refaire cette séance",
+        "body": "Une nouvelle séance, un autre jour, avec le même programme."
+      },
+      "share": {
+        "title": "Partager",
+        "body": "Votre séance en carte pour Instagram, avec les informations et les photos de votre choix."
+      }
     }
   },
   "home": {
@@ -87,6 +276,12 @@
       }
     },
     "ctaTitle": "Prêt à ouvrir votre carnet ?",
+    "demo": "Voir un exemple",
+    "demoUnavailable": "Le journal d'exemple n'a pas pu s'ouvrir. Réessayez dans un instant.",
+    "deleted": {
+      "title": "Votre compte a été supprimé",
+      "body": "Vos journaux, vos séances, vos photos et toutes vos données ont été effacés. Merci d'avoir utilisé MyArcheryDiary."
+    },
     "login": "Connexion",
     "register": "Créer un compte",
     "profile": "Mon profil",
@@ -100,6 +295,11 @@
         "body": "Découvrez ci-dessous à quoi sert MyArcheryDiary, puis créez votre compte. Une fois connecté, rouvrez le lien de l'invitation reçu par email pour devenir coach."
       }
     }
+  },
+  "demo": {
+    "bannerTitle": "Journal d'exemple",
+    "bannerBody": "Une saison inventée, à parcourir librement : calendrier, fiches, indicateurs. Rien ne s'y modifie.",
+    "register": "Créer mon compte"
   },
   "roles": {
     "ADMIN": "Administrateur",
@@ -184,7 +384,9 @@
     "DATE_LOCKED": "Cette compétition vient du calendrier de la FFTA : sa date ne se modifie pas.",
     "DAILY_LIMIT_REACHED": "Vous avez envoyé trop d'invitations aujourd'hui. Réessayez demain.",
     "GROUP_NAME_TAKEN": "Vous avez déjà un groupe à ce nom.",
-    "INVALID_REVIEW_TOKEN": "Ce lien ne correspond à aucun avis en attente : il a peut-être déjà été publié ou refusé."
+    "INVALID_REVIEW_TOKEN": "Ce lien ne correspond à aucun avis en attente : il a peut-être déjà été publié ou refusé.",
+    "WEATHER_UNAVAILABLE": "Météo introuvable : indiquez une ville comme lieu de la séance, ou votre ville de départ sur la page Profil.",
+    "DEMO_READ_ONLY": "C'est un journal d'exemple : il ne se modifie pas. Créez votre compte pour tenir le vôtre !"
   },
   "validation": {
     "isEmail": "Adresse email invalide.",
@@ -203,13 +405,37 @@
     "signInMethods": "Connexion",
     "methodPassword": "mot de passe",
     "memberSince": "Inscrit le",
-    "rolesHint": "Tout le monde est archer. Le profil Coach s'ajoute quand un archer vous invite comme coach, tant qu'il ne retire pas son invitation."
+    "rolesHint": "Tout le monde est archer. Le profil Coach s'ajoute quand un archer vous invite comme coach, tant qu'il ne retire pas son invitation.",
+    "data": {
+      "title": "Vos données",
+      "exportHint": "Téléchargez toutes vos données dans une archive ZIP : vos journaux, séances, objectifs et profil (fichier JSON), avec vos photos et vos feuilles de marque.",
+      "export": "Télécharger mes données",
+      "delete": "Supprimer mon compte",
+      "deleteTitle": "Supprimer votre compte ?",
+      "deleteBody": "Votre compte et tout ce qu'il contient seront définitivement supprimés : journaux, séances, photos, objectifs, profil et invitations. Vos coachs n'auront plus accès à votre journal. C'est irréversible.",
+      "deleteExportFirst": "Pensez à télécharger vos données avant, si vous voulez les garder.",
+      "typeEmail": "Pour confirmer, tapez votre adresse email ({email})",
+      "password": "Votre mot de passe",
+      "cancel": "Annuler",
+      "confirm": "Supprimer définitivement"
+    }
   },
   "archer": {
     "addToday": "Noter un événement aujourd'hui",
+    "gettingStarted": {
+      "title": "Pour bien démarrer",
+      "steps": {
+        "profile": "Renseigner votre profil : arme, catégorie, licence",
+        "event": "Noter votre première séance",
+        "coach": "Inviter votre coach",
+        "decor": "Décorer un mois de votre journal"
+      },
+      "done": "fait",
+      "hide": "Masquer cette liste"
+    },
     "regularity": {
       "title": "Régularité",
-      "events": "<strong>{events}</strong> {events, plural, one {événement noté} other {événements notés}} en <strong>{days}</strong> {days, plural, one {jour} other {jours}} de saison",
+      "events": "<strong>{events}</strong> {events, plural, one {séance notée} other {séances notées}} en <strong>{days}</strong> {days, plural, one {jour} other {jours}} de saison",
       "streak": "<strong>{weeks}</strong> {weeks, plural, one {semaine} other {semaines d'affilée}} avec au moins {sessions} séances",
       "noStreak": "Faites {sessions} séances cette semaine pour lancer une série"
     },
@@ -219,7 +445,7 @@
     "stats": "Indicateurs",
     "profile": "Profil",
     "homeTitle": "Bonjour {name}",
-    "calendar": "Calendrier Annuel",
+    "calendar": "Calendrier annuel",
     "openSeason": "Afficher le calendrier de toute la saison",
     "openMonth": "Ouvrir {month} dans le journal",
     "close": "Fermer",
@@ -243,7 +469,6 @@
         "legendChampionship": "Championnat",
         "noHome": "Indiquez votre ville de départ (page Profil) pour voir les distances."
       },
-      "planningIntro": "Les concours FFTA à venir cette saison dans vos départements et disciplines, à ajouter à votre journal.",
       "plan": "Planifier",
       "noDepartment": "Choisissez vos départements sur la page Profil pour voir ici les concours FFTA à venir dans vos disciplines.",
       "setUp": "Aller au profil",
@@ -379,10 +604,16 @@
     "score": "Score",
     "objective": "Objectif de la séance",
     "outline": "Déroulé de la séance",
+    "dictation": {
+      "start": "Dicter (votre voix est transcrite à la fin du texte)",
+      "stop": "Arrêter la dictée"
+    },
     "weather": {
       "sky": "Ciel",
       "wind": "Vent",
       "temperature": "Température",
+      "fetch": "Remplir avec la météo du jour",
+      "found": "Météo du jour à {place} : vérifiez, puis enregistrez.",
       "skies": {
         "SUNNY": "Soleil",
         "PARTLY_CLOUDY": "Éclaircies",
@@ -696,6 +927,7 @@
       "clear": "Tout effacer",
       "saving": "Enregistrement…",
       "saved": "Coloriage enregistré.",
+      "full": "Ce mois a atteint le nombre maximum de coups de pinceau : effacez une zone pour en colorier une nouvelle.",
       "pastel": "{color} pastel",
       "auto": "Coloriage automatique",
       "autoHint": "Colorie tout le décor avec les couleurs de la réalité (le nom du mois garde les siennes). « Annuler le dernier coup » revient en arrière.",
@@ -774,6 +1006,29 @@
       "choose": "Choisir",
       "save": "Enregistrer",
       "saved": "Profil enregistré."
+    },
+    "emails": {
+      "title": "Emails",
+      "coachEmails": {
+        "label": "Les nouvelles de mon coach",
+        "hint": "Un email quand votre coach vous propose une séance ou commente l'une des vôtres (un par jour au plus)."
+      },
+      "competitionReminders": {
+        "label": "Le rappel de mes concours",
+        "hint": "Un email la semaine d'un concours noté dans votre journal, avec le lien vers son mandat."
+      }
+    },
+    "calendarFeed": {
+      "title": "Agenda du téléphone",
+      "hint": "Abonnez votre agenda (Google Agenda, Calendrier de l'iPhone, Outlook…) à votre journal : vos séances et concours y apparaissent tout seuls, et se mettent à jour.",
+      "create": "Créer le lien d'abonnement",
+      "renew": "Créer un nouveau lien",
+      "remove": "Désactiver le lien",
+      "link": "Votre lien d'abonnement",
+      "copy": "Copier",
+      "copied": "Copié",
+      "keepSecret": "Ajoutez-le dans votre agenda (« S'abonner à un agenda » / « À partir d'une URL »). Gardez-le pour vous : il ne s'affichera plus. Un nouveau lien désactive l'ancien.",
+      "active": "Un lien d'abonnement est actif. Perdu ? Créez-en un nouveau (l'ancien cessera de fonctionner)."
     },
     "personalization": {
       "title": "Personnalisation",
@@ -863,6 +1118,7 @@
     "thanks": "Merci pour votre avis !",
     "nextAt": "Vous pourrez donner un nouvel avis à partir de {date}.",
     "publicTitle": "Ce qu'en disent les archers",
+    "featuredTitle": "Quelques avis d'archers",
     "average": "{average} / 5 · {count, plural, one {# avis} other {# avis}}",
     "rowLabel": "Avis des utilisateurs (faire défiler horizontalement)",
     "moderation": {
@@ -999,8 +1255,27 @@
     "save": "Enregistrer",
     "cancel": "Annuler",
     "delete": "Supprimer",
-    "emptyType": "Aucun objectif pour l’instant.",
-    "dateReached": "Atteint le {reached}"
+    "emptyType": "Aucun objectif pour l'instant.",
+    "dateReached": "Atteint le {reached}",
+    "metric": "Suivi chiffré",
+    "metricHint": "Votre journal suit la progression et coche l'objectif tout seul, le jour où il est atteint.",
+    "metrics": {
+      "NONE": "Aucun (objectif en mots)",
+      "SCORE": "Un score à atteindre en compétition",
+      "ARROWS": "Un nombre de flèches à tirer"
+    },
+    "targetLabel": {
+      "SCORE": "Score visé",
+      "ARROWS": "Flèches à tirer depuis la date de création"
+    },
+    "discipline": "Discipline",
+    "anyDiscipline": "Toutes",
+    "distance": "Distance",
+    "anyDistance": "Toutes",
+    "progressOf": {
+      "SCORE": "{value} / {target} pts",
+      "ARROWS": "{value} / {target} flèches"
+    }
   },
   "coach": {
     "groups": {

@@ -7,6 +7,11 @@ const TIMEOUT_MS = 60_000;
 /** Between two requests: the site is run by volunteers. */
 const PAUSE_MS = 1_000;
 
+/** The page listing a year's French competitions. */
+export const tourListPath = (year: number) => `/TourList.php?Year=${year}&countryid=FRA&comptime=0`;
+/** A page's full address (for the layout alert). */
+export const ianseoUrl = (path: string) => `${BASE_URL}${path}`;
+
 /** Reads the public pages of ianseo.net (no API), one request at a time. */
 @Injectable()
 export class IanseoClient {
@@ -14,7 +19,7 @@ export class IanseoClient {
 
   /** The list of a year's French competitions (HTML). */
   async tours(year: number): Promise<string> {
-    const response = await this.get(`/TourList.php?Year=${year}&countryid=FRA&comptime=0`);
+    const response = await this.get(tourListPath(year));
     return response.text();
   }
 

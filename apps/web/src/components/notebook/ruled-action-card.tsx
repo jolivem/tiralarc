@@ -5,7 +5,8 @@ import classes from './ruled-action-card.module.css';
 
 /**
  * A card written on the home notebook's lines: its title, what it is for, and on its right a
- * button (the PDF extract, the competition planning).
+ * button (the PDF extract). Without `intro`, the button sits on the title's line (the
+ * competition planning, its list below).
  */
 export function RuledActionCard({
   title,
@@ -20,21 +21,33 @@ export function RuledActionCard({
   /** Its heading's highlighter. */
   highlight: Highlighter;
   title: ReactNode;
-  intro: ReactNode;
+  intro?: ReactNode;
   action: ReactNode;
   /** Off the ruling, e.g. the dialog the button opens. */
   children?: ReactNode;
 }) {
+  const heading = (
+    <RuledHeading raised={raised} highlight={highlight}>
+      {title}
+    </RuledHeading>
+  );
   return (
     <section>
       <RuledStack>
-        <RuledHeading raised={raised} highlight={highlight}>
-          {title}
-        </RuledHeading>
-        <div className={classes.row}>
-          <p className={classes.intro}>{intro}</p>
-          <div className={classes.action}>{action}</div>
-        </div>
+        {intro === undefined ? (
+          <div className={classes.headed}>
+            {heading}
+            <div className={classes.headingAction}>{action}</div>
+          </div>
+        ) : (
+          heading
+        )}
+        {intro !== undefined && (
+          <div className={classes.row}>
+            <p className={classes.intro}>{intro}</p>
+            <div className={classes.action}>{action}</div>
+          </div>
+        )}
       </RuledStack>
       {children}
     </section>

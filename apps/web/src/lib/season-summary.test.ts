@@ -18,6 +18,11 @@ const goal = (fields: Partial<Goal>): Goal => ({
   createdOn: '2026-09-01',
   achieved: false,
   achievedOn: null,
+  metric: null,
+  target: null,
+  discipline: null,
+  distanceMeters: null,
+  progress: null,
   ...fields,
 });
 const indoor = (date: string, score: number, arrowCount = 60) => ({

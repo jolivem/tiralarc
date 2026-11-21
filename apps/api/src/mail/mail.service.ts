@@ -3,6 +3,9 @@ import { ConfigService } from '@nestjs/config';
 import { createTransport, type Transporter } from 'nodemailer';
 import type { Env } from '../config/env.js';
 import {
+  type AlertSite,
+  coachNewsEmail,
+  competitionReminderEmail,
   invitationEmail,
   layoutAlertEmail,
   type MailLocale,
@@ -76,10 +79,11 @@ export class MailService {
   }
 
   /**
-   * To ALERTS_EMAIL (in French): a page of the FFTA website no longer reads as expected
-   * (`FftaWatch`).
+   * To ALERTS_EMAIL (in French): a page of an outside website (the FFTA's, ianseo.net) no longer
+   * reads as expected (`LayoutWatch`).
    */
   async sendLayoutAlert(alert: {
+    site: AlertSite;
     page: string;
     url: string;
     problem: string;
@@ -87,13 +91,40 @@ export class MailService {
   }): Promise<void> {
     await this.send({
       to: this.config.get('ALERTS_EMAIL', { infer: true }),
-      ...layoutAlertEmail({ site: 'FFTA', ...alert }),
+      ...layoutAlertEmail(alert),
     });
+  }
+
+  /** To an archer: what their coach proposed or wrote since the last such email (one a day). */
+  async sendCoachNews(
+    to: string,
+    locale: string,
+    news: Parameters<typeof coachNewsEmail>[1],
+  ): Promise<void> {
+    const lang = mailLocale(locale);
+    await this.send({ to, ...coachNewsEmail(lang, news, this.webLink(lang, '/archer')) });
+  }
+
+  /** To an archer, the week before: their competitions to come (`sheetId`: the first one's). */
+  async sendCompetitionReminder(
+    to: string,
+    locale: string,
+    competitions: Parameters<typeof competitionReminderEmail>[1],
+    sheetId: string,
+  ): Promise<void> {
+    const lang = mailLocale(locale);
+    const link = this.webLink(lang, `/archer/journal/${sheetId}`);
+    await this.send({ to, ...competitionReminderEmail(lang, competitions, link) });
+  }
+
+  /** A page of the web app (`path`, in `lang`). */
+  private webLink(lang: MailLocale, path: string): string {
+    return new URL(`/${lang}${path}`, this.config.get('WEB_URL', { infer: true })).toString();
   }
 
   /** A page of the web app (`path`, in `lang`) that receives `token`. */
   private tokenLink(lang: MailLocale, path: string, token: string): string {
-    const link = new URL(`/${lang}${path}`, this.config.get('WEB_URL', { infer: true }));
+    const link = new URL(this.webLink(lang, path));
     link.searchParams.set('token', token);
     return link.toString();
   }

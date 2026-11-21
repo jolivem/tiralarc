@@ -6,6 +6,8 @@ import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { ApiException, ErrorCode } from '../common/errors.js';
 import { DEFAULT_LOCALE } from '../common/locales.js';
 import type { Env } from '../config/env.js';
+import type { DemoLocale } from '../demo/demo-season.js';
+import { DemoService } from '../demo/demo.service.js';
 import { type AuthProvider, Prisma, Role } from '../generated/prisma/client.js';
 import { MailService } from '../mail/mail.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
@@ -23,6 +25,8 @@ export interface AccessTokenPayload {
   sub: string;
   email: string;
   roles: Role[];
+  /** The example journal's account: read-only (`AuthGuard`). */
+  demo?: true;
 }
 
 export interface ClientInfo {
@@ -49,6 +53,7 @@ export class AuthService {
     private readonly config: ConfigService<Env, true>,
     private readonly mail: MailService,
     private readonly idTokens: IdTokenVerifier,
+    private readonly demo: DemoService,
   ) {}
 
   // ---------------------------------------------------------------- email + password
@@ -352,6 +357,13 @@ export class AuthService {
     }
   }
 
+  /** The example journal: its account (made, or its season refreshed, if need be), signed in. */
+  async demoSignIn(locale: DemoLocale, client: ClientInfo): Promise<TokenPairDto> {
+    const id = await this.demo.ensure(locale);
+    const user = await this.prisma.user.findUniqueOrThrow({ where: { id }, include: withRoles });
+    return this.issueTokens(user, randomUUID(), { ...client, deviceName: 'demo' });
+  }
+
   async verifyAccessToken(token: string): Promise<AccessTokenPayload> {
     return this.jwt.verifyAsync<AccessTokenPayload>(token);
   }
@@ -380,7 +392,12 @@ export class AuthService {
     const accessTtl = this.config.get('JWT_ACCESS_TTL', { infer: true });
     const refreshTtl = this.config.get('JWT_REFRESH_TTL', { infer: true });
 
-    const payload: AccessTokenPayload = { sub: user.id, email: user.email, roles: rolesOf(user) };
+    const payload: AccessTokenPayload = {
+      sub: user.id,
+      email: user.email,
+      roles: rolesOf(user),
+      ...(user.isDemo && { demo: true }),
+    };
     const accessToken = await this.jwt.signAsync(payload, { expiresIn: accessTtl });
     const refreshToken = randomBytes(32).toString('base64url');
 

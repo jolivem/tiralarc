@@ -25,6 +25,25 @@ async function mutate(
   return {};
 }
 
+/** A guided tour finished or skipped: it won't start by itself again (`toursSeen`). */
+export async function markTourSeen(tour: string): Promise<ActionState> {
+  const result = await send(
+    (await getAuthedApi()).PUT('/api/v1/profile/tours/{tour}', { params: { path: { tour } } }),
+  );
+  return result.ok ? {} : result.state;
+}
+
+/** A new calendar subscription link (the old one stops working): shown once. */
+export async function createCalendarFeed(): Promise<ActionState & { url?: string }> {
+  const result = await send((await getAuthedApi()).POST('/api/v1/profile/calendar-feed'));
+  return result.ok ? { url: result.data.url } : result.state;
+}
+
+export async function removeCalendarFeed(): Promise<ActionState> {
+  const result = await send((await getAuthedApi()).DELETE('/api/v1/profile/calendar-feed'));
+  return result.ok ? {} : result.state;
+}
+
 /** `homeFound`: whether the home town (if any) was found on the map, as saved. */
 export async function saveProfile(
   values: ArcherProfileUpdate,

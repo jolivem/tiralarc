@@ -128,7 +128,38 @@ export class ProfileDto {
 
   @ApiProperty({ type: Number, nullable: true, description: "`homeTown`'s longitude." })
   homeLongitude!: number | null;
+
+  @ApiProperty({
+    type: [String],
+    example: ['home', 'journal'],
+    description:
+      'Guided tours the archer has seen (ids are client-side keys, one per page): a client ' +
+      "starts a page's tour once, the first time it is shown. See PUT /profile/tours/{tour}.",
+  })
+  toursSeen!: string[];
+
+  @ApiProperty({
+    description:
+      'Email the archer (at most once a day) when their coach proposes an event or comments one.',
+  })
+  coachEmails!: boolean;
+
+  @ApiProperty({
+    description: 'Email the archer the week before each competition of their journal.',
+  })
+  competitionReminders!: boolean;
+
+  @ApiProperty({
+    description:
+      'Whether a calendar subscription link exists (POST /profile/calendar-feed creates one).',
+  })
+  hasCalendarFeed!: boolean;
 }
+
+/** A guided tour's id: a client-side key, like the font ids. */
+export const TOUR = /^[a-z0-9-]{1,30}$/;
+/** Bounds the stored list (a client has one tour per page). */
+export const MAX_TOURS = 50;
 
 /** PATCH body: every field optional; `null` clears a field. */
 export class UpdateProfileDto {
@@ -243,6 +274,16 @@ export class UpdateProfileDto {
   @IsString()
   @MaxLength(100)
   homeTown?: string | null;
+
+  @ApiPropertyOptional({ description: "The coach's news by email (at most once a day)." })
+  @IsOptional()
+  @IsBoolean()
+  coachEmails?: boolean;
+
+  @ApiPropertyOptional({ description: 'Competition reminders by email, the week before.' })
+  @IsOptional()
+  @IsBoolean()
+  competitionReminders?: boolean;
 }
 
 export class CreateInvitationDto {

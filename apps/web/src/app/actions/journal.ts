@@ -1,6 +1,7 @@
 'use server';
 
 import type {
+  components,
   Competition,
   CompetitionList,
   CustomEventTypeInput,
@@ -250,6 +251,22 @@ export async function markSessionSeen(id: string): Promise<void> {
   await send(
     (await getAuthedApi()).POST('/api/v1/journal/sessions/{id}/seen', { params: { path: { id } } }),
   );
+}
+
+/** The event's day weather where it took place (Open-Meteo, through the API), to fill its sheet. */
+export async function sessionWeather(
+  id: string,
+): Promise<
+  ActionState & { place?: string; weather?: Omit<components['schemas']['WeatherDto'], 'place'> }
+> {
+  const result = await send(
+    (await getAuthedApi()).GET('/api/v1/journal/sessions/{id}/weather', {
+      params: { path: { id } },
+    }),
+  );
+  if (!result.ok) return result.state;
+  const { sky, wind, temperatureC, place } = result.data;
+  return { place, weather: { sky, wind, temperatureC } };
 }
 
 export async function saveSession(id: string, values: JournalSessionUpdate): Promise<ActionState> {

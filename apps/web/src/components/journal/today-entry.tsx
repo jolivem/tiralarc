@@ -43,11 +43,17 @@ export function TodayEntry({
           className={`${classes.button} ${classes.pen} ${className ?? ''}`}
           onClick={open}
           aria-label={t('addToday')}
+          data-tour="today"
         >
           <IconPencilPlus size="1em" stroke={1.8} aria-hidden />
         </button>
       </Tooltip>
-      <button type="button" className={`${classes.button} ${className ?? ''}`} onClick={open}>
+      <button
+        type="button"
+        className={`${classes.button} ${className ?? ''}`}
+        onClick={open}
+        data-tour="today"
+      >
         {label}
       </button>
       <NewSessionModal

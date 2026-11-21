@@ -2,6 +2,7 @@
 
 import {
   ActionIcon,
+  Alert,
   AppShell,
   Avatar,
   Burger,
@@ -15,8 +16,10 @@ import {
   useComputedColorScheme,
   useMantineColorScheme,
 } from '@mantine/core';
-import { useDisclosure } from '@mantine/hooks';
+import { useDisclosure, useMediaQuery } from '@mantine/hooks';
 import {
+  IconEye,
+  IconHelp,
   IconHome,
   IconLogin,
   IconLogout,
@@ -28,16 +31,17 @@ import {
 import type { User } from '@tiralarc/api-client';
 import { useTranslations } from 'next-intl';
 import type { CSSProperties, ReactNode } from 'react';
-import { logout } from '@/app/actions/auth';
+import { leaveDemo, logout } from '@/app/actions/auth';
 import { Link, usePathname } from '@/i18n/navigation';
 import { homePathFor, type Profile } from '@/lib/current-user-paths';
 import { type JournalChoices, JournalMenu } from './journal-menu';
 import { LanguageSwitcher } from './language-switcher';
 import { Logo } from './logo';
+import { useRegisteredTour } from './tour/tour-store';
 import { ARCHER_SECTIONS, coachedArcherOf, coachSections, sectionOf, tabColors } from './sections';
 import classes from './app-shell.module.css';
 
-type ShellUser = Pick<User, 'displayName' | 'email' | 'roles'> & {
+type ShellUser = Pick<User, 'displayName' | 'email' | 'roles' | 'isDemo'> & {
   profile: Profile | null;
   /** The journals named in the middle of the header (and the menu to switch between them). */
   journals: JournalChoices;
@@ -141,6 +145,7 @@ export function TiralarcShell({ user, children }: { user: ShellUser | null; chil
                 </Button>
               </Group>
             )}
+            <TourButton label={t('nav.tour')} />
             <LanguageSwitcher />
             <ColorSchemeToggle label={t('nav.toggleColorScheme')} />
             {user && <UserMenu user={user} />}
@@ -181,11 +186,15 @@ export function TiralarcShell({ user, children }: { user: ShellUser | null; chil
         </AppShell.Navbar>
       )}
 
-      <AppShell.Main>{children}</AppShell.Main>
+      <AppShell.Main>
+        {/* The example journal: read-only, a way out to one's own. */}
+        {user?.isDemo && <DemoBanner />}
+        {children}
+      </AppShell.Main>
 
       {hasSections && (
         <AppShell.Footer hiddenFrom="sm" className={classes.tabBar}>
-          <nav aria-label={t('nav.mainNavigation')} className={classes.tabs}>
+          <nav aria-label={t('nav.mainNavigation')} className={classes.tabs} data-tour="tabs">
             {sections.map((section) => {
               const { key, href, icon: Icon } = section;
               const active = current?.href === href;
@@ -211,13 +220,47 @@ export function TiralarcShell({ user, children }: { user: ShellUser | null; chil
   );
 }
 
+/** Above every page of the example journal: what it is, and the button to start one's own. */
+function DemoBanner() {
+  const t = useTranslations('demo');
+  return (
+    <Alert
+      variant="light"
+      color="yellow"
+      radius="md"
+      mb="md"
+      icon={<IconEye size={20} />}
+      title={t('bannerTitle')}
+    >
+      <Group justify="space-between" gap="sm">
+        <Text size="sm">{t('bannerBody')}</Text>
+        <form action={leaveDemo}>
+          <Button type="submit" size="xs" color="#3f2817" leftSection={<IconUserPlus size={16} />}>
+            {t('register')}
+          </Button>
+        </form>
+      </Group>
+    </Alert>
+  );
+}
+
 function UserMenu({ user }: { user: ShellUser }) {
   const t = useTranslations('nav');
   const name = user.displayName ?? user.email;
+  const tour = useRegisteredTour();
+  // Phones: the guided tour is replayed from this menu (no "?" in the header).
+  const phone = useMediaQuery('(max-width: 47.99em)');
   return (
     <Menu position="bottom-end" width={240} withinPortal>
       <Menu.Target>
-        <ActionIcon variant="transparent" size="lg" radius="xl" aria-label={t('userMenu')}>
+        <ActionIcon
+          variant="transparent"
+          size="lg"
+          radius="xl"
+          aria-label={t('userMenu')}
+          // Phones: the "?" step points here (the account's step left out: the same button).
+          data-tour={tour && phone ? 'help' : 'account'}
+        >
           <Avatar name={name} color="initials" size={34} />
         </ActionIcon>
       </Menu.Target>
@@ -234,6 +277,11 @@ function UserMenu({ user }: { user: ShellUser }) {
         <Menu.Item component={Link} href="/account" leftSection={<IconUserCircle size={16} />}>
           {t('account')}
         </Menu.Item>
+        {tour && (
+          <Menu.Item hiddenFrom="sm" leftSection={<IconHelp size={16} />} onClick={tour.start}>
+            {t('tour')}
+          </Menu.Item>
+        )}
         <form action={logout}>
           <Menu.Item
             component="button"
@@ -246,6 +294,26 @@ function UserMenu({ user }: { user: ShellUser }) {
         </form>
       </Menu.Dropdown>
     </Menu>
+  );
+}
+
+/** "?": replays the guided tour of the page shown (only on pages that have one). */
+function TourButton({ label }: { label: string }) {
+  const tour = useRegisteredTour();
+  if (!tour) return null;
+  return (
+    // On phones the header has no room: it is in the user menu there.
+    <ActionIcon
+      variant="default"
+      size="lg"
+      aria-label={label}
+      title={label}
+      onClick={tour.start}
+      data-tour="help"
+      visibleFrom="sm"
+    >
+      <IconHelp size={18} />
+    </ActionIcon>
   );
 }
 

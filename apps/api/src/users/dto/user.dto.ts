@@ -30,6 +30,12 @@ export class UserDto {
   @ApiProperty({ description: 'False for accounts created through Google / Apple only.' })
   hasPassword!: boolean;
 
+  @ApiProperty({
+    description:
+      'The example journal (POST /auth/demo): read-only, every change refused (DEMO_READ_ONLY).',
+  })
+  isDemo!: boolean;
+
   @ApiProperty({ enum: AuthProvider, enumName: 'AuthProvider', isArray: true })
   providers!: AuthProvider[];
 

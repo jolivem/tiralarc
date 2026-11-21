@@ -313,6 +313,21 @@
   line-height: 1.2;
 }
 
+/* "Pour bien démarrer" (getting-started.tsx): a ticked step crossed out, "Masquer" on its line. */
+.gettingStartedDone {
+  composes: newEventText;
+  color: var(--mantine-color-dimmed);
+  font-weight: 400;
+  text-decoration: line-through;
+}
+
+.gettingStartedHide {
+  display: flex;
+  align-items: flex-end;
+  height: var(--step);
+  padding: 0 6px 3px;
+}
+
 /* The regularity card (regularity-card.tsx): a blank ruled line under it. */
 .regularity {
   padding-bottom: var(--step, 30px);

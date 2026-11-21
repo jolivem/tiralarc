@@ -56,6 +56,10 @@ describe('Profile (e2e)', () => {
       homeTown: null,
       homeLatitude: null,
       homeLongitude: null,
+      toursSeen: [],
+      coachEmails: true,
+      competitionReminders: true,
+      hasCalendarFeed: false,
     });
 
     const saved = await http()
@@ -90,6 +94,10 @@ describe('Profile (e2e)', () => {
       homeTown: null,
       homeLatitude: null,
       homeLongitude: null,
+      toursSeen: [],
+      coachEmails: true,
+      competitionReminders: true,
+      hasCalendarFeed: false,
     });
 
     // Partial update; null clears a field.
@@ -135,6 +143,22 @@ describe('Profile (e2e)', () => {
       .send({ calendarFont: 'satisfy' })
       .expect(200);
     expect(first.body).toMatchObject({ disciplines: [], calendarFont: 'satisfy' });
+  });
+
+  it('remembers the guided tours seen, once each', async () => {
+    const tours = (token: string) => http().get('/api/v1/profile').set(as(token)).expect(200);
+    // An archer who never saved their profile: it is created.
+    const fresh = await signUp('p-tours');
+    await http().put('/api/v1/profile/tours/home').set(as(fresh)).expect(204);
+    await http().put('/api/v1/profile/tours/journal').set(as(fresh)).expect(204);
+    await http().put('/api/v1/profile/tours/home').set(as(fresh)).expect(204);
+    expect((await tours(fresh)).body.toursSeen).toEqual(['home', 'journal']);
+    // Their own only; ids are slugs.
+    expect((await tours(otherArcher)).body.toursSeen).toEqual([]);
+    await http().put('/api/v1/profile/tours/Not%20a%20tour').set(as(fresh)).expect(400);
+    // Other profile fields don't touch them.
+    await http().patch('/api/v1/profile').set(as(fresh)).send({ bowType: 'BAREBOW' }).expect(200);
+    expect((await tours(fresh)).body.toursSeen).toEqual(['home', 'journal']);
   });
 
   it('records where the archer practises', async () => {

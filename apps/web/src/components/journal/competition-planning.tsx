@@ -1,11 +1,11 @@
 'use client';
 
-import { Button, Center, Loader, LoadingOverlay, Modal, Stack } from '@mantine/core';
+import { Box, Button, Center, Loader, LoadingOverlay, Modal, Stack } from '@mantine/core';
 import { useMediaQuery } from '@mantine/hooks';
 import { IconCalendarPlus } from '@tabler/icons-react';
 import type { CompetitionList, Journal, JournalSessionSummary } from '@tiralarc/api-client';
 import { useTranslations } from 'next-intl';
-import { useState, useTransition } from 'react';
+import { type ReactNode, useState, useTransition } from 'react';
 import { listCompetitions } from '@/app/actions/journal';
 import { RuledActionCard } from '@/components/notebook/ruled-action-card';
 import type { LatLng } from '@/lib/geo';
@@ -14,22 +14,25 @@ import { CompetitionListPanel } from './competition-list';
 import classes from './season-calendar.module.css';
 
 /**
- * Home page, right page, under "Mandats publiés !": "Planification Concours", written on the
- * notebook's lines like the PDF extract. Its button opens the FFTA competitions still to come
- * this season (from today to the end of the selected journal) in the archer's departments and
- * disciplines, to add to the journal. Only for an archer practising in France; the button is
- * disabled once the journal's season is over.
+ * Home page, right page, under "Régularité": "Planification Concours", written on the
+ * notebook's lines like the PDF extract, its button on the title's line. The button opens the
+ * FFTA competitions still to come this season (from today to the end of the selected journal)
+ * in the archer's departments and disciplines, to add to the journal; `children` (the published
+ * invitations, `CompetitionsToPlan`) go under the title. Only for an archer practising in
+ * France; the button is disabled once the journal's season is over.
  */
 export function CompetitionPlanningCard({
   journal,
   today,
   home = null,
+  children,
 }: {
   journal: Pick<Journal, 'startDate' | 'endDate'>;
   /** "YYYY-MM-DD", decided by the server so both renders agree. */
   today: string;
   /** The profile's starting town, for the map's distances to travel (null: none, or not found). */
   home?: (LatLng & { name: string }) | null;
+  children?: ReactNode;
 }) {
   const t = useTranslations('archer.competitions');
   const tArcher = useTranslations('archer');
@@ -62,9 +65,6 @@ export function CompetitionPlanningCard({
     <RuledActionCard
       title={t('planningTitle')}
       highlight="peach"
-      intro={t('planningIntro')}
-      // A line higher, close under the published invitations.
-      raised
       action={
         <Button
           variant="light"
@@ -77,6 +77,8 @@ export function CompetitionPlanningCard({
         </Button>
       }
     >
+      {/* Room under the heading (written on its box's last line) before the list. */}
+      {children && <Box mt="md">{children}</Box>}
       <Modal
         opened={opened}
         onClose={() => setOpened(false)}

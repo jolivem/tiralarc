@@ -259,12 +259,16 @@ export interface AreaSeed {
   pixels: number;
 }
 
+/** Share of a band an area cut by its edge may cover and still be part of the drawing. */
+const MAX_EDGE_AREA = 0.1;
+
 /**
  * Every area of paper not reaching the image's edge (the paper around the drawing does), with
  * its size and the point furthest from its outline: a click there fills that area, even on the
- * same drawing read a pixel off. Largest areas first.
+ * same drawing read a pixel off. Largest areas first. `edges`: also the areas cut by the image's
+ * edge (a branch running off the band), except the big ones (the paper around).
  */
-export function areaSeeds(art: Artwork): AreaSeed[] {
+export function areaSeeds(art: Artwork, { edges = false } = {}): AreaSeed[] {
   const { width, height, light } = art;
   const size = width * height;
   const isPaper = (i: number) => at(light, i) >= PAPER;
@@ -321,7 +325,7 @@ export function areaSeeds(art: Artwork): AreaSeed[] {
   }
   return pixels
     .flatMap((count, id) => {
-      if (onEdge[id]) return [];
+      if (onEdge[id] && (!edges || count > size * MAX_EDGE_AREA)) return [];
       const i = at(deepest, id);
       return [
         {
@@ -349,7 +353,8 @@ function colorAt(rgba: ArrayLike<number>, width: number, height: number, x: numb
 /**
  * The automatic colouring of a band: one fill per closed area of the line art (`art`), in the
  * colour its colour map (`colors`, RGBA pixels of the same drawing filled with real-life colours,
- * any size) has at that area's deepest point; areas left white there stay uncoloured. Largest
+ * any size) has at that area's deepest point, areas cut by the image's edge included; areas left
+ * white there stay uncoloured. Largest
  * areas first, at most `limit`.
  */
 export function realisticFills<B extends string>(
@@ -359,7 +364,8 @@ export function realisticFills<B extends string>(
   limit: number,
 ): (Fill & { band: B; pixels: number })[] {
   const out: (Fill & { band: B; pixels: number })[] = [];
-  for (const seed of areaSeeds(art)) {
+  // Areas cut by the edge too: the paper around is white in the colour map, left out anyway.
+  for (const seed of areaSeeds(art, { edges: true })) {
     if (out.length >= limit) break;
     const color = colorAt(colors.rgba, colors.width, colors.height, seed.x, seed.y);
     if (!color) continue;

@@ -83,6 +83,35 @@
   }
 }
 
+/* Under the tagline (FeaturedReviews): up to three smaller notes side by side, the average below. */
+.featured {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mantine-spacing-xs);
+  align-items: center;
+}
+
+.featuredRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px 22px;
+  justify-content: center;
+  margin: 0;
+  padding: 8px 0;
+  list-style: none;
+}
+
+.featuredNote {
+  flex: 0 1 220px;
+  gap: 4px;
+  padding: 12px 14px 10px;
+  text-align: start;
+
+  & .comment {
+    font-size: 1.15rem;
+  }
+}
+
 .comment {
   margin: 0;
   font-family: var(--font-hand), 'Segoe Print', cursive;

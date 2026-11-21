@@ -272,6 +272,38 @@
         ]
       }
     },
+    "/api/v1/auth/demo": {
+      "post": {
+        "operationId": "Auth_demo",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DemoSignInDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenPairDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Signs into the example journal (a made-up season, in the language asked for): read-only, every change is refused (DEMO_READ_ONLY)",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
     "/api/v1/auth/verify-email": {
       "post": {
         "operationId": "Auth_verifyEmail",
@@ -587,6 +619,40 @@
         "tags": [
           "users"
         ]
+      },
+      "delete": {
+        "operationId": "Account_delete",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeleteAccountDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "400": {
+            "description": "VALIDATION_FAILED: the email is not the account's"
+          },
+          "401": {
+            "description": "INVALID_CREDENTIALS: wrong or missing password"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Deletes the signed-in account and everything in it (journals, events, photos, goals, profile, invitations, coaching links). Cannot be undone.",
+        "tags": [
+          "users"
+        ]
       }
     },
     "/api/v1/users": {
@@ -616,6 +682,34 @@
             "bearer": []
           }
         ],
+        "tags": [
+          "users"
+        ]
+      }
+    },
+    "/api/v1/users/me/export": {
+      "get": {
+        "operationId": "Account_export",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/zip": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "All the account's data, as a ZIP archive: `mes-donnees.json` (account, profile, journals, events, goals, invitations, reviews, what was written as a coach), the photos (`photos/<day>_<event id>/<photo id>.webp`) and the score sheets (PDF).",
         "tags": [
           "users"
         ]
@@ -2105,6 +2199,45 @@
             "bearer": []
           }
         ],
+        "tags": [
+          "profile"
+        ]
+      }
+    },
+    "/api/v1/profile/tours/{tour}": {
+      "put": {
+        "description": "Tour ids are client-side keys (`^[a-z0-9-]{1,30}$`, one per page). Idempotent.",
+        "operationId": "Profile_markTourSeen",
+        "parameters": [
+          {
+            "name": "tour",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "400": {
+            "description": "VALIDATION_FAILED: not a tour id"
+          },
+          "403": {
+            "description": "Archers only"
+          },
+          "409": {
+            "description": "LIMIT_REACHED"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Mark a guided tour as seen (listed in `toursSeen`)",
         "tags": [
           "profile"
         ]
@@ -3687,6 +3820,130 @@
         ]
       }
     },
+    "/api/v1/profile/calendar-feed": {
+      "post": {
+        "operationId": "CalendarFeed_create",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CalendarFeedDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Creates the archer's calendar subscription link (replacing the previous one)",
+        "tags": [
+          "profile"
+        ]
+      },
+      "delete": {
+        "operationId": "CalendarFeed_remove",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Turns the calendar subscription link off",
+        "tags": [
+          "profile"
+        ]
+      }
+    },
+    "/api/v1/calendar/{file}": {
+      "get": {
+        "operationId": "CalendarFeed_file",
+        "parameters": [
+          {
+            "name": "file",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "text/calendar": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown or turned-off link"
+          }
+        },
+        "summary": "The archer's events as an iCalendar file (whole days), for calendar apps: the link of POST /profile/calendar-feed, no sign-in.",
+        "tags": [
+          "profile"
+        ]
+      }
+    },
+    "/api/v1/journal/sessions/{id}/weather": {
+      "get": {
+        "operationId": "Weather_get",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WeatherDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_FAILED: the day is still to come"
+          },
+          "404": {
+            "description": ""
+          },
+          "422": {
+            "description": "WEATHER_UNAVAILABLE: no place found on the map, or the service unreachable"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "The weather of the event's day (Open-Meteo), as the sheet notes it, to fill in its sky, wind and temperature. Nothing is saved.",
+        "tags": [
+          "journal"
+        ]
+      }
+    },
     "/api/v1/reviews": {
       "get": {
         "operationId": "Reviews_published",
@@ -3902,22 +4159,18 @@
           "verificationRequired"
         ]
       },
-      "VerifyEmailDto": {
+      "DemoSignInDto": {
         "type": "object",
         "properties": {
-          "token": {
+          "locale": {
             "type": "string",
-            "description": "Token from the link emailed at registration."
-          },
-          "deviceName": {
-            "type": "string",
-            "description": "Human-readable device label (e.g. \"Pixel 9\", \"Firefox on Linux\"), shown in session lists.",
-            "maxLength": 100
+            "enum": [
+              "fr",
+              "en"
+            ],
+            "description": "The example journal's language (French by default)."
           }
-        },
-        "required": [
-          "token"
-        ]
+        }
       },
       "TokenPairDto": {
         "type": "object",
@@ -3951,6 +4204,23 @@
           "tokenType",
           "expiresIn",
           "refreshExpiresIn"
+        ]
+      },
+      "VerifyEmailDto": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string",
+            "description": "Token from the link emailed at registration."
+          },
+          "deviceName": {
+            "type": "string",
+            "description": "Human-readable device label (e.g. \"Pixel 9\", \"Firefox on Linux\"), shown in session lists.",
+            "maxLength": 100
+          }
+        },
+        "required": [
+          "token"
         ]
       },
       "ResendVerificationDto": {
@@ -4118,6 +4388,10 @@
             "type": "boolean",
             "description": "False for accounts created through Google / Apple only."
           },
+          "isDemo": {
+            "type": "boolean",
+            "description": "The example journal (POST /auth/demo): read-only, every change refused (DEMO_READ_ONLY)."
+          },
           "providers": {
             "type": "array",
             "items": {
@@ -4137,8 +4411,27 @@
           "locale",
           "roles",
           "hasPassword",
+          "isDemo",
           "providers",
           "createdAt"
+        ]
+      },
+      "DeleteAccountDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "description": "The account's email, typed again."
+          },
+          "password": {
+            "type": "string",
+            "maxLength": 128,
+            "description": "Required when the account has a password (INVALID_CREDENTIALS if wrong)."
+          }
+        },
+        "required": [
+          "email"
         ]
       },
       "ThemeBand": {
@@ -4370,7 +4663,7 @@
         "type": "object",
         "properties": {
           "fills": {
-            "maxItems": 500,
+            "maxItems": 2000,
             "description": "Replaces the colouring.",
             "type": "array",
             "items": {
@@ -6301,6 +6594,29 @@
             "type": "number",
             "nullable": true,
             "description": "`homeTown`'s longitude."
+          },
+          "toursSeen": {
+            "example": [
+              "home",
+              "journal"
+            ],
+            "description": "Guided tours the archer has seen (ids are client-side keys, one per page): a client starts a page's tour once, the first time it is shown. See PUT /profile/tours/{tour}.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "coachEmails": {
+            "type": "boolean",
+            "description": "Email the archer (at most once a day) when their coach proposes an event or comments one."
+          },
+          "competitionReminders": {
+            "type": "boolean",
+            "description": "Email the archer the week before each competition of their journal."
+          },
+          "hasCalendarFeed": {
+            "type": "boolean",
+            "description": "Whether a calendar subscription link exists (POST /profile/calendar-feed creates one)."
           }
         },
         "required": [
@@ -6318,7 +6634,11 @@
           "paraCompetitions",
           "homeTown",
           "homeLatitude",
-          "homeLongitude"
+          "homeLongitude",
+          "toursSeen",
+          "coachEmails",
+          "competitionReminders",
+          "hasCalendarFeed"
         ]
       },
       "UpdateProfileDto": {
@@ -6408,6 +6728,14 @@
             "nullable": true,
             "maxLength": 100,
             "description": "Town the archer sets off from; its coordinates are looked up when saved."
+          },
+          "coachEmails": {
+            "type": "boolean",
+            "description": "The coach's news by email (at most once a day)."
+          },
+          "competitionReminders": {
+            "type": "boolean",
+            "description": "Competition reminders by email, the week before."
           }
         }
       },
@@ -6616,6 +6944,14 @@
           "PERSONAL"
         ]
       },
+      "GoalMetric": {
+        "type": "string",
+        "enum": [
+          "SCORE",
+          "ARROWS"
+        ],
+        "description": "What a figured goal measures, followed from the events since `createdOn` (it is then reached by itself, the day the target is met): SCORE = the best score in competition (a round of fixed length, unlike a training's); ARROWS = the arrows shot in all. Null: a goal in words only. Given with `target` (VALIDATION_FAILED otherwise)."
+      },
       "GoalDto": {
         "type": "object",
         "properties": {
@@ -6646,6 +6982,39 @@
             "type": "string",
             "nullable": true,
             "example": "2027-02-06"
+          },
+          "metric": {
+            "nullable": true,
+            "description": "What a figured goal measures, followed from the events since `createdOn` (it is then reached by itself, the day the target is met): SCORE = the best score in competition (a round of fixed length, unlike a training's); ARROWS = the arrows shot in all. Null: a goal in words only. Given with `target` (VALIDATION_FAILED otherwise).",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/GoalMetric"
+              }
+            ]
+          },
+          "target": {
+            "type": "number",
+            "nullable": true,
+            "example": 550
+          },
+          "discipline": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Discipline"
+              }
+            ]
+          },
+          "distanceMeters": {
+            "type": "number",
+            "nullable": true,
+            "example": 18
+          },
+          "progress": {
+            "type": "number",
+            "nullable": true,
+            "example": 532,
+            "description": "Figured goals: the best score so far, or the arrows shot so far (up to today); null otherwise."
           }
         },
         "required": [
@@ -6654,7 +7023,12 @@
           "description",
           "createdOn",
           "achieved",
-          "achievedOn"
+          "achievedOn",
+          "metric",
+          "target",
+          "discipline",
+          "distanceMeters",
+          "progress"
         ]
       },
       "CreateGoalDto": {
@@ -6683,6 +7057,37 @@
             "nullable": true,
             "example": "2027-02-06",
             "description": "Day the goal was reached (YYYY-MM-DD); omitted / null = not reached yet."
+          },
+          "metric": {
+            "nullable": true,
+            "description": "What a figured goal measures, followed from the events since `createdOn` (it is then reached by itself, the day the target is met): SCORE = the best score in competition (a round of fixed length, unlike a training's); ARROWS = the arrows shot in all. Null: a goal in words only. Given with `target` (VALIDATION_FAILED otherwise).",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/GoalMetric"
+              }
+            ]
+          },
+          "target": {
+            "type": "number",
+            "nullable": true,
+            "minimum": 1,
+            "maximum": 1000000,
+            "example": 550
+          },
+          "discipline": {
+            "nullable": true,
+            "description": "SCORE goals: only the competitions of this discipline (null: any).",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Discipline"
+              }
+            ]
+          },
+          "distanceMeters": {
+            "type": "number",
+            "nullable": true,
+            "example": 18,
+            "description": "SCORE goals: only the competitions shot at this distance, in metres (null: any)."
           }
         },
         "required": [
@@ -6713,6 +7118,33 @@
             "type": "string",
             "nullable": true,
             "example": "2027-02-06"
+          },
+          "metric": {
+            "nullable": true,
+            "description": "What a figured goal measures, followed from the events since `createdOn` (it is then reached by itself, the day the target is met): SCORE = the best score in competition (a round of fixed length, unlike a training's); ARROWS = the arrows shot in all. Null: a goal in words only. Given with `target` (VALIDATION_FAILED otherwise). Null makes it a goal in words only.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/GoalMetric"
+              }
+            ]
+          },
+          "target": {
+            "type": "number",
+            "nullable": true,
+            "minimum": 1,
+            "maximum": 1000000
+          },
+          "discipline": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Discipline"
+              }
+            ]
+          },
+          "distanceMeters": {
+            "type": "number",
+            "nullable": true
           }
         }
       },
@@ -6950,6 +7382,57 @@
         },
         "required": [
           "text"
+        ]
+      },
+      "CalendarFeedDto": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "description": "The subscription link (iCal), to add to a calendar app. Shown only now: keep it secret, anyone with it sees the events. A new one replaces it."
+          }
+        },
+        "required": [
+          "url"
+        ]
+      },
+      "WeatherDto": {
+        "type": "object",
+        "properties": {
+          "sky": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Sky"
+              }
+            ]
+          },
+          "wind": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Wind"
+              }
+            ]
+          },
+          "temperatureC": {
+            "type": "number",
+            "nullable": true,
+            "example": 17,
+            "description": "The day's highest, °C."
+          },
+          "place": {
+            "type": "string",
+            "example": "Rennes",
+            "description": "Where it was looked up: the event's place, or the archer's home town."
+          }
+        },
+        "required": [
+          "sky",
+          "wind",
+          "temperatureC",
+          "place"
         ]
       },
       "PublicReviewDto": {

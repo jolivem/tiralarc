@@ -2,6 +2,7 @@ import type { Journal, ThemeFill } from '@tiralarc/api-client';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { saveMonthColoring } from '@/app/actions/journal';
 import type { ActionState } from '@/lib/action-state';
+import { MAX_FILLS } from './auto-coloring';
 
 const SAVE_DELAY_MS = 800;
 
@@ -16,7 +17,9 @@ export function useMonthColoring(journal: Journal, month: string, theme: string 
     key: '',
     steps: [],
   });
-  const [status, setStatus] = useState<'idle' | 'saving' | 'saved' | ActionState['code']>('idle');
+  const [status, setStatus] = useState<'idle' | 'saving' | 'saved' | 'full' | ActionState['code']>(
+    'idle',
+  );
   const pending = useRef<{ month: string; fills: ThemeFill[]; timer: number } | null>(null);
 
   const key = `${month}/${theme}`;
@@ -39,6 +42,11 @@ export function useMonthColoring(journal: Journal, month: string, theme: string 
   useEffect(() => flush, [flush]);
 
   const apply = (next: ThemeFill[], nextSteps: ThemeFill[][]) => {
+    // The server would refuse it: say so rather than show a colouring that is never saved.
+    if (next.length > MAX_FILLS && next.length > fills.length) {
+      setStatus('full');
+      return;
+    }
     // Another month's save is still waiting: send it before queuing this one.
     if (pending.current && pending.current.month !== month) flush();
     if (pending.current) window.clearTimeout(pending.current.timer);

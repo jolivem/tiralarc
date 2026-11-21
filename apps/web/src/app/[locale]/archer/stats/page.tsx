@@ -23,6 +23,23 @@ import { getArcherProfile } from '@/lib/archer-profile';
 import { getCurrentUser } from '@/lib/current-user';
 import { getJournals, getSelectedJournal } from '@/lib/journals';
 import { getStats } from '@/lib/stats';
+import { Tour } from '@/components/tour/tour';
+
+/**
+ * The Indicators page's guided tour: a welcome, then each `data-tour` element (left out when
+ * not shown: no season summary over all time, no rankings outside France). The first chart card
+ * (`charts`) and its star (`favorite`) stand for them all (`StatsCard`).
+ */
+const STATS_TOUR = [
+  'welcome',
+  'period',
+  'season',
+  'goals',
+  'rankings',
+  'charts',
+  'favorite',
+  'all',
+] as const;
 
 /**
  * Indicators over a period chosen on the page (`?period=`): the period of one
@@ -77,12 +94,16 @@ export default async function ArcherStatsPage({
         <Group gap="sm">
           {/* A journal's period: its season summary, on a whiteboard in a window. */}
           {journal && (
-            <SeasonBoardButton
-              journal={journal}
-              summary={seasonSummary(stats, goals ?? [], journal.startDate, journal.endDate)}
-            />
+            <div data-tour="season">
+              <SeasonBoardButton
+                journal={journal}
+                summary={seasonSummary(stats, goals ?? [], journal.startDate, journal.endDate)}
+              />
+            </div>
           )}
-          <PeriodSelect journals={journals} value={journal?.id ?? ALL_TIME} />
+          <div data-tour="period">
+            <PeriodSelect journals={journals} value={journal?.id ?? ALL_TIME} />
+          </div>
         </Group>
       }
       squared
@@ -90,13 +111,19 @@ export default async function ArcherStatsPage({
       {/* One wide page, so the charts keep their width. */}
       <FavoriteIndicatorProvider initial={profile?.favoriteIndicator ?? null}>
         <Stack gap="lg">
-          <GoalsCard goals={goals ?? []} today={today} />
-          {ffta && <RankingsCard cacheScope={rankingsScope} />}
+          <div data-tour="goals">
+            <GoalsCard goals={goals ?? []} today={today} />
+          </div>
+          {ffta && (
+            <div data-tour="rankings">
+              <RankingsCard cacheScope={rankingsScope} />
+            </div>
+          )}
           {/*
             Side by side on large screens, one above the other below; the two cards of a row
             as high as each other (the taller one, in whole squares).
           */}
-          <SimpleGrid cols={{ base: 1, md: 2 }} spacing="lg">
+          <SimpleGrid cols={{ base: 1, md: 2 }} spacing="lg" data-tour="all">
             <ArrowsCard period={span} arrowsByDay={stats.arrowsByDay} today={today} />
             <DurationsCard period={span} durationsByDay={stats.durationsByDay} today={today} />
             <ScoresCard period={span} scores={stats.scores} today={today} />
@@ -118,6 +145,16 @@ export default async function ArcherStatsPage({
           </SimpleGrid>
         </Stack>
       </FavoriteIndicatorProvider>
+      {/* The first time only (then from the header's "?"). */}
+      <Tour
+        id="stats"
+        autoStart={journals.length > 0 && !(profile?.toursSeen ?? []).includes('stats')}
+        steps={STATS_TOUR.map((key) => ({
+          target: key === 'welcome' ? undefined : key,
+          title: t(`tours.stats.${key}.title`),
+          body: t(`tours.stats.${key}.body`),
+        }))}
+      />
     </SectionPage>
   );
 }

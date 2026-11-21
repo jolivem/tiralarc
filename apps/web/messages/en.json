@@ -22,12 +22,201 @@
     "userMenu": "User menu",
     "archerSection": "Archer area",
     "mainNavigation": "Main navigation",
+    "tour": "Replay this page's guided tour",
     "journalMenu": {
       "label": "Choose the journal shown",
       "choose": "Choose a journal",
       "own": "My journals",
       "athletes": "My archers",
       "athleteJournal": "{title} — {name}"
+    }
+  },
+  "tours": {
+    "next": "Next",
+    "previous": "Back",
+    "skip": "Skip the tour",
+    "finish": "Let's go!",
+    "home": {
+      "welcome": {
+        "title": "Welcome to your diary!",
+        "body": "This home page sums up your season. A short tour to see the essentials? (Esc to skip it.)"
+      },
+      "today": {
+        "title": "Note an event",
+        "body": "Click today's date, or its pen, to note a training, a competition, a strength session… You'll fill in its sheet afterwards."
+      },
+      "calendar": {
+        "title": "Your calendar",
+        "body": "This month and the next, with an icon per event. Click it to see the whole season at a glance."
+      },
+      "regularity": {
+        "title": "Your regularity",
+        "body": "Number of days you noted a session since the journal began, and your weeks in a row with at least two sessions. Something to keep you going!"
+      },
+      "competitions": {
+        "title": "FFTA competitions",
+        "body": "The invitations published in your departments, and “Plan” to choose your season's competitions on a map. One click adds them to your journal."
+      },
+      "export": {
+        "title": "Journal publication",
+        "body": "Print your season's diary: decorated calendars, sheets, photos and indicators, to keep the memory of this archery season."
+      },
+      "tabs": {
+        "title": "The diary's sections",
+        "body": "These tabs, like the sticky notes at the bottom of the page, lead to the Journal, the Sheets, the Stats and your Profile. Each has its own short tour the first time you open it."
+      },
+      "account": {
+        "title": "Your account",
+        "body": "Open your account to add a new journal or rate the app."
+      },
+      "help": {
+        "title": "Replay the tour",
+        "body": "Not sure? The “?” button replays the tour of the page shown, whenever you like. On a phone, it is in your account's menu."
+      }
+    },
+    "journal": {
+      "welcome": {
+        "title": "Your month's journal",
+        "body": "Here is your season month by month: your sessions, their description sheets, and a calendar to decorate. A quick tour? (Escape to skip it.)"
+      },
+      "calendar": {
+        "title": "The calendar",
+        "body": "Click a day to add or plan a session (training, competition, coaching…). If the icon is greyed out, its description sheet is still to complete. An “FFTA” ticket marks the day's competitions."
+      },
+      "new-event": {
+        "title": "New event",
+        "body": "The “+” adds an event on the date of your choice: training, competition, strength work, or one of your own types."
+      },
+      "navigate": {
+        "title": "Changing month",
+        "body": "To get around faster, use the “Today” button, or the calendar one to show the whole season."
+      },
+      "summary": {
+        "title": "The month at a glance",
+        "body": "The arrows shot this month, and your satisfaction: click the stars to rate it."
+      },
+      "share": {
+        "title": "Share the month",
+        "body": "Your month written in chalk on a blackboard, ready for Instagram."
+      },
+      "decor": {
+        "title": "The decoration",
+        "body": "Pick a decoration for this month, and the colour the month's name is shown in."
+      },
+      "coloring": {
+        "title": "Colouring",
+        "body": "Colour the decoration as you like, or let “Colour automatically” do it."
+      },
+      "legend": {
+        "title": "The legend",
+        "body": "To recall what each icon means."
+      }
+    },
+    "stats": {
+      "welcome": {
+        "title": "Your indicators",
+        "body": "Your filled-in sheets turn into figures and charts, to follow your progress. A quick tour? (Escape to skip it.)"
+      },
+      "period": {
+        "title": "The period",
+        "body": "The indicators cover a journal's period, or everything you have noted since the start."
+      },
+      "season": {
+        "title": "The season summary",
+        "body": "The whole season summed up on a whiteboard: best scores, averages per arrow, goals reached… to share on Instagram."
+      },
+      "goals": {
+        "title": "Your goals",
+        "body": "Set yourself goals, then note the day you reach them."
+      },
+      "rankings": {
+        "title": "National rankings",
+        "body": "Your place in the FFTA rankings for your bow and category, this season and the one before. It needs your licence number, category and bow (Profile page)."
+      },
+      "charts": {
+        "title": "The charts",
+        "body": "Arrows, durations, scores, averages per arrow, events, feelings: each card has its chart, often with buttons on top to change the span or the discipline."
+      },
+      "favorite": {
+        "title": "Your favourite indicator",
+        "body": "A card's star features it on the home page. One at a time."
+      },
+      "all": {
+        "title": "All your indicators",
+        "body": "Every indicator at your disposal."
+      }
+    },
+    "profile": {
+      "welcome": {
+        "title": "Your profile",
+        "body": "Here is what the diary needs to know about you, and the people you share it with. A quick tour? (Escape to skip it.)"
+      },
+      "guests": {
+        "title": "Invitation",
+        "body": "Invite your archer friends so they start their own journal, and your coach so they see your current season's journal and, if you allow it, propose sessions and comment on yours."
+      },
+      "competitions": {
+        "title": "Your competitions",
+        "body": "Pick up to five departments: their FFTA competitions show in your calendars. Your home town gives the distance on the competitions' map."
+      },
+      "configuration": {
+        "title": "Your configuration",
+        "body": "Licence, name, category, bow and disciplines: they are used for competitions, rankings and finding your score sheets."
+      },
+      "personalization": {
+        "title": "Personalisation",
+        "body": "Choose your calendars' handwriting: a calligraphy, or a simpler font to read."
+      },
+      "emails": {
+        "title": "Your emails",
+        "body": "Get your coach's news and a reminder in the week of your competitions. They can be turned off anytime."
+      },
+      "calendar-feed": {
+        "title": "Your phone's calendar",
+        "body": "A link to add to your calendar: your sessions and competitions show up there by themselves."
+      }
+    },
+    "sheet": {
+      "welcome": {
+        "title": "The session sheet",
+        "body": "Everything about your session: before, what you plan; after, your review. A quick tour? (Escape to skip it.)"
+      },
+      "info": {
+        "title": "The details",
+        "body": "Date, duration, place, discipline and distance are noted ahead; arrows, score and, outdoors, the weather once the day has come."
+      },
+      "photos": {
+        "title": "Photos",
+        "body": "Up to four photos per session: your target face, your gear, the shooting line… They stay private."
+      },
+      "objective": {
+        "title": "The objective",
+        "body": "What you want to work on during this session."
+      },
+      "steps": {
+        "title": "The outline",
+        "body": "The “+” adds a step (in minutes or arrows). On the day, tick those you have done."
+      },
+      "review": {
+        "title": "The review",
+        "body": "After the session: your satisfaction and technique, then your analysis, what to keep, to improve and for next time."
+      },
+      "feelings": {
+        "title": "Your feelings",
+        "body": "How you felt, physically and mentally: they feed the indicators."
+      },
+      "save": {
+        "title": "Save",
+        "body": "Remember to save your changes before closing the sheet."
+      },
+      "again": {
+        "title": "Do this session again",
+        "body": "A new session, on another day, with the same programme."
+      },
+      "share": {
+        "title": "Share",
+        "body": "Your session as an Instagram card, with the details and photos of your choice."
+      }
     }
   },
   "home": {
@@ -87,6 +276,12 @@
       }
     },
     "ctaTitle": "Ready to open your notebook?",
+    "demo": "See an example",
+    "demoUnavailable": "The example journal couldn't be opened. Try again in a moment.",
+    "deleted": {
+      "title": "Your account has been deleted",
+      "body": "Your journals, sessions, photos and all your data have been erased. Thank you for using MyArcheryDiary."
+    },
     "login": "Sign in",
     "register": "Create an account",
     "profile": "My profile",
@@ -100,6 +295,11 @@
         "body": "Find out below what MyArcheryDiary is for, then create your account. Once signed in, open the emailed invitation link again to become the coach."
       }
     }
+  },
+  "demo": {
+    "bannerTitle": "Example journal",
+    "bannerBody": "A made-up season to browse freely: calendar, sheets, indicators. Nothing in it can be changed.",
+    "register": "Create my account"
   },
   "roles": {
     "ADMIN": "Administrator",
@@ -184,7 +384,9 @@
     "DATE_LOCKED": "This competition comes from the FFTA calendar: its date can't be changed.",
     "DAILY_LIMIT_REACHED": "You have sent too many invitations today. Try again tomorrow.",
     "GROUP_NAME_TAKEN": "You already have a group with this name.",
-    "INVALID_REVIEW_TOKEN": "This link matches no pending review: it may already have been published or refused."
+    "INVALID_REVIEW_TOKEN": "This link matches no pending review: it may already have been published or refused.",
+    "WEATHER_UNAVAILABLE": "No weather found: give a town as the session's place, or your home town on the Profile page.",
+    "DEMO_READ_ONLY": "This is an example journal: it can't be changed. Create your account to keep your own!"
   },
   "validation": {
     "isEmail": "Invalid email address.",
@@ -203,13 +405,37 @@
     "signInMethods": "Sign-in",
     "methodPassword": "password",
     "memberSince": "Member since",
-    "rolesHint": "Everyone is an archer. The Coach profile is added when an archer invites you as their coach, for as long as the invitation stands."
+    "rolesHint": "Everyone is an archer. The Coach profile is added when an archer invites you as their coach, for as long as the invitation stands.",
+    "data": {
+      "title": "Your data",
+      "exportHint": "Download all your data as a ZIP archive: your journals, sessions, goals and profile (a JSON file), with your photos and score sheets.",
+      "export": "Download my data",
+      "delete": "Delete my account",
+      "deleteTitle": "Delete your account?",
+      "deleteBody": "Your account and everything in it will be permanently deleted: journals, sessions, photos, goals, profile and invitations. Your coaches will no longer see your journal. This cannot be undone.",
+      "deleteExportFirst": "Remember to download your data first if you want to keep it.",
+      "typeEmail": "To confirm, type your email address ({email})",
+      "password": "Your password",
+      "cancel": "Cancel",
+      "confirm": "Delete permanently"
+    }
   },
   "archer": {
+    "gettingStarted": {
+      "title": "Getting started",
+      "steps": {
+        "profile": "Fill in your profile: bow, category, licence",
+        "event": "Note your first session",
+        "coach": "Invite your coach",
+        "decor": "Decorate a month of your journal"
+      },
+      "done": "done",
+      "hide": "Hide this list"
+    },
     "addToday": "Note an event today",
     "regularity": {
       "title": "Regularity",
-      "events": "<strong>{events}</strong> {events, plural, one {event noted} other {events noted}} in <strong>{days}</strong> {days, plural, one {day} other {days}} of the season",
+      "events": "<strong>{events}</strong> {events, plural, one {session noted} other {sessions noted}} in <strong>{days}</strong> {days, plural, one {day} other {days}} of the season",
       "streak": "<strong>{weeks}</strong> {weeks, plural, one {week} other {weeks in a row}} with at least {sessions} sessions",
       "noStreak": "Do {sessions} sessions this week to start a streak"
     },
@@ -243,7 +469,6 @@
         "legendChampionship": "Championship",
         "noHome": "Give your starting town (Profile page) to see the distances."
       },
-      "planningIntro": "The FFTA competitions still to come this season in your departments and disciplines, to add to your journal.",
       "plan": "Plan",
       "noDepartment": "Choose your departments on the Profile page to see the upcoming FFTA competitions in your disciplines here.",
       "setUp": "Go to the profile",
@@ -379,10 +604,16 @@
     "score": "Score",
     "objective": "Session goal",
     "outline": "Session outline",
+    "dictation": {
+      "start": "Dictate (your voice is written at the end of the text)",
+      "stop": "Stop dictating"
+    },
     "weather": {
       "sky": "Sky",
       "wind": "Wind",
       "temperature": "Temperature",
+      "fetch": "Fill in the day's weather",
+      "found": "The day's weather at {place}: check it, then save.",
       "skies": {
         "SUNNY": "Sunny",
         "PARTLY_CLOUDY": "Sunny spells",
@@ -696,6 +927,7 @@
       "clear": "Clear all",
       "saving": "Saving…",
       "saved": "Colouring saved.",
+      "full": "This month has reached the maximum number of brush strokes: erase an area to colour a new one.",
       "pastel": "Pastel {color}",
       "auto": "Colour automatically",
       "autoHint": "Colours the whole decoration in real-life colours (the month's name keeps its own). \"Undo last step\" takes it back.",
@@ -774,6 +1006,29 @@
       "choose": "Choose",
       "save": "Save",
       "saved": "Profile saved."
+    },
+    "emails": {
+      "title": "Emails",
+      "coachEmails": {
+        "label": "My coach's news",
+        "hint": "An email when your coach proposes a session or comments on one of yours (one a day at most)."
+      },
+      "competitionReminders": {
+        "label": "My competition reminders",
+        "hint": "An email in the week of a competition noted in your journal, with the link to its invitation."
+      }
+    },
+    "calendarFeed": {
+      "title": "Phone calendar",
+      "hint": "Subscribe your calendar (Google Calendar, iPhone Calendar, Outlook…) to your journal: your sessions and competitions show up there by themselves, and stay up to date.",
+      "create": "Create the subscription link",
+      "renew": "Create a new link",
+      "remove": "Turn the link off",
+      "link": "Your subscription link",
+      "copy": "Copy",
+      "copied": "Copied",
+      "keepSecret": "Add it to your calendar (“Subscribe to calendar” / “From URL”). Keep it to yourself: it won't be shown again. A new link turns the old one off.",
+      "active": "A subscription link is active. Lost it? Create a new one (the old one will stop working)."
     },
     "personalization": {
       "title": "Personalisation",
@@ -863,6 +1118,7 @@
     "thanks": "Thank you for your review!",
     "nextAt": "You can give a new review from {date}.",
     "publicTitle": "What archers say",
+    "featuredTitle": "A few archers' reviews",
     "average": "{average} / 5 · {count, plural, one {# review} other {# reviews}}",
     "rowLabel": "Users' reviews (scroll sideways)",
     "moderation": {
@@ -1000,7 +1256,26 @@
     "cancel": "Cancel",
     "delete": "Delete",
     "emptyType": "No goal yet.",
-    "dateReached": "Reached on {reached}"
+    "dateReached": "Reached on {reached}",
+    "metric": "Tracked figures",
+    "metricHint": "Your journal follows the progress and ticks the goal by itself, the day it is reached.",
+    "metrics": {
+      "NONE": "None (a goal in words)",
+      "SCORE": "A score to reach in competition",
+      "ARROWS": "A number of arrows to shoot"
+    },
+    "targetLabel": {
+      "SCORE": "Target score",
+      "ARROWS": "Arrows to shoot from the day it was set"
+    },
+    "discipline": "Discipline",
+    "anyDiscipline": "Any",
+    "distance": "Distance",
+    "anyDistance": "Any",
+    "progressOf": {
+      "SCORE": "{value} / {target} pts",
+      "ARROWS": "{value} / {target} arrows"
+    }
   },
   "coach": {
     "groups": {

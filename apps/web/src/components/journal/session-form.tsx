@@ -25,6 +25,7 @@ import {
   IconArrowRight,
   IconCalendar,
   IconCheck,
+  IconCloudDownload,
   IconDeviceFloppy,
   IconFileText,
   IconMapPin,
@@ -59,6 +60,7 @@ import {
   deleteSession,
   markSessionSeen,
   saveSession,
+  sessionWeather,
 } from '@/app/actions/journal';
 import { FormError } from '@/components/form-feedback';
 import { LooseLeaf } from '@/components/notebook/loose-leaf';
@@ -75,6 +77,8 @@ import { SessionAgainButton } from './session-again';
 import { SkyIcon, Windsock } from './weather-icons';
 import { ShareButton } from './share-modal';
 import { CoachComments } from './coach-comments';
+import { appendDictation } from '@/lib/dictation';
+import { DictationButton } from './dictation-button';
 
 const DEFAULT_NOTE_COLOR = 'gray';
 /** The weather of an outdoor session, in the order offered. */
@@ -243,6 +247,7 @@ export function SessionForm({
   children?: ReactNode;
 }) {
   const t = useTranslations('journal');
+  const tErrors = useTranslations('errors');
   const stepsTotal = useStepsTotal();
   const locale = useLocale();
   const router = useRouter();
@@ -280,6 +285,14 @@ export function SessionForm({
     setState({});
     setValues((v) => ({ ...v, [key]: value }));
   };
+  /** Dictated words, at the end of a free text (DictationButton). */
+  const dictate = (key: 'objective' | 'description' | 'nextTime') =>
+    readOnly
+      ? undefined
+      : (words: string) => {
+          setState({});
+          setValues((v) => ({ ...v, [key]: appendDictation(v[key], words) }));
+        };
   const setLine = (list: 'wentWell' | 'toImprove', index: number, value: string) =>
     set(
       list,
@@ -294,6 +307,20 @@ export function SessionForm({
         : await saveSession(session.id, snapshot);
       setState(result);
       if (!result.code) setSaved(JSON.stringify(snapshot));
+    });
+
+  /** The day's weather where the event took place (as saved), put in its fields: then saved. */
+  const [weather, setWeather] = useState<(ActionState & { place?: string }) | null>(null);
+  const [fetchingWeather, startFetchingWeather] = useTransition();
+  const fetchWeather = () =>
+    startFetchingWeather(async () => {
+      const result = await sessionWeather(session.id);
+      setWeather(result);
+      if (result.weather) {
+        const { sky, wind, temperatureC } = result.weather;
+        setState({});
+        setValues((v) => ({ ...v, sky, wind, temperatureC }));
+      }
     });
 
   /** Back to the month of the event as saved (unsaved changes are dropped: asked first). */
@@ -462,6 +489,7 @@ export function SessionForm({
               </Text>
               <Button
                 leftSection={<IconDeviceFloppy size={18} />}
+                data-tour="save"
                 onClick={save}
                 loading={saving}
                 disabled={!dirty}
@@ -498,7 +526,7 @@ export function SessionForm({
             spacing="xl"
             verticalSpacing="var(--step)"
           >
-            <Section title={t('info')} gap={0}>
+            <Section title={t('info')} gap={0} tour="info">
               {/*
                 One ruled line per field: its name on the left (one column, as wide as the
                 longest name), the compact field (one line high) on the right.
@@ -687,6 +715,35 @@ export function SessionForm({
                             suffix=" °C"
                           />
                         </FieldRow>
+                        {/* The archer's own sheet, from the day on: the weather looked up. */}
+                        {!coach && !locked && (
+                          <FieldRow
+                            label=""
+                            below={
+                              weather && (
+                                <Text
+                                  size="xs"
+                                  c={weather.code ? 'red' : 'dimmed'}
+                                  className={classes.fieldHint}
+                                >
+                                  {weather.code
+                                    ? tErrors(weather.code)
+                                    : t('weather.found', { place: weather.place ?? '' })}
+                                </Text>
+                              )
+                            }
+                          >
+                            <Button
+                              variant="subtle"
+                              size="compact-xs"
+                              leftSection={<IconCloudDownload size={14} />}
+                              loading={fetchingWeather}
+                              onClick={fetchWeather}
+                            >
+                              {t('weather.fetch')}
+                            </Button>
+                          </FieldRow>
+                        )}
                       </>
                     )}
                   </>
@@ -759,7 +816,13 @@ export function SessionForm({
           {hasSheet && (
             <>
               {/* A blank line more between the Informations (and photos) and the objective. */}
-              <Section title={t('objective')} gap={0} blankLineAbove>
+              <Section
+                title={t('objective')}
+                gap={0}
+                blankLineAbove
+                tour="objective"
+                action={!readOnly && <DictationButton onText={dictate('objective')!} />}
+              >
                 <Textarea
                   {...RULED_TEXT}
                   aria-label={t('objective')}
@@ -782,6 +845,7 @@ export function SessionForm({
                       : t('outline')
                   }
                   gap={0}
+                  tour="steps"
                   action={
                     !readOnly && (
                       <AddStepButton
@@ -831,7 +895,7 @@ export function SessionForm({
                 </Text>
               )}
 
-              <Section title={t('selfAssessment')} locked={locked}>
+              <Section title={t('selfAssessment')} locked={locked} tour="review">
                 <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="xl">
                   <Rating
                     label={t('satisfaction')}
@@ -850,7 +914,15 @@ export function SessionForm({
                 </SimpleGrid>
               </Section>
 
-              <Section title={t('description')} gap={0} locked={locked}>
+              <Section
+                title={t('description')}
+                gap={0}
+                locked={locked}
+                action={
+                  !readOnly &&
+                  !coach && <DictationButton onText={dictate('description')!} disabled={locked} />
+                }
+              >
                 <Textarea
                   {...RULED_TEXT}
                   disabled={locked}
@@ -866,7 +938,7 @@ export function SessionForm({
 
               <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
                 {/* No gap: the faces' frame starts on the title's line (see .feelingBox). */}
-                <Section title={t('physical')} gap={0} locked={locked}>
+                <Section title={t('physical')} gap={0} locked={locked} tour="feelings">
                   <FeelingPicker
                     label={t('physical')}
                     value={values.physicalFeeling}
@@ -874,7 +946,7 @@ export function SessionForm({
                     disabled={locked}
                   />
                 </Section>
-                <Section title={t('mental')} gap={0} locked={locked}>
+                <Section title={t('mental')} gap={0} locked={locked} tour="feelings">
                   <FeelingPicker
                     label={t('mental')}
                     value={values.mentalFeeling}
@@ -927,7 +999,15 @@ export function SessionForm({
                 ))}
               </SimpleGrid>
 
-              <Section title={t('nextTime')} gap={0} locked={locked}>
+              <Section
+                title={t('nextTime')}
+                gap={0}
+                locked={locked}
+                action={
+                  !readOnly &&
+                  !coach && <DictationButton onText={dictate('nextTime')!} disabled={locked} />
+                }
+              >
                 <Textarea
                   {...RULED_TEXT}
                   disabled={locked}
@@ -1110,9 +1190,12 @@ function Section({
   locked,
   action,
   blankLineAbove = false,
+  tour,
   children,
 }: {
   title: string;
+  /** Its `data-tour` mark, for the sheet's guided tour. */
+  tour?: string;
   /** Next to the title (e.g. the steps' "+"). */
   action?: ReactNode;
   /**
@@ -1140,6 +1223,7 @@ function Section({
       mih={mih}
       pt={blankLineAbove ? 'var(--step)' : undefined}
       className={locked ? classes.locked : undefined}
+      data-tour={tour}
     >
       {action ? (
         <Group gap="xs" wrap="nowrap" align="center">

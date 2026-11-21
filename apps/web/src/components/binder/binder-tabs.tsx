@@ -17,7 +17,7 @@ export function BinderTabs({ archerId }: { archerId?: string }) {
   const current = sectionOf(pathname, sections);
 
   return (
-    <nav className={classes.tabs} aria-label={t('nav.archerSection')}>
+    <nav className={classes.tabs} aria-label={t('nav.archerSection')} data-tour="tabs">
       {sections.map((section) => {
         const { key, href, icon: Icon } = section;
         const active = current?.href === href;

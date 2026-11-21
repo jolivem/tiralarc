@@ -258,8 +258,11 @@ export const THEME_BANDS = ['top', 'bottom', 'left', 'right', 'title'] as const;
 export type ThemeBand = (typeof THEME_BANDS)[number];
 /** The band whose colouring outlives a change of theme. */
 export const TITLE_BAND: ThemeBand = 'title';
-/** Colouring one decoration takes far fewer; this only bounds the stored size. */
-export const MAX_FILLS = 500;
+/**
+ * Bounds the stored size. A decoration has a few hundred closed areas, the automatic colouring
+ * takes up to 500 of them: the rest is room for the archer's own clicks.
+ */
+export const MAX_FILLS = 2000;
 
 /** One "paint bucket" click on a theme's artwork: the closed area around the point takes the colour. */
 export class FillDto {

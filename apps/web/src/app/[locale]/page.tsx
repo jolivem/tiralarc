@@ -1,8 +1,9 @@
-import { Alert, Box, Container, Stack, Text } from '@mantine/core';
-import { IconLogin, IconMailOpened, IconUserPlus } from '@tabler/icons-react';
+import { Alert, Box, Button, Container, Stack, Text } from '@mantine/core';
+import { IconEye, IconLogin, IconMailOpened, IconUserPlus } from '@tabler/icons-react';
+import { openDemo } from '@/app/actions/auth';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { PreviewPrint } from '@/components/home/preview-print';
-import { ReviewsStrip } from '@/components/reviews/reviews-strip';
+import { FeaturedReviews, ReviewsStrip } from '@/components/reviews/reviews-strip';
 import { ButtonLink } from '@/components/links';
 import { NotebookCover } from '@/components/notebook/cover';
 import { HandHeading } from '@/components/notebook/notebook';
@@ -31,7 +32,12 @@ const FAQ = [
  */
 const PREVIEWS = [
   { key: 'home', file: 'notebook-home-2026-11.webp', width: 1200, height: 938 },
-  { key: 'journal', file: 'notebook-journal-cerisier-2026-11.webp', width: 1200, height: 1280 },
+  {
+    key: 'journal',
+    file: 'notebook-journal-cerisier-auto-2026-11.webp',
+    width: 1200,
+    height: 1280,
+  },
   { key: 'sheet', file: 'notebook-sheet-photo.webp', width: 1200, height: 909 },
   { key: 'stats', file: 'notebook-stats-2026-11.webp', width: 1200, height: 1313 },
 ] as const;
@@ -47,14 +53,33 @@ export default async function HomePage({ params, searchParams }: PageProps<'/[lo
   // What users think of the app (approved reviews), under the FAQ.
   const { data: reviews } = await api.GET('/api/v1/reviews');
   const t = await getTranslations('home');
-  const { invitation: requested } = await searchParams;
+  const { invitation: requested, account, demo } = await searchParams;
   const invitation = INVITATIONS.find((kind) => kind === requested);
+  // Back here right after deleting one's account (actions/account.ts).
+  const deleted = account === 'deleted';
 
   // On the desk: the welcome, the closed notebook, then the FAQ on a sheet torn out of a spiral notebook.
   return (
     // Wide enough for the notebook and a column of prints on each side.
     <Container size="lg" px={0}>
       <Stack gap={48}>
+        {deleted && (
+          <Alert
+            variant="light"
+            color="gray"
+            radius="lg"
+            maw={680}
+            mx="auto"
+            title={t('deleted.title')}
+          >
+            {t('deleted.body')}
+          </Alert>
+        )}
+        {demo === 'unavailable' && (
+          <Alert variant="light" color="orange" radius="lg" maw={680} mx="auto">
+            {t('demoUnavailable')}
+          </Alert>
+        )}
         {invitation && (
           // A guest who accepted an invitation (or a coach without an account yet): what the
           // site is for is below, then the button to create their account.
@@ -75,6 +100,8 @@ export default async function HomePage({ params, searchParams }: PageProps<'/[lo
           <h1 className={classes.hook}>{t('hook')}</h1>
           <Text size="lg">{t('welcomeBody')}</Text>
         </Box>
+        {/* A few of the best reviews, where the visitor decides (all of them under the FAQ). */}
+        <FeaturedReviews reviews={reviews ?? []} />
 
         {/*
           The closed notebook in the middle, a glance inside on either side: screenshots of the
@@ -105,6 +132,19 @@ export default async function HomePage({ params, searchParams }: PageProps<'/[lo
                 >
                   {t('login')}
                 </ButtonLink>
+                {/* A made-up season to look through first, read-only. */}
+                <form action={openDemo}>
+                  <Button
+                    type="submit"
+                    size="md"
+                    variant="subtle"
+                    color="#f3e6d3"
+                    fullWidth
+                    leftSection={<IconEye size={18} />}
+                  >
+                    {t('demo')}
+                  </Button>
+                </form>
               </Stack>
             </NotebookCover>
           </div>

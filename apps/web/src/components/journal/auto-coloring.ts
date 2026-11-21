@@ -4,7 +4,9 @@ import { realisticFills } from './coloring';
 import { themeColorMap, themeImage, THEMES, type ThemeId } from './themes';
 
 /** Fills a month may hold (the API's `MAX_FILLS`). */
-export const MAX_FILLS = 500;
+export const MAX_FILLS = 2000;
+/** Fills the automatic colouring takes at most, leaving room for the archer's corrections. */
+export const AUTO_FILLS = 500;
 
 /**
  * The month's decoration coloured in real-life colours: every closed area of each band takes
@@ -17,7 +19,7 @@ export async function automaticColoring(
   fills: ThemeFill[],
 ): Promise<ThemeFill[] | null> {
   const title = fills.filter((fill) => fill.band === 'title');
-  const room = MAX_FILLS - title.length;
+  const room = AUTO_FILLS - title.length;
   const bands = await Promise.all(
     THEMES[theme].bands.map(async (band) => {
       const [art, colors] = await Promise.all([

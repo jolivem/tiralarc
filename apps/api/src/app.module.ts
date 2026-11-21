@@ -3,7 +3,9 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { LoggerModule } from 'nestjs-pino';
+import { AccountModule } from './account/account.module.js';
 import { AuthModule } from './auth/auth.module.js';
+import { CalendarFeedModule } from './calendar-feed/calendar-feed.module.js';
 import { CoachingModule } from './coaching/coaching.module.js';
 import { CompetitionsModule } from './competitions/competitions.module.js';
 import { type Env, validateEnv } from './config/env.js';
@@ -11,12 +13,14 @@ import { GoalsModule } from './goals/goals.module.js';
 import { HealthModule } from './health/health.module.js';
 import { JournalModule } from './journal/journal.module.js';
 import { MailModule } from './mail/mail.module.js';
+import { NotificationsModule } from './notifications/notifications.module.js';
 import { ProfileModule } from './profile/profile.module.js';
 import { PrismaModule } from './prisma/prisma.module.js';
 import { ReviewsModule } from './reviews/reviews.module.js';
 import { ScoreSheetsModule } from './score-sheets/score-sheets.module.js';
 import { StorageModule } from './storage/storage.module.js';
 import { UsersModule } from './users/users.module.js';
+import { WeatherModule } from './weather/weather.module.js';
 
 @Module({
   imports: [
@@ -48,12 +52,16 @@ import { UsersModule } from './users/users.module.js';
     HealthModule,
     AuthModule,
     UsersModule,
+    AccountModule,
     JournalModule,
     GoalsModule,
     ProfileModule,
     CoachingModule,
     CompetitionsModule,
     ScoreSheetsModule,
+    NotificationsModule,
+    CalendarFeedModule,
+    WeatherModule,
     ReviewsModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
