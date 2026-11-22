@@ -25,11 +25,12 @@ export const ARCHER_SECTIONS: readonly ArcherSection[] = [
 ];
 
 /**
- * What a coach sees of one of their archers (the journal of the season in progress and the
- * indicators), with the colours of the archer's own sections.
+ * What a coach sees of one of their archers (the journal of the season in progress, the
+ * binder of sheets — read only — and the indicators), with the colours of the archer's own
+ * sections.
  */
 export function coachSections(archerId: string): ArcherSection[] {
-  return ARCHER_SECTIONS.filter(({ key }) => key === 'journal' || key === 'stats').map(
+  return ARCHER_SECTIONS.filter(({ key }) => key !== 'home' && key !== 'profile').map(
     (section) => ({ ...section, href: section.href.replace('/archer', `/coach/${archerId}`) }),
   );
 }

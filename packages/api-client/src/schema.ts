@@ -790,6 +790,159 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/sheets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Every sheet, without its text (the indexes), by title */
+        get: operations["Sheets_list"];
+        put?: never;
+        post: operations["Sheets_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sheets/all": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Every sheet with its text, oldest first (e.g. to print them) */
+        get: operations["Sheets_all"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sheets/templates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Ready-made sheets to start from when adding one (e.g. "My string" in SETTINGS), by category */
+        get: operations["Sheets_templates"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sheets/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["Sheets_get"];
+        put?: never;
+        post?: never;
+        delete: operations["Sheets_remove"];
+        options?: never;
+        head?: never;
+        patch: operations["Sheets_update"];
+        trace?: never;
+    };
+    "/api/v1/sheets/{sheetId}/photos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Photos of a sheet; the URLs are signed and expire after 10 minutes */
+        get: operations["SheetPhotos_list"];
+        put?: never;
+        /** Attach a photo to a TECHNIQUE sheet (JPEG, PNG or WebP, 10 MB max); it is resized */
+        post: operations["SheetPhotos_add"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sheets/{sheetId}/photos/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["SheetPhotos_remove"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/sheet-templates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Every template, hidden ones too, by category then in their order */
+        get: operations["SheetTemplates_list"];
+        put?: never;
+        /** A new template, at the end of its category */
+        post: operations["SheetTemplates_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/sheet-templates/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete a template; the sheets started from it keep their text */
+        delete: operations["SheetTemplates_remove"];
+        options?: never;
+        head?: never;
+        patch: operations["SheetTemplates_update"];
+        trace?: never;
+    };
+    "/api/v1/admin/sheet-templates/{id}/move": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** One place up or down in its category; every template comes back */
+        post: operations["SheetTemplates_move"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/goals": {
         parameters: {
             query?: never;
@@ -976,6 +1129,23 @@ export interface paths {
         patch: operations["Coaching_update"];
         trace?: never;
     };
+    "/api/v1/coach/athletes/{archerId}/sessions/{id}/copy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Plan a training or coaching of the current journal again on `date`, for the archers chosen (the same planning, steps unticked, coach-stamped); one result per archer, in the order given */
+        post: operations["Coaching_copy"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/coach/athletes/{archerId}/sessions/{id}/photos": {
         parameters: {
             query?: never;
@@ -1072,6 +1242,56 @@ export interface paths {
         };
         /** The archer's own event types (for the legend) */
         get: operations["Coaching_eventTypes"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/coach/athletes/{archerId}/sheets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The archer's binder (Sheets section), without the texts: read only */
+        get: operations["Coaching_sheets"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/coach/athletes/{archerId}/sheets/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["Coaching_sheet"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/coach/athletes/{archerId}/sheets/{id}/photos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Photos of a technique sheet; the URLs are signed (10 minutes) */
+        get: operations["Coaching_sheetPhotos"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1692,6 +1912,35 @@ export interface components {
              */
             done: boolean;
         };
+        /** @enum {string} */
+        StrengthMeasure: "REPS" | "SECONDS";
+        /** @enum {string} */
+        StrengthLoad: "BODYWEIGHT" | "KG" | "BAND_LIGHT" | "BAND_MEDIUM" | "BAND_STRONG";
+        StrengthStepDto: {
+            /**
+             * @description The clients' catalogue exercise it was picked from (they name it in their language); null for an exercise typed by the archer.
+             * @example PLANK_FRONT
+             */
+            exercise: string | null;
+            /**
+             * @description As shown.
+             * @example Gainage face
+             */
+            name: string;
+            sets: number;
+            measure: components["schemas"]["StrengthMeasure"];
+            /** @description Repetitions, or seconds, per set. */
+            amount: number;
+            load: components["schemas"]["StrengthLoad"];
+            /** @description `load` KG: the weight (kg); null otherwise. */
+            loadKg: number | null;
+            /** @description Rest between two sets, in seconds; null = not said. */
+            restSeconds: number | null;
+            /** @default  */
+            note: string;
+            /** @description A STRENGTH event, from its day on: ticked once done. Absent = false; always present in responses (false on sheets). */
+            done?: boolean;
+        };
         /**
          * @description Outdoor sessions.
          * @enum {string}
@@ -1741,6 +1990,8 @@ export interface components {
             objective: string | null;
             /** @description Trainings and coachings: the steps of the session ("Déroulé de la séance"). */
             steps: components["schemas"]["SessionStepDto"][];
+            /** @description STRENGTH events: their programme (built with the guide or copied from a STRENGTH sheet). */
+            strengthSteps: components["schemas"]["StrengthStepDto"][];
             satisfaction: number | null;
             technique: number | null;
             physicalFeeling: components["schemas"]["Feeling"] | null;
@@ -1788,6 +2039,8 @@ export interface components {
             objective?: string | null;
             /** @description Trainings and coachings: the steps of the session, in order (replaces them). Planned ahead like the objective: not part of the review. */
             steps?: components["schemas"]["SessionStepDto"][];
+            /** @description STRENGTH events: their programme, in order (replaces it); `done` ticked from the day on. */
+            strengthSteps?: components["schemas"]["StrengthStepDto"][];
             /** @description Overall satisfaction. */
             satisfaction?: number | null;
             /** @description Technique self-assessment. */
@@ -2185,6 +2438,111 @@ export interface components {
             archerId: string | null;
         };
         /** @enum {string} */
+        SheetCategory: "TECHNIQUE" | "SETTINGS" | "STRENGTH" | "MENTAL";
+        SheetSummaryDto: {
+            /** Format: uuid */
+            id: string;
+            category: components["schemas"]["SheetCategory"];
+            /** @example Ancrage */
+            title: string;
+            /** Format: date-time */
+            createdAt: string;
+            /**
+             * Format: date-time
+             * @description Last change of its title or text.
+             */
+            updatedAt: string;
+        };
+        SheetDto: {
+            /** Format: uuid */
+            id: string;
+            category: components["schemas"]["SheetCategory"];
+            /** @example Ancrage */
+            title: string;
+            /** Format: date-time */
+            createdAt: string;
+            /**
+             * Format: date-time
+             * @description Last change of its title or text.
+             */
+            updatedAt: string;
+            /** @description Free text; line breaks kept. */
+            body: string;
+            /** @description STRENGTH sheets: the programme built with the guide, in order (else empty). */
+            strengthSteps: components["schemas"]["StrengthStepDto"][];
+        };
+        SheetTemplateDto: {
+            /** Format: uuid */
+            id: string;
+            category: components["schemas"]["SheetCategory"];
+            /** @example Ma corde */
+            title: string;
+            /** @description Lines to fill in. */
+            body: string;
+        };
+        CreateSheetDto: {
+            category: components["schemas"]["SheetCategory"];
+            /** @example Ancrage */
+            title: string;
+            /** @description The text; when left out, the template's (if any), else empty. */
+            body?: string;
+            /**
+             * Format: uuid
+             * @description A template of the same category (GET /sheets/templates), not hidden: its text starts the sheet.
+             */
+            templateId?: string;
+            /**
+             * @description With `templateId`: the language of its text, as for GET /sheets/templates.
+             * @example fr
+             */
+            locale?: string;
+        };
+        UpdateSheetDto: {
+            title?: string;
+            body?: string;
+            /** @description STRENGTH sheets only (another category: 400): the programme, in order (replaces it). */
+            strengthSteps?: components["schemas"]["StrengthStepDto"][];
+        };
+        AdminSheetTemplateDto: {
+            /** Format: uuid */
+            id: string;
+            category: components["schemas"]["SheetCategory"];
+            /** @description Order in its category (1 first). */
+            position: number;
+            /** @description Not offered to the archers. */
+            hidden: boolean;
+            /** @example Ma corde */
+            titleFr: string;
+            bodyFr: string;
+            /** @example My string */
+            titleEn: string;
+            bodyEn: string;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        CreateSheetTemplateDto: {
+            category: components["schemas"]["SheetCategory"];
+            titleFr: string;
+            bodyFr: string;
+            titleEn: string;
+            bodyEn: string;
+            /** @description Not offered to the archers yet (false by default). */
+            hidden?: boolean;
+        };
+        UpdateSheetTemplateDto: {
+            category?: components["schemas"]["SheetCategory"];
+            titleFr?: string;
+            bodyFr?: string;
+            titleEn?: string;
+            bodyEn?: string;
+            hidden?: boolean;
+        };
+        /** @enum {string} */
+        MoveDirection: "UP" | "DOWN";
+        MoveSheetTemplateDto: {
+            direction: components["schemas"]["MoveDirection"];
+        };
+        /** @enum {string} */
         GoalType: "SPORT" | "TECHNIQUE" | "PHYSICAL" | "PERSONAL";
         /**
          * @description What a figured goal measures, followed from the events since `createdOn` (it is then reached by itself, the day the target is met): SCORE = the best score in competition (a round of fixed length, unlike a training's); ARROWS = the arrows shot in all. Null: a goal in words only. Given with `target` (VALIDATION_FAILED otherwise).
@@ -2300,6 +2658,8 @@ export interface components {
             objective?: string | null;
             /** @description Trainings and coachings: the steps of the session, in order (replaces them). */
             steps?: components["schemas"]["SessionStepDto"][];
+            /** @description STRENGTH sessions: their programme, in order (replaces it). */
+            strengthSteps?: components["schemas"]["StrengthStepDto"][];
             type: components["schemas"]["PlannableType"];
             /**
              * @description A day after today, within the archer's journal of the season in progress.
@@ -2320,11 +2680,38 @@ export interface components {
             objective?: string | null;
             /** @description Trainings and coachings: the steps of the session, in order (replaces them). */
             steps?: components["schemas"]["SessionStepDto"][];
+            /** @description STRENGTH sessions: their programme, in order (replaces it). */
+            strengthSteps?: components["schemas"]["StrengthStepDto"][];
             /**
              * @description A day after today, within the archer's journal of the season in progress.
              * @example 2026-11-04
              */
             date?: string;
+        };
+        CopyToAthletesDto: {
+            /**
+             * @description A day after today, within each archer's journal of the season in progress.
+             * @example 2026-11-03
+             */
+            date: string;
+            /** @description The archers who get the session (yours, WRITE access): the one whose sheet it is, others, or both. */
+            archerIds: string[];
+        };
+        CopiedSessionDto: {
+            /** Format: uuid */
+            archerId: string;
+            /** @description Display name, or email. */
+            name: string;
+            /**
+             * Format: uuid
+             * @description The event planned in their journal; null when it could not be.
+             */
+            sessionId: string | null;
+            /**
+             * @description Why nothing was planned: FORBIDDEN (read-only access), DATE_NOT_PLANNABLE (no journal of the season in progress covering the day), DAY_FULL. Null when planned.
+             * @enum {string|null}
+             */
+            error: "FORBIDDEN" | "DATE_NOT_PLANNABLE" | "DAY_FULL" | null;
         };
         SaveSessionCommentDto: {
             text: string;
@@ -4537,6 +4924,526 @@ export interface operations {
             };
         };
     };
+    Sheets_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SheetSummaryDto"][];
+                };
+            };
+            /** @description Archers only */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    Sheets_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateSheetDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SheetDto"];
+                };
+            };
+            /** @description Archers only */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No such template in that category */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description LIMIT_REACHED: 100 sheets in that category */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    Sheets_all: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SheetDto"][];
+                };
+            };
+            /** @description Archers only */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    Sheets_templates: {
+        parameters: {
+            query?: {
+                category?: components["schemas"]["SheetCategory"];
+                /** @description Their language: English for 'en', else French; by default the account's. */
+                locale?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SheetTemplateDto"][];
+                };
+            };
+            /** @description Archers only */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    Sheets_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SheetDto"];
+                };
+            };
+            /** @description Archers only */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    Sheets_remove: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Archers only */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    Sheets_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateSheetDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SheetDto"];
+                };
+            };
+            /** @description Archers only */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    SheetPhotos_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sheetId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PhotoDto"][];
+                };
+            };
+            /** @description Archers only */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    SheetPhotos_add: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sheetId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["UploadPhotoDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PhotoDto"];
+                };
+            };
+            /** @description INVALID_IMAGE; VALIDATION_FAILED: not a technique sheet */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Archers only */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description LIMIT_REACHED (4 photos per sheet) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description FILE_TOO_LARGE */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    SheetPhotos_remove: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sheetId: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Archers only */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    SheetTemplates_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminSheetTemplateDto"][];
+                };
+            };
+            /** @description Admins only */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    SheetTemplates_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateSheetTemplateDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminSheetTemplateDto"];
+                };
+            };
+            /** @description Admins only */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    SheetTemplates_remove: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Admins only */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    SheetTemplates_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateSheetTemplateDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminSheetTemplateDto"];
+                };
+            };
+            /** @description Admins only */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    SheetTemplates_move: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MoveSheetTemplateDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminSheetTemplateDto"][];
+                };
+            };
+            /** @description Admins only */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     Goals_list: {
         parameters: {
             query?: never;
@@ -5139,6 +6046,46 @@ export interface operations {
             };
         };
     };
+    Coaching_copy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                archerId: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CopyToAthletesDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CopiedSessionDto"][];
+                };
+            };
+            /** @description Not a training or a coaching */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not one of your archers (or not in their current journal) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     Coaching_photos: {
         parameters: {
             query?: never;
@@ -5392,6 +6339,92 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CustomEventTypeDto"][];
+                };
+            };
+            /** @description Not one of your archers (or not in their current journal) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    Coaching_sheets: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                archerId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SheetSummaryDto"][];
+                };
+            };
+            /** @description Not one of your archers (or not in their current journal) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    Coaching_sheet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                archerId: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SheetDto"];
+                };
+            };
+            /** @description Not one of your archers (or not in their current journal) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    Coaching_sheetPhotos: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                archerId: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PhotoDto"][];
                 };
             };
             /** @description Not one of your archers (or not in their current journal) */

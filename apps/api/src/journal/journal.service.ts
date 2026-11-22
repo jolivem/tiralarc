@@ -37,6 +37,7 @@ import {
   type UpdateJournalDto,
   type UpdateSessionDto,
 } from './dto/journal.dto.js';
+import { asStrengthSteps, cleanStrengthSteps, type StrengthStepDto } from './dto/strength.dto.js';
 import { PhotosService } from './photos.service.js';
 
 const MAX_RANGE_DAYS = 366;
@@ -285,6 +286,7 @@ export interface PlannedFields {
   distanceMeters?: number | null;
   objective?: string | null;
   steps?: SessionStepDto[];
+  strengthSteps?: StrengthStepDto[];
   /** A competition added from the FFTA calendar (see `CreateSessionDto.fftaCompetitionId`). */
   fftaCompetitionId?: string;
 }
@@ -329,6 +331,7 @@ function toDto(s: SessionRow): SessionDto {
     distanceMeters: s.distanceMeters,
     objective: s.objective,
     steps: asSteps(s.steps),
+    strengthSteps: asStrengthSteps(s.strengthSteps),
     satisfaction: s.satisfaction,
     technique: s.technique,
     physicalFeeling: s.physicalFeeling,
@@ -690,6 +693,11 @@ export class JournalService {
           fields.distanceMeters ?? defaultDistance(fftaCompetitionId, fields.discipline),
         objective: fields.objective,
         ...(fields.steps && { steps: cleanSteps(fields.steps) }),
+        ...(fields.strengthSteps && {
+          strengthSteps: cleanStrengthSteps(
+            fields.strengthSteps.map((s) => ({ ...s, done: false })),
+          ),
+        }),
         wentWell: [],
         toImprove: [],
       },
@@ -888,13 +896,21 @@ export class JournalService {
 
   async update(userId: string, id: string, dto: UpdateSessionDto): Promise<SessionDto> {
     const current = await this.findOwned(userId, id);
-    const { date, wentWell, toImprove, location, title, steps, ...rest } = dto;
+    const { date, wentWell, toImprove, location, title, steps, strengthSteps, ...rest } = dto;
     // A custom event gets its type when created: there is no type id to switch to here.
     if (rest.type === SessionType.CUSTOM && current.type !== SessionType.CUSTOM) {
       throw new ApiException(
         HttpStatus.BAD_REQUEST,
         ErrorCode.VALIDATION_FAILED,
         'An event becomes CUSTOM only when created (with its "customTypeId")',
+      );
+    }
+    // A strength programme belongs to a STRENGTH event.
+    if (strengthSteps !== undefined && (rest.type ?? current.type) !== SessionType.STRENGTH) {
+      throw new ApiException(
+        HttpStatus.BAD_REQUEST,
+        ErrorCode.VALIDATION_FAILED,
+        'Only a strength session has a programme',
       );
     }
     const moved = date !== undefined && date !== fromDbDate(current.date);
@@ -925,6 +941,7 @@ export class JournalService {
         ...(wentWell !== undefined && { wentWell: cleanList(wentWell) }),
         ...(toImprove !== undefined && { toImprove: cleanList(toImprove) }),
         ...(steps !== undefined && { steps: cleanSteps(steps) }),
+        ...(strengthSteps !== undefined && { strengthSteps: cleanStrengthSteps(strengthSteps) }),
       },
     });
     return toDto(session);

@@ -9,6 +9,7 @@ import type {
   RankingList,
   SessionPhoto,
   SessionType,
+  Sheet,
 } from '@tiralarc/api-client';
 import { getAuthedApi } from './api';
 import type { ExportOptions } from './export-options';
@@ -38,6 +39,10 @@ export interface ExportData {
   rankings: RankingList | null;
   /** The archer's goals, for the season summary (Indicators chapter only). */
   goals: Goal[];
+  /** The Sheets section's binder, every sheet with its text (the Sheets chapter). */
+  binder: Sheet[];
+  /** The technique sheets' photos, by sheet id (only when the photos were asked for). */
+  binderPhotos: Record<string, SessionPhoto[]>;
 }
 
 /** `task` on each item, `PARALLEL` at a time, results in the items' order. */
@@ -56,7 +61,7 @@ export async function getExportData(options: ExportOptions): Promise<ExportData>
   // The Indicators chapter (rankings or indicators asked for) opens on the season summary,
   // which needs the figures and the goals.
   const withStats = options.indicators.length > 0 || options.rankings.length > 0;
-  const [journals, { data: sessions }, { data: customTypes }, stats, rankings, goals] =
+  const [journals, { data: sessions }, { data: customTypes }, stats, rankings, goals, binder] =
     await Promise.all([
       getJournals(),
       api.GET('/api/v1/journal/sessions', { params: { query: range } }),
@@ -68,6 +73,7 @@ export async function getExportData(options: ExportOptions): Promise<ExportData>
         : undefined,
       options.rankings.length > 0 ? api.GET('/api/v1/rankings').then((r) => r.data) : undefined,
       withStats ? api.GET('/api/v1/goals').then((r) => r.data) : undefined,
+      api.GET('/api/v1/sheets/all').then((r) => r.data),
     ]);
 
   const sheeted = options.sheets
@@ -88,6 +94,17 @@ export async function getExportData(options: ExportOptions): Promise<ExportData>
     return session ? { session, photos } : null;
   });
 
+  // The binder's technique sheets' photos, like the events' ones: when the photos were asked for.
+  const pictured = options.photos
+    ? (binder ?? []).filter((sheet) => sheet.category === 'TECHNIQUE')
+    : [];
+  const binderPhotos = await inBatches(pictured, async ({ id }) => {
+    const { data } = await api.GET('/api/v1/sheets/{sheetId}/photos', {
+      params: { path: { sheetId: id } },
+    });
+    return [id, data ?? []] as const;
+  });
+
   return {
     journals,
     sessions: sessions ?? [],
@@ -96,6 +113,8 @@ export async function getExportData(options: ExportOptions): Promise<ExportData>
     stats: stats ?? null,
     rankings: rankings ?? null,
     goals: goals ?? [],
+    binder: binder ?? [],
+    binderPhotos: Object.fromEntries(binderPhotos),
   };
 }
 

@@ -51,6 +51,11 @@ the same API — keep it client-agnostic (no cookies, no web-only assumptions in
   read-only `SessionPhotos` / `GoalsCard`. Deleting the invitation ends the access. A coach sorts their archers into
   named groups of their own (`/coach/groups`, `PUT /coach/athletes/{id}/group`, `GROUP_NAME_TAKEN`; on the link,
   `coachGroupId`, unseen by the archer): sections of the athletes card and of the header's journal menu.
+  "Planifier à nouveau" on a training / coaching sheet the coach sees (any access to it;
+  `components/coach/copy-session.tsx`): a day and archers (WRITE, journal not over; a whole group at once) →
+  `POST /coach/athletes/{id}/sessions/{id}/copy` {date, archerIds} plans the same planning (steps unticked,
+  coach-stamped) in each journal, one result per archer (`error` FORBIDDEN / DATE_NOT_PLANNABLE / DAY_FULL;
+  an archer not theirs = 404, nothing planned).
   Any coach of the archer (READ or WRITE: it changes nothing of the sheet) comments on an event of the current journal
   (table `session_comments`, `/coach/athletes/{id}/sessions/{id}/comments`, one per coach and event, `LIMIT_REACHED`
   (API check only; the web hides the field once written); only its author changes / deletes it, a change makes it new again). The archer reads them
@@ -95,8 +100,8 @@ the same API — keep it client-agnostic (no cookies, no web-only assumptions in
   Done: `home` (archer home page, `HOME_TOUR`), `journal` (Journal page, `JOURNAL_TOUR`: marks in `journal-view.tsx`;
   not started by itself over a `?day=` competitions' dialog), `stats` (Indicators, `STATS_TOUR`: the arrows card and
   its star stand for every chart card, `StatsCard`), `profile` (`PROFILE_TOUR`, one step per card), `sheet` (the
-  event sheet, trainings / coachings / competitions only, `SHEET_TOUR`: `Section tour=`); still to come: the Sheets
-  section (once it has content). Home page, left page, for a new archer: "Pour bien démarrer" (`getting-started.tsx`:
+  event sheet, trainings / coachings / competitions only, `SHEET_TOUR`: `Section tour=`), `sheets` (the Sheets binder,
+  `SHEETS_TOUR`: the binder, its first "+", each part — `data-tour` = the category in lower case). Home page, left page, for a new archer: "Pour bien démarrer" (`getting-started.tsx`:
   profile, first event, coach invited, a month decorated; ticked ones crossed out; there until hidden —
   `getting-started` in `toursSeen`; not in the example journal).
   Existing accounts get each tour on their next visit (`toursSeen` null = none seen).
@@ -202,6 +207,43 @@ the same API — keep it client-agnostic (no cookies, no web-only assumptions in
   optional `discipline` / `distanceMeters`): `progress` (best competition score — a training's score counts however
   many arrows were shot —, or arrows shot since `createdOn`, `goal-progress.ts`, unit-tested) is worked out when the
   goals are read, and a goal whose target was met becomes reached on that day (the card shows a progress bar).
+- Sheets section (`apps/api/src/sheets/`, table `archer_sheets`, `/sheets`): the archer's binder, sheets of four
+  categories (`SheetCategory`: TECHNIQUE, SETTINGS, STRENGTH — reusable programmes, not the STRENGTH events —,
+  MENTAL), each a title + free text (plain, line breaks kept; at most 100 per category, `LIMIT_REACHED`); the list
+  has no texts (`GET /sheets/all` has them, for the PDF). Their coaches read them, any access
+  (`/coach/athletes/{id}/sheets`; web: the coach's Fiches tab, `coachSections`). Web (`components/sheets/`): a ring
+  binder (`sheet-binder.tsx`, brown like the notebooks) holding four half-pages, each its own pastel paper
+  (`data-category` in `sheets.module.css`, light + dark); from tablets up each row's pages hang on two rings through
+  holes near their inner edges (`data-side`; the left page draws them). Each opens on its index (one sheet a ruled
+  line, numbered titles, no dates: those are on the sheet, created / changed; nothing when empty) with "+" in its title's colour
+  (`new-sheet-button.tsx`: a title and, if the category has some, a template — its text previewed —, then the new
+  sheet opens to be written). Templates: table `sheet_templates` (category, `titleFr` / `bodyFr` / `titleEn` / `bodyEn`:
+  both languages in one row, lines to fill in; `position` within the category; `hidden` = not offered), read by
+  archers through `GET /sheets/templates?category&locale` (English for "en…", else French; the account's language
+  by default) and written by the admins (`SheetTemplatesService`; `/admin/sheet-templates`, `@Roles(ADMIN)`: list,
+  create at the category's end, PATCH, `POST {id}/move` UP / DOWN, DELETE — the sheets keep their copied text).
+  Web: `/admin/sheet-templates` (`components/admin/sheet-templates-admin.tsx`: a tab per category, the two languages
+  side by side with previews; "Administration" in the user menu for admins only; anyone else gets a 404).
+  `POST /sheets` takes `templateId` (same category, not hidden, else 404) + `locale` and copies its text;
+  TECHNIQUE sheets only (`PHOTO_CATEGORIES`, API and web) take up to 4 photos (`MAX_PHOTOS_PER_SHEET`, table
+  `sheet_photos`, `SheetPhotosService`, `/sheets/{id}/photos`; files under `<user>/sheets/<sheet>/`, removed with
+  the sheet or the account, in the account's ZIP under `fiches/`; coach: `.../sheets/{id}/photos`; the PDF prints
+  them under the sheet's text when the photos are asked for). Shared image processing: `storage/photo-image.ts`
+  (`processPhoto`, also the events'). Web: the events' polaroids (`SessionPhotos` with `actions`) right of the text; a sheet opens on its own page
+  (`/archer/sheets/[id]`, `sheet-form.tsx`: a loose leaf tinted with its category, saved with the action bar).
+  Strength programmes (`strengthSteps`, JSON on `archer_sheets` and `journal_sessions`, `StrengthStepDto` in
+  `journal/dto/strength.dto.ts`: exercise (catalogue id or null) + name, sets, REPS / SECONDS + amount, load
+  BODYWEIGHT / KG (+ `loadKg`) / BAND_LIGHT|MEDIUM|STRONG, `restSeconds`, note, `done`; at most 30; STRENGTH sheets /
+  events only, else 400): built with the guide (`components/strength/strength-programme.tsx`: an area, an exercise
+  card with its drawing, then one-click suggestions for sets, reps or duration, load, rest; the line as it will
+  read). Catalogue fixed in the web (`lib/strength.ts`, unit-tested; names `strength.exercises.<id>`); drawings
+  `exercise-figure.tsx` (a stick-figure pose per exercise, one window size for all — same scale, the same floor —,
+  equipped by the load: dumbbells, a band in its colour to its anchor); a chosen exercise shows "Comment faire" (its
+  drawing, `strength.howTo.<id>.description`, `.tips` one a line; every exercise has them in both languages, unit-
+  tested). Each exercise of a programme takes two ruled lines: its drawing in a rounded frame, then its text. A STRENGTH event's sheet: "Programme de la séance" (copied from a strength sheet,
+  `from-strength-sheet.tsx`, or built there; ticked from its day on; a coach plans it too), its duration worked out
+  from it (`programmeMinutes`: sets, ~3 s a repetition, rests between sets; read-only then); a strength sheet shows
+  its programme's length by the title; the PDF prints the programme.
 - Event photos: files go to S3-compatible storage through `StorageService` (`apps/api/src/storage/`, a local
   Versity Gateway on :9000 in dev, an in-memory fake in e2e tests); the DB keeps one `SessionPhoto` row, at most 4
   per event (`MAX_PHOTOS_PER_SESSION`, `LIMIT_REACHED`; events that had more keep them). Uploads are
@@ -310,8 +352,8 @@ the same API — keep it client-agnostic (no cookies, no web-only assumptions in
   page even — Chromium ignores `break-before: left`, and only its printing knows the page count (charts lay out
   differently on paper), so `lib/pdf.ts` (`faceSpreads`) prints the parts between months alone, counts their
   pages and shows the blank page before a month when needed; Mon–Thu left, Fri–Sun right, no year), each followed by its month's sheets by
-  day (and photos — the events' sheets), then Fiches: the Sheets section (technique / settings sheets, coming
-  soon: title page only for now; not the events' sheets). Dev: `pnpm --filter @tiralarc/web exec playwright-core install chromium-headless-shell`;
+  day (and photos — the events' sheets), then Fiches: the Sheets section's binder (each part with sheets
+  from a new page, `GET /sheets/all`; not the events' sheets). Dev: `pnpm --filter @tiralarc/web exec playwright-core install chromium-headless-shell`;
   Docker: Alpine's `chromium` (`CHROMIUM_PATH`). `VPS_WITH_2GB_RAM` (web env, small VPS): one extract printed at a time, lighter Chromium flags. `PRINT_BASE_URL` if the server isn't on localhost:`PORT`.
 - Score sheets (`apps/api/src/score-sheets/`, no ianseo API): during the 7 days after a COMPETITION event, once a day
   (`ScoreSheetsService`, hourly timer; `scoreSheetCheckedOn`), for archers practising in France with licence, last and

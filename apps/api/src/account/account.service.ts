@@ -3,6 +3,7 @@ import * as argon2 from 'argon2';
 import { ApiException, ErrorCode } from '../common/errors.js';
 import { PhotosService, photoKeys } from '../journal/photos.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { SheetPhotosService, sheetPhotoKeys } from '../sheets/sheet-photos.service.js';
 import { StorageService } from '../storage/storage.service.js';
 import type { DeleteAccountDto } from './dto/account.dto.js';
 import type { ZipEntry } from './zip.js';
@@ -23,6 +24,7 @@ export class AccountService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly photos: PhotosService,
+    private readonly sheetPhotos: SheetPhotosService,
     private readonly storage: StorageService,
   ) {}
 
@@ -56,9 +58,11 @@ export class AccountService {
       where: { userId },
       select: { id: true, sessionId: true, userId: true },
     });
+    const sheetPhotos = await this.sheetPhotos.find({ userId });
     await this.prisma.user.delete({ where: { id: userId } });
     await this.photos.removeFiles(photos);
-    this.logger.log(`Account ${userId} deleted (${photos.length} photos)`);
+    await this.sheetPhotos.removeFiles(sheetPhotos);
+    this.logger.log(`Account ${userId} deleted (${photos.length + sheetPhotos.length} photos)`);
   }
 
   /**
@@ -77,6 +81,10 @@ export class AccountService {
         journals: { orderBy: { startDate: 'asc' } },
         customEventTypes: { orderBy: { createdAt: 'asc' } },
         goals: { orderBy: { createdOn: 'asc' } },
+        sheets: {
+          orderBy: { createdAt: 'asc' },
+          include: { photos: { orderBy: { createdAt: 'asc' } } },
+        },
         profileInvitations: { orderBy: { createdAt: 'asc' } },
         favoriteSites: true,
         dismissedCompetitions: true,
@@ -103,6 +111,9 @@ export class AccountService {
     const photoPath = (s: { date: Date; id: string }, photoId: string) =>
       `photos/${folder(s)}/${photoId}.webp`;
     const sheetPath = (s: { date: Date; id: string }) => `feuilles-de-marque/${folder(s)}.pdf`;
+    // The binder's technique sheets' photos, by sheet.
+    const binderPhotoPath = (sheetId: string, photoId: string) =>
+      `fiches/${sheetId}/${photoId}.webp`;
 
     const data = {
       exportedAt: now.toISOString(),
@@ -149,6 +160,15 @@ export class AccountService {
         createdOn: day(g.createdOn),
         achievedOn: day(g.achievedOn),
       })),
+      sheets: user.sheets.map((sheet) => ({
+        category: sheet.category,
+        title: sheet.title,
+        body: sheet.body,
+        strengthSteps: sheet.strengthSteps,
+        createdAt: sheet.createdAt,
+        updatedAt: sheet.updatedAt,
+        photos: sheet.photos.map((p) => binderPhotoPath(sheet.id, p.id)),
+      })),
       invitations: user.profileInvitations.map((i) => ({
         name: i.name,
         email: i.email,
@@ -191,6 +211,16 @@ export class AccountService {
         const sheet = await this.prisma.scoreSheet.findUnique({ where: { sessionId: session.id } });
         if (sheet) {
           yield { name: sheetPath(session), data: sheet.pdf, date: sheet.createdAt };
+        }
+      }
+    }
+    for (const sheet of user.sheets) {
+      for (const photo of sheet.photos) {
+        try {
+          const image = await this.storage.get(sheetPhotoKeys(photo).image);
+          yield { name: binderPhotoPath(sheet.id, photo.id), data: image, date: photo.createdAt };
+        } catch (error) {
+          this.logger.warn(`Sheet photo ${photo.id} not exported: ${String(error)}`);
         }
       }
     }

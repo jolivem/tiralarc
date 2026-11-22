@@ -8,7 +8,8 @@ import { SessionPhotos } from '@/components/journal/session-photos';
 import { SESSION_TYPES } from '@/components/journal/session-types';
 import type { Locale } from '@/i18n/routing';
 import { getAuthedApi } from '@/lib/api';
-import { getAthlete } from '@/lib/coaching';
+import type { CopyTarget } from '@/components/coach/copy-session';
+import { getAthlete, getAthletes } from '@/lib/coaching';
 import { getCurrentUser } from '@/lib/current-user';
 
 const EMPTY_SUGGESTIONS = { locations: [], distances: [], wentWell: [], toImprove: [] };
@@ -28,6 +29,7 @@ export default async function CoachSessionPage({
   const api = await getAuthedApi();
   const path = { archerId, id };
   const [
+    athletes,
     athlete,
     user,
     { data: session },
@@ -35,6 +37,7 @@ export default async function CoachSessionPage({
     { data: photos },
     { data: comments },
   ] = await Promise.all([
+    getAthletes(),
     getAthlete(archerId),
     getCurrentUser(),
     api.GET('/api/v1/coach/athletes/{archerId}/sessions/{id}', { params: { path } }),
@@ -52,6 +55,14 @@ export default async function CoachSessionPage({
   const today = new Date().toISOString().slice(0, 10);
   const canEdit =
     athlete.access === 'WRITE' && session.plannedBy?.id === user.id && session.date > today;
+  // A training / coaching can be planned again for the archers whose journal the coach plans in
+  // (this one or others): WRITE access, a journal of the season in progress not over yet.
+  const copyTargets: CopyTarget[] = athletes.flatMap(
+    ({ id: archer, name, access, journal, group }) =>
+      access === 'WRITE' && journal && journal.endDate > today
+        ? [{ id: archer, name, group, lastDay: journal.endDate }]
+        : [],
+  );
 
   const title = (
     <Group gap="sm" wrap="nowrap" align="center" h="calc(var(--step) * 2)">
@@ -69,7 +80,7 @@ export default async function CoachSessionPage({
         suggestions={suggestions ?? EMPTY_SUGGESTIONS}
         disciplines={athlete.disciplines}
         title={title}
-        coach={{ archerId, canEdit, lastDay: athlete.journal.endDate }}
+        coach={{ archerId, canEdit, lastDay: athlete.journal.endDate, copyTargets }}
         comments={comments ?? []}
       >
         {withPhotos && <SessionPhotos sessionId={session.id} photos={photos ?? []} readOnly />}

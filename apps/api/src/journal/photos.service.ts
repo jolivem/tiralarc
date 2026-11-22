@@ -1,20 +1,14 @@
 import { randomUUID } from 'node:crypto';
 import { HttpStatus, Injectable, Logger, NotFoundException } from '@nestjs/common';
-import sharp from 'sharp';
 import { ApiException, ErrorCode } from '../common/errors.js';
 import type { SessionPhoto } from '../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { MAX_PHOTO_BYTES, processPhoto, SIGNED_URL_TTL_SECONDS } from '../storage/photo-image.js';
 import { StorageService } from '../storage/storage.service.js';
 import type { PhotoDto } from './dto/journal.dto.js';
 
 export const MAX_PHOTOS_PER_SESSION = 4;
-export const MAX_PHOTO_BYTES = 10 * 1024 * 1024;
-const ACCEPTED_FORMATS = ['jpeg', 'png', 'webp'];
-/** Longest side, in pixels, of the stored image and of its thumbnail. The original is not kept. */
-const IMAGE_SIZE = 2000;
-const THUMBNAIL_SIZE = 400;
-const SIGNED_URL_TTL_SECONDS = 600;
-
+export { MAX_PHOTO_BYTES };
 type PhotoRef = Pick<SessionPhoto, 'id' | 'sessionId' | 'userId'>;
 
 /** Where a photo's two files live: grouped by owner, then by event. */
@@ -24,13 +18,6 @@ export function photoKeys(photo: PhotoRef): { image: string; thumbnail: string }
 }
 
 const allKeys = (photos: PhotoRef[]) => photos.flatMap((photo) => Object.values(photoKeys(photo)));
-
-const invalidImage = () =>
-  new ApiException(
-    HttpStatus.BAD_REQUEST,
-    ErrorCode.INVALID_IMAGE,
-    'Expected a JPEG, PNG or WebP image',
-  );
 
 /** Photos attached to journal events. Private: scoped to the owner, read through signed URLs. */
 @Injectable()
@@ -54,7 +41,6 @@ export class PhotosService {
   /** Re-encodes the upload (which also drops its metadata, GPS position included) and stores it. */
   async add(userId: string, sessionId: string, file: Buffer | undefined): Promise<PhotoDto> {
     await this.assertOwnedSession(userId, sessionId);
-    if (!file?.length) throw invalidImage();
     if (
       (await this.prisma.sessionPhoto.count({ where: { sessionId } })) >= MAX_PHOTOS_PER_SESSION
     ) {
@@ -65,21 +51,7 @@ export class PhotosService {
       );
     }
 
-    const resize = (size: number, quality: number) =>
-      sharp(file)
-        .rotate() // apply the camera orientation before it is dropped with the metadata
-        .resize({ width: size, height: size, fit: 'inside', withoutEnlargement: true })
-        .webp({ quality })
-        .toBuffer({ resolveWithObject: true });
-    let image: Awaited<ReturnType<typeof resize>>;
-    let thumbnail: Awaited<ReturnType<typeof resize>>;
-    try {
-      const { format } = await sharp(file).metadata();
-      if (!format || !ACCEPTED_FORMATS.includes(format)) throw invalidImage();
-      [image, thumbnail] = await Promise.all([resize(IMAGE_SIZE, 82), resize(THUMBNAIL_SIZE, 75)]);
-    } catch {
-      throw invalidImage();
-    }
+    const { image, thumbnail } = await processPhoto(file);
 
     const ref = { id: randomUUID(), sessionId, userId };
     const keys = photoKeys(ref);

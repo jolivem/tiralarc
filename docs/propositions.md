@@ -47,12 +47,20 @@ et une estimation de l'effort (S = quelques heures, M = une journée, L = plusie
 7. **Modèles de séance** — Enregistrer un déroulé comme modèle (« Technique 18 m », « Préparation
    concours ») et l'appliquer en un clic à une nouvelle séance. Utile aussi au coach, qui pourrait
    partager les siens avec ses archers. _(M)_
-8. **Fiche de renforcement musculaire** — Le formulaire est annoncé « bientôt disponible » : exercices,
-   séries, répétitions, charge ou durée, avec la même liste à cocher que le déroulé des séances. _(M)_
-9. **Rubrique Fiches (technique et réglages)** — La rubrique n'a encore qu'une page de titre.
+8. ~~**Fiche de renforcement musculaire** — Le formulaire est annoncé « bientôt disponible » : exercices,
+   séries, répétitions, charge ou durée, avec la même liste à cocher que le déroulé des séances. _(M)_~~
+   **Fait** : un guide construit chaque exercice en quelques clics (zone, exercice illustré, séries,
+   répétitions ou durée, charge, repos), sur les fiches Renfo du classeur et sur les séances Renfo du
+   journal, qui peuvent reprendre une fiche et cocher chaque exercice fait ; la durée de la séance se
+   calcule d'après le programme.
+9. ~~**Rubrique Fiches (technique et réglages)** — La rubrique n'a encore qu'une page de titre.
    Proposer deux sortes de fiches : les réglages du matériel (puissance, allonge, band, repères du
    viseur par distance, flèches) et des mémos techniques (consignes, points de vigilance), datées
-   pour garder l'historique d'un réglage. Elles ont déjà leur chapitre dans l'extrait PDF. _(L)_
+   pour garder l'historique d'un réglage. Elles ont déjà leur chapitre dans l'extrait PDF. _(L)_~~
+   **Fait** : un classeur en quatre demi-pages pastel (Technique, Réglages, Renfo, Préparation
+   mentale), chacune avec son index et un « + » ; une fiche = un titre et un texte libre, datée de sa
+   dernière modification, sur sa propre feuille. Le coach les lit ; elles remplissent le chapitre
+   « Fiches » de l'extrait PDF. Pas encore de champs structurés (repères du viseur par distance…).
 10. **Saisie volée par volée** — Noter les volées (ex. 10 × 3 flèches) avec un clavier de valeurs
     (X, 10, 9… M) : score et nombre de flèches se calculent seuls, et la moyenne par flèche devient
     plus précise. _(L)_
@@ -88,8 +96,13 @@ et une estimation de l'effort (S = quelques heures, M = une journée, L = plusie
     **Fait** : carte « Emails » de la page Profil pour le désactiver.
 17. **Tableau de bord du coach** — Tous ses archers sur une page : dernière séance, séances proposées
     à venir, bilans en retard, aucune séance depuis 10 jours. _(M)_
-18. **Planifier pour un groupe** — Les groupes existent : proposer la même séance à tous les archers
-    d'un groupe en une fois. _(M)_
+18. ~~**Planifier pour un groupe** — Les groupes existent : proposer la même séance à tous les archers
+    d'un groupe en une fois. _(M)_~~
+    **Fait** : « Planifier à nouveau » sur la fiche d'un entraînement ou d'un cours vue par le coach :
+    il choisit le jour et les archers (un par un, ou tout un groupe d'un clic ; ceux dont il n'a
+    qu'un accès en lecture ne sont pas proposés). Chacun reçoit une séance proposée par le coach,
+    avec le même programme ; la fenêtre dit ensuite pour qui c'est fait, et pourquoi pas pour les
+    autres (journal terminé avant ce jour, jour déjà complet).
 
 ## Compétitions
 

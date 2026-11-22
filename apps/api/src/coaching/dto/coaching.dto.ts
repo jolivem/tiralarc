@@ -1,5 +1,9 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
+  ArrayMaxSize,
+  ArrayMinSize,
+  ArrayUnique,
+  IsArray,
   IsIn,
   IsInt,
   IsOptional,
@@ -12,6 +16,7 @@ import {
 } from 'class-validator';
 import { CoachAccess, Discipline, SessionType } from '../../generated/prisma/client.js';
 import { JournalDto, SessionStepDto, StepsProperty } from '../../journal/dto/journal.dto.js';
+import { StrengthStepDto, StrengthStepsProperty } from '../../journal/dto/strength.dto.js';
 import { COACH_ACCESSES } from '../../profile/dto/profile.dto.js';
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
@@ -127,6 +132,9 @@ class PlanningFields {
 
   @StepsProperty('Trainings and coachings: the steps of the session, in order (replaces them).')
   steps?: SessionStepDto[];
+
+  @StrengthStepsProperty('STRENGTH sessions: their programme, in order (replaces it).')
+  strengthSteps?: StrengthStepDto[];
 }
 
 export class PlanSessionDto extends PlanningFields {
@@ -150,6 +158,63 @@ export class PlanSessionDto extends PlanningFields {
   @IsOptional()
   @Matches(/^\d{1,20}$/, { message: 'fftaCompetitionId must be a number' })
   fftaCompetitionId?: string;
+}
+
+/** At most this many archers per copy (`POST .../sessions/{id}/copy`). */
+export const MAX_COPY_ARCHERS = 100;
+
+/** POST body of `/coach/athletes/{archerId}/sessions/{id}/copy`. */
+export class CopyToAthletesDto {
+  @ApiProperty({
+    example: '2026-11-03',
+    description: "A day after today, within each archer's journal of the season in progress.",
+  })
+  @Matches(DATE, { message: 'date must be YYYY-MM-DD' })
+  date!: string;
+
+  @ApiProperty({
+    type: String,
+    format: 'uuid',
+    isArray: true,
+    minItems: 1,
+    maxItems: MAX_COPY_ARCHERS,
+    description:
+      'The archers who get the session (yours, WRITE access): the one whose sheet it is, others, ' +
+      'or both.',
+  })
+  @IsArray()
+  @ArrayMinSize(1)
+  @ArrayMaxSize(MAX_COPY_ARCHERS)
+  @ArrayUnique()
+  @IsUUID('all', { each: true })
+  archerIds!: string[];
+}
+
+/** What a copy did in one archer's journal: the new event, or why there is none. */
+export class CopiedSessionDto {
+  @ApiProperty({ format: 'uuid' })
+  archerId!: string;
+
+  @ApiProperty({ description: 'Display name, or email.' })
+  name!: string;
+
+  @ApiProperty({
+    type: String,
+    format: 'uuid',
+    nullable: true,
+    description: 'The event planned in their journal; null when it could not be.',
+  })
+  sessionId!: string | null;
+
+  @ApiProperty({
+    type: String,
+    nullable: true,
+    enum: ['FORBIDDEN', 'DATE_NOT_PLANNABLE', 'DAY_FULL'],
+    description:
+      'Why nothing was planned: FORBIDDEN (read-only access), DATE_NOT_PLANNABLE (no journal of ' +
+      'the season in progress covering the day), DAY_FULL. Null when planned.',
+  })
+  error!: 'FORBIDDEN' | 'DATE_NOT_PLANNABLE' | 'DAY_FULL' | null;
 }
 
 /** PATCH body: every field optional; `null` clears a field. */

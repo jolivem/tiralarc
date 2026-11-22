@@ -20,6 +20,7 @@
     "toggleColorScheme": "Changer le thème clair / sombre",
     "account": "Mon compte",
     "userMenu": "Menu utilisateur",
+    "admin": "Administration",
     "archerSection": "Espace archer",
     "mainNavigation": "Navigation principale",
     "tour": "Revoir la visite guidée de cette page",
@@ -144,6 +145,36 @@
       "all": {
         "title": "Tous vos indicateurs",
         "body": "Ensemble des indicateurs à votre disposition."
+      }
+    },
+    "sheets": {
+      "welcome": {
+        "title": "Votre classeur de fiches",
+        "body": "Ici, vous gardez ce qui ne change pas d'une séance à l'autre : votre technique, vos réglages, vos programmes de renfo et votre préparation mentale. Petite visite ?"
+      },
+      "binder": {
+        "title": "Quatre parties",
+        "body": "Le classeur a quatre demi-pages, chacune avec sa couleur. Chacune commence par l'index de ses fiches : un clic sur un titre ouvre la fiche."
+      },
+      "add": {
+        "title": "Ajouter une fiche",
+        "body": "Le « + » de chaque partie crée une fiche : un titre, et si vous voulez un modèle tout prêt (« Ma corde », « Mes flèches »…) dont vous voyez l'aperçu. La fiche s'ouvre ensuite pour être complétée."
+      },
+      "technique": {
+        "title": "Technique",
+        "body": "Vos points de technique, consignes et éducatifs. Ces fiches peuvent aussi garder jusqu'à 4 photos : une posture, un ancrage, un exercice."
+      },
+      "settings": {
+        "title": "Réglages",
+        "body": "Votre arc, vos flèches, votre corde, vos repères de viseur : notez-les pour retrouver un réglage qui marchait."
+      },
+      "strength": {
+        "title": "Renfo",
+        "body": "Construisez vos séances de renforcement en quelques clics : l'exercice, les séries, les répétitions ou la durée, la charge et le repos. Une séance Renfo du journal peut ensuite reprendre ce programme et cocher chaque exercice fait."
+      },
+      "mental": {
+        "title": "Préparation mentale",
+        "body": "Votre routine de tir, vos phrases-clés, votre préparation d'un concours : à relire avant de tirer."
       }
     },
     "profile": {
@@ -451,7 +482,7 @@
     "close": "Fermer",
     "sections": "Mes rubriques",
     "journalIntro": "Vos séances d'entraînement et compétitions : date, distance, nombre de flèches, scores, ressenti.",
-    "sheetsIntro": "Vos fiches techniques et mémos : points de technique, consignes, notes personnelles.",
+    "sheetsIntro": "Votre classeur de fiches : technique, réglages, renfo et préparation mentale.",
     "statsIntro": "Votre progression en chiffres : volume de flèches, scores, régularité.",
     "profileIntro": "Votre licence, votre catégorie, votre arme et vos disciplines, et vos personnes invitées.",
     "comingSoon": "Bientôt disponible",
@@ -632,6 +663,22 @@
       "confirm": "Créer la séance",
       "saveFirst": "Enregistrez d'abord vos modifications"
     },
+    "coachAgain": {
+      "button": "Planifier à nouveau",
+      "hint": "Proposer la même séance un autre jour, à cet archer ou à d'autres.",
+      "title": "Planifier à nouveau cette séance",
+      "body": "Chaque archer choisi trouvera dans son journal une séance proposée par vous, avec la même durée, le même lieu, la même discipline, la même distance, le même objectif et le même déroulé.",
+      "date": "Jour de la séance",
+      "archers": "Archers qui la recevront",
+      "noGroup": "Sans groupe",
+      "wholeGroup": "Tout le groupe {name}",
+      "journalEnds": "Son journal se termine le {date}",
+      "cancel": "Annuler",
+      "confirm": "{count, plural, =0 {Planifier} one {Planifier pour # archer} other {Planifier pour # archers}}",
+      "failed": "{name} : {reason}",
+      "close": "Fermer",
+      "saveFirst": "Enregistrez d'abord vos modifications"
+    },
     "steps": {
       "add": "Ajouter une étape",
       "edit": "Modifier cette étape",
@@ -693,7 +740,8 @@
       "name": "Titre",
       "deleteBody": "Les événements déjà notés avec ce type sont conservés : ils deviennent des événements « Divers » avec le même titre, la même couleur et le même pictogramme."
     },
-    "strengthComing": "Le formulaire du renforcement musculaire arrive bientôt. Vous pouvez déjà placer la séance dans le calendrier.",
+    "strengthProgramme": "Programme de la séance",
+    "durationFromProgramme": "Calculée d'après le programme : séries, environ 3 s par répétition, repos entre les séries.",
     "allDay": "Journée",
     "note": "Texte libre",
     "customDescription": "Description",
@@ -735,7 +783,7 @@
     "photos": {
       "title": "Photos",
       "count": "{count} / {max}",
-      "empty": "Aucune photo pour cet événement.",
+      "empty": "Aucune photo pour l'instant : cliquez pour en ajouter.",
       "add": "Ajouter des photos",
       "hint": "JPEG, PNG ou WebP, 10 Mo au plus par photo.\nLes photos sont redimensionnées et restent privées.",
       "locked": "Événement à venir : les photos s'ajouteront à partir du jour de l'événement.",
@@ -1098,6 +1146,308 @@
       "signIn": "Se connecter",
       "register": "Créer un compte"
     }
+  },
+  "admin": {
+    "templates": {
+      "title": "Modèles de fiche",
+      "intro": "Les fiches toutes prêtes que « + » propose dans le classeur, chacune en français et en anglais. Une fiche masquée n'est pas proposée aux archers.",
+      "new": "Nouveau modèle",
+      "none": "Aucun modèle dans cette catégorie.",
+      "hidden": "Masqué",
+      "up": "Monter",
+      "down": "Descendre",
+      "show": "Proposer aux archers",
+      "hide": "Masquer aux archers",
+      "edit": "Modifier",
+      "delete": "Supprimer",
+      "deleteTitle": "Supprimer ce modèle ?",
+      "deleteBody": "Le modèle « {title} » ne sera plus proposé. Les fiches déjà créées à partir de lui gardent leur texte.",
+      "cancel": "Annuler",
+      "save": "Enregistrer",
+      "newTitle": "Nouveau modèle de fiche",
+      "editTitle": "Modifier le modèle",
+      "category": "Catégorie",
+      "hiddenSwitch": "Masqué (pas encore proposé)",
+      "languageFr": "Français",
+      "languageEn": "Anglais",
+      "templateTitle": "Titre",
+      "body": "Texte",
+      "bodyHint": "Des lignes à compléter, par exemple « Band : ».",
+      "preview": "Aperçu, tel que l'archer le voit en choisissant le modèle :"
+    }
+  },
+  "strength": {
+    "programme": "Programme de la séance",
+    "empty": "Aucun exercice : « Ajouter un exercice » pour construire la séance.",
+    "add": "Ajouter un exercice",
+    "addOne": "Ajouter",
+    "edit": "Modifier cet exercice",
+    "newTitle": "Nouvel exercice",
+    "editTitle": "Modifier l'exercice",
+    "exercise": "Exercice",
+    "otherExercise": "Ou un autre exercice : tapez son nom",
+    "sets": "Séries",
+    "reps": "Répétitions par série",
+    "duration": "Durée par série",
+    "measures": { "REPS": "Répétitions", "SECONDS": "Durée" },
+    "load": "Charge",
+    "loads": {
+      "BODYWEIGHT": "Poids du corps",
+      "KG": "Haltère / poids",
+      "BAND_LIGHT": "Élastique léger",
+      "BAND_MEDIUM": "Élastique moyen",
+      "BAND_STRONG": "Élastique fort"
+    },
+    "weight": "Poids",
+    "kg": "{kg} kg",
+    "rest": "Repos entre deux séries",
+    "noRest": "Sans repos indiqué",
+    "restShort": "repos {rest}",
+    "note": "Note (consigne, côté, tempo…)",
+    "summary": "Sur la fiche :",
+    "delete": "Retirer l'exercice",
+    "cancel": "Annuler",
+    "save": "Enregistrer",
+    "moveUp": "Monter l'exercice {step}",
+    "moveDown": "Descendre l'exercice {step}",
+    "done": "Exercice {step} fait",
+    "doneMark": "Fait",
+    "fromSheet": "Reprendre une fiche Renfo",
+    "fromSheetHint": "Le programme de la fiche remplace celui de la séance.",
+    "noSheet": "Aucune fiche Renfo dans votre classeur",
+    "zones": {
+      "CORE": "Gainage",
+      "SHOULDERS": "Épaules",
+      "BACK": "Dos",
+      "ARMS": "Bras",
+      "LEGS": "Jambes",
+      "ARCHERY": "Spécifique arc"
+    },
+    "exercises": {
+      "PLANK_FRONT": "Gainage face",
+      "PLANK_SIDE": "Gainage latéral",
+      "DEAD_BUG": "Dead bug",
+      "BIRD_DOG": "Bird dog (quadrupédie)",
+      "CRUNCH": "Crunch",
+      "SUPERMAN": "Superman",
+      "PALLOF_PRESS": "Pallof press (anti-rotation)",
+      "EXTERNAL_ROTATION": "Rotations externes",
+      "INTERNAL_ROTATION": "Rotations internes",
+      "LATERAL_RAISE": "Élévations latérales",
+      "FRONT_RAISE": "Élévations frontales",
+      "FACE_PULL": "Face pull",
+      "Y_T_W": "Y-T-W au sol",
+      "SHOULDER_PRESS": "Développé épaules",
+      "BAND_ROW": "Tirage horizontal à l'élastique",
+      "DUMBBELL_ROW": "Rowing haltère",
+      "BAND_PULL_APART": "Écartés d'élastique",
+      "REVERSE_FLY": "Oiseau (écartés inversés)",
+      "PULL_UP": "Tractions",
+      "PUSH_UP": "Pompes",
+      "TRICEPS_DIP": "Dips triceps",
+      "BICEPS_CURL": "Curl biceps",
+      "WRIST_CURL": "Flexions de poignet",
+      "FARMER_CARRY": "Marche du fermier",
+      "SQUAT": "Squat",
+      "LUNGE": "Fentes",
+      "WALL_SIT": "Chaise contre le mur",
+      "CALF_RAISE": "Montées sur pointes",
+      "GLUTE_BRIDGE": "Pont fessier",
+      "SINGLE_LEG_BALANCE": "Équilibre sur une jambe",
+      "ANCHOR_HOLD": "Tenue à l'ancrage",
+      "BAND_DRAW": "Armement à l'élastique",
+      "SCAPULAR_SETTING": "Placement des omoplates",
+      "BOW_ARM_HOLD": "Tenue bras d'arc tendu"
+    },
+    "howToTitle": "Comment faire",
+    "tipsTitle": "Pour bien le faire",
+    "howTo": {
+      "PLANK_FRONT": {
+        "description": "En appui sur les avant-bras et la pointe des pieds, le corps tendu comme une planche.",
+        "tips": "Coudes sous les épaules.\nBassin aligné : ni creusé, ni en l'air.\nRentrez le nombril et respirez calmement."
+      },
+      "PLANK_SIDE": {
+        "description": "Sur le côté, en appui sur un avant-bras et le bord du pied, le corps aligné.",
+        "tips": "Coude sous l'épaule.\nPoussez la hanche vers le haut, sans la laisser tomber.\nFaites les deux côtés."
+      },
+      "DEAD_BUG": {
+        "description": "Sur le dos, bras tendus vers le plafond, genoux à 90° : on allonge en même temps un bras et la jambe opposée.",
+        "tips": "Le bas du dos reste collé au sol.\nMouvement lent, en expirant quand on allonge.\nAlternez les côtés."
+      },
+      "BIRD_DOG": {
+        "description": "À quatre pattes, on tend un bras devant et la jambe opposée derrière, puis on revient.",
+        "tips": "Le dos reste plat, comme une table.\nRegard vers le sol, nuque dans l'alignement.\nTenez une seconde en extension."
+      },
+      "CRUNCH": {
+        "description": "Sur le dos, genoux pliés, on enroule le haut du dos pour décoller les épaules du sol.",
+        "tips": "On ne tire pas sur la nuque.\nLe bas du dos reste au sol.\nExpirez en montant, redescendez lentement."
+      },
+      "SUPERMAN": {
+        "description": "Allongé sur le ventre, on décolle en même temps les bras tendus et les jambes.",
+        "tips": "Montez sans à-coup, juste de quelques centimètres.\nRegard vers le sol.\nSerrez les fessiers."
+      },
+      "PALLOF_PRESS": {
+        "description": "De profil à l'accroche de l'élastique, mains à la poitrine, on tend les bras devant soi sans se laisser tourner.",
+        "tips": "Le buste reste face à l'avant : on résiste à la rotation.\nPieds à largeur de bassin, genoux souples.\nFaites les deux côtés."
+      },
+      "EXTERNAL_ROTATION": {
+        "description": "Coude collé au corps et plié à 90°, on écarte l'avant-bras vers l'extérieur.",
+        "tips": "Le coude ne quitte pas le flanc (une serviette roulée aide).\nMouvement lent, sans hausser l'épaule.\nCharge légère : c'est un muscle de stabilité."
+      },
+      "INTERNAL_ROTATION": {
+        "description": "Coude collé au corps et plié à 90°, on ramène l'avant-bras vers le ventre.",
+        "tips": "Le coude reste contre le flanc.\nGardez l'épaule basse.\nRetour lent vers l'extérieur."
+      },
+      "LATERAL_RAISE": {
+        "description": "Debout, bras le long du corps, on lève les bras sur les côtés jusqu'à l'horizontale.",
+        "tips": "Coudes légèrement fléchis.\nPas plus haut que les épaules.\nDescendez lentement, sans balancer le corps."
+      },
+      "FRONT_RAISE": {
+        "description": "Debout, on lève les bras tendus devant soi jusqu'à hauteur des épaules.",
+        "tips": "Gardez le dos droit, sans vous pencher en arrière.\nPas d'élan.\nDescente contrôlée."
+      },
+      "FACE_PULL": {
+        "description": "Face à l'accroche placée en hauteur, on tire l'élastique vers le visage en écartant les coudes.",
+        "tips": "Coudes hauts, à hauteur d'épaules.\nRapprochez les omoplates en fin de mouvement.\nNe cambrez pas le dos."
+      },
+      "Y_T_W": {
+        "description": "Allongé sur le ventre, on décolle les bras en formant successivement un Y, un T puis un W.",
+        "tips": "Pouces vers le plafond.\nRapprochez les omoplates à chaque position.\nPetits mouvements lents, sans charge au début."
+      },
+      "SHOULDER_PRESS": {
+        "description": "Debout ou assis, mains à hauteur d'épaules, on pousse vers le haut jusqu'à bras tendus.",
+        "tips": "Gainez le ventre, ne cambrez pas.\nPoussez dans l'axe, au-dessus de la tête.\nRedescendez jusqu'aux épaules, lentement."
+      },
+      "BAND_ROW": {
+        "description": "Face à l'accroche, on tire l'élastique vers le bas des côtes, coudes le long du corps.",
+        "tips": "Commencez en rapprochant les omoplates.\nÉpaules basses, loin des oreilles.\nRetour lent, bras presque tendus."
+      },
+      "DUMBBELL_ROW": {
+        "description": "Une main et un genou sur un banc, dos plat, on tire l'haltère vers la hanche.",
+        "tips": "Le dos reste plat et immobile.\nTirez avec le dos : le coude passe près du corps.\nFaites les deux côtés."
+      },
+      "BAND_PULL_APART": {
+        "description": "Bras tendus devant soi, l'élastique entre les mains, on l'écarte jusqu'à la poitrine.",
+        "tips": "Rapprochez les omoplates.\nBras tendus, épaules basses.\nRetour contrôlé."
+      },
+      "REVERSE_FLY": {
+        "description": "Penché en avant, dos plat, on écarte les bras sur les côtés.",
+        "tips": "Coudes légèrement fléchis.\nCharge légère : ce sont les muscles de l'arrière de l'épaule.\nPas d'élan, dos immobile."
+      },
+      "PULL_UP": {
+        "description": "Suspendu à une barre, on se hisse jusqu'à ce que le menton passe la barre.",
+        "tips": "Commencez en abaissant les épaules.\nSans balancer les jambes.\nRedescendez jusqu'aux bras presque tendus. Un élastique aide au début."
+      },
+      "PUSH_UP": {
+        "description": "En appui sur les mains et les pieds, corps gainé, on descend la poitrine vers le sol puis on remonte.",
+        "tips": "Mains un peu plus larges que les épaules.\nLe corps reste droit, bassin compris.\nSur les genoux pour commencer."
+      },
+      "TRICEPS_DIP": {
+        "description": "Mains sur le bord d'un banc derrière soi, on plie les coudes pour descendre puis on remonte.",
+        "tips": "Coudes vers l'arrière, pas sur les côtés.\nDos près du banc.\nNe descendez pas plus bas que les coudes à 90°."
+      },
+      "BICEPS_CURL": {
+        "description": "Debout, bras le long du corps, on plie les coudes pour monter les mains vers les épaules.",
+        "tips": "Les coudes restent collés au corps.\nPas d'élan avec le dos.\nDescente lente."
+      },
+      "WRIST_CURL": {
+        "description": "Avant-bras posé, poignet dans le vide, on fléchit et on étend le poignet.",
+        "tips": "Seul le poignet bouge.\nCharge légère, mouvement complet.\nUtile pour la main d'arc et la main de corde."
+      },
+      "FARMER_CARRY": {
+        "description": "Une charge dans chaque main, on marche, debout et gainé.",
+        "tips": "Épaules basses et en arrière.\nPetits pas, le corps reste droit.\nSerrez bien les poignées."
+      },
+      "SQUAT": {
+        "description": "Pieds à largeur d'épaules, on fléchit les jambes comme pour s'asseoir, puis on se relève.",
+        "tips": "Le poids sur les talons.\nGenoux dans l'axe des pieds.\nDos droit, poitrine ouverte."
+      },
+      "LUNGE": {
+        "description": "Un grand pas en avant, on descend le genou arrière vers le sol, puis on revient.",
+        "tips": "Le genou avant reste au-dessus de la cheville.\nBuste droit.\nAlternez les jambes."
+      },
+      "WALL_SIT": {
+        "description": "Dos contre un mur, on descend jusqu'aux cuisses à l'horizontale et on tient.",
+        "tips": "Genoux à 90°, au-dessus des chevilles.\nTout le dos contre le mur.\nRespirez calmement."
+      },
+      "CALF_RAISE": {
+        "description": "Debout, on monte sur la pointe des pieds puis on redescend.",
+        "tips": "Montez le plus haut possible.\nDescente lente.\nSur une marche pour plus d'amplitude."
+      },
+      "GLUTE_BRIDGE": {
+        "description": "Sur le dos, genoux pliés, on monte le bassin jusqu'à aligner épaules, hanches et genoux.",
+        "tips": "Poussez dans les talons.\nSerrez les fessiers en haut.\nSans cambrer le bas du dos."
+      },
+      "SINGLE_LEG_BALANCE": {
+        "description": "Debout sur une jambe, l'autre genou levé, on tient l'équilibre.",
+        "tips": "Fixez un point devant vous.\nGenou d'appui légèrement fléchi.\nPlus dur les yeux fermés ou sur un coussin."
+      },
+      "ANCHOR_HOLD": {
+        "description": "Avec un arc léger ou un élastique, on arme jusqu'à l'ancrage et on tient la position.",
+        "tips": "Gardez votre posture de tir : épaules basses, alignement.\nTenez avec le dos, pas avec le bras.\nArc plus léger que votre arc de tir."
+      },
+      "BAND_DRAW": {
+        "description": "Avec un élastique, on reproduit l'armement jusqu'à l'ancrage, puis on relâche lentement.",
+        "tips": "Le même geste qu'au pas de tir.\nOmoplates qui se rapprochent pendant l'armement.\nRetour contrôlé, sans lâcher l'élastique."
+      },
+      "SCAPULAR_SETTING": {
+        "description": "Bras tendus devant soi, on rapproche puis on écarte les omoplates, sans plier les coudes.",
+        "tips": "Seules les omoplates bougent.\nÉpaules basses.\nMouvement lent : c'est le placement de l'armement."
+      },
+      "BOW_ARM_HOLD": {
+        "description": "Bras d'arc tendu devant soi à hauteur d'épaule, on tient la position, avec un poids léger ou un élastique.",
+        "tips": "Épaule basse, poussée vers la cible.\nCoude légèrement tourné vers l'extérieur.\nCharge légère, tenue longue."
+      }
+    }
+  },
+  "sheets": {
+    "binder": "Classeur de fiches",
+    "categories": {
+      "TECHNIQUE": {
+        "name": "Technique",
+        "intro": "Points technique, consignes."
+      },
+      "SETTINGS": {
+        "name": "Réglages",
+        "intro": "Arc, viseur, flèches : vos repères et leur historique."
+      },
+      "STRENGTH": {
+        "name": "Renfo",
+        "intro": "Vos séances de renforcement : exercices, séries, charges."
+      },
+      "MENTAL": {
+        "name": "Préparation mentale",
+        "intro": "Routines, visualisation, phrases-clés avant un concours."
+      }
+    },
+    "noneCoach": "Aucune fiche pour l'instant.",
+    "coachIntro": "Le classeur de fiches de votre archer, en lecture seule.",
+    "add": "Ajouter une fiche {category}",
+    "newTitle": "Nouvelle fiche · {category}",
+    "template": "Partir d'un modèle",
+    "templateHint": "Une fiche toute prête à compléter, que vous pourrez modifier.",
+    "blank": "Fiche vierge",
+    "preview": "Aperçu : la fiche commencera par ce texte, à compléter.",
+    "title": "Titre",
+    "body": "Contenu de la fiche",
+    "create": "Ajouter la fiche",
+    "cancel": "Annuler",
+    "save": "Enregistrer",
+    "saved": "Fiche enregistrée.",
+    "close": "Fermer",
+    "delete": "Supprimer",
+    "deleteTitle": "Supprimer cette fiche ?",
+    "deleteBody": "La fiche « {title} » sera supprimée définitivement.",
+    "leaveTitle": "Modifications non enregistrées",
+    "leaveBody": "Quitter la fiche sans enregistrer vos modifications ?",
+    "stay": "Rester",
+    "leave": "Quitter sans enregistrer",
+    "readOnly": "Fiche de votre archer, en lecture seule",
+    "programme": "Programme de renfo",
+    "programmeLength": "Programme de renfo · environ {minutes} min",
+    "notes": "Notes",
+    "created": "créée le {date}",
+    "updated": "modifiée le {date}"
   },
   "reviews": {
     "title": "Noter l'application",

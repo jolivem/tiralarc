@@ -18,6 +18,7 @@ import { ProfileModule } from './profile/profile.module.js';
 import { PrismaModule } from './prisma/prisma.module.js';
 import { ReviewsModule } from './reviews/reviews.module.js';
 import { ScoreSheetsModule } from './score-sheets/score-sheets.module.js';
+import { SheetsModule } from './sheets/sheets.module.js';
 import { StorageModule } from './storage/storage.module.js';
 import { UsersModule } from './users/users.module.js';
 import { WeatherModule } from './weather/weather.module.js';
@@ -59,6 +60,7 @@ import { WeatherModule } from './weather/weather.module.js';
     CoachingModule,
     CompetitionsModule,
     ScoreSheetsModule,
+    SheetsModule,
     NotificationsModule,
     CalendarFeedModule,
     WeatherModule,

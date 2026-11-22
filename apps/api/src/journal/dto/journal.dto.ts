@@ -20,6 +20,7 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { Discipline, Feeling, SessionType, Sky, Wind } from '../../generated/prisma/client.js';
+import { StrengthStepDto, StrengthStepsProperty } from './strength.dto.js';
 
 const DATE = /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/;
 export const MONTH = /^\d{4}-(0[1-9]|1[0-2])$/;
@@ -690,6 +691,11 @@ export class UpdateSessionDto {
   )
   steps?: SessionStepDto[];
 
+  @StrengthStepsProperty(
+    'STRENGTH events: their programme, in order (replaces it); `done` ticked from the day on.',
+  )
+  strengthSteps?: StrengthStepDto[];
+
   @ApiPropertyOptional({
     type: Number,
     nullable: true,
@@ -1000,6 +1006,13 @@ export class SessionDto extends SessionSummaryDto {
     description: 'Trainings and coachings: the steps of the session ("Déroulé de la séance").',
   })
   steps!: SessionStepDto[];
+
+  @ApiProperty({
+    type: () => [StrengthStepDto],
+    description:
+      'STRENGTH events: their programme (built with the guide or copied from a STRENGTH sheet).',
+  })
+  strengthSteps!: StrengthStepDto[];
 
   @ApiProperty({ type: Number, nullable: true })
   satisfaction!: number | null;

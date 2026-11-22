@@ -27,6 +27,8 @@ export type InvitationCreate = Schemas['CreateInvitationDto'];
 export type CoachAccess = NonNullable<Schemas['InvitationDto']['coachAccess']>;
 export type Athlete = Schemas['AthleteDto'];
 export type CoachGroup = Schemas['CoachGroupDto'];
+/** One archer's outcome when a coach plans a session again for several (`POST .../copy`). */
+export type CopiedSession = Schemas['CopiedSessionDto'];
 export type PlannableType = Schemas['PlanSessionDto']['type'];
 export type PlanSession = Schemas['PlanSessionDto'];
 export type PlannedSessionUpdate = Schemas['UpdatePlannedSessionDto'];
@@ -39,6 +41,16 @@ export type CustomEventTypeInput = Schemas['CreateCustomEventTypeDto'];
 export type Goal = Schemas['GoalDto'];
 export type GoalType = Schemas['GoalDto']['type'];
 export type GoalInput = Schemas['CreateGoalDto'];
+/** A sheet of the Sheets section's binder (technique, settings, strength, mental). */
+export type Sheet = Schemas['SheetDto'];
+export type SheetSummary = Schemas['SheetSummaryDto'];
+export type SheetCategory = Schemas['SheetDto']['category'];
+export type SheetTemplate = Schemas['SheetTemplateDto'];
+/** One exercise of a strength programme (a STRENGTH sheet's, or a STRENGTH event's). */
+export type StrengthStep = Schemas['StrengthStepDto'];
+/** A template as the admins write it, both languages (`/admin/sheet-templates`). */
+export type AdminSheetTemplate = Schemas['AdminSheetTemplateDto'];
+export type SheetTemplateInput = Schemas['CreateSheetTemplateDto'];
 export type JournalStats = Schemas['JournalStatsDto'];
 export type CompetitionStat = Schemas['CompetitionStatDto'];
 export type ScoreStat = Schemas['ScoreStatDto'];

@@ -2,7 +2,7 @@ import { ForbiddenException, HttpStatus, Injectable, NotFoundException } from '@
 import { ApiException, ErrorCode } from '../common/errors.js';
 import { CompetitionsService } from '../competitions/competitions.service.js';
 import type { CompetitionListDto } from '../competitions/dto/competition.dto.js';
-import { CoachAccess, type ProfileInvitation } from '../generated/prisma/client.js';
+import { CoachAccess, type ProfileInvitation, SessionType } from '../generated/prisma/client.js';
 import type { GoalDto } from '../goals/dto/goal.dto.js';
 import { GoalsService } from '../goals/goals.service.js';
 import type {
@@ -20,9 +20,13 @@ import { JournalService } from '../journal/journal.service.js';
 import { PhotosService } from '../journal/photos.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { ProfileService } from '../profile/profile.service.js';
+import type { SheetDto, SheetSummaryDto } from '../sheets/dto/sheet.dto.js';
+import { SheetPhotosService } from '../sheets/sheet-photos.service.js';
+import { SheetsService } from '../sheets/sheets.service.js';
 import type {
   AthleteDto,
   CoachGroupDto,
+  CopiedSessionDto,
   PlanSessionDto,
   SaveCoachGroupDto,
   UpdatePlannedSessionDto,
@@ -69,6 +73,8 @@ export class CoachingService {
     private readonly goals: GoalsService,
     private readonly profile: ProfileService,
     private readonly competitions: CompetitionsService,
+    private readonly sheets: SheetsService,
+    private readonly sheetPhotoService: SheetPhotosService,
   ) {}
 
   /** The archers the user coaches, by name. */
@@ -218,6 +224,22 @@ export class CoachingService {
     return this.goals.list(archerId);
   }
 
+  /** The archer's binder (READ or WRITE access: the coach only reads it). */
+  async sheetList(coachId: string, archerId: string): Promise<SheetSummaryDto[]> {
+    await this.link(coachId, archerId);
+    return this.sheets.list(archerId);
+  }
+
+  async sheet(coachId: string, archerId: string, id: string): Promise<SheetDto> {
+    await this.link(coachId, archerId);
+    return this.sheets.get(archerId, id);
+  }
+
+  async sheetPhotos(coachId: string, archerId: string, id: string): Promise<PhotoDto[]> {
+    await this.link(coachId, archerId);
+    return this.sheetPhotoService.list(archerId, id);
+  }
+
   /** An event of the current journal (any other is a 404). */
   async session(coachId: string, archerId: string, id: string): Promise<SessionDto> {
     const journal = await this.currentJournal(coachId, archerId);
@@ -282,6 +304,67 @@ export class CoachingService {
     await this.assertPlannable(archerId, dto.date);
     const { type, ...fields } = dto;
     return this.journal.plan(archerId, coachId, type, fields);
+  }
+
+  /**
+   * Plans a training or coaching of the archer's current journal again on `date`, in the journals
+   * of the archers chosen (the archer whose sheet it is among them or not): the same planning
+   * (duration, place, discipline, distance, objective, steps — none ticked), stamped as planned by
+   * the coach. Every archer must be one of theirs (404 otherwise, nothing planned); each one is
+   * then planned on its own, an archer the copy can't go to getting the reason instead.
+   */
+  async copyToAthletes(
+    coachId: string,
+    archerId: string,
+    id: string,
+    date: string,
+    archerIds: string[],
+  ): Promise<CopiedSessionDto[]> {
+    const source = await this.session(coachId, archerId, id);
+    if (source.type !== SessionType.TRAINING && source.type !== SessionType.COACHING) {
+      throw new ApiException(
+        HttpStatus.BAD_REQUEST,
+        ErrorCode.VALIDATION_FAILED,
+        'Only a training or a coaching can be copied',
+      );
+    }
+    const links = await this.prisma.profileInvitation.findMany({
+      where: { coachId, userId: { in: archerIds } },
+      include: LINK_DETAILS,
+    });
+    const byArcher = new Map(links.map((link) => [link.userId, link]));
+    if (archerIds.some((target) => !byArcher.has(target))) {
+      throw new NotFoundException('Archer not found');
+    }
+    const fields = {
+      date,
+      durationMinutes: source.durationMinutes,
+      location: source.location,
+      discipline: source.discipline,
+      distanceMeters: source.distanceMeters,
+      objective: source.objective,
+      steps: source.steps.map((step) => ({ ...step, done: false })),
+    };
+    const results: CopiedSessionDto[] = [];
+    // One after the other: each archer's day is checked against what is already planned.
+    for (const target of archerIds) {
+      const link = byArcher.get(target)!;
+      const result = { archerId: target, name: link.user.displayName ?? link.user.email };
+      if (link.coachAccess !== CoachAccess.WRITE) {
+        results.push({ ...result, sessionId: null, error: 'FORBIDDEN' });
+        continue;
+      }
+      try {
+        await this.assertPlannable(target, date);
+        const session = await this.journal.plan(target, coachId, source.type, fields);
+        results.push({ ...result, sessionId: session.id, error: null });
+      } catch (error) {
+        const code = errorCode(error);
+        if (code !== ErrorCode.DATE_NOT_PLANNABLE && code !== ErrorCode.DAY_FULL) throw error;
+        results.push({ ...result, sessionId: null, error: code });
+      }
+    }
+    return results;
   }
 
   async updatePlanned(
@@ -357,6 +440,13 @@ export class CoachingService {
       group: link.coachGroup,
     };
   }
+}
+
+/** The `ErrorCode` an `ApiException` carries, if any. */
+function errorCode(error: unknown): string | undefined {
+  if (!(error instanceof ApiException)) return undefined;
+  const response = error.getResponse();
+  return typeof response === 'object' && 'code' in response ? String(response.code) : undefined;
 }
 
 function assertWrite(link: Link): void {

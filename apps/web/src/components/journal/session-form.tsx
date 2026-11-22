@@ -73,6 +73,10 @@ import classes from './journal.module.css';
 import { today, tomorrow } from './new-session-modal';
 import { DISCIPLINE_COLORS, DISCIPLINE_ORDER, SESSION_TYPES } from './session-types';
 import { AddStepButton, MAX_STEPS, StepDialog, StepList, useStepsTotal } from './session-steps';
+import { CoachSessionAgainButton, type CopyTarget } from '@/components/coach/copy-session';
+import { FromStrengthSheet } from '@/components/strength/from-strength-sheet';
+import { StrengthProgramme } from '@/components/strength/strength-programme';
+import { programmeMinutes } from '@/lib/strength';
 import { SessionAgainButton } from './session-again';
 import { SkyIcon, Windsock } from './weather-icons';
 import { ShareButton } from './share-modal';
@@ -120,6 +124,7 @@ function initialValues(s: JournalSession): Values {
     score: s.score,
     objective: s.objective,
     steps: s.steps,
+    strengthSteps: s.strengthSteps,
     satisfaction: s.satisfaction,
     technique: s.technique,
     description: s.description,
@@ -195,6 +200,7 @@ const planningOf = ({
   distanceMeters,
   objective,
   steps,
+  strengthSteps,
 }: Values) => ({
   date,
   durationMinutes,
@@ -203,6 +209,7 @@ const planningOf = ({
   distanceMeters,
   objective,
   steps,
+  strengthSteps,
 });
 
 /** A coach looking at one of their archers' events. */
@@ -212,6 +219,8 @@ export interface CoachSheet {
   canEdit: boolean;
   /** The journal's last day: the latest a planned event can move to. */
   lastDay: string;
+  /** The archers a training / coaching can be planned again for (WRITE access, a journal). */
+  copyTargets: CopyTarget[];
 }
 
 /**
@@ -332,6 +341,15 @@ export function SessionForm({
   const close = () => (dirty ? setConfirmLeave(true) : leave());
 
   const { form } = SESSION_TYPES[values.type];
+  /** A strength session's length worked out from its programme (null without one). */
+  const programmeLength =
+    values.type === 'STRENGTH' ? programmeMinutes(values.strengthSteps) : null;
+  /** A new programme, and the session's duration with it. */
+  const setProgramme = (steps: Values['strengthSteps']) => {
+    set('strengthSteps', steps);
+    const minutes = programmeMinutes(steps);
+    if (minutes !== null) set('durationMinutes', minutes);
+  };
   const hasSheet = form === 'sheet';
   // An event still to come is planned only (date, duration, place, discipline, distance,
   // objective, steps): its review (everything else) opens on the day itself.
@@ -445,16 +463,30 @@ export function SessionForm({
 
   // Above the sheet, following the scroll: delete on the left; save, then close on the right.
   // A coach who only reads it gets the close button alone.
+  // A training or coaching (as saved) the coach plans again, for this archer and / or others.
+  const coachAgain = coach &&
+    coach.copyTargets.length > 0 &&
+    (savedValues.type === 'TRAINING' || savedValues.type === 'COACHING') && (
+      <CoachSessionAgainButton
+        archerId={coach.archerId}
+        sessionId={session.id}
+        dirty={dirty}
+        targets={coach.copyTargets}
+      />
+    );
   const actionBar = (
     <Paper withBorder shadow="md" p="sm" radius="md" className={classes.actionBar}>
       {/* Wraps on narrow screens; from tablets up, "Share" in the middle. */}
       <div className={classes.actionRow} data-centred={sharable || undefined}>
         {readOnly ? (
-          (plannedBy ?? (
-            <Text size="sm" c="dimmed">
-              {t('readOnly')}
-            </Text>
-          ))
+          <Group gap="sm">
+            {coachAgain}
+            {plannedBy ?? (
+              <Text size="sm" c="dimmed">
+                {t('readOnly')}
+              </Text>
+            )}
+          </Group>
         ) : (
           <Group gap="sm">
             <Button
@@ -469,6 +501,7 @@ export function SessionForm({
             {!coach && (savedValues.type === 'TRAINING' || savedValues.type === 'COACHING') && (
               <SessionAgainButton sessionId={session.id} dirty={dirty} />
             )}
+            {coachAgain}
             {plannedBy}
           </Group>
         )}
@@ -557,7 +590,9 @@ export function SessionForm({
                       maw={NUMBER_WIDTH}
                       value={values.durationMinutes ?? ''}
                       onChange={(v) => set('durationMinutes', toNumber(v))}
-                      readOnly={readOnly}
+                      // A strength session with a programme: its length is the programme's.
+                      readOnly={readOnly || programmeLength !== null}
+                      title={programmeLength !== null ? t('durationFromProgramme') : undefined}
                       min={0}
                       max={1440}
                       step={15}
@@ -805,9 +840,36 @@ export function SessionForm({
                   />
                 </Stack>
               ) : (
-                <Alert color={SESSION_TYPES.STRENGTH.color} variant="light" mt="md">
-                  {t('strengthComing')}
-                </Alert>
+                // A strength session: its programme, built with the guide or taken from a
+                // strength sheet of the binder; its exercises ticked from its day on.
+                <Stack gap={0} mt="md" data-tour="strength">
+                  <Text className={classes.fieldName}>{t('strengthProgramme')}</Text>
+                  <StrengthProgramme
+                    steps={values.strengthSteps}
+                    onChange={setProgramme}
+                    onToggle={
+                      !coach && values.date <= today()
+                        ? (i) =>
+                            set(
+                              'strengthSteps',
+                              values.strengthSteps.map((s, j) =>
+                                j === i ? { ...s, done: !s.done } : s,
+                              ),
+                            )
+                        : undefined
+                    }
+                    readOnly={readOnly}
+                    extra={
+                      !coach && (
+                        <FromStrengthSheet
+                          onPick={(steps) =>
+                            setProgramme(steps.map((s) => ({ ...s, done: false })))
+                          }
+                        />
+                      )
+                    }
+                  />
+                </Stack>
               )}
             </Section>
             <SheetLockedContext value={locked}>{children}</SheetLockedContext>

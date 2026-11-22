@@ -3,6 +3,7 @@
 import type {
   Competition,
   CompetitionList,
+  CopiedSession,
   JournalSessionSummary,
   PlannableType,
   PlannedSessionUpdate,
@@ -208,6 +209,26 @@ export async function planSession(
     href: `/coach/${archerId}/journal/${result.data.id}`,
     locale: await getLocale(),
   });
+}
+
+/**
+ * Plans one of the archer's trainings / coachings again on `date` for the archers chosen: one
+ * outcome per archer (the new event, or why there is none), shown in the dialog.
+ */
+export async function copySessionToAthletes(
+  archerId: string,
+  id: string,
+  date: string,
+  archerIds: string[],
+): Promise<ActionState & { results?: CopiedSession[] }> {
+  const result = await send(
+    (await getAuthedApi()).POST('/api/v1/coach/athletes/{archerId}/sessions/{id}/copy', {
+      params: { path: { archerId, id } },
+      body: { date, archerIds },
+    }),
+  );
+  if (!result.ok) return result.state;
+  return { results: result.data };
 }
 
 export async function savePlannedSession(

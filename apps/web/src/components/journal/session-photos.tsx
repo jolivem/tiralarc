@@ -50,10 +50,17 @@ export function SessionPhotos({
   sessionId,
   photos,
   readOnly = false,
+  actions,
 }: {
+  /** The event's; with `actions`, any id (unused). */
   sessionId: string;
   photos: SessionPhoto[];
   readOnly?: boolean;
+  /** Where they are added and deleted when not an event's (a technique sheet's: sheet-form.tsx). */
+  actions?: {
+    upload: (form: FormData) => Promise<ActionState>;
+    remove: (photoId: string) => Promise<ActionState>;
+  };
 }) {
   const t = useTranslations('journal');
   const router = useRouter();
@@ -93,7 +100,7 @@ export function SessionPhotos({
         else {
           const form = new FormData();
           form.set('file', file);
-          result = await uploadPhoto(sessionId, form);
+          result = actions ? await actions.upload(form) : await uploadPhoto(sessionId, form);
         }
         if (result.code) {
           setState(result);
@@ -286,7 +293,9 @@ export function SessionPhotos({
                     loading={deleting}
                     onClick={() =>
                       startDeleting(async () => {
-                        const result = await deletePhoto(sessionId, opened.id);
+                        const result = actions
+                          ? await actions.remove(opened.id)
+                          : await deletePhoto(sessionId, opened.id);
                         setState(result);
                         closePhoto();
                       })

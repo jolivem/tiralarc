@@ -20,6 +20,7 @@
     "toggleColorScheme": "Toggle light / dark theme",
     "account": "My account",
     "userMenu": "User menu",
+    "admin": "Administration",
     "archerSection": "Archer area",
     "mainNavigation": "Main navigation",
     "tour": "Replay this page's guided tour",
@@ -144,6 +145,36 @@
       "all": {
         "title": "All your indicators",
         "body": "Every indicator at your disposal."
+      }
+    },
+    "sheets": {
+      "welcome": {
+        "title": "Your binder of sheets",
+        "body": "Here you keep what doesn't change from one session to the next: your technique, your settings, your strength programmes and your mental preparation. A quick tour?"
+      },
+      "binder": {
+        "title": "Four parts",
+        "body": "The binder has four half-pages, each with its colour. Each opens on the index of its sheets: a click on a title opens the sheet."
+      },
+      "add": {
+        "title": "Adding a sheet",
+        "body": "Each part's “+” creates a sheet: a title and, if you like, a ready-made template (“My string”, “My arrows”…) whose preview you see. The sheet then opens to be filled in."
+      },
+      "technique": {
+        "title": "Technique",
+        "body": "Your technique points, cues and drills. These sheets can also keep up to 4 photos: a posture, an anchor, a drill."
+      },
+      "settings": {
+        "title": "Settings",
+        "body": "Your bow, arrows, string and sight marks: write them down to find a setting that worked."
+      },
+      "strength": {
+        "title": "Strength",
+        "body": "Build your strength sessions in a few clicks: the exercise, the sets, the repetitions or duration, the load and the rest. A strength session in the journal can then take that programme and tick each exercise done."
+      },
+      "mental": {
+        "title": "Mental preparation",
+        "body": "Your shot routine, your key phrases, how you prepare a competition: to read again before shooting."
       }
     },
     "profile": {
@@ -451,7 +482,7 @@
     "close": "Close",
     "sections": "My sections",
     "journalIntro": "Your training sessions and competitions: date, distance, arrow count, scores, feelings.",
-    "sheetsIntro": "Your technique sheets and memos: technique points, instructions, personal notes.",
+    "sheetsIntro": "Your binder of sheets: technique, settings, strength and mental preparation.",
     "statsIntro": "Your progress in numbers: arrow volume, scores, consistency.",
     "profileIntro": "Your licence, category, bow and disciplines, and your invited people.",
     "comingSoon": "Coming soon",
@@ -632,6 +663,22 @@
       "confirm": "Create the session",
       "saveFirst": "Save your changes first"
     },
+    "coachAgain": {
+      "button": "Plan again",
+      "hint": "Suggest the same session on another day, to this archer or others.",
+      "title": "Plan this session again",
+      "body": "Each archer chosen will find a session suggested by you in their journal, with the same duration, place, discipline, distance, goal and outline.",
+      "date": "Day of the session",
+      "archers": "Archers who will get it",
+      "noGroup": "No group",
+      "wholeGroup": "The whole {name} group",
+      "journalEnds": "Their journal ends on {date}",
+      "cancel": "Cancel",
+      "confirm": "{count, plural, =0 {Plan} one {Plan for # archer} other {Plan for # archers}}",
+      "failed": "{name}: {reason}",
+      "close": "Close",
+      "saveFirst": "Save your changes first"
+    },
     "steps": {
       "add": "Add a step",
       "edit": "Edit this step",
@@ -693,7 +740,8 @@
       "name": "Title",
       "deleteBody": "Events already recorded with this type are kept: they become “Other” events with the same title, colour and icon."
     },
-    "strengthComing": "The strength training form is coming soon. You can already put the session in your calendar.",
+    "strengthProgramme": "Session programme",
+    "durationFromProgramme": "Worked out from the programme: sets, about 3 s a repetition, rests between sets.",
     "allDay": "All day",
     "note": "Free text",
     "customDescription": "Description",
@@ -735,7 +783,7 @@
     "photos": {
       "title": "Photos",
       "count": "{count} / {max}",
-      "empty": "No photo for this event.",
+      "empty": "No photo yet: click to add some.",
       "add": "Add photos",
       "hint": "JPEG, PNG or WebP, 10 MB at most per photo.\nPhotos are resized and stay private.",
       "locked": "Upcoming event: photos can be added from the day of the event.",
@@ -1098,6 +1146,308 @@
       "signIn": "Sign in",
       "register": "Create an account"
     }
+  },
+  "admin": {
+    "templates": {
+      "title": "Sheet templates",
+      "intro": "The ready-made sheets “+” offers in the binder, each in French and English. A hidden one isn't offered to the archers.",
+      "new": "New template",
+      "none": "No template in this category.",
+      "hidden": "Hidden",
+      "up": "Move up",
+      "down": "Move down",
+      "show": "Offer to the archers",
+      "hide": "Hide from the archers",
+      "edit": "Edit",
+      "delete": "Delete",
+      "deleteTitle": "Delete this template?",
+      "deleteBody": "The template “{title}” will no longer be offered. Sheets already started from it keep their text.",
+      "cancel": "Cancel",
+      "save": "Save",
+      "newTitle": "New sheet template",
+      "editTitle": "Edit the template",
+      "category": "Category",
+      "hiddenSwitch": "Hidden (not offered yet)",
+      "languageFr": "French",
+      "languageEn": "English",
+      "templateTitle": "Title",
+      "body": "Text",
+      "bodyHint": "Lines to fill in, e.g. “Brace height:”.",
+      "preview": "Preview, as the archer sees it when picking the template:"
+    }
+  },
+  "strength": {
+    "programme": "Session programme",
+    "empty": "No exercise yet: “Add an exercise” to build the session.",
+    "add": "Add an exercise",
+    "addOne": "Add",
+    "edit": "Edit this exercise",
+    "newTitle": "New exercise",
+    "editTitle": "Edit the exercise",
+    "exercise": "Exercise",
+    "otherExercise": "Or another exercise: type its name",
+    "sets": "Sets",
+    "reps": "Repetitions per set",
+    "duration": "Duration per set",
+    "measures": { "REPS": "Repetitions", "SECONDS": "Duration" },
+    "load": "Load",
+    "loads": {
+      "BODYWEIGHT": "Body weight",
+      "KG": "Dumbbell / weight",
+      "BAND_LIGHT": "Light band",
+      "BAND_MEDIUM": "Medium band",
+      "BAND_STRONG": "Strong band"
+    },
+    "weight": "Weight",
+    "kg": "{kg} kg",
+    "rest": "Rest between two sets",
+    "noRest": "No rest given",
+    "restShort": "rest {rest}",
+    "note": "Note (cue, side, tempo…)",
+    "summary": "On the sheet:",
+    "delete": "Remove the exercise",
+    "cancel": "Cancel",
+    "save": "Save",
+    "moveUp": "Move exercise {step} up",
+    "moveDown": "Move exercise {step} down",
+    "done": "Exercise {step} done",
+    "doneMark": "Done",
+    "fromSheet": "Use a strength sheet",
+    "fromSheetHint": "The sheet's programme replaces the session's.",
+    "noSheet": "No strength sheet in your binder",
+    "zones": {
+      "CORE": "Core",
+      "SHOULDERS": "Shoulders",
+      "BACK": "Back",
+      "ARMS": "Arms",
+      "LEGS": "Legs",
+      "ARCHERY": "Archery-specific"
+    },
+    "exercises": {
+      "PLANK_FRONT": "Front plank",
+      "PLANK_SIDE": "Side plank",
+      "DEAD_BUG": "Dead bug",
+      "BIRD_DOG": "Bird dog",
+      "CRUNCH": "Crunch",
+      "SUPERMAN": "Superman",
+      "PALLOF_PRESS": "Pallof press (anti-rotation)",
+      "EXTERNAL_ROTATION": "External rotations",
+      "INTERNAL_ROTATION": "Internal rotations",
+      "LATERAL_RAISE": "Lateral raises",
+      "FRONT_RAISE": "Front raises",
+      "FACE_PULL": "Face pull",
+      "Y_T_W": "Y-T-W on the floor",
+      "SHOULDER_PRESS": "Shoulder press",
+      "BAND_ROW": "Band row",
+      "DUMBBELL_ROW": "Dumbbell row",
+      "BAND_PULL_APART": "Band pull-apart",
+      "REVERSE_FLY": "Reverse fly",
+      "PULL_UP": "Pull-ups",
+      "PUSH_UP": "Push-ups",
+      "TRICEPS_DIP": "Triceps dips",
+      "BICEPS_CURL": "Biceps curl",
+      "WRIST_CURL": "Wrist curls",
+      "FARMER_CARRY": "Farmer's carry",
+      "SQUAT": "Squat",
+      "LUNGE": "Lunges",
+      "WALL_SIT": "Wall sit",
+      "CALF_RAISE": "Calf raises",
+      "GLUTE_BRIDGE": "Glute bridge",
+      "SINGLE_LEG_BALANCE": "Single-leg balance",
+      "ANCHOR_HOLD": "Holding at anchor",
+      "BAND_DRAW": "Band draw",
+      "SCAPULAR_SETTING": "Scapular setting",
+      "BOW_ARM_HOLD": "Bow-arm hold"
+    },
+    "howToTitle": "How to do it",
+    "tipsTitle": "To do it well",
+    "howTo": {
+      "PLANK_FRONT": {
+        "description": "On your forearms and toes, the body straight like a board.",
+        "tips": "Elbows under the shoulders.\nHips in line: neither sagging nor raised.\nDraw your navel in and breathe calmly."
+      },
+      "PLANK_SIDE": {
+        "description": "On your side, on one forearm and the edge of the foot, the body in line.",
+        "tips": "Elbow under the shoulder.\nPush the hip up, don't let it drop.\nDo both sides."
+      },
+      "DEAD_BUG": {
+        "description": "On your back, arms up to the ceiling, knees at 90°: stretch out one arm and the opposite leg together.",
+        "tips": "The lower back stays on the floor.\nSlowly, breathing out as you stretch.\nAlternate sides."
+      },
+      "BIRD_DOG": {
+        "description": "On all fours, stretch one arm forward and the opposite leg back, then return.",
+        "tips": "The back stays flat, like a table.\nLook at the floor, neck in line.\nHold a second when stretched."
+      },
+      "CRUNCH": {
+        "description": "On your back, knees bent, curl the upper back to lift the shoulders off the floor.",
+        "tips": "Don't pull on your neck.\nThe lower back stays down.\nBreathe out going up, come down slowly."
+      },
+      "SUPERMAN": {
+        "description": "Lying on your front, lift your straight arms and your legs together.",
+        "tips": "Lift smoothly, just a few centimetres.\nLook at the floor.\nSqueeze your glutes."
+      },
+      "PALLOF_PRESS": {
+        "description": "Side-on to the band's anchor, hands at the chest, push the arms out without letting yourself turn.",
+        "tips": "The chest keeps facing forward: you resist the twist.\nFeet hip-width, knees soft.\nDo both sides."
+      },
+      "EXTERNAL_ROTATION": {
+        "description": "Elbow against your side and bent at 90°, swing the forearm outwards.",
+        "tips": "The elbow stays at your side (a rolled towel helps).\nSlowly, without shrugging.\nLight load: it is a stabilising muscle."
+      },
+      "INTERNAL_ROTATION": {
+        "description": "Elbow against your side and bent at 90°, bring the forearm in to your stomach.",
+        "tips": "The elbow stays at your side.\nKeep the shoulder low.\nSlow return outwards."
+      },
+      "LATERAL_RAISE": {
+        "description": "Standing, arms by your sides, raise them out to the sides up to horizontal.",
+        "tips": "Elbows slightly bent.\nNo higher than the shoulders.\nLower slowly, without swinging."
+      },
+      "FRONT_RAISE": {
+        "description": "Standing, raise your straight arms in front of you up to shoulder height.",
+        "tips": "Keep your back straight, don't lean back.\nNo swing.\nControlled lowering."
+      },
+      "FACE_PULL": {
+        "description": "Facing a high anchor, pull the band towards your face, elbows out wide.",
+        "tips": "Elbows high, at shoulder height.\nSqueeze the shoulder blades at the end.\nDon't arch your back."
+      },
+      "Y_T_W": {
+        "description": "Lying on your front, lift your arms into a Y, then a T, then a W.",
+        "tips": "Thumbs to the ceiling.\nSqueeze the shoulder blades in each position.\nSmall slow moves, no load at first."
+      },
+      "SHOULDER_PRESS": {
+        "description": "Standing or seated, hands at shoulder height, press up to straight arms.",
+        "tips": "Brace your core, don't arch.\nPress straight up, above your head.\nLower slowly to the shoulders."
+      },
+      "BAND_ROW": {
+        "description": "Facing the anchor, pull the band to your lower ribs, elbows close to the body.",
+        "tips": "Start by squeezing the shoulder blades.\nShoulders low, away from the ears.\nSlow return, arms almost straight."
+      },
+      "DUMBBELL_ROW": {
+        "description": "One hand and one knee on a bench, back flat, pull the dumbbell to your hip.",
+        "tips": "The back stays flat and still.\nPull with the back: the elbow passes close to the body.\nDo both sides."
+      },
+      "BAND_PULL_APART": {
+        "description": "Arms straight in front, the band between your hands, pull it apart to your chest.",
+        "tips": "Squeeze the shoulder blades.\nArms straight, shoulders low.\nControlled return."
+      },
+      "REVERSE_FLY": {
+        "description": "Bent forward, back flat, open your arms out to the sides.",
+        "tips": "Elbows slightly bent.\nLight load: these are the back-of-shoulder muscles.\nNo swing, back still."
+      },
+      "PULL_UP": {
+        "description": "Hanging from a bar, pull yourself up until your chin passes the bar.",
+        "tips": "Start by pulling the shoulders down.\nNo leg swing.\nLower to almost straight arms. A band helps at first."
+      },
+      "PUSH_UP": {
+        "description": "On hands and toes, body braced, lower your chest to the floor and push back up.",
+        "tips": "Hands slightly wider than the shoulders.\nThe body stays straight, hips included.\nOn your knees to start with."
+      },
+      "TRICEPS_DIP": {
+        "description": "Hands on the edge of a bench behind you, bend the elbows to lower yourself, then push back up.",
+        "tips": "Elbows go back, not out.\nBack close to the bench.\nNo lower than elbows at 90°."
+      },
+      "BICEPS_CURL": {
+        "description": "Standing, arms by your sides, bend the elbows to bring your hands up to your shoulders.",
+        "tips": "The elbows stay against the body.\nNo swing from the back.\nSlow lowering."
+      },
+      "WRIST_CURL": {
+        "description": "Forearm resting, wrist over the edge, bend and straighten the wrist.",
+        "tips": "Only the wrist moves.\nLight load, full range.\nUseful for the bow hand and the string hand."
+      },
+      "FARMER_CARRY": {
+        "description": "A weight in each hand, walk, standing tall and braced.",
+        "tips": "Shoulders low and back.\nShort steps, the body stays upright.\nGrip the handles tight."
+      },
+      "SQUAT": {
+        "description": "Feet shoulder-width apart, bend your legs as if sitting down, then stand back up.",
+        "tips": "Weight on your heels.\nKnees in line with the feet.\nBack straight, chest open."
+      },
+      "LUNGE": {
+        "description": "A long step forward, lower the back knee towards the floor, then come back.",
+        "tips": "The front knee stays above the ankle.\nUpper body upright.\nAlternate legs."
+      },
+      "WALL_SIT": {
+        "description": "Back against a wall, slide down until your thighs are level, and hold.",
+        "tips": "Knees at 90°, above the ankles.\nYour whole back against the wall.\nBreathe calmly."
+      },
+      "CALF_RAISE": {
+        "description": "Standing, rise up onto your toes, then lower.",
+        "tips": "Rise as high as you can.\nLower slowly.\nOn a step for more range."
+      },
+      "GLUTE_BRIDGE": {
+        "description": "On your back, knees bent, lift your hips until shoulders, hips and knees line up.",
+        "tips": "Push through your heels.\nSqueeze the glutes at the top.\nDon't arch your lower back."
+      },
+      "SINGLE_LEG_BALANCE": {
+        "description": "Standing on one leg, the other knee raised, hold your balance.",
+        "tips": "Fix a point in front of you.\nStanding knee slightly bent.\nHarder with eyes closed or on a cushion."
+      },
+      "ANCHOR_HOLD": {
+        "description": "With a light bow or a band, draw to your anchor and hold the position.",
+        "tips": "Keep your shooting posture: shoulders low, alignment.\nHold with the back, not the arm.\nA lighter bow than your shooting bow."
+      },
+      "BAND_DRAW": {
+        "description": "With a band, repeat your draw to anchor, then let it back slowly.",
+        "tips": "The same move as on the shooting line.\nShoulder blades closing during the draw.\nControlled return, don't let go of the band."
+      },
+      "SCAPULAR_SETTING": {
+        "description": "Arms straight in front, squeeze then spread the shoulder blades, without bending the elbows.",
+        "tips": "Only the shoulder blades move.\nShoulders low.\nSlowly: this is your draw's setup."
+      },
+      "BOW_ARM_HOLD": {
+        "description": "Bow arm straight in front at shoulder height, hold it, with a light weight or a band.",
+        "tips": "Shoulder low, pushing towards the target.\nElbow turned slightly out.\nLight load, long hold."
+      }
+    }
+  },
+  "sheets": {
+    "binder": "Binder of sheets",
+    "categories": {
+      "TECHNIQUE": {
+        "name": "Technique",
+        "intro": "Technique points, cues."
+      },
+      "SETTINGS": {
+        "name": "Settings",
+        "intro": "Bow, sight, arrows: your marks and their history."
+      },
+      "STRENGTH": {
+        "name": "Strength",
+        "intro": "Your strength sessions: exercises, sets, loads."
+      },
+      "MENTAL": {
+        "name": "Mental preparation",
+        "intro": "Routines, visualisation, key phrases before a competition."
+      }
+    },
+    "noneCoach": "No sheet yet.",
+    "coachIntro": "Your archer's binder of sheets, read only.",
+    "add": "Add a {category} sheet",
+    "newTitle": "New sheet · {category}",
+    "template": "Start from a template",
+    "templateHint": "A ready-made sheet to fill in, which you can change.",
+    "blank": "Blank sheet",
+    "preview": "Preview: the sheet will start with this text, to fill in.",
+    "title": "Title",
+    "body": "Sheet content",
+    "create": "Add the sheet",
+    "cancel": "Cancel",
+    "save": "Save",
+    "saved": "Sheet saved.",
+    "close": "Close",
+    "delete": "Delete",
+    "deleteTitle": "Delete this sheet?",
+    "deleteBody": "The sheet “{title}” will be deleted for good.",
+    "leaveTitle": "Unsaved changes",
+    "leaveBody": "Leave the sheet without saving your changes?",
+    "stay": "Stay",
+    "leave": "Leave without saving",
+    "readOnly": "Your archer's sheet, read only",
+    "programme": "Strength programme",
+    "programmeLength": "Strength programme · about {minutes} min",
+    "notes": "Notes",
+    "created": "created on {date}",
+    "updated": "changed on {date}"
   },
   "reviews": {
     "title": "Rate the app",

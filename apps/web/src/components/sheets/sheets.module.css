@@ -1,0 +1,346 @@
+/*
+ * The Sheets section's binder (sheet-binder.tsx): a ring binder open on the desk, its cover the
+ * brown of the notebooks, holding four independent half-pages, two by two from tablets up (one
+ * under the other on phones). Each row's two pages hang on two rings that cross the gap between
+ * them through holes punched near their inner edges. Each half-page has its own pastel paper,
+ * ruled every --step, so the index's lines sit on the ruling.
+ */
+.binder {
+  --cover: #7a5539;
+  --ring: linear-gradient(to bottom, #f4f6f8, #a9b2bc 55%, #e6eaee);
+  --step: 30px;
+  /* Between the two columns; the holes' centres, from the pages' inner edges. */
+  --gap: var(--mantine-spacing-xl);
+  --hole: 16px;
+  --hole-inset: 20px;
+
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--mantine-spacing-md);
+  padding: var(--mantine-spacing-md);
+  border-radius: 18px;
+  background:
+    radial-gradient(circle at 20% 10%, rgb(255 255 255 / 0.08), transparent 40%), var(--cover);
+  box-shadow: 0 20px 40px -20px rgb(0 0 0 / 0.5);
+
+  @mixin dark {
+    --cover: #3d2b1f;
+  }
+
+  @media (min-width: $mantine-breakpoint-sm) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: var(--gap);
+    padding: var(--mantine-spacing-lg);
+  }
+}
+
+/*
+ * A hole punched in a half-page, near its inner edge (tablets up): the cover seen through it.
+ * Two a page, at a quarter and three quarters of its height — the same for both pages of a row
+ * (the grid gives them one height), so the rings line up.
+ */
+.hole {
+  display: none;
+
+  @media (min-width: $mantine-breakpoint-sm) {
+    position: absolute;
+    display: block;
+    width: var(--hole);
+    height: var(--hole);
+    margin-top: calc(var(--hole) / -2);
+    border-radius: 50%;
+    background: var(--cover);
+    box-shadow: inset 0 1px 3px rgb(0 0 0 / 0.5);
+
+    .part[data-side='left'] & {
+      right: calc(var(--hole-inset) - var(--hole) / 2);
+    }
+
+    .part[data-side='right'] & {
+      left: calc(var(--hole-inset) - var(--hole) / 2);
+    }
+  }
+}
+
+/*
+ * A ring, drawn by the left page of a row: from its hole across the gap into the right page's,
+ * above both pages, its rounded ends sinking into the holes.
+ */
+.ring {
+  display: none;
+
+  @media (min-width: $mantine-breakpoint-sm) {
+    position: absolute;
+    left: calc(100% - var(--hole-inset));
+    z-index: 2;
+    display: block;
+    width: calc(var(--gap) + var(--hole-inset) * 2);
+    height: 12px;
+    margin-top: -6px;
+    border-radius: 6px;
+    background: var(--ring);
+    box-shadow:
+      0 2px 4px rgb(0 0 0 / 0.35),
+      inset 0 -2px 2px rgb(0 0 0 / 0.15);
+    pointer-events: none;
+  }
+}
+
+/*
+ * A half-page: its category's pastel paper and ruling. The header (icon, name, "+") takes the
+ * first two lines, the index the next ones.
+ */
+.part {
+  --paper: #e6f0ff;
+  --rule: rgb(70 120 190 / 0.25);
+  --accent: #3b6fb6;
+  --ink: #2f3a4a;
+
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: calc(var(--step) * 12);
+  padding: 0 var(--mantine-spacing-md) var(--step);
+  border-radius: 6px;
+  color: var(--ink);
+  background-color: var(--paper);
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0 calc(var(--step) - 1px),
+    var(--rule) calc(var(--step) - 1px) var(--step)
+  );
+  box-shadow: 0 10px 20px -14px rgb(0 0 0 / 0.6);
+
+  /* The punched side (tablets up) keeps clear of the holes. */
+  @media (min-width: $mantine-breakpoint-sm) {
+    &[data-side='left'] {
+      padding-right: calc(var(--hole-inset) * 2 + 4px);
+    }
+
+    &[data-side='right'] {
+      padding-left: calc(var(--hole-inset) * 2 + 4px);
+    }
+  }
+
+  &[data-category='SETTINGS'] {
+    --paper: #ffe4ee;
+    --rule: rgb(200 90 130 / 0.26);
+    --accent: #c2255c;
+  }
+
+  &[data-category='STRENGTH'] {
+    --paper: #e2f5e7;
+    --rule: rgb(60 145 95 / 0.28);
+    --accent: #2b8a4e;
+  }
+
+  &[data-category='MENTAL'] {
+    --paper: #efe6ff;
+    --rule: rgb(125 95 190 / 0.28);
+    --accent: #6c4bb8;
+  }
+
+  @mixin dark {
+    --ink: #e9e2d4;
+    --paper: #243246;
+    --rule: rgb(140 180 240 / 0.16);
+    --accent: #8db4ee;
+
+    &[data-category='SETTINGS'] {
+      --paper: #3d2531;
+      --rule: rgb(250 160 200 / 0.16);
+      --accent: #f29ec0;
+    }
+
+    &[data-category='STRENGTH'] {
+      --paper: #22382b;
+      --rule: rgb(130 220 160 / 0.15);
+      --accent: #7fd39b;
+    }
+
+    &[data-category='MENTAL'] {
+      --paper: #31283f;
+      --rule: rgb(190 160 250 / 0.16);
+      --accent: #bba0f2;
+    }
+  }
+}
+
+/* Two ruled lines: the category's name resting on the second one, "+" on the right. */
+.partHeader {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--mantine-spacing-sm);
+  height: calc(var(--step) * 2);
+  padding-bottom: 4px;
+}
+
+.partTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-family: var(--font-hand), cursive;
+  font-size: 1.9rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--accent);
+}
+
+.partIntro {
+  margin: 0;
+  font-size: var(--mantine-font-size-sm);
+  line-height: var(--step);
+  color: color-mix(in srgb, var(--ink) 65%, transparent);
+}
+
+/*
+ * The index: one sheet a ruled line, numbered, its title (the dates are on the sheet itself).
+ */
+.index {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: sheet;
+}
+
+.indexItem {
+  counter-increment: sheet;
+  height: var(--step);
+}
+
+.indexLink {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  height: 100%;
+  padding-bottom: 3px;
+  font-family: var(--font-calendar, var(--font-hand-upright)), cursive;
+  font-size: 1.2rem;
+  line-height: 1.1;
+  color: inherit;
+  text-decoration: none;
+
+  &::before {
+    content: counter(sheet) '.';
+    min-width: 1.6em;
+    font-weight: 700;
+    color: var(--accent);
+  }
+
+  &:hover .indexTitle,
+  &:focus-visible .indexTitle {
+    text-decoration: underline;
+    text-decoration-color: var(--accent);
+  }
+}
+
+.indexTitle {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/*
+ * A sheet's own page (sheet-form.tsx): the loose leaf tinted with its category's pastel, a
+ * coloured band along its top.
+ */
+.sheetLeaf {
+  &[data-category] [data-leaf] {
+    --paper: #f1f6ff;
+    --band: #9fc0ee;
+
+    /* The band inside the edge (a border would move the ruling off RuledStack's measure). */
+    box-shadow:
+      inset 0 8px 0 var(--band),
+      0 14px 30px -16px rgb(0 0 0 / 0.45);
+  }
+
+  &[data-category='SETTINGS'] [data-leaf] {
+    --paper: #fff3f7;
+    --band: #f4a9c6;
+  }
+
+  &[data-category='STRENGTH'] [data-leaf] {
+    --paper: #f1fbf4;
+    --band: #93d3a8;
+  }
+
+  &[data-category='MENTAL'] [data-leaf] {
+    --paper: #f7f2ff;
+    --band: #c6b0f0;
+  }
+
+  @mixin dark {
+    &[data-category] [data-leaf] {
+      --paper: #26303d;
+      --band: #4f6f9c;
+    }
+
+    &[data-category='SETTINGS'] [data-leaf] {
+      --paper: #36262e;
+      --band: #9c4f70;
+    }
+
+    &[data-category='STRENGTH'] [data-leaf] {
+      --paper: #23332a;
+      --band: #3f7d55;
+    }
+
+    &[data-category='MENTAL'] [data-leaf] {
+      --paper: #2f2a3b;
+      --band: #6a56a0;
+    }
+  }
+}
+
+/* The sheet's title: two ruled lines, written large in the headings' hand. */
+.sheetTitle {
+  height: calc(var(--step, 30px) * 2);
+  padding-top: calc(var(--step, 30px) * 0.55);
+  font-family: var(--font-hand), cursive;
+  font-size: 2.1rem;
+  font-weight: 700;
+  line-height: calc(var(--step, 30px) * 1.4);
+  color: inherit;
+  background: transparent;
+}
+
+/*
+ * The sheet's text, and a technique sheet's photos (the events' polaroids) on its right from
+ * tablets up, under it on phones.
+ */
+.sheetBody {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--mantine-spacing-lg);
+
+  @media (min-width: $mantine-breakpoint-sm) {
+    &[data-photos] {
+      grid-template-columns: minmax(0, 1fr) 260px;
+    }
+  }
+}
+
+/* A part of a strength sheet ("Programme", "Notes"): its name resting on a ruled line. */
+.sheetSection {
+  height: var(--step, 30px);
+  margin: 0;
+  padding-top: calc(var(--step, 30px) - 1.55rem);
+  font-family: var(--font-hand), cursive;
+  font-size: 1.45rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+/* The category, small, under the title (one line). */
+.sheetCategory {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: var(--step, 30px);
+  font-size: var(--mantine-font-size-sm);
+  color: var(--mantine-color-dimmed);
+}

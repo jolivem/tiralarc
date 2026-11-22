@@ -1,0 +1,98 @@
+/* The guide's summary (strength-programme.tsx): the exercise as it will read on the sheet. */
+.summary {
+  background: var(--mantine-color-default-hover);
+}
+
+/* The exercises of an area: small cards, each with its drawing above its name. */
+.exercises {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+  gap: 6px;
+}
+
+.exercise {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 4px;
+  border: 1px solid var(--mantine-color-default-border);
+  border-radius: var(--mantine-radius-md);
+  font-size: var(--mantine-font-size-xs);
+  line-height: 1.2;
+  text-align: center;
+  color: var(--mantine-color-text);
+
+  &:hover {
+    background: var(--mantine-color-default-hover);
+  }
+
+  &[data-selected] {
+    border-color: var(--mantine-primary-color-filled);
+    background: var(--mantine-primary-color-light);
+    font-weight: 600;
+  }
+}
+
+/*
+ * An exercise of a programme: two ruled lines high, its drawing framed on the left, its text
+ * beside it, centred between the two lines.
+ */
+.item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: calc(var(--step, 30px) * 2);
+
+  & > * {
+    flex-shrink: 0;
+  }
+}
+
+/* An exercise's number, in a column of its own width: every frame starts at the same place. */
+.itemNumber {
+  width: 2.6em;
+  text-align: end;
+  white-space: nowrap;
+}
+
+/* An exercise's text: the room left, wrapping onto the second line if need be. */
+.itemText {
+  flex: 1 1 auto;
+  min-width: 0;
+  line-height: 1.25;
+}
+
+/* The drawing's frame: rounded, on the paper, a little inside the two lines. */
+.figureFrame {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 80px;
+  height: calc(var(--step, 30px) * 2 - 6px);
+  margin-inline-end: 6px;
+  border: 1.5px solid var(--mantine-color-default-border);
+  border-radius: 12px;
+  background: var(--mantine-color-body);
+  line-height: 0;
+}
+
+/* The guide's "How to do it": the drawing (with the load chosen), what to do, the tips. */
+.howTo {
+  background: var(--mantine-color-default-hover);
+}
+
+.howToFigure {
+  flex-shrink: 0;
+  padding: 4px;
+  border: 1.5px solid var(--mantine-color-default-border);
+  border-radius: 14px;
+  background: var(--mantine-color-body);
+  line-height: 0;
+}
+
+.tips {
+  margin: 0;
+  padding-inline-start: 18px;
+  font-size: var(--mantine-font-size-sm);
+}

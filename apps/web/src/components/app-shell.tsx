@@ -24,6 +24,7 @@ import {
   IconLogin,
   IconLogout,
   IconMoon,
+  IconSettings,
   IconSun,
   IconUserCircle,
   IconUserPlus,
@@ -277,6 +278,15 @@ function UserMenu({ user }: { user: ShellUser }) {
         <Menu.Item component={Link} href="/account" leftSection={<IconUserCircle size={16} />}>
           {t('account')}
         </Menu.Item>
+        {user.roles.includes('ADMIN') && (
+          <Menu.Item
+            component={Link}
+            href="/admin/sheet-templates"
+            leftSection={<IconSettings size={16} />}
+          >
+            {t('admin')}
+          </Menu.Item>
+        )}
         {tour && (
           <Menu.Item hiddenFrom="sm" leftSection={<IconHelp size={16} />} onClick={tour.start}>
             {t('tour')}

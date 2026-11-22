@@ -2562,6 +2562,645 @@
         ]
       }
     },
+    "/api/v1/sheets": {
+      "get": {
+        "operationId": "Sheets_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SheetSummaryDto"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Archers only"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Every sheet, without its text (the indexes), by title",
+        "tags": [
+          "sheets"
+        ]
+      },
+      "post": {
+        "operationId": "Sheets_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSheetDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SheetDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Archers only"
+          },
+          "404": {
+            "description": "No such template in that category"
+          },
+          "409": {
+            "description": "LIMIT_REACHED: 100 sheets in that category"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "sheets"
+        ]
+      }
+    },
+    "/api/v1/sheets/all": {
+      "get": {
+        "operationId": "Sheets_all",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SheetDto"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Archers only"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Every sheet with its text, oldest first (e.g. to print them)",
+        "tags": [
+          "sheets"
+        ]
+      }
+    },
+    "/api/v1/sheets/templates": {
+      "get": {
+        "operationId": "Sheets_templates",
+        "parameters": [
+          {
+            "name": "category",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/SheetCategory"
+            }
+          },
+          {
+            "name": "locale",
+            "required": false,
+            "in": "query",
+            "description": "Their language: English for 'en', else French; by default the account's.",
+            "schema": {
+              "example": "fr",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SheetTemplateDto"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Archers only"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Ready-made sheets to start from when adding one (e.g. \"My string\" in SETTINGS), by category",
+        "tags": [
+          "sheets"
+        ]
+      }
+    },
+    "/api/v1/sheets/{id}": {
+      "get": {
+        "operationId": "Sheets_get",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SheetDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Archers only"
+          },
+          "404": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "sheets"
+        ]
+      },
+      "patch": {
+        "operationId": "Sheets_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSheetDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SheetDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Archers only"
+          },
+          "404": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "sheets"
+        ]
+      },
+      "delete": {
+        "operationId": "Sheets_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "403": {
+            "description": "Archers only"
+          },
+          "404": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "sheets"
+        ]
+      }
+    },
+    "/api/v1/sheets/{sheetId}/photos": {
+      "get": {
+        "operationId": "SheetPhotos_list",
+        "parameters": [
+          {
+            "name": "sheetId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PhotoDto"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Archers only"
+          },
+          "404": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Photos of a sheet; the URLs are signed and expire after 10 minutes",
+        "tags": [
+          "sheets"
+        ]
+      },
+      "post": {
+        "operationId": "SheetPhotos_add",
+        "parameters": [
+          {
+            "name": "sheetId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/UploadPhotoDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhotoDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "INVALID_IMAGE; VALIDATION_FAILED: not a technique sheet"
+          },
+          "403": {
+            "description": "Archers only"
+          },
+          "404": {
+            "description": ""
+          },
+          "409": {
+            "description": "LIMIT_REACHED (4 photos per sheet)"
+          },
+          "413": {
+            "description": "FILE_TOO_LARGE"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Attach a photo to a TECHNIQUE sheet (JPEG, PNG or WebP, 10 MB max); it is resized",
+        "tags": [
+          "sheets"
+        ]
+      }
+    },
+    "/api/v1/sheets/{sheetId}/photos/{id}": {
+      "delete": {
+        "operationId": "SheetPhotos_remove",
+        "parameters": [
+          {
+            "name": "sheetId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "403": {
+            "description": "Archers only"
+          },
+          "404": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "sheets"
+        ]
+      }
+    },
+    "/api/v1/admin/sheet-templates": {
+      "get": {
+        "operationId": "SheetTemplates_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AdminSheetTemplateDto"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Admins only"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Every template, hidden ones too, by category then in their order",
+        "tags": [
+          "admin"
+        ]
+      },
+      "post": {
+        "operationId": "SheetTemplates_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSheetTemplateDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminSheetTemplateDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Admins only"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "A new template, at the end of its category",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/sheet-templates/{id}": {
+      "patch": {
+        "operationId": "SheetTemplates_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSheetTemplateDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminSheetTemplateDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Admins only"
+          },
+          "404": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin"
+        ]
+      },
+      "delete": {
+        "operationId": "SheetTemplates_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "403": {
+            "description": "Admins only"
+          },
+          "404": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Delete a template; the sheets started from it keep their text",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/sheet-templates/{id}/move": {
+      "post": {
+        "operationId": "SheetTemplates_move",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MoveSheetTemplateDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AdminSheetTemplateDto"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Admins only"
+          },
+          "404": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "One place up or down in its category; every template comes back",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
     "/api/v1/goals": {
       "get": {
         "operationId": "Goals_list",
@@ -3355,6 +3994,69 @@
         ]
       }
     },
+    "/api/v1/coach/athletes/{archerId}/sessions/{id}/copy": {
+      "post": {
+        "operationId": "Coaching_copy",
+        "parameters": [
+          {
+            "name": "archerId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CopyToAthletesDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CopiedSessionDto"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Not a training or a coaching"
+          },
+          "404": {
+            "description": "Not one of your archers (or not in their current journal)"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Plan a training or coaching of the current journal again on `date`, for the archers chosen (the same planning, steps unticked, coach-stamped); one result per archer, in the order given",
+        "tags": [
+          "coaching"
+        ]
+      }
+    },
     "/api/v1/coach/athletes/{archerId}/sessions/{id}/photos": {
       "get": {
         "operationId": "Coaching_photos",
@@ -3774,6 +4476,144 @@
           }
         ],
         "summary": "The archer's own event types (for the legend)",
+        "tags": [
+          "coaching"
+        ]
+      }
+    },
+    "/api/v1/coach/athletes/{archerId}/sheets": {
+      "get": {
+        "operationId": "Coaching_sheets",
+        "parameters": [
+          {
+            "name": "archerId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SheetSummaryDto"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not one of your archers (or not in their current journal)"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "The archer's binder (Sheets section), without the texts: read only",
+        "tags": [
+          "coaching"
+        ]
+      }
+    },
+    "/api/v1/coach/athletes/{archerId}/sheets/{id}": {
+      "get": {
+        "operationId": "Coaching_sheet",
+        "parameters": [
+          {
+            "name": "archerId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SheetDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not one of your archers (or not in their current journal)"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "coaching"
+        ]
+      }
+    },
+    "/api/v1/coach/athletes/{archerId}/sheets/{id}/photos": {
+      "get": {
+        "operationId": "Coaching_sheetPhotos",
+        "parameters": [
+          {
+            "name": "archerId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PhotoDto"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not one of your archers (or not in their current journal)"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Photos of a technique sheet; the URLs are signed (10 minutes)",
         "tags": [
           "coaching"
         ]
@@ -5571,6 +6411,98 @@
           "description"
         ]
       },
+      "StrengthMeasure": {
+        "type": "string",
+        "enum": [
+          "REPS",
+          "SECONDS"
+        ]
+      },
+      "StrengthLoad": {
+        "type": "string",
+        "enum": [
+          "BODYWEIGHT",
+          "KG",
+          "BAND_LIGHT",
+          "BAND_MEDIUM",
+          "BAND_STRONG"
+        ]
+      },
+      "StrengthStepDto": {
+        "type": "object",
+        "properties": {
+          "exercise": {
+            "type": "string",
+            "nullable": true,
+            "example": "PLANK_FRONT",
+            "description": "The clients' catalogue exercise it was picked from (they name it in their language); null for an exercise typed by the archer."
+          },
+          "name": {
+            "type": "string",
+            "example": "Gainage face",
+            "maxLength": 120,
+            "description": "As shown."
+          },
+          "sets": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 20
+          },
+          "measure": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/StrengthMeasure"
+              }
+            ]
+          },
+          "amount": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 3600,
+            "description": "Repetitions, or seconds, per set."
+          },
+          "load": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/StrengthLoad"
+              }
+            ]
+          },
+          "loadKg": {
+            "type": "number",
+            "nullable": true,
+            "minimum": 0.5,
+            "maximum": 500,
+            "description": "`load` KG: the weight (kg); null otherwise."
+          },
+          "restSeconds": {
+            "type": "number",
+            "nullable": true,
+            "minimum": 0,
+            "maximum": 900,
+            "description": "Rest between two sets, in seconds; null = not said."
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 300,
+            "default": ""
+          },
+          "done": {
+            "type": "boolean",
+            "description": "A STRENGTH event, from its day on: ticked once done. Absent = false; always present in responses (false on sheets)."
+          }
+        },
+        "required": [
+          "exercise",
+          "name",
+          "sets",
+          "measure",
+          "amount",
+          "load",
+          "loadKg",
+          "restSeconds"
+        ]
+      },
       "Sky": {
         "type": "string",
         "enum": [
@@ -5715,6 +6647,13 @@
               "$ref": "#/components/schemas/SessionStepDto"
             }
           },
+          "strengthSteps": {
+            "description": "STRENGTH events: their programme (built with the guide or copied from a STRENGTH sheet).",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StrengthStepDto"
+            }
+          },
           "satisfaction": {
             "type": "number",
             "nullable": true
@@ -5805,6 +6744,7 @@
           "distanceMeters",
           "objective",
           "steps",
+          "strengthSteps",
           "satisfaction",
           "technique",
           "physicalFeeling",
@@ -5926,6 +6866,14 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/SessionStepDto"
+            }
+          },
+          "strengthSteps": {
+            "maxItems": 30,
+            "description": "STRENGTH events: their programme, in order (replaces it); `done` ticked from the day on.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StrengthStepDto"
             }
           },
           "satisfaction": {
@@ -6935,6 +7883,341 @@
           "archerId"
         ]
       },
+      "SheetCategory": {
+        "type": "string",
+        "enum": [
+          "TECHNIQUE",
+          "SETTINGS",
+          "STRENGTH",
+          "MENTAL"
+        ]
+      },
+      "SheetSummaryDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "category": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SheetCategory"
+              }
+            ]
+          },
+          "title": {
+            "type": "string",
+            "example": "Ancrage",
+            "maxLength": 120
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string",
+            "description": "Last change of its title or text."
+          }
+        },
+        "required": [
+          "id",
+          "category",
+          "title",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "SheetDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "category": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SheetCategory"
+              }
+            ]
+          },
+          "title": {
+            "type": "string",
+            "example": "Ancrage",
+            "maxLength": 120
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string",
+            "description": "Last change of its title or text."
+          },
+          "body": {
+            "type": "string",
+            "description": "Free text; line breaks kept.",
+            "maxLength": 20000
+          },
+          "strengthSteps": {
+            "description": "STRENGTH sheets: the programme built with the guide, in order (else empty).",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StrengthStepDto"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "category",
+          "title",
+          "createdAt",
+          "updatedAt",
+          "body",
+          "strengthSteps"
+        ]
+      },
+      "SheetTemplateDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "category": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SheetCategory"
+              }
+            ]
+          },
+          "title": {
+            "type": "string",
+            "example": "Ma corde"
+          },
+          "body": {
+            "type": "string",
+            "description": "Lines to fill in."
+          }
+        },
+        "required": [
+          "id",
+          "category",
+          "title",
+          "body"
+        ]
+      },
+      "CreateSheetDto": {
+        "type": "object",
+        "properties": {
+          "category": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SheetCategory"
+              }
+            ]
+          },
+          "title": {
+            "type": "string",
+            "example": "Ancrage",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "body": {
+            "type": "string",
+            "maxLength": 20000,
+            "description": "The text; when left out, the template's (if any), else empty."
+          },
+          "templateId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "A template of the same category (GET /sheets/templates), not hidden: its text starts the sheet."
+          },
+          "locale": {
+            "type": "string",
+            "example": "fr",
+            "description": "With `templateId`: the language of its text, as for GET /sheets/templates."
+          }
+        },
+        "required": [
+          "category",
+          "title"
+        ]
+      },
+      "UpdateSheetDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "body": {
+            "type": "string",
+            "maxLength": 20000
+          },
+          "strengthSteps": {
+            "maxItems": 30,
+            "description": "STRENGTH sheets only (another category: 400): the programme, in order (replaces it).",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StrengthStepDto"
+            }
+          }
+        }
+      },
+      "AdminSheetTemplateDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "category": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SheetCategory"
+              }
+            ]
+          },
+          "position": {
+            "type": "number",
+            "description": "Order in its category (1 first)."
+          },
+          "hidden": {
+            "type": "boolean",
+            "description": "Not offered to the archers."
+          },
+          "titleFr": {
+            "type": "string",
+            "example": "Ma corde"
+          },
+          "bodyFr": {
+            "type": "string"
+          },
+          "titleEn": {
+            "type": "string",
+            "example": "My string"
+          },
+          "bodyEn": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "category",
+          "position",
+          "hidden",
+          "titleFr",
+          "bodyFr",
+          "titleEn",
+          "bodyEn",
+          "updatedAt"
+        ]
+      },
+      "CreateSheetTemplateDto": {
+        "type": "object",
+        "properties": {
+          "category": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SheetCategory"
+              }
+            ]
+          },
+          "titleFr": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "bodyFr": {
+            "type": "string",
+            "maxLength": 20000
+          },
+          "titleEn": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "bodyEn": {
+            "type": "string",
+            "maxLength": 20000
+          },
+          "hidden": {
+            "type": "boolean",
+            "description": "Not offered to the archers yet (false by default)."
+          }
+        },
+        "required": [
+          "category",
+          "titleFr",
+          "bodyFr",
+          "titleEn",
+          "bodyEn"
+        ]
+      },
+      "UpdateSheetTemplateDto": {
+        "type": "object",
+        "properties": {
+          "category": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SheetCategory"
+              }
+            ]
+          },
+          "titleFr": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "bodyFr": {
+            "type": "string",
+            "maxLength": 20000
+          },
+          "titleEn": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "bodyEn": {
+            "type": "string",
+            "maxLength": 20000
+          },
+          "hidden": {
+            "type": "boolean"
+          }
+        }
+      },
+      "MoveDirection": {
+        "type": "string",
+        "enum": [
+          "UP",
+          "DOWN"
+        ]
+      },
+      "MoveSheetTemplateDto": {
+        "type": "object",
+        "properties": {
+          "direction": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/MoveDirection"
+              }
+            ]
+          }
+        },
+        "required": [
+          "direction"
+        ]
+      },
       "GoalType": {
         "type": "string",
         "enum": [
@@ -7300,6 +8583,14 @@
               "$ref": "#/components/schemas/SessionStepDto"
             }
           },
+          "strengthSteps": {
+            "maxItems": 30,
+            "description": "STRENGTH sessions: their programme, in order (replaces it).",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StrengthStepDto"
+            }
+          },
           "type": {
             "allOf": [
               {
@@ -7364,12 +8655,79 @@
               "$ref": "#/components/schemas/SessionStepDto"
             }
           },
+          "strengthSteps": {
+            "maxItems": 30,
+            "description": "STRENGTH sessions: their programme, in order (replaces it).",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StrengthStepDto"
+            }
+          },
           "date": {
             "type": "string",
             "example": "2026-11-04",
             "description": "A day after today, within the archer's journal of the season in progress."
           }
         }
+      },
+      "CopyToAthletesDto": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "example": "2026-11-03",
+            "description": "A day after today, within each archer's journal of the season in progress."
+          },
+          "archerIds": {
+            "minItems": 1,
+            "maxItems": 100,
+            "description": "The archers who get the session (yours, WRITE access): the one whose sheet it is, others, or both.",
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        },
+        "required": [
+          "date",
+          "archerIds"
+        ]
+      },
+      "CopiedSessionDto": {
+        "type": "object",
+        "properties": {
+          "archerId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "description": "Display name, or email."
+          },
+          "sessionId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true,
+            "description": "The event planned in their journal; null when it could not be."
+          },
+          "error": {
+            "type": "string",
+            "nullable": true,
+            "enum": [
+              "FORBIDDEN",
+              "DATE_NOT_PLANNABLE",
+              "DAY_FULL"
+            ],
+            "description": "Why nothing was planned: FORBIDDEN (read-only access), DATE_NOT_PLANNABLE (no journal of the season in progress covering the day), DAY_FULL. Null when planned."
+          }
+        },
+        "required": [
+          "archerId",
+          "name",
+          "sessionId",
+          "error"
+        ]
       },
       "SaveSessionCommentDto": {
         "type": "object",

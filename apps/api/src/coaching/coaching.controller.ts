@@ -47,11 +47,14 @@ import {
 import {
   AthleteDto,
   CoachGroupDto,
+  CopiedSessionDto,
+  CopyToAthletesDto,
   PlanSessionDto,
   SaveCoachGroupDto,
   SetAthleteGroupDto,
   UpdatePlannedSessionDto,
 } from './dto/coaching.dto.js';
+import { SheetDto, SheetSummaryDto } from '../sheets/dto/sheet.dto.js';
 import { CoachingService } from './coaching.service.js';
 
 const ARCHER_ID = 'archerId';
@@ -235,6 +238,23 @@ export class CoachingController {
     return this.coaching.removePlanned(user.id, archerId, id);
   }
 
+  @Post(':archerId/sessions/:id/copy')
+  @ApiOperation({
+    summary:
+      'Plan a training or coaching of the current journal again on `date`, for the archers chosen ' +
+      '(the same planning, steps unticked, coach-stamped); one result per archer, in the order given',
+  })
+  @ApiCreatedResponse({ type: CopiedSessionDto, isArray: true })
+  @ApiBadRequestResponse({ description: 'Not a training or a coaching' })
+  copy(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param(ARCHER_ID, new ParseUUIDPipe()) archerId: string,
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() dto: CopyToAthletesDto,
+  ): Promise<CopiedSessionDto[]> {
+    return this.coaching.copyToAthletes(user.id, archerId, id, dto.date, dto.archerIds);
+  }
+
   @Get(':archerId/sessions/:id/photos')
   @ApiOperation({ summary: 'Photos of an event; the URLs are signed and expire after 10 minutes' })
   @ApiOkResponse({ type: PhotoDto, isArray: true })
@@ -340,6 +360,37 @@ export class CoachingController {
     @Param(ARCHER_ID, new ParseUUIDPipe()) archerId: string,
   ): Promise<CustomEventTypeDto[]> {
     return this.coaching.customTypes(user.id, archerId);
+  }
+
+  @Get(':archerId/sheets')
+  @ApiOperation({ summary: "The archer's binder (Sheets section), without the texts: read only" })
+  @ApiOkResponse({ type: SheetSummaryDto, isArray: true })
+  sheets(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param(ARCHER_ID, new ParseUUIDPipe()) archerId: string,
+  ): Promise<SheetSummaryDto[]> {
+    return this.coaching.sheetList(user.id, archerId);
+  }
+
+  @Get(':archerId/sheets/:id')
+  @ApiOkResponse({ type: SheetDto })
+  sheet(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param(ARCHER_ID, new ParseUUIDPipe()) archerId: string,
+    @Param('id', new ParseUUIDPipe()) id: string,
+  ): Promise<SheetDto> {
+    return this.coaching.sheet(user.id, archerId, id);
+  }
+
+  @Get(':archerId/sheets/:id/photos')
+  @ApiOperation({ summary: 'Photos of a technique sheet; the URLs are signed (10 minutes)' })
+  @ApiOkResponse({ type: PhotoDto, isArray: true })
+  sheetPhotos(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param(ARCHER_ID, new ParseUUIDPipe()) archerId: string,
+    @Param('id', new ParseUUIDPipe()) id: string,
+  ): Promise<PhotoDto[]> {
+    return this.coaching.sheetPhotos(user.id, archerId, id);
   }
 
   @Get(':archerId/goals')

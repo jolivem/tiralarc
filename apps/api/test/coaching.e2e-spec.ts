@@ -438,6 +438,138 @@ describe('Coaching (e2e)', () => {
     await setAccess('WRITE');
   });
 
+  it('plans a session again for several archers at once', async () => {
+    // Two more archers coached by the same coach: one with WRITE access, one read-only.
+    const coachOf = async (token: string, email: string, coachAccess: 'READ' | 'WRITE') => {
+      const invited = await http()
+        .post('/api/v1/profile/invitations')
+        .set(as(token))
+        .send({ name: 'Camille', email, isCoach: true, coachAccess })
+        .expect(201);
+      const mail = ctx.outbox.filter((m) => m.to === email).at(-1);
+      const token2 = mail?.text.match(/invitations\/accept\?token=([\w-]+)/)?.[1];
+      await http()
+        .post('/api/v1/invitations/accept')
+        .set(as(coach))
+        .send({ token: token2 })
+        .expect(200);
+      await http()
+        .post('/api/v1/journals')
+        .set(as(token))
+        .send({ title: 'Saison', startDate: day(-10), endDate: day(10) })
+        .expect(201);
+      const id = (await http().get('/api/v1/users/me').set(as(token)).expect(200)).body.id;
+      return { id: id as string, invitation: invited.body.id as string };
+    };
+    const writer = await signUp('c-writer', 'Alex Groupe');
+    const reader = await signUp('c-reader', 'Noa Lecture');
+    const w = await coachOf(writer, 'camille+w@club.fr', 'WRITE');
+    const r = await coachOf(reader, 'camille+r@club.fr', 'READ');
+
+    // The archer's own training, its steps ticked and reviewed.
+    const source = await http()
+      .post('/api/v1/journal/sessions')
+      .set(as(archer))
+      .send({ type: 'TRAINING', date: day(-1) })
+      .expect(201);
+    await http()
+      .patch(`/api/v1/journal/sessions/${source.body.id}`)
+      .set(as(archer))
+      .send({
+        durationMinutes: 90,
+        location: 'Stade',
+        objective: 'Régularité',
+        steps: [{ unit: 'ARROWS', amount: 36, target: 'FACE', description: 'Volées', done: true }],
+        score: 550,
+      })
+      .expect(200);
+    const copy = `${base()}/sessions/${source.body.id}/copy`;
+
+    const copied = await http()
+      .post(copy)
+      .set(as(coach))
+      .send({ date: day(8), archerIds: [archerId, w.id, r.id] })
+      .expect(201);
+    expect(copied.body).toEqual([
+      { archerId, name: 'Léa Archère', sessionId: expect.any(String), error: null },
+      { archerId: w.id, name: 'Alex Groupe', sessionId: expect.any(String), error: null },
+      { archerId: r.id, name: 'Noa Lecture', sessionId: null, error: 'FORBIDDEN' },
+    ]);
+    // Same planning, nothing ticked, no review, stamped by the coach: new to the archer.
+    const planned = await http()
+      .get(`/api/v1/journal/sessions/${copied.body[1].sessionId}`)
+      .set(as(writer))
+      .expect(200);
+    expect(planned.body).toMatchObject({
+      type: 'TRAINING',
+      date: day(8),
+      durationMinutes: 90,
+      location: 'Stade',
+      objective: 'Régularité',
+      steps: [{ amount: 36, description: 'Volées', done: false }],
+      score: null,
+      plannedBy: { name: 'Camille Coach' },
+    });
+    expect(
+      (await http().get('/api/v1/journal/sessions/new').set(as(writer)).expect(200)).body,
+    ).toHaveLength(1);
+
+    // Each archer's own journal decides: after its end, nothing for them.
+    const late = await http()
+      .post(copy)
+      .set(as(coach))
+      .send({ date: day(20), archerIds: [archerId, w.id] })
+      .expect(201);
+    expect(late.body.map((c: { error: string | null }) => c.error)).toEqual([
+      null,
+      'DATE_NOT_PLANNABLE',
+    ]);
+    // Someone the coach doesn't coach: nothing planned at all; past days and other types refused.
+    const stranger = (await http().get('/api/v1/users/me').set(as(otherCoach)).expect(200)).body.id;
+    await http()
+      .post(copy)
+      .set(as(coach))
+      .send({ date: day(9), archerIds: [w.id, stranger] })
+      .expect(404);
+    const refused = await http()
+      .post(copy)
+      .set(as(coach))
+      .send({ date: day(0), archerIds: [w.id] })
+      .expect(201);
+    expect(refused.body[0].error).toBe('DATE_NOT_PLANNABLE');
+    await http()
+      .post(copy)
+      .set(as(coach))
+      .send({ date: day(9), archerIds: [] })
+      .expect(400);
+    await http()
+      .post(copy)
+      .set(as(otherCoach))
+      .send({ date: day(9), archerIds: [archerId] })
+      .expect(404);
+    const strength = await http()
+      .post('/api/v1/journal/sessions')
+      .set(as(archer))
+      .send({ type: 'STRENGTH', date: day(-1) })
+      .expect(201);
+    await http()
+      .post(`${base()}/sessions/${strength.body.id}/copy`)
+      .set(as(coach))
+      .send({ date: day(9), archerIds: [archerId] })
+      .expect(400);
+
+    for (const id of [
+      source.body.id,
+      strength.body.id,
+      copied.body[0].sessionId,
+      late.body[0].sessionId,
+    ]) {
+      await http().delete(`/api/v1/journal/sessions/${id}`).set(as(archer)).expect(204);
+    }
+    await http().delete(`/api/v1/profile/invitations/${w.invitation}`).set(as(writer)).expect(204);
+    await http().delete(`/api/v1/profile/invitations/${r.invitation}`).set(as(reader)).expect(204);
+  });
+
   it('ends with the invitation', async () => {
     await http().delete(`/api/v1/profile/invitations/${invitationId}`).set(as(archer)).expect(204);
     await http().get(base()).set(as(coach)).expect(404);
