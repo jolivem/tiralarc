@@ -91,6 +91,8 @@ services:
       - '443:443/udp'
     environment:
       DOMAIN: ${DOMAIN:?}
+      # Other names redirected to DOMAIN, comma-separated (e.g. www.<domain>, <domain>.fr).
+      REDIRECT_DOMAINS: ${REDIRECT_DOMAINS:?}
     volumes:
       # Directories, not single files: git pull replaces files, which a file bind mount wouldn't see.
       - ./caddy:/etc/caddy:ro

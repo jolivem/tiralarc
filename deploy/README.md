@@ -74,8 +74,9 @@ cat runtime/current-tag runtime/previous-tag
 
 1. Ubuntu + Docker et son plugin compose :
    `curl -fsSL https://get.docker.com | sh`. Pare-feu Hetzner : ouvrir 22, 80, 443 (TCP) et 443 (UDP).
-2. DNS : deux enregistrements `A` (et `AAAA`) vers l'IP du VPS, pour `<domaine>` et `s3.<domaine>`. Les photos
-   sont lues par URL signée sur `s3.<domaine>`.
+2. DNS : des enregistrements `A` (et `AAAA`) vers l'IP du VPS, pour `<domaine>` et `s3.<domaine>` (les photos
+   sont lues par URL signée sur `s3.<domaine>`), et pour chaque nom de `REDIRECT_DOMAINS` (`www.<domaine>`, un
+   autre domaine…), que Caddy redirige vers `<domaine>`, chacun avec son certificat.
 3. Code : `git clone https://github.com/jolivem/tiralarc /opt/tiralarc` (si le dépôt est privé : une clé de
    déploiement en lecture seule).
 4. Images : `docker login ghcr.io -u jolivem`, avec un token GitHub `read:packages`. Inutile si les paquets GHCR
